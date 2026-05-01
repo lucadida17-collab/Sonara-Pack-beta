@@ -1,0 +1,144 @@
+
+<!DOCTYPE html> 
+<html lang="fr">
+
+<head>
+ <meta Charset="UTF-8">
+ <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NEBG1Z3EE0');
+</script>
+
+ <link rel="stylesheet" href="app/css/style.css">
+ <link rel="icon" href="logo-sonara-pack.PNG" type="image/png">
+ <link rel="shortcut icon" href="logo-sonara-pack.PNG" type="image/png">
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+ <meta name="viewport" content="width=device-width, Initial-scale=1.0">
+ <title>Sorana Pack</title>
+</head>
+
+
+<body class="Accueil">
+
+
+<div class="intro-screen">
+  
+    <video 
+    src="../assets/video/logo-Sonara-Animation.mp4" 
+    class="intro-animation"
+    autoplay
+    muted
+    playsinline
+    onended="this.pause(); this.currentTime = this.duration;"></video>
+  </video>
+
+  <h2 class="intro-title">Sonara Pack</h2>
+  <div class="intro-loader">
+  </div>
+   <p class="intro-chargement">Chargement</p>
+</div>
+
+<main class="page">
+<!--DESKTOP-->
+<header>
+<section class="brand">
+  <video src="../assets/video/logo-Sonara.mp4"
+  class="brand-logo"
+  autoplay
+  muted
+  playsinline
+  onended="this.pause(); this.currentTime = this.duration;">
+</video>
+ 
+
+</header>
+</section>
+
+<section class="teaser">
+  <div class="brand-info">
+<p>Sonara Pack <br>
+Bêta privée <br>
+Tu es en avance. <br>
+Les prochaines versions vont tout changer</p>
+</div>
+</section>
+
+<section class="hero-desktop">
+  <picture class="hero-desktop-picture">
+   <img src="../assets/image/dernier-souffle-pc.PNG" alt="Image Nostalgia pc " class="hero-desktop-image">
+  </picture>
+
+
+  <div class="hero-desktop-overlay">
+  <h1 class="hero-desktop-title"></h1>
+</div>
+
+<hr class="hero-desktop-ligne">
+
+<section class="hero-desktop-info">
+  <h2 class="hero-desktop-subtitle"></h2>
+  <p class="hero-desktop-text"></p>
+</section>
+
+<section class="hero-desktop-pack-content">
+  <h3 class="hero-desktop-pack-title"></h3>
+  <p class="hero-desktop-pack-text"></p>
+  <button class="hero-pack-button" data-id="dernier-souffle"><p class="hero-pack-button-text"></p></button>
+</section>
+</section>
+
+
+
+<!--Mobile-->
+
+
+<section class="hero">
+  
+   <img src="../assets/image/dernier-souffle-mobile.PNG" alt="Image Nostalgia mobile " class="hero-image">
+
+
+  <div class="hero-overlay">
+  <h1 class="hero-title"></h1>
+</div>
+
+<hr class="hero-ligne">
+
+</section>
+
+<section class="hero-info">
+  
+  <h2 class="hero-subtitle"></h2>
+  <p class="hero-text">
+  </p>
+</section>
+
+<section class="pack-content">
+
+  <h3 class="pack-title"></h3>
+  <p class="pack-text">
+  </p>
+  <button class="pack-button" data-id="dernier-souffle"><p class="pack-button-text"></p></button>
+  
+</section>
+  <img src="" alt="" class="pack-carte-accueil">
+
+<section class="hero-roadmap">
+  <h1 class="h-r">Voir les Prochaine Version</h1>
+  <button class="hero-roadmap-button">Prochaine Version</button>
+</section>
+
+</main>
+<script src="app/js/data/data.js"></script>
+<script src="app/js/script.js"></script>
+<script>
+  fetch("https://api.counterapi.dev/v1/sonara/visit/up");
+</script>
+</body>
+</html>
