@@ -1,0 +1,101 @@
+ 
+.Load {
+    color: white;
+    font-family: 'inter', sans-serif;
+     display: flex;
+   justify-content: center;
+   align-content: center;
+   align-items: center;
+}
+ 
+ .intro-screen {
+    
+   position: fixed;
+   inset: 0;
+   display: flex;
+   justify-content: center;
+   align-content: center;
+   align-items: center;
+   flex: 1;
+    
+    margin-left: 0px;
+    background: linear-gradient(150deg, purple, black, black, black, blue);
+    z-index: 9999;
+    
+    padding: 0px;
+    color: white;
+   opacity: 1;
+   visibility: visible;
+   transition: opacity 0.8s ease, visibility 0.8s ease;
+ }
+
+
+
+
+ .intro-animation {
+   height: 130px;
+    width: 130px;
+    border-radius: 500px;
+    display: flex;
+    margin-left: -200px;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+ }
+
+.info { 
+    margin-left: 150px;
+    margin-top: 140px;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+ .spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid  white;
+  border-top: 3px solid #f004b9;
+  border-radius: 50%;
+ margin-top: -2px;
+ margin-left: -190px;
+  animation: spin 1s linear infinite;
+ 
+ }
+
+
+ .intro-chargement {
+  color: white;
+  margin-left: 20px;
+  opacity: 0.75;
+ }
+
+ 
+ .intro-version {
+    font-size: 14px;
+    margin-top: -550px;
+    margin-left: 0px;
+   opacity: 0.70;
+ }
+
+ .intro-title {
+   opacity: 1;
+  transition: opacity 5s ease;
+ }
+
+ .intro-title.hide {
+  opacity: 0;
+ }
+
+ .intro-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+ }
+
+
+ @keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+ }

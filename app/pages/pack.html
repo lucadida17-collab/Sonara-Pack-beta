@@ -1,10 +1,9 @@
-
 <!DOCTYPE html> 
 <html lang="fr">
 
 <head>
  <meta Charset="UTF-8">
- <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -14,22 +13,18 @@
   gtag('config', 'G-NEBG1Z3EE0');
 </script>
 
- <link rel="stylesheet" href="app/css/style.css">
- <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="stylesheet" href="../css/pack.css">
+  <link rel="icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="preconnect" href="https://fonts.googleapis.com">
  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
  <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
  <meta name="viewport" content="width=device-width, Initial-scale=1.0">
- <title>Sorana Pack</title>
+ <title>Sorana Pack - Catalogue de Pack</title>
 </head>
 
 
-<body class="Accueil">
-
-
-
-
+<body class="pack">
 <main class="app-layout">
 
 <aside class="side-panel">
@@ -45,7 +40,7 @@
 
 <header class="brand">
 <div class="brand-info">
-    <video src="../assets/video/logo-Sonara.mp4"
+    <video src="../../assets/video/logo-Sonara.mp4"
   class="brand-logo"
   autoplay
   muted
@@ -65,17 +60,37 @@
 </section>
 
 
+<section class="pack-list">
+  <!-- Les packs seront générés ici par JavaScript -->
 </section>
 
-
-</section>
 
 </main>
-<script src="app/js/data/data.js" defer></script>
-<script src="app/js/script.js" defer></script>
+
+    <div class="notice-overlay">
+      <div class="notice-box">
+      <button class="notice-close">&times;</button>
+      <h2>Droit d'utilisation</h2>
+
+      <p>🎧 Utilisation du pack :
+    ✔️ Vidéos (Tiktok, Youtube, films, etc.)
+    ✔️ Usage illimité (projets perso & pro.)
+    ✔️ Utiliser des daw (rajouter des effet sur les sons.)
+    
+    🚫 Interdit:
+    ❌ revente des sons
+    ❌ partage du pack
+    ❌ upload sur une plateforme musicale.
+    </p>
+    <div class="notice-actions">
+    <button class="notice-refuse">Refuser</button>
+    <button class="notice-accept">Accepter</button>
+    </div>
+      </div>
+
+<script src="../js/data/data.js" defer></script>
+<script src="../js/pack.js" defer></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script>
-  fetch("https://api.counterapi.dev/v1/sonara/visit/up");
-</script>
 </body>
+
 </html>
