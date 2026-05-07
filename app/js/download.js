@@ -31,7 +31,7 @@ if (downloadPage && selectedId) {
 
     const link = document.createElement("a");
     link.href = `../../${selectedId.telechargementUrl}`;
-    link.download = `Dernier-Souffle.zip`;
+    link.download = `${selectedId.title}.zip`;
     
     console.log("link.href =", link.href);
     console.log("link.download =", link.download);

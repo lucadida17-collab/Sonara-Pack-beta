@@ -37,7 +37,7 @@
     width: 130px;
     border-radius: 500px;
     display: flex;
-    margin-left: -200px;
+    margin-left: -220px;
     justify-content: center;
     align-items: center;
     align-content: center;
@@ -74,12 +74,13 @@
  
  .intro-version {
     font-size: 14px;
-    margin-top: -550px;
-    margin-left: 0px;
+    margin-top: -500px;
+    margin-left: 60px;
    opacity: 0.70;
  }
 
  .intro-title {
+  margin-left: 10px;
    opacity: 1;
   transition: opacity 5s ease;
  }

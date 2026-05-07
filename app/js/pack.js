@@ -70,7 +70,7 @@ playerBtn.addEventListener('click', () => {
 
 
 if (pageName) {
-    pageName.textContent = "V0.9.2 - Sonara " ;
+    pageName.textContent = "V0.9.21 - Sonara " ;
 };
 
 const loaderText = document.querySelector('.loader-text')
