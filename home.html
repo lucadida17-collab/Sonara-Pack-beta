@@ -1,0 +1,81 @@
+
+<!DOCTYPE html> 
+<html lang="fr">
+
+<head>
+ <meta Charset="UTF-8">
+ <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NEBG1Z3EE0');
+</script>
+
+ <link rel="stylesheet" href="app/css/home.css">
+ <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+ <meta name="viewport" content="width=device-width, Initial-scale=1.0">
+ <title>Sorana Pack</title>
+</head>
+
+
+<body class="Accueil">
+
+
+
+
+<main class="app-layout">
+
+<aside class="side-panel">
+
+ <button class="accueil-btn">
+  <i data-lucide="home"></i>
+  Accueil
+</button>
+
+</aside>
+
+<section class="main-content">
+
+<header class="brand">
+<div class="brand-info">
+    <video src="../assets/video/logo-Sonara.mp4"
+  class="brand-logo"
+  autoplay
+  muted
+  playsinline
+  onended="this.pause(); this.currentTime = this.duration;">
+</video>
+<h2 class="page"></h2>
+</div>
+<div class="border-brand"></div>
+</header>
+
+<section class="scroll-zone">
+
+<section class="loader">
+  <div class="spinner"></div>
+  <p class="loader-text"></p>
+</section>
+
+
+</section>
+
+
+</section>
+
+</main>
+<script src="app/js/data/data.js" defer></script>
+<script src="app/js/home.js" defer></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  fetch("https://api.counterapi.dev/v1/sonara/visit/up");
+</script>
+</body>
+</html>

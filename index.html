@@ -14,7 +14,7 @@
   gtag('config', 'G-NEBG1Z3EE0');
 </script>
 
- <link rel="stylesheet" href="app/css/style.css">
+ <link rel="stylesheet" href="app/css/index.css">
  <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,58 +24,32 @@
  <title>Sorana Pack</title>
 </head>
 
+<body class="Load">
 
-<body class="Accueil">
+    <main>
 
-
-
-
-<main class="app-layout">
-
-<aside class="side-panel">
-
- <button class="accueil-btn">
-  <i data-lucide="home"></i>
-  Accueil
-</button>
-
-</aside>
-
-<section class="main-content">
-
-<header class="brand">
-<div class="brand-info">
-    <video src="../assets/video/logo-Sonara.mp4"
-  class="brand-logo"
-  autoplay
-  muted
-  playsinline
-  onended="this.pause(); this.currentTime = this.duration;">
-</video>
-<h2 class="page"></h2>
-</div>
-<div class="border-brand"></div>
-</header>
-
-<section class="scroll-zone">
-
-<section class="loader">
+          
+    <div class="intro-screen">
+        <div class="version"></div>
+   <span class="intro-version">Sonara Pack V0.9.3 loadAjout</span>
+    <video 
+    src="../assets/video/logo-Sonara-Animation.mp4" 
+    class="intro-animation"
+    autoplay
+    muted
+    playsinline
+    onended="this.pause(); this.currentTime = this.duration;"></video>
+  </video>
+  <h2 class="intro-title">Sonara Pack</h2>
+  <div class="info">
   <div class="spinner"></div>
-  <p class="loader-text"></p>
-</section>
+   <p class="intro-chargement">Chargement...</p>
 
+</div>
+</div>
 
-</section>
-
-
-</section>
-
-</main>
-<script src="app/js/data/data.js" defer></script>
-<script src="app/js/script.js" defer></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script>
-  fetch("https://api.counterapi.dev/v1/sonara/visit/up");
-</script>
+    </main>
+ <script src="app/js/index.js"></script>
 </body>
+
 </html>
