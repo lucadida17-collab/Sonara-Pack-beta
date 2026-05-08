@@ -54,20 +54,41 @@ const pageName = document.querySelector('.page');
 
  };
 
-const playerBtn = document.querySelector('.playerBtn, .playerBtnMob');
-const audio = document.querySelector('audio');  
-playerBtn.addEventListener('click', () => { 
-    if (audio.paused) {
-        audio.play();
-        playerBtn.classList.remove('play');
-        playerBtn.classList.add('pause');
-    } else {
-        audio.pause();
-        playerBtn.classList.remove('pause');
-        playerBtn.classList.add('play');
-    }
-});
 
+
+const desktopBtn = document.querySelector('.playerBtn');
+const desktopAudio = desktopBtn ? desktopBtn.nextElementSibling : null;
+
+const mobilePlayer = document.querySelector('.playerBtnMob');
+const audioMob = mobilePlayer ? mobilePlayer.nextElementSibling : null;
+
+if (desktopBtn && desktopAudio) {
+    desktopBtn.addEventListener("click", () => {
+        if (desktopAudio.paused) {
+            desktopAudio.play();
+            desktopBtn.classList.remove("play");
+            desktopBtn.classList.add("pause");
+        } else {
+            desktopAudio.pause();
+            desktopBtn.classList.remove("pause");
+            desktopBtn.classList.add("play");
+        }
+    });
+}
+
+if (mobilePlayer && audioMob) {
+    mobilePlayer.addEventListener("click", () => {
+        if (audioMob.paused) {
+            audioMob.play();
+            mobilePlayer.classList.remove("play");
+            mobilePlayer.classList.add("pause");
+        } else {
+            audioMob.pause();
+            mobilePlayer.classList.remove("pause");
+            mobilePlayer.classList.add("play");
+        }
+    });
+}   
 
 if (pageName) {
     pageName.textContent = "V0.9.21 - Sonara " ;

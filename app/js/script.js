@@ -50,23 +50,43 @@ function renderHome() {
     content.innerHTML = `
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Piano</h2>
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+</div>
  <div class="pack-row" data-cat="piano"></div>
 </section>
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Cinématique</h2>
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+</div>
  <div class="pack-row" data-cat="cinematic"></div>
 </section>
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Espace</h2>
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+</div>
  <div class="pack-row" data-cat="espace"></div>
 </section>
 
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Tiktok</h2>
+
+
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+
+
+</div>
  <div class="pack-row" data-cat="tiktok"></div>
 </section>
 
@@ -75,12 +95,20 @@ function renderHome() {
 
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Youtube</h2>
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+</div>
  <div class="pack-row" data-cat="youtube"></div>
 </section>
 
 <section class="pack-categorie">
+<div class="categorie-header">
 <h2>Film</h2>
+<button class="scroll-btn left">‹</button>
+<button class="scroll-btn right">›</button>
+</div>
  <div class="pack-row" data-cat="film"></div>
 </section>
  `
@@ -122,10 +150,23 @@ setTimeout(() => {
     }
 });
 
-
 renderHome();
 
 
+
+document.querySelectorAll(".pack-categorie").forEach(section => {
+    const leftBtn = section.querySelector(".scroll-btn.left");
+    const rightBtn = section.querySelector(".scroll-btn.right");
+    const row = section.querySelector(".pack-row");
+
+leftBtn.addEventListener('click', () => {
+    row.scrollBy({ left: -300, behavior: 'smooth' });
+});
+
+rightBtn.addEventListener('click', () => {
+    row.scrollBy({ left: 300, behavior: 'smooth' });
+});
+});
 
 
 

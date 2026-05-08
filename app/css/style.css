@@ -1,4 +1,7 @@
 
+.scroll-btn{
+  display: none;
+}
 
 h1 {
   font-size: 28px;
@@ -288,11 +291,7 @@ overflow: hidden;
 
 }
 
-.categorie-name {
-  margin-top: 20px;
-  margin-left: 50px;
-  font-family: 'inter', sans-serif;
-}
+
 
 .brand {
   display: flex;
@@ -385,8 +384,62 @@ overflow: hidden;
 .pack-row {
   display: flex;
    gap: 30px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
 }
+
+.pack-row::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.categorie-header {
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+
+}
+
+.scroll-controls {
+  display: flex;
+  gap: 28px;
+  flex-direction: row;
+  
+}
+
+.scroll-btn {
+  background:  transparent;
+  border: 1px solid rgba(255, 255, 255, 1);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30px;
+  width: 40px;
+  height: 40px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-direction: row;
+}
+
+.scroll-btn.left {
+ position: absolute;
+ left: 940px;
+ top: 50%;
+ transform: translateY(-50%);
+}
+
+.scroll-btn.right {
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+
 
 .card {
   display: flex;
@@ -404,7 +457,7 @@ overflow: hidden;
     border-radius: 20px;
     margin-right: 0px;
     margin-bottom: 0px;
-    background: black;
+    background: transparent;
     color: white;
     font-family: 'inter', sans-serif;
     cursor: pointer;

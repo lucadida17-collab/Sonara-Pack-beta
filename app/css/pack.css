@@ -10,6 +10,7 @@
 
 .side-panel {
   display: none;
+
 }
 
 
@@ -34,7 +35,7 @@
   
 margin-top: 0px;
   background: linear-gradient(90deg, purple, blue);
-  padding: 2px;
+  padding: 0px;
     
   display: inline-block;
 
@@ -374,7 +375,7 @@ cursor: pointer;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding: 40px 40px;
+  padding: 30px 30px;
   background: linear-gradient(140deg ,rgb(52, 52, 52), black,black,  #484302);
   height: 100%;
 }
