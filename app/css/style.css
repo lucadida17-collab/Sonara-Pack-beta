@@ -427,7 +427,7 @@ overflow: hidden;
 
 .scroll-btn.left {
  position: absolute;
- left: 940px;
+ left: 990px;
  top: 50%;
  transform: translateY(-50%);
 }
