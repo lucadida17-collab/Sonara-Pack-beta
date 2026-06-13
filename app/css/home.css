@@ -1,67 +1,199 @@
 
+
 .scroll-btn{
   display: none;
+}
+
+.update-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+  background: rgba( 0, 0, 0, 0.82);
+  z-index: 999999;
+}
+.update-modal-box {
+  position: relative;
+  width: 85%;
+  max-height: 80vh;
+overflow-y: auto;
+
+  height: auto;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 28px 22px;
+  color: white;
+   
+}
+.update-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.update-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  text-align: left;
+  line-height: 1.4;
+  max-width: 500px;
+  letter-spacing: 1px;
+}
+
+.update-modal-title {
+  font-size: 20px;
+   font-weight: 600;
+  margin-bottom: 30px;
+  text-align: center;
+  
+}
+
+.update-modal-box h2 {
+
+  font-size: 24px;
+   font-weight: 500;
+  margin-bottom: 18px;
+  text-align: center;
+  
+}
+
+.update-modal-box li {
+  display: flex;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.update-modal-box ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-modal-box p {
+  line-height: 1.5;
+  margin: 15px;
+  font-size: 16px;
+  white-space: pre-line;
+  opacity: 0.9;
+  text-align: center;
+
+}
+
+.update-modal-note {
+  margin-top: -10px;
+ margin: 10px;
+  opacity: 1;
+  text-align: center;
+}
+
+.update-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.update-modal-button {
+
+height: 54px;
+text-shadow: 0 0 7px white ;
+border-radius: 999px;
+cursor: pointer;
+ width: 90%;
+ margin-top: 20px;
+ margin-left: 0px;
+  background: black;
+  font-size: 18px;
+  border: 1px solid rgb(255, 255, 255);
+  color: white;
+
+}
+
+.update-modal-button:hover {
+    background: rgb(255, 255, 255);
+  color: black;
+  text-shadow: 0 0 8px rgb(153, 0, 255);
+  box-shadow: 0 0 50px rgb(255, 0, 255);
 }
 
 h1 {
   font-size: 28px;
 }
 
-.Accueil{ 
-    background: linear-gradient(140deg, black,black, black, black,  #48023a);
-    overflow-x: hidden;
-  background-color: black;
+body,
+html{ 
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,.24), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(147,51,234,.22), transparent 40%),
+    #020617;
+    
     color: White;
-  font-family: 'inter', sans-serif; 
-  height: 280vh;
+  font-family: inter, Arial, sans-serif; 
+  height: 105%;
+  margin: 0;
 }
 
 
 .side-panel {
-  display: none;
-}
-
-
-.brand {
   display: flex;
-  justify-content: left;
-  align-items: center;
-  gap: 0px;
-  background: black;
-  height: 80px;
- 
 }
 
+  .mobile-bottom-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    z-index: 9999;
 
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
 
+    padding: 10px 8px;
+    border-radius: 28px;
 
-.brand-logo {
- width: 55px;
- 
-  height: 55px;
-  border-radius: 999px;
-  
-margin-top: 0px;
-  background: linear-gradient(90deg, purple, blue);
-  padding: 2px;
-    
-  display: inline-block;
+    background: rgba(6, 14, 32, 0.92);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(120, 210, 255, 0.18);
+    box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
+  }
 
-}
+  .nav-mobile-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.72);
 
-.page {
-  font-size: 20px;
-  margin-left: 10px;
-  letter-spacing: 0.01px;
-  text-shadow: 0 0 7px white;
-}
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 
-.brand-info {
-  display: flex;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
-}
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .nav-mobile-btn i,
+  .nav-mobile-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-mobile-btn.active{
+    color: #00d9ff;
+  }
+
+  .main-content {
+    padding-bottom: 0px;
+  }
 
 .loader {
   position: fixed;
@@ -103,12 +235,16 @@ margin-top: 0px;
   
 }
 
-.scroll-zone {
- overflow: hidden;
+.header {
+  background: rgba(255, 255, 255, 0.085);
 }
+
+
 
 .pack-categorie {
   padding: 0px;
+  margin-top: 0px;
+  margin-left: 10px;
   flex-direction: row;
 }
 
@@ -137,7 +273,7 @@ margin-top: 0px;
     margin-left: 0;
     gap: 13px;
     max-width: 160px;
-    padding-top: -20px;
+    padding-top: -10px;
     margin-top: 0px;
     border-radius: 20px;
     margin-right: 0px;
@@ -190,13 +326,11 @@ overflow: hidden;
   transition: opacity 0.3;
  }
 
-
+   .mobile-bottom-bar {
+    display: flex;
+  }
 
  
-
-
-
-
  @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -206,54 +340,176 @@ overflow: hidden;
  @media  (min-width: 900px)  {
  
 
-.Accueil{ 
+
+
+.update-modal-overlay {
+  display: none;
+  position: fixed;
+  
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+  background: rgba( 0, 0, 0, 0.82);
+  z-index: 999999;
+}
+.update-modal-box {
+  position: relative;
+  width: 85%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 20px;
+  color: white;
+   
+}
+.update-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.update-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-align: left;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.update-modal-box h2 {
+
+  font-size: 24px;
+   font-weight: 700;
+  margin-bottom: 20px;
+  text-align: left;
+  
+}
+
+.update-modal-box p {
+  line-height: 1.5;
+  margin: 20px;
+  font-size: 16px;
+  white-space: pre-line;
+  opacity: 0.9;
+  text-align: center;
+
+}
+
+.update-modal-note {
+  margin-top: -10px;
+ margin: 30px;
+  opacity: 1;
+  text-align: center;
+}
+
+.update-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.update-modal-button {
+  flex: 1;
+height: 76px;
+text-shadow: 0 0 7px white ;
+border-radius: 999px;
+cursor: pointer;
+ width: 80%;
+ margin-top: 20px;
+ margin-left: 50px;
+  background: black;
+  font-size: 18px;
+  border: 1px solid rgb(255, 255, 255);
+  color: white;
+
+}
+
+
+
+body,
+html{ 
      overflow: hidden;
      margin: 0;
-     height: 100%;
-      background: black;
+     padding-top: 0;
+     
+      background-color: rgba(92, 72, 72, 0.04);
   color: White;
   font-family: 'inter', sans-serif; 
 }
 
-.main-content {
-  height: 100vh;
-  display: grid;
-  grid-template-rows: 130px 1fr;
-  overflow: hidden;
-}
+
 
 .scroll-zone {
-  margin-top: -39px;
+  margin-top: 0;
+  margin-bottom: 0;
+
+  height: calc(100vh - 70px);
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0;
-  padding: 40px 40px;
-  background: linear-gradient(140deg ,rgb(52, 52, 52), black,black,  #484302);
-  height: 100%;
+
+  padding: 40px 40px 140px;
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,.24), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(147,51,234,.22), transparent 40%),
+    #020617;
 }
 
-.app-layout {
-  
-  display: grid;
-  grid-template-columns: 244px 1fr;
-  height: 100vh;
-  background: #050505;
-  color: white;
-}
 
-.side-panel {
-  background-color: #2424247c;
-  display: block;
-  display: flex;
-  overflow: hidden;
-  text-align: left;
-  justify-content: left;
-  align-items: left;
-  width: 244px 1fr;
+  .mobile-bottom-bar {
+    position: fixed;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    z-index: 9999;
 
-  height: 100vh;
-  
-}
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+
+    padding: 13.84px 50px;
+    border-radius: 0px;
+
+    background: rgba(6, 14, 32, 0.92);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(120, 210, 255, 0.18);
+    box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
+  }
+
+  .nav-mobile-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.72);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .nav-mobile-btn i,
+  .nav-mobile-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-mobile-btn.active{
+    color: #00d9ff;
+  }
+
 
 .accueil-btn {
     display: flex;
@@ -275,94 +531,8 @@ overflow: hidden;
 }
 
 
-.accueil-btn.active {
-    background:  rgba(166, 166, 166, 0.3);
-}
-
-.accueil-btn.active{
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-
-   background: linear-gradient(90deg, #4FACFE, #a855f7);
-   -webkit-background-clip: text;
-   -webkit-text-fill-color: transparent;
-
-   text-shadow: 0 0 9px rgba(100, 150, 255, 0.3);
-
-}
 
 
-
-.brand {
-  display: flex;
-  align-items: left;
-  
-  align-items: left;
-  gap: 50px;
-  height: 50px;
-  
-   overflow: hidden;
-  background: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.30);
-  padding: 20px 30px;
-  }
-
-
-  
-.brand-logo {
-  width: 70px;
-  margin-top: 0px;
-  height: 70px;
-  border-radius: 999px;
-  
-  margin-bottom: 0px;
-  margin-left: 0px;
-  
-  padding: 2px;
-  display: inline-block;
-}
-
-.brand-info {
-  display: flex;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
-
-}
-
-
-
-
-.loader {
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin-left: 252px;
-  border-radius: 0;
-  height: 700px;
-  margin-top: 99px;
-  max-width: 1150px;
-  background: rgb(0, 0, 0);
-}
-
-.spinner {
-  width: 30px;
-  display: flex;
-  justify-content: center;
-  height: 30px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top: 3px solid #ffffff;
-  border-radius: 100%;
-  animation: spin 0.70s linear infinite;
-}
-
-.loader-text {
-  margin-top: 10px;
-  font-size: 14px;
-  opacity: 0.3;
-} 
 
 .loader.hide {
   opacity: 0;
@@ -398,7 +568,7 @@ overflow: hidden;
   position: relative;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 0px;
 
 }
 
@@ -427,7 +597,7 @@ overflow: hidden;
 
 .scroll-btn.left {
  position: absolute;
- left: 1060px;
+ left: 1200px;
  top: 50%;
  transform: translateY(-50%);
 }
@@ -468,8 +638,8 @@ overflow: hidden;
 
 
 .cover {
-  width: 260px;
-  height: 260px;
+  width: 300px;
+  height: 300px;
   border-radius: 10px;
   overflow: hidden;
   background: #111;

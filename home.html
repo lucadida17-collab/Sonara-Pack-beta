@@ -15,8 +15,8 @@
 </script>
 
  <link rel="stylesheet" href="app/css/home.css">
- <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
+ <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="preconnect" href="https://fonts.googleapis.com">
  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
  <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,41 +28,42 @@
 <body class="Accueil">
 
 
-
-
 <main class="app-layout">
 
-<aside class="side-panel">
 
- <button class="accueil-btn">
-  <i data-lucide="home"></i>
-  Accueil
-</button>
 
-</aside>
+  <nav class="mobile-bottom-bar">
+    <button class="nav-mobile-btn nav-mobile-home">
+      <i data-lucide="home"></i>
+      <span>Accueil</span>
+    </button>
+    
+    <button class="nav-mobile-btn nav-mobile-create">
+      <i data-lucide="plus-circle"></i>
+      <span>Crée</span>
+    </button>
+
+    <button class="nav-mobile-btn nav-mobile-library">
+    <i data-lucide="library"></i>
+    <span>Bibliothéque</span>
+    </button>
+
+    <button class="nav-mobile-btn nav-mobile-search">
+      <i data-lucide="search">  </i>
+        <span>Recherche</span>
+    
+    </button>
+  </nav>
+  
 
 <section class="main-content">
 
-<header class="brand">
-<div class="brand-info">
-    <video src="../assets/video/logo-Sonara.mp4"
-  class="brand-logo"
-  autoplay
-  muted
-  playsinline
-  onended="this.pause(); this.currentTime = this.duration;">
-</video>
-<h2 class="page"></h2>
-</div>
-<div class="border-brand"></div>
+<header class="header">
+ 
 </header>
 
 <section class="scroll-zone">
 
-<section class="loader">
-  <div class="spinner"></div>
-  <p class="loader-text"></p>
-</section>
 
 
 </section>
@@ -72,6 +73,7 @@
 
 </main>
 <script src="app/js/data/data.js" defer></script>
+<script src="app/js/Memoire/memoire.js"></script>
 <script src="app/js/home.js" defer></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>

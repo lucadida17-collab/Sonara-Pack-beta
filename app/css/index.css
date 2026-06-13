@@ -37,14 +37,14 @@
     width: 130px;
     border-radius: 500px;
     display: flex;
-    margin-left: -220px;
+    margin-left: -20px;
     justify-content: center;
     align-items: center;
     align-content: center;
  }
 
 .info { 
-    margin-left: 150px;
+    margin-left: 200px;
     margin-top: 140px;
     position: absolute;
     display: flex;

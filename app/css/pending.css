@@ -1,0 +1,129 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(0, 174, 255, 0.35), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.9), #020617 55%);
+  color: white;
+}
+
+.pending-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.pending-card {
+  width: 100%;
+  max-width: 620px;
+  padding: 42px;
+  border-radius: 34px;
+  background: rgba(8, 18, 34, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  text-align: center;
+}
+
+.pending-label {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.pending-card h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 4rem);
+  letter-spacing: -0.05em;
+}
+
+.pending-text {
+  margin: 22px auto;
+  max-width: 470px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.7;
+}
+
+.pending-loader {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 28px 0;
+}
+
+.pending-loader span {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #38bdf8;
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+.pending-loader span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.pending-loader span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: translateY(-9px);
+    opacity: 1;
+  }
+}
+
+.pending-info {
+  margin: 28px 0;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+
+.pending-info p {
+  margin: 10px 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.5;
+}
+
+.home-access-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 16px 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.home-access-btn:hover {
+  transform: translateY(-2px);
+}
+
+.pending-warning {
+  margin: 24px auto 0;
+  max-width: 480px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.48);
+}

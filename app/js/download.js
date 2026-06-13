@@ -1,180 +1,232 @@
+"use strict";
+
+const API_URL =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000"
+    : "http://192.168.1.22:3000";
+const downloadPage = document.querySelector(".download-page");
+
 const params = new URLSearchParams(window.location.search);
 const packId = params.get("id");
-const selectedId = window.packs?.find(data => data.id === packId);
+const trackId = params.get("trackId");
+
+const currentUser = JSON.parse(
+  localStorage.getItem("sonaraProfile")
+);
+
+if (!currentUser) {
+  console.log("Aucun Utilisateur connecter")
+}
 
 
-const downloadPage = document.querySelector('.Download');
+let selectedDownload = null;
 
-const downloadDesktop = document.querySelector('.download-desktop');
-const downloadMobile = document.querySelector('.download-mobile');
-const downloadMobileTitle = document.querySelector('.download-mobile-title');
-const downloadMobileText = document.querySelector('.download-mobile-text');
-const downloadTitle = document.querySelector('.download-title');
-const downloadText = document.querySelector('.download-text');
-const downloadButton = document.querySelector('.download-button');
-const downloadHomeButton = document.querySelector('.download-home-button');
- const confirmButton = document.querySelector(".download-confirm-button");
+const isMobile =
+  window.innerWidth <= 768 ||
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-if (downloadPage && selectedId) {
- const isMobile = window.innerWidth <= 768;
+function renderLayout() {
+  if (isMobile) {
+    downloadPage.innerHTML = `
+      <section class="download-mobile">
+        <div class="download-mobile-card">
+          <p class="download-kicker">SONARA PACK</p>
 
- const isAndroid = /Android/i.test(navigator.userAgent);
- const isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
- const iphoneVideo = document.querySelector(".download-iphone-video");
+          <h1 class="download-mobile-title">Téléchargement prêt</h1>
 
- function downloadPack() {
-    console.log("downloadPack exécuté");
-     
-    
-  fetch("https://api.counterapi.dev/v1/sonara/download-real/up");
+          <p class="download-mobile-text">
+            Votre fichier est prêt. Sur mobile, appuyez sur le bouton ci-dessous pour lancer le téléchargement.
+          </p>
 
+          <button class="download-button">Télécharger le fichier</button>
+          <button class="download-home-button">Retour à l’accueil</button>
+        </div>
+      </section>
+    `;
+  } else {
+    downloadPage.innerHTML = `
+      <section class="download-desktop">
+        <div class="download-desktop-card">
+          <p class="download-kicker">SONARA PACK</p>
 
-    const link = document.createElement("a");
-    link.href = `../../${selectedId.telechargementUrl}`;
-    link.download = `${selectedId.title}.zip`;
-    
-    console.log("link.href =", link.href);
-    console.log("link.download =", link.download);
+          <h1 class="download-title">Préparation du téléchargement</h1>
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
- }
+          <div class="download-loader"></div>
 
- if (isMobile) {
-    if (downloadDesktop) downloadDesktop.style.display = "none";
-    if (confirmButton) confirmButton.style.display = "none";
-    if (downloadHomeButton) downloadHomeButton.style.display = "none";
-    if (downloadMobile) downloadMobile.style.display = 'flex';
-    if (iphoneVideo) iphoneVideo.style.display = "none";
-    
+          <p class="download-text">
+            Votre fichier est en cours de préparation...
+          </p>
+        </div>
+      </section>
+    `;
+  }
+}
 
-  if (downloadMobileTitle) {
-    downloadMobileTitle.textContent = "Comment Télécharger ?";
+function renderError(message) {
+  downloadPage.innerHTML = `
+    <section class="download-desktop">
+      <div class="download-desktop-card">
+        <p class="download-kicker">SONARA PACK</p>
+        <h1 class="download-title">Téléchargement impossible</h1>
+        <p class="download-text">${message}</p>
+        <button class="download-home-button">Retour à l’accueil</button>
+      </div>
+    </section>
+  `;
+
+  const homeButton = document.querySelector(".download-home-button");
+  if (homeButton) {
+    homeButton.addEventListener("click", () => {
+      window.location.href = "../../home.html";
+    });
+  }
+}
+
+function getFinalDownloadUrl() {
+  if (!selectedDownload || !selectedDownload.downloadZip) {
+    return null;
   }
 
-  if (downloadMobileText) {
-    downloadMobileText.textContent =
-    `⚠️ IMPORTANT (iPhone IOS uniquement)
-    Cliquer sur télécharger et regarder bien les explications, 
-    comment on récupére le fichier.
-    
-    Androïd continuer. Vous ces automatiques.`; 
+  return `${API_URL}${selectedDownload.downloadZip}`;
+}
+
+function downloadFile() {
+  const finalUrl = getFinalDownloadUrl();
+
+  if (!finalUrl) {
+    console.log("Aucun ZIP trouvé :", selectedDownload);
+    renderError("Aucun fichier ZIP disponible pour ce téléchargement.");
+    return;
   }
 
-    if (downloadButton) {
-        downloadButton.textContent = `Télécharger ${selectedId.title}`;
+  console.log("ZIP FINAL =", finalUrl);
 
-        downloadButton.addEventListener("click", () => {
-            downloadPack();
+  const link = document.createElement("a");
+  link.href = finalUrl;
+  link.download = `${selectedDownload.title || "sonara-pack"}.zip`;
 
-            if (isIphone && iphoneVideo) {
-                iphoneVideo.style.display = "block";
-            };
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
-            if (downloadMobileTitle) {
-                downloadMobileTitle.textContent = "Dernière étape";
-            };
+function finishDesktopDownload() {
+  const title = document.querySelector(".download-title");
+  const text = document.querySelector(".download-text");
 
-            if (downloadMobileText) {
-                if (isIphone ) {
-                    downloadMobileText.textContent = `📱 iPhone :
-                1. cliquer sur télécharger en bas. 
-               2. Appuyer sur l'icône partager en bas a gauche,
-               3. choisissez "Enregistrer dans Fichiers".
-                Revenez ensuite ici et confirmez. 
+  if (title) title.textContent = "Téléchargement terminé";
+  if (text) text.textContent = "Merci pour votre achat. Retour automatique à l’accueil...";
 
-                pour ceux qui veuleut plus comprendre y'a une vidéo en plus.
+  setTimeout(() => {
+    window.location.href = "../../home.html";
+  }, 6000);
+}
 
-               💡Astuce : Créez un dossier "Sonara Pack" pour retrouver facilement vos sons.`
-                } else if (isAndroid) {
-                `
-                 🤖 Androïd :
-                 Le fichier se télécharge automatiquement.
-                 ou soi y'a une pop up qui apparait en haut.
-                 
-                 📁 Ouvrez "Fichiers" -> "Téléchargements"
-                 Vous trouverez votre pack ici.
-                 
-                 Samsung -> "mes fichiers"
-                 Xiaomi -> "Gestionnaire de fichier"
-                 Pixel -> "Files by Google"
-                 
-                 Le principe est toujours le même.
-                 Si vous avez compris confirmer. 
-                 Sinon vidéo juste en bas 👇 `;
-                 }
-                }
- 
-            downloadButton.style.display = "none";
-            
-           
-                      
-            if (confirmButton) {
-                confirmButton.style.display = "inline-flex";
-                confirmButton.textContent = "j'ai enregistrer le fichier";
-                confirmButton.addEventListener("click", () => {
-                    
-             iphoneVideo.style.display = "none"; 
-           confirmButton.style.display = "none";
+function connectMobileButtons() {
+  const downloadButton = document.querySelector(".download-button");
+  const homeButton = document.querySelector(".download-home-button");
 
-           if (downloadMobileText) {
-            downloadMobileText.textContent = `Nouvelle mise a jour prévu`;
-           };
+  if (downloadButton) {
+    downloadButton.addEventListener("click", () => {
+      downloadFile();
+      downloadButton.textContent = "Téléchargement lancé";
+    });
+  }
 
-            if (downloadMobileTitle) {
-                downloadMobileTitle.textContent = "Téléchargement lancé";
-            };
+  if (homeButton) {
+    homeButton.addEventListener("click", () => {
+      window.location.href = "../../home.html";
+    });
+  }
+}
 
-            if (downloadMobileText) {
-                downloadMobileText.textContent = "Merci pour votre achat";
-            };
+async function loadDownloadData() {
+  renderLayout();
 
-            if (downloadHomeButton) {
-                downloadHomeButton.style.display = "inline-flex";
-                downloadHomeButton.textContent = "Retour à l'accueil";
+  try {
+    const response = await fetch(`${API_URL}/api/packs`);
+    const packs = await response.json();
 
-                downloadHomeButton.addEventListener("click", () => {
-                    window.location.href = "../../index.html";
-                });
-             };    
-          });   
-        };
-     });
+    const selectedPack = packs.find((pack) => pack.id === packId);
+
+
+    if (currentUser && selectedPack && !trackId) {
+  console.log("ENVOI ADD PACK =", {
+    userId: currentUser.id,
+    packId: selectedPack.id
+  });
+
+  const addResponse = await fetch(`${API_URL}/api/add-downloaded-pack`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      userId: currentUser.id,
+      packId: selectedPack.id
+    })
+  });
+
+  const addData = await addResponse.json();
+
+  console.log("REPONSE ADD PACK =", addData);
+}
+
+if (currentUser && selectedPack && trackId) {
+
+    const addResponse = await fetch(`${API_URL}/api/add-downloaded-track`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            userId: currentUser.id,
+            trackId: trackId
+        })
+    });
+
+    const addData = await addResponse.json();
+
+    console.log("REPONSE ADD TRACK =", addData);
+}
+
+    console.log("PACK ID URL =", packId);
+    console.log("TRACK ID URL =", trackId);
+    console.log("SELECTED PACK =", selectedPack);
+
+    if (!selectedPack) {
+      renderError("Pack introuvable.");
+      return;
     }
 
- } else {
-    if (downloadMobile) downloadMobile.style.display = "none";
-    if (downloadDesktop) downloadDesktop.style.display = "flex";
+    if (trackId) {
+      selectedDownload = selectedPack.tracks.find(
+        (track) => String(track.id) === String(trackId)
+      );
+    } else {
+      selectedDownload = selectedPack;
+    }
 
-    if (downloadTitle) {
-        downloadTitle.textContent = "Téléchargement en cours...";
-    };
+    console.log("DOWNLOAD DATA =", selectedDownload);
 
-    if (downloadText) {
-        downloadText.textContent = `Le pack ${selectedId.title} se prépare.`;
-    };
+    if (!selectedDownload) {
+      renderError("Fichier introuvable.");
+      return;
+    }
 
-    setTimeout(() => {
-        downloadPack();
-
-        if (downloadTitle) {
-            downloadTitle.textContent = "Téléchargement Terminer";
-        };
-
-        if (downloadText) {
-        downloadText.textContent = `Merci pour votre achat.`;
-        }
-     
-       
-
-       }, 5000);
-        setTimeout(() => {
-            window.location.href = "../../index.html";
-        }, 6000);
-   
- }
-
-
-  
+    if (isMobile) {
+      connectMobileButtons();
+    } else {
+      setTimeout(() => {
+        downloadFile();
+        finishDesktopDownload();
+      }, 2000);
+    }
+  } catch (error) {
+    console.error("Erreur download :", error);
+    renderError("Erreur de connexion au serveur.");
+  }
 }
+
+loadDownloadData();

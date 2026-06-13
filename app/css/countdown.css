@@ -1,0 +1,57 @@
+
+
+html {
+    font-family: inter, Arial, sans-serif;
+ background: radial-gradient(circle at top, #10233f, #05070d 60%);
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+}
+
+.countdown-page {
+     
+    display: flex;
+      justify-content: center;
+      align-items: center;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.countdown-card {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+
+.countdown-label {
+  color: #00eaff;
+  letter-spacing: 4px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.countdown-card h1 {
+  font-size: 42px;
+  margin-bottom: 14px;
+}
+
+.countdown-text {
+  opacity: 0.7;
+  margin-bottom: 28px;
+}
+
+.countdown-timer {
+  font-size: 58px;
+  font-weight: 900;
+  margin-bottom: 28px;
+}
+
+.countdown-small {
+  opacity: 0.55;
+  line-height: 1.5;
+}
