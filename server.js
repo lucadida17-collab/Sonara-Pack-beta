@@ -75,12 +75,14 @@ const tracksZipPath = path.join(downloadsPath, "tracks");
 
 app.use("/downloads", express.static("downloads"));
 
-const usersPath = path.join(__dirname, "data", "users.json");
 
 app.post("/api/register", upload.any(), async (req, res) => {
   const profile = req.body.profile
     ? JSON.parse(req.body.profile)
     : req.body;
+
+    console.log("REGISTER RECU")
+    console.log(profile)
 
   const imageArtistFile = req.files?.find(
     file => file.fieldname === "imageArtist"
@@ -104,20 +106,20 @@ app.post("/api/register", upload.any(), async (req, res) => {
     profile.downloadedTracks = [];
   }
 
- const usersCollection =
-  client.db("sonara-pack-db").collection("users");
+  console.log("avant insert")
 
-await usersCollection.insertOne(profile);
+  await usersCollection.insertOne(profile);
 
-console.log("USER SAUVEGARDE MONGO");
+  console.log("apres insert ");
 
   if (profile.status === "pending") {
-    console.log("Avant Mail")
-    transporter.sendMail({
-      from: "Sonara Pack <luca.dida17@gmail.com>",
-      to: "luca.dida17@gmail.com",
-      subject: "Nouvelle demande artiste à modérer - Sonara Pack",
-      html: `
+
+    try {
+      await transporter.sendMail({
+        from: "Sonara Pack <luca.dida17@gmail.com>",
+        to: "luca.dida17@gmail.com",
+        subject: "Nouvelle demande artiste à modérer - Sonara Pack",
+        html: `
         <div style="font-family: Arial, sans-serif; background:#080b12; color:white; padding:30px; border-radius:16px;">
           <h1 style="color:#7ddcff;">Nouvelle demande artiste</h1>
 
@@ -144,32 +146,33 @@ console.log("USER SAUVEGARDE MONGO");
           </div>
         </div>
       `
-    });
+      })
+      console.log("EMAIL ADMIN ENVOYER")
+    } catch (mailError) {
+      console.log("Erreur Admin Mail :", mailError.message)
+    }
+
     console.log("APRES MAIL")
   }
 
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+
 
   res.json({
     success: true,
     message: "Profil enregistré",
-    profile
+    profilef
   });
 });
 
-app.post("/api/add-downloaded-pack", (req, res) => {
+app.post("/api/add-downloaded-pack", async (req, res) => {
 
 
 
   const { userId, packId } = req.body;
 
-  const users = JSON.parse(
-    fs.readFileSync(usersPath, "utf8")
-  );
-
-  const user = users.find(
-    u => u.id === userId
-  );
+  const user = await usersCollection.findOne({
+    id: userId
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -196,9 +199,13 @@ app.post("/api/add-downloaded-pack", (req, res) => {
     user.downloadedPacks.push(packId);
   }
 
-  fs.writeFileSync(
-    usersPath,
-    JSON.stringify(users, null, 2)
+  await usersCollection.updateOne(
+    { id: userId },
+    {
+      $set: {
+        downloadedPacks: user.downloadedPacks
+      }
+    }
   );
 
   res.json({
@@ -207,17 +214,13 @@ app.post("/api/add-downloaded-pack", (req, res) => {
 
 });
 
-app.post("/api/add-downloaded-track", (req, res) => {
+app.post("/api/add-downloaded-track", async (req, res) => {
 
   const { userId, trackId } = req.body;
 
-  const users = JSON.parse(
-    fs.readFileSync(usersPath, "utf8")
-  );
-
-  const user = users.find(
-    u => u.id === userId
-  );
+const user = await usersCollection.findOne({
+  id: userId
+});
 
   if (!user) {
     return res.status(404).json({
@@ -242,10 +245,14 @@ app.post("/api/add-downloaded-track", (req, res) => {
     user.downloadedTracks.push(trackId);
   }
 
-  fs.writeFileSync(
-    usersPath,
-    JSON.stringify(users, null, 2)
-  );
+ await usersCollection.updateOne(
+  { id: userId },
+  {
+    $set: {
+      downloadedTracks: user.downloadedTracks
+    }
+  }
+);
 
   res.json({
     success: true
@@ -253,19 +260,21 @@ app.post("/api/add-downloaded-track", (req, res) => {
 
 });
 
-app.get("/api/pending-users", (req, res) => {
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
-  const pendingUsers = users.filter(user => user.status === "pending");
+app.get("/api/pending-users",  async (req, res) => {
+ const pendingUsers = await usersCollection
+  .find({ status: "pending" })
+  .toArray();
 
-  res.json(pendingUsers);
+res.json(pendingUsers);
 });
 
 
 
-app.get("/api/users/:id", (req, res) => {
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+app.get("/api/users/:id", async (req, res) => {
 
-  const user = users.find(user => user.id === req.params.id);
+  const user = await usersCollection.findOne({
+  id: req.params.id
+});
 
   if (!user) {
     return res.status(404).json({
@@ -283,29 +292,42 @@ app.get("/api/users/:id", (req, res) => {
 
 
 
-app.patch("/api/users/:id/status", (req, res) => {
+app.patch("/api/users/:id/status", async (req, res) => {
 
   const userId = req.params.id;
   const { status } = req.body;
 
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
-
-  const user = users.find(user => user.id === userId);
+  const user = await usersCollection.findOne({
+    id: userId
+  });
 
   if (!user) {
-    return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+    return res.status(404).json({
+      success: false,
+      message: "Utilisateur introuvable"
+    });
   }
 
-  user.status = status;
-  user.moderatedAt = new Date().toISOString();
+  await usersCollection.updateOne(
+    { id: userId },
+    {
+      $set: {
+        status,
+        moderatedAt: new Date().toISOString()
+      }
+    }
+  );
 
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+  const updatedUser = await usersCollection.findOne({
+    id: userId
+  });
 
   res.json({
     success: true,
     message: `Utilisateur ${status}`,
-    user
+    user: updatedUser
   });
+
 });
 
 app.get("/api/packs/pending", (req, res) => {
@@ -505,7 +527,6 @@ function checkServerFiles() {
     { name: "home.js", path: "./app/js/home.js" },
     { name: "pack.js", path: "./app/js/pack.js" },
     { name: "pendingPacks.json", path: "./data/pendingPacks.json" },
-    { name: "users.json", path: "./data/users.json" },
     { name: "uploads folder", path: "./uploads" }
   ];
 
