@@ -1,37 +1,3 @@
 [
-  {
-    "id": "pack_1781452918040",
-    "title": "Taishi",
-    "artist": "Luca Dida",
-    "imageArtist": "1781452751554-Luca-Dida.png",
-    "coverPack": "1781452918048-Lumiere-Nocturne.png",
-    "coverPackName": "Lumiere-Nocturne.png",
-    "coverPackFile": {},
-    "packLink": "app/pages/pack.html?id=pack_1781452918040",
-    "price": "8.99€",
-    "categorie": [
-      "cinematique"
-    ],
-    "downloadPage": "download.html?id=pack_1781452918040",
-    "tracks": [
-      {
-        "id": "pack_1781452918040-1",
-        "trackLink": "app/pages/pack.html?id=pack_1781452918040&trackId=pack_1781452918040-1",
-        "downloadPage": "download.html?id=pack_1781452918040&trackId=pack_1781452918040-1",
-        "title": "Taishi",
-        "artist": "Luca Dida",
-        "coverPack": "1781452918060-Lumiere-Nocturne.png",
-        "coverPackFile": {},
-        "audioName": "1781452918072-Lumiere-Nocturne.mp3",
-        "audioFile": {},
-        "price": "8.99€",
-        "previewDuration": 30,
-        "duration": 206,
-        "downloadZip": "/downloads/tracks/pack_1781452918040-1.zip"
-      }
-    ],
-    "status": "approved",
-    "createdAt": "2026-06-14T16:01:58.187Z",
-    "downloadZip": "/downloads/packs/pack_1781452918040_pack.zip"
-  }
+  
 ]
