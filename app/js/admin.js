@@ -1,7 +1,12 @@
 
 const adminPage = document.querySelector(".admin-page") 
 
-
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname.startsWith("192.168.")
+    ? "http://192.168.1.18:3000"
+    : "https://sonara-pack-beta.onrender.com";
 
 {
   adminPage.innerHTML = `
@@ -108,7 +113,7 @@ refreshBtn.addEventListener("click", () => {
 });
 
 async function loadPendingUsers() {
-  const response = await fetch("http://192.168.1.22:3000/api/pending-users");
+  const response = await fetch(`${API_BASE}/api/pending-users`);
   const users = await response.json();
 
   pendingUsersContainer.innerHTML = "";
@@ -200,7 +205,7 @@ async function loadPendingUsers() {
 }
 
  async function updateStatus(id, status) {
-  await fetch(`http://192.168.1.22:3000/api/users/${id}/status`, {
+  await fetch(`${API_BASE}/api/users/${id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"
@@ -217,7 +222,7 @@ async function loadPendingUsers() {
 async function loadPendingPacks() {
   console.log("LOAD PACKS LANCÉ");
 
-  const response = await fetch("http://192.168.1.22:3000/api/packs/pending");
+  const response = await fetch(`${API_BASE}/api/packs/pending`);
  const packs = await response.json();
 const pendingPacks = packs.filter(pack => pack.status === "pending");
 
@@ -367,7 +372,7 @@ function renderPackTracksView(pack) {
 async function updatePackStatus(id, status) {
   console.log("PACK CLICK :", id, status);
 
-  const response = await fetch(`http://192.168.1.22:3000/api/packs/${id}/status`, {
+  const response = await fetch(`${API_BASE}/api/packs/${id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json"

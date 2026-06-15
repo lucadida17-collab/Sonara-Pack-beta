@@ -118,9 +118,10 @@ Acheter, découvrir et télécharger des packs.
           console.log(profile)
           const API_URL =
             window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1"
-              ? "http://localhost:3000"
-              : "http://192.168.1.22:3000";
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.18:3000"
+              : "https://sonara-pack-beta.onrender.com";
 
 
 
@@ -238,9 +239,11 @@ Acheter, découvrir et télécharger des packs.
 
           const API_URL =
             window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1"
-              ? "http://localhost:3000"
-              : "http://192.168.1.22:3000";
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.18:3000"
+              : "https://sonara-pack-beta.onrender.com";
+
 
           if (artistImageFile) {
             alert("IMAGE OK : " + artistImageFile.name);
@@ -353,8 +356,8 @@ Acheter, découvrir et télécharger des packs.
             status: "pending",
             createdAt: new Date().toISOString()
           };
-          
-           const artistImageInput = document.querySelector(".artist-image-input");
+
+          const artistImageInput = document.querySelector(".artist-image-input");
           const artistImageFile = artistImageInput.files[0];
 
           const formData = new FormData();
@@ -367,9 +370,10 @@ Acheter, découvrir et télécharger des packs.
 
           const API_URL =
             window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1"
-              ? "http://localhost:3000"
-              : "http://192.168.1.22:3000";
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.18:3000"
+              : "https://sonara-pack-beta.onrender.com";
 
           if (artistImageFile) {
             alert("IMAGE OK : " + artistImageFile.name);

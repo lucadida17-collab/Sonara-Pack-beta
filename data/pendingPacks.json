@@ -1,87 +1,37 @@
 [
   {
-    "id": "pack_1780424461307",
-    "title": "Dernier Souffle",
+    "id": "pack_1781452918040",
+    "title": "Taishi",
     "artist": "Luca Dida",
-    "imageArtist": "1780424394501-Luca-Dida.png",
-    "coverPack": "1780424461315-cover-dernier-souffle.PNG",
-    "coverPackName": "cover-dernier-souffle.PNG",
+    "imageArtist": "1781452751554-Luca-Dida.png",
+    "coverPack": "1781452918048-Lumiere-Nocturne.png",
+    "coverPackName": "Lumiere-Nocturne.png",
     "coverPackFile": {},
-    "packLink": "app/pages/pack.html?id=pack_1780424461307",
-    "price": "0€",
-    "categorie": [
-      "sombre"
-    ],
-    "downloadPage": "download.html?id=pack_1780424461307",
-    "tracks": [
-      {
-        "id": "pack_1780424461307-1",
-        "trackLink": "app/pages/pack.html?id=pack_1780424461307&trackId=pack_1780424461307-1",
-        "downloadPage": "download.html?id=pack_1780424461307&trackId=pack_1780424461307-1",
-        "title": "Dernier Souffle",
-        "artist": "Luca Dida",
-        "coverPack": "1780424461330-cover-dernier-souffle.PNG",
-        "coverPackFile": {},
-        "audioName": "1780424461341-Dernier-Souffle.mp3",
-        "audioFile": {},
-        "price": "0€",
-        "previewDuration": 30,
-        "duration": 171,
-        "downloadZip": "/downloads/tracks/pack_1780424461307-1.zip"
-      }
-    ],
-    "status": "approved",
-    "createdAt": "2026-06-02T18:21:01.381Z",
-    "downloadZip": "/downloads/packs/pack_1780424461307_pack.zip"
-  },
-  {
-    "id": "pack_1780508341299",
-    "title": "Night Of Death",
-    "artist": "Luca Dida",
-    "imageArtist": "1780424394501-Luca-Dida.png",
-    "coverPack": "1780508341317-the-last-night.png",
-    "coverPackName": "the-last-night.png",
-    "coverPackFile": {},
-    "packLink": "app/pages/pack.html?id=pack_1780508341299",
+    "packLink": "app/pages/pack.html?id=pack_1781452918040",
     "price": "8.99€",
     "categorie": [
       "cinematique"
     ],
-    "downloadPage": "download.html?id=pack_1780508341299",
+    "downloadPage": "download.html?id=pack_1781452918040",
     "tracks": [
       {
-        "id": "pack_1780508341299-1",
-        "trackLink": "app/pages/pack.html?id=pack_1780508341299&trackId=pack_1780508341299-1",
-        "downloadPage": "download.html?id=pack_1780508341299&trackId=pack_1780508341299-1",
-        "title": "Dernier Souffle",
+        "id": "pack_1781452918040-1",
+        "trackLink": "app/pages/pack.html?id=pack_1781452918040&trackId=pack_1781452918040-1",
+        "downloadPage": "download.html?id=pack_1781452918040&trackId=pack_1781452918040-1",
+        "title": "Taishi",
         "artist": "Luca Dida",
-        "coverPack": "1780508341337-cover-dernier-souffle.PNG",
+        "coverPack": "1781452918060-Lumiere-Nocturne.png",
         "coverPackFile": {},
-        "audioName": "1780508341351-Dernier-Souffle.mp3",
-        "audioFile": {},
-        "price": "0€",
-        "previewDuration": 30,
-        "duration": 171,
-        "downloadZip": "/downloads/tracks/pack_1780508341299-1.zip"
-      },
-      {
-        "id": "pack_1780508341299-2",
-        "trackLink": "app/pages/pack.html?id=pack_1780508341299&trackId=pack_1780508341299-2",
-        "downloadPage": "download.html?id=pack_1780508341299&trackId=pack_1780508341299-2",
-        "title": "Nostalgia",
-        "artist": "Luca Dida",
-        "coverPack": "1780508341439-Copilot_20260527_185122.png",
-        "coverPackFile": {},
-        "audioName": "1780508341448-Nostalgia.mp3",
+        "audioName": "1781452918072-Lumiere-Nocturne.mp3",
         "audioFile": {},
         "price": "8.99€",
         "previewDuration": 30,
-        "duration": 189,
-        "downloadZip": "/downloads/tracks/pack_1780508341299-2.zip"
+        "duration": 206,
+        "downloadZip": "/downloads/tracks/pack_1781452918040-1.zip"
       }
     ],
     "status": "approved",
-    "createdAt": "2026-06-03T17:39:01.464Z",
-    "downloadZip": "/downloads/packs/pack_1780508341299_pack.zip"
+    "createdAt": "2026-06-14T16:01:58.187Z",
+    "downloadZip": "/downloads/packs/pack_1781452918040_pack.zip"
   }
 ]

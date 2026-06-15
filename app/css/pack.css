@@ -1,8 +1,6 @@
   .pack {
     background:
-      radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
-      radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
-      #020617;
+        rgba(0, 0, 0, 0.919);
 
     color: White;
     font-family: inter, sans-serif;
@@ -624,10 +622,10 @@
 
     .main-content {
       min-height: 100vh;
-      height: 100vh;
+      height: 102vh;
       width: 102%;
       display: grid;
-      margin-top: -8px;
+      margin-top: -40px;
       margin-left: -10px;
       overflow: hidden;
     }
@@ -635,10 +633,11 @@
 
 
     .scroll-zone {
-      margin-top: 0;
+      margin-top: -50px;
       margin-bottom: 0;
 
-      height: calc(100vh - 70px);
+      margin: 0;
+      height: calc(102vh - 70px);
       overflow-y: auto;
       overflow-x: hidden;
 
@@ -646,9 +645,7 @@
       box-sizing: border-box;
 
       background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
-        radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
-        #020617;
+       rgba(0, 0, 0, 0.751);
     }
 
 
@@ -1010,7 +1007,7 @@
       border-radius: 1px;
       border-top: 12px solid transparent;
       border-bottom: 12px solid transparent;
-      border-left: 20px solid white;
+      border-left: 10px solid white;
     }
 
     /* PAUSE (deux barres blanches) */
@@ -1044,7 +1041,7 @@
     .track-list {
       display: flex;
       display: grid;
-      grid-template-columns: 60px 280px 150px 390px 390px;
+      grid-template-columns: 60px 280px 150px 390px 100px;
       margin-left: 10px;
       gap: 20px;
       display: flex;
@@ -1153,7 +1150,7 @@
     .track-list,
     .track-row {
       display: grid;
-      grid-template-columns: 60px 280px 150px 390px 290px;
+      grid-template-columns: 60px 280px 200px 460px 250px;
       align-items: center;
       width: 100%;
       column-gap: 20px;

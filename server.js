@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
 require("dotenv").config()
 
-const { MongoClient} = require("mongodb")
+const { MongoClient } = require("mongodb")
 
 const client = new MongoClient(process.env.MONGO_URI)
 
@@ -126,15 +126,11 @@ app.post("/api/register", upload.any(), (req, res) => {
           </div>
 
           <div style="margin-top:30px;">
-            <a href="http://localhost:5501/admin.html"
+            <a href="https://sonara-pack-beta.onrender.com"
               style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
-              Ouvrir Admin sur PC
+              Open Admin
             </a>
 
-            <a href="http://192.168.1.22:5501/admin.html"
-              style="display:inline-block; padding:14px 22px; background:#ffffff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold; margin-left:10px;">
-              Ouvrir Admin sur téléphone
-            </a>
           </div>
         </div>
       `
@@ -181,7 +177,7 @@ app.post("/api/add-downloaded-pack", (req, res) => {
 
   if (!user.downloadedPacks) {
     user.downloadedPacks = [
-      
+
     ];
   }
 
@@ -202,47 +198,47 @@ app.post("/api/add-downloaded-pack", (req, res) => {
 
 app.post("/api/add-downloaded-track", (req, res) => {
 
-    const { userId, trackId } = req.body;
+  const { userId, trackId } = req.body;
 
-    const users = JSON.parse(
-        fs.readFileSync(usersPath, "utf8")
-    );
+  const users = JSON.parse(
+    fs.readFileSync(usersPath, "utf8")
+  );
 
-    const user = users.find(
-        u => u.id === userId
-    );
+  const user = users.find(
+    u => u.id === userId
+  );
 
-    if (!user) {
-        return res.status(404).json({
-            success: false
-        });
-    }
-
-    if (
-        user.role !== "user" &&
-        user.role !== "both"
-    ) {
-        return res.status(403).json({
-            success: false
-        });
-    }
-
-    if (!user.downloadedTracks) {
-        user.downloadedTracks = [];
-    }
-
-    if (!user.downloadedTracks.includes(trackId)) {
-        user.downloadedTracks.push(trackId);
-    }
-
-    fs.writeFileSync(
-        usersPath,
-        JSON.stringify(users, null, 2)
-    );
-
-    res.json({
-        success: true
+  if (!user) {
+    return res.status(404).json({
+      success: false
     });
+  }
+
+  if (
+    user.role !== "user" &&
+    user.role !== "both"
+  ) {
+    return res.status(403).json({
+      success: false
+    });
+  }
+
+  if (!user.downloadedTracks) {
+    user.downloadedTracks = [];
+  }
+
+  if (!user.downloadedTracks.includes(trackId)) {
+    user.downloadedTracks.push(trackId);
+  }
+
+  fs.writeFileSync(
+    usersPath,
+    JSON.stringify(users, null, 2)
+  );
+
+  res.json({
+    success: true
+  });
 
 });
 
@@ -414,23 +410,30 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
           to: "luca.dida17@gmail.com",
           subject: "Nouvelle demande de pack à modérer",
           html: `
+           <div style="font-family: Arial, sans-serif; background:#080b12; color:white; padding:30px; border-radius:16px;">
             <h2>Nouvelle demande Sonara Pack</h2>
-
+           <div style="background:#111827; padding:20px; border-radius:14px; margin-top:20px;">
             <p><strong>Titre :</strong> ${newPack.title || "Pack sans titre"}</p>
             <p><strong>Artiste :</strong> ${newPack.artist || "Non renseigné"}</p>
             <p><strong>Prix :</strong> ${newPack.price || newPack.globalPrice || "Non renseigné"}</p>
             <p><strong>Tracks :</strong> ${newPack.tracks?.length || 0}</p>
             <p><strong>Status :</strong> ${newPack.status}</p>
             <p><strong>ID :</strong> ${newPack.id}</p>
+         
 
             <p>
               <strong>Vérification obligatoire :</strong><br>
-              cover, audio, cohérence du pack, prix, droits, qualité générale.
+              cover,bientôt écoute audio, cohérence du pack, prix, droits, qualité générale.
             </p>
-
-            <a href="http://localhost:5501/admin.html">Ouvrir admin sur PC</a>
-            <br><br>
-            <a href="http://192.168.1.22:5501/admin.html">Ouvrir admin sur téléphone</a>
+          </div>
+            <div style="margin-top:30px;">
+            <a href="https://sonara-pack-beta.onrender.com"
+              style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
+              Open Admin
+            </a>
+            
+           </div>
+        </div>
           `
         }).catch(error => {
           console.error("Erreur mail :", error);
@@ -518,9 +521,9 @@ function checkServerFiles() {
 
 app.listen(PORT, () => {
 
-    checkServerFiles();
+  checkServerFiles();
 
-    console.log(`
+  console.log(`
 ━━━━━━━━━━━━━━━━━━
 🔥 SONARA READY
 🌐 http://localhost:${PORT}

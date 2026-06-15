@@ -11,11 +11,11 @@ setTimeout(() => {
 
 setTimeout(() => {
     if(profilCreated === "true") {
-    window.location.href = "app/pages/countdown.html";
+    window.location.href = "app/pages/chaos.html";
     }
 
     else {
-        window.location.href = "app/pages/countdown.html";
+        window.location.href = "app/pages/chaos.html";
     }
 
 }, 5500);
@@ -24,5 +24,5 @@ function resetAccount() {
   localStorage.removeItem("sonaraProfile");
   localStorage.removeItem("sonaraProfileCreated");
 
-  window.location.href = "app/pages/countdown.html";
+  window.location.href = "app/pages/chaos.html";
 }

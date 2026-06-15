@@ -318,5 +318,77 @@
       "pack_1780508341299-2"
     ],
     "moderatedAt": "2026-06-10T20:55:30.077Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "20550-04-06",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "rejected",
+    "createdAt": "2026-06-13T17:51:18.963Z",
+    "imageArtist": "1781373078939-Luca-Dida.png",
+    "id": "1781373078963",
+    "downloadedPacks": [],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-13T17:51:30.215Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "20989-04-06",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "rejected",
+    "createdAt": "2026-06-13T21:38:15.816Z",
+    "imageArtist": "1781386695784-Luca-Dida.png",
+    "id": "1781386695818",
+    "downloadedPacks": [],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-13T21:38:54.050Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "5050-04-06",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "approved",
+    "createdAt": "2026-06-13T21:39:49.417Z",
+    "imageArtist": "1781386789400-Luca-Dida.png",
+    "id": "1781386789417",
+    "downloadedPacks": [],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-14T15:08:48.892Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "2004-04-06",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "approved",
+    "createdAt": "2026-06-14T15:59:11.573Z",
+    "imageArtist": "1781452751554-Luca-Dida.png",
+    "id": "1781452751573",
+    "downloadedPacks": [
+      "pack_1781452918040"
+    ],
+    "downloadedTracks": [
+      "pack_1781452918040-1"
+    ],
+    "moderatedAt": "2026-06-14T15:59:53.101Z"
   }
 ]
