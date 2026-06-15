@@ -7,9 +7,14 @@ const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
 require("dotenv").config()
 
-const { MongoClient } = require("mongodb")
+const { MongoClient } = require("mongodb");
 
-const client = new MongoClient(process.env.MONGO_URI)
+const client = new MongoClient(process.env.MONGO_URI);
+
+const db = client.db("sonara-pack-db");
+
+const usersCollection = db.collection("users");
+const packsCollection = db.collection("packs");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -29,6 +34,7 @@ async function connectDB() {
 }
 
 connectDB()
+
 
 const app = express();
 
@@ -71,7 +77,7 @@ app.use("/downloads", express.static("downloads"));
 
 const usersPath = path.join(__dirname, "data", "users.json");
 
-app.post("/api/register", upload.any(), (req, res) => {
+app.post("/api/register", upload.any(), async (req, res) => {
   const profile = req.body.profile
     ? JSON.parse(req.body.profile)
     : req.body;
@@ -98,11 +104,15 @@ app.post("/api/register", upload.any(), (req, res) => {
     profile.downloadedTracks = [];
   }
 
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+ const usersCollection =
+  client.db("sonara-pack-db").collection("users");
 
-  users.push(profile);
+await usersCollection.insertOne(profile);
+
+console.log("USER SAUVEGARDE MONGO");
 
   if (profile.status === "pending") {
+    console.log("Avant Mail")
     transporter.sendMail({
       from: "Sonara Pack <luca.dida17@gmail.com>",
       to: "luca.dida17@gmail.com",
@@ -126,7 +136,7 @@ app.post("/api/register", upload.any(), (req, res) => {
           </div>
 
           <div style="margin-top:30px;">
-            <a href="https://sonara-pack-beta.onrender.com"
+            <a href="https://sonarapack-test.netlify.app/admin.html"
               style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
               Open Admin
             </a>
@@ -135,6 +145,7 @@ app.post("/api/register", upload.any(), (req, res) => {
         </div>
       `
     });
+    console.log("APRES MAIL")
   }
 
   fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
@@ -427,7 +438,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
             </p>
           </div>
             <div style="margin-top:30px;">
-            <a href="https://sonara-pack-beta.onrender.com"
+            <a href="https://sonarapack-test.netlify.app/admin.html"
               style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
               Open Admin
             </a>
