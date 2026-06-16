@@ -6,12 +6,15 @@ const cors = require("cors");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
-const nodemailer = require("nodemailer");
+
 const AdmZip = require("adm-zip");
 require("dotenv").config();
 
+const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
 
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 const client = new MongoClient(process.env.MONGO_URI);
 
 const db = client.db("sonara-pack-db");
@@ -19,15 +22,6 @@ const db = client.db("sonara-pack-db");
 const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 
 async function connectDB() {
   try {
@@ -121,8 +115,8 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
     try {
       console.log("AVANTT MAIL")
-      await transporter.sendMail({
-        from: "Sonara Pack <luca.dida17@gmail.com>",
+      await resend.emails.send({
+        from: "Sonara Pack <onboarding@resend.dev>",
         to: "luca.dida17@gmail.com",
         subject: "Nouvelle demande artiste à modérer - Sonara Pack",
         html: `
@@ -443,8 +437,8 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
             [track.audioName]
           );
         });
-
-        transporter.sendMail({
+      
+       await resend.emails.send({
           from: "Sonara Pack <luca.dida17@gmail.com>",
           to: "luca.dida17@gmail.com",
           subject: "Nouvelle demande de pack à modérer",
