@@ -438,7 +438,9 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
           );
         });
       
-       await resend.emails.send({
+
+
+       resend.emails.send({
           from: "Sonara Pack <luca.dida17@gmail.com>",
           to: "luca.dida17@gmail.com",
           subject: "Nouvelle demande de pack à modérer",
