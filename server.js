@@ -1,3 +1,6 @@
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first")
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -17,12 +20,14 @@ const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   }
-})
+});
 
 async function connectDB() {
   try {
