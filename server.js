@@ -120,6 +120,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
   if (profile.status === "pending") {
 
     try {
+      console.log("AVANTT MAIL")
       await transporter.sendMail({
         from: "Sonara Pack <luca.dida17@gmail.com>",
         to: "luca.dida17@gmail.com",
