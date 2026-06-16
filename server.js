@@ -5,7 +5,7 @@ const multer = require("multer");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
-require("dotenv").config()
+require("dotenv").config();
 
 const { MongoClient } = require("mongodb");
 
@@ -19,8 +19,8 @@ const packsCollection = db.collection("packs");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "luca.dida17@gmail.com",
-    pass: "wuks nump bpbe lwmv"
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 })
 
