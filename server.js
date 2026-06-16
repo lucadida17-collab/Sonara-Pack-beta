@@ -9,10 +9,32 @@ const path = require("path");
 
 const AdmZip = require("adm-zip");
 require("dotenv").config();
-
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
+  }
+});
 
+async function uploadToR2(file, folder) {
+  const key = `${folder}/${Date.now()}-${file.originalname}`;
+
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: fs.createReadStream(file.path),
+      ContentType: file.mimetype,
+    })
+  );
+
+  return key;
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const client = new MongoClient(process.env.MONGO_URI);
@@ -87,9 +109,16 @@ app.post("/api/register", upload.any(), async (req, res) => {
     file => file.fieldname === "imageArtist"
   );
 
+  if (imageArtistFile) {
+  const imageArtistKey = await uploadToR2(imageArtistFile, "artists");
+  profile.imageArtist = imageArtistKey;
+
+  console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
+}
+
   console.log("IMAGE ARTIST :", imageArtistFile)
 
-  profile.imageArtist = imageArtistFile ? imageArtistFile.filename : "";
+
 
   if (profile.role === "user") {
     profile.status = "approved";

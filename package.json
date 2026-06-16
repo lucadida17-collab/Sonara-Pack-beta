@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/lucadida17-collab/Sonara-Pack-beta#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1069.0",
     "adm-zip": "^0.5.17",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
