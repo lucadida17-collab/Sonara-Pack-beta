@@ -193,7 +193,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
   res.json({
     success: true,
     message: "Profil enregistré",
-    profilef
+    profile
   });
 });
 
