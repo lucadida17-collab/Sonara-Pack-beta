@@ -107,19 +107,19 @@ app.post("/api/register", upload.any(), async (req, res) => {
     ? JSON.parse(req.body.profile)
     : req.body;
 
-    console.log("REGISTER RECU")
-    console.log(profile)
+  console.log("REGISTER RECU")
+  console.log(profile)
 
   const imageArtistFile = req.files?.find(
     file => file.fieldname === "imageArtist"
   );
 
   if (imageArtistFile) {
-  const imageArtistKey = await uploadToR2(imageArtistFile, "artists");
-  profile.imageArtist = imageArtistKey;
+    const imageArtistKey = await uploadToR2(imageArtistFile, "artists");
+    profile.imageArtist = imageArtistKey;
 
-  console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
-}
+    console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
+  }
 
   console.log("IMAGE ARTIST :", imageArtistFile)
 
@@ -252,9 +252,9 @@ app.post("/api/add-downloaded-track", async (req, res) => {
 
   const { userId, trackId } = req.body;
 
-const user = await usersCollection.findOne({
-  id: userId
-});
+  const user = await usersCollection.findOne({
+    id: userId
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -279,14 +279,14 @@ const user = await usersCollection.findOne({
     user.downloadedTracks.push(trackId);
   }
 
- await usersCollection.updateOne(
-  { id: userId },
-  {
-    $set: {
-      downloadedTracks: user.downloadedTracks
+  await usersCollection.updateOne(
+    { id: userId },
+    {
+      $set: {
+        downloadedTracks: user.downloadedTracks
+      }
     }
-  }
-);
+  );
 
   res.json({
     success: true
@@ -294,12 +294,12 @@ const user = await usersCollection.findOne({
 
 });
 
-app.get("/api/pending-users",  async (req, res) => {
- const pendingUsers = await usersCollection
-  .find({ status: "pending" })
-  .toArray();
+app.get("/api/pending-users", async (req, res) => {
+  const pendingUsers = await usersCollection
+    .find({ status: "pending" })
+    .toArray();
 
-res.json(pendingUsers);
+  res.json(pendingUsers);
 });
 
 
@@ -307,8 +307,8 @@ res.json(pendingUsers);
 app.get("/api/users/:id", async (req, res) => {
 
   const user = await usersCollection.findOne({
-  id: req.params.id
-});
+    id: req.params.id
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -364,22 +364,27 @@ app.patch("/api/users/:id/status", async (req, res) => {
 
 });
 
-app.get("/api/packs/pending", (req, res) => {
-  const packs = JSON.parse(
-    fs.readFileSync("./data/pendingPacks.json", "utf8")
-  );
-
-  res.json(packs);
+app.get("/api/packs/pending", async (req, res) => {
+  try {
+    const packs = await packsCollection.find({}).toArray();
+    res.json(packs);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
-app.get("/api/packs", (req, res) => {
-  const packs = JSON.parse(
-    fs.readFileSync("./data/pendingPacks.json", "utf8")
-  );
+app.get("/api/packs", async (req, res) => {
+  try {
+    const approvedPacks = await packsCollection.find({
+      status: "approved"
+    }).toArray();
 
-  const approvedPacks = packs.filter(pack => pack.status === "approved");
-
-  res.json(approvedPacks);
+    res.json(approvedPacks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
 function createZip(zipPath, files) {
@@ -408,12 +413,13 @@ function createZip(zipPath, files) {
 
 app.post("/api/packs/pending", upload.any(), async (req, res) => {
   try {
-    const packs = JSON.parse(fs.readFileSync("./data/pendingPacks.json", "utf8"));
     const receivedPack = JSON.parse(req.body.packData);
 
     const coverPackFile = req.files.find(file => file.fieldname === "coverPack");
 
-    receivedPack.coverPack = coverPackFile ? coverPackFile.filename : receivedPack.coverPack;
+    receivedPack.coverPack = coverPackFile
+      ? await uploadToR2(coverPackFile, "packs/covers")
+      : receivedPack.coverPack;
 
     receivedPack.tracks = receivedPack.tracks.map((track, index) => {
       const trackCoverFile = req.files.find(file => file.fieldname === `trackCover_${index}`);
@@ -442,12 +448,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       track.downloadZip = `/downloads/tracks/${trackZipName}`;
     });
 
-    packs.push(newPack);
-
-    fs.writeFileSync(
-      "./data/pendingPacks.json",
-      JSON.stringify(packs, null, 2)
-    );
+    await packsCollection.insertOne(newPack);
 
     res.json({
       success: true,
@@ -471,11 +472,11 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
             [track.audioName]
           );
         });
-      
 
 
-       resend.emails.send({
-          from: "Sonara Pack <luca.dida17@gmail.com>",
+
+        resend.emails.send({
+          from: "Sonara Pack <sonarapack@gmail.com>",
           to: "luca.dida17@gmail.com",
           subject: "Nouvelle demande de pack à modérer",
           html: `
@@ -524,34 +525,36 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
 });
 
 app.patch("/api/packs/:id/status", (req, res) => {
-  const packId = req.params.id
-  const { status } = req.body
 
-  const packs = JSON.parse(
-    fs.readFileSync("./data/pendingPacks.json", "utf8")
-  )
+  const packId = req.params.id;
+  const { status } = req.body;
 
-  const pack = packs.find(pack => pack.id === packId)
+  await packsCollection.updateOne(
+    { id: packId },
+    {
+      $set: {
+        status
+      }
+    }
+  );
 
-  if (!pack) {
+  const updatedPack = await packsCollection.findOne({
+    id: packId
+  });
+
+  if (!updatedPack) {
     return res.status(404).json({
       success: false,
       message: "Pack introuvable"
-    })
+    });
   }
-
-  pack.status = status
-
-  fs.writeFileSync(
-    "./data/pendingPacks.json",
-    JSON.stringify(packs, null, 2)
-  )
 
   res.json({
     success: true,
     message: `Pack ${status}`,
-    pack
-  })
+    pack: updatedPack
+  });
+
 })
 
 function checkServerFiles() {
@@ -562,7 +565,6 @@ function checkServerFiles() {
     { name: "admin.js", path: "./app/js/admin.js" },
     { name: "home.js", path: "./app/js/home.js" },
     { name: "pack.js", path: "./app/js/pack.js" },
-    { name: "pendingPacks.json", path: "./data/pendingPacks.json" },
     { name: "uploads folder", path: "./uploads" }
   ];
 
