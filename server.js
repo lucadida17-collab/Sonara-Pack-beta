@@ -12,6 +12,7 @@ require("dotenv").config();
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
+const { profileEnd } = require("console");
 const r2 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT,
@@ -149,7 +150,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
     try {
       console.log("AVANTT MAIL")
       await resend.emails.send({
-        from: "Sonara Pack <onboarding@resend.dev>",
+        from: "Sonara Pack <admin@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject: "Nouvelle demande artiste à modérer - Sonara Pack",
         html: `
