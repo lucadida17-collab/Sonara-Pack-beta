@@ -81,7 +81,11 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+   storage,
+  limits: {
+    fileSize: 200 * 1024 * 1024
+  } });
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
