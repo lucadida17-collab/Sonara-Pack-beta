@@ -37,6 +37,19 @@ async function uploadToR2(file, folder) {
   return key;
 }
 
+async function uploadLocalFileToR2(filePath, key, contentType = "application/zip") {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: fs.createReadStream(filePath),
+      ContentType: contentType
+    })
+  );
+
+  return key;
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY)
 const client = new MongoClient(process.env.MONGO_URI);
 
@@ -425,16 +438,23 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       ? await uploadToR2(coverPackFile, "packs/covers")
       : receivedPack.coverPack;
 
-    receivedPack.tracks = receivedPack.tracks.map((track, index) => {
-      const trackCoverFile = req.files.find(file => file.fieldname === `trackCover_${index}`);
-      const trackAudioFile = req.files.find(file => file.fieldname === `trackAudio_${index}`);
+   receivedPack.tracks = await Promise.all(
+  receivedPack.tracks.map(async (track, index) => {
+    const trackCoverFile = req.files.find(file => file.fieldname === `trackCover_${index}`);
+    const trackAudioFile = req.files.find(file => file.fieldname === `trackAudio_${index}`);
 
-      return {
-        ...track,
-        coverPack: trackCoverFile ? trackCoverFile.filename : track.coverPack,
-        audioName: trackAudioFile ? trackAudioFile.filename : track.audioName
-      };
-    });
+    return {
+      ...track,
+      coverPack: trackCoverFile
+        ? await uploadToR2(trackCoverFile, "tracks/covers")
+        : track.coverPack,
+
+      audioName: trackAudioFile
+        ? await uploadToR2(trackAudioFile, "tracks/audio")
+        : track.audioName
+    };
+  })
+);
 
     const newPack = {
       ...receivedPack,
@@ -445,11 +465,8 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
     const packZipName = `${newPack.id}_pack.zip`;
     const packZipFullPath = path.join(packsZipPath, packZipName);
 
-    newPack.downloadZip = `/downloads/packs/${packZipName}`;
-
     newPack.tracks.forEach(track => {
       const trackZipName = `${track.id}.zip`;
-      track.downloadZip = `/downloads/tracks/${trackZipName}`;
     });
 
     await packsCollection.insertOne(newPack);
@@ -460,63 +477,87 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       pack: newPack
     });
 
-    setTimeout(() => {
-      try {
-        createZip(
-          packZipFullPath,
-          newPack.tracks.map(track => track.audioName)
-        );
+setTimeout(async () => {
+  try {
+    createZip(
+      packZipFullPath,
+      newPack.tracks.map(track => track.audioName)
+    );
 
-        newPack.tracks.forEach(track => {
-          const trackZipName = `${track.id}.zip`;
-          const trackZipFullPath = path.join(tracksZipPath, trackZipName);
+    const packZipKey = await uploadLocalFileToR2(
+      packZipFullPath,
+      `zips/packs/${packZipName}`
+    );
 
-          createZip(
-            trackZipFullPath,
-            [track.audioName]
-          );
-        });
+    newPack.downloadZip = packZipKey;
 
+    for (const track of newPack.tracks) {
+      const trackZipName = `${track.id}.zip`;
+      const trackZipFullPath = path.join(tracksZipPath, trackZipName);
 
+      createZip(
+        trackZipFullPath,
+        [track.audioName]
+      );
 
-        resend.emails.send({
-          from: "Sonara Pack <sonarapack@gmail.com>",
-          to: "luca.dida17@gmail.com",
-          subject: "Nouvelle demande de pack à modérer",
-          html: `
-           <div style="font-family: Arial, sans-serif; background:#080b12; color:white; padding:30px; border-radius:16px;">
-            <h2>Nouvelle demande Sonara Pack</h2>
-           <div style="background:#111827; padding:20px; border-radius:14px; margin-top:20px;">
+      const trackZipKey = await uploadLocalFileToR2(
+        trackZipFullPath,
+        `zips/tracks/${trackZipName}`
+      );
+
+      track.downloadZip = trackZipKey;
+    }
+
+    await packsCollection.updateOne(
+      { id: newPack.id },
+      {
+        $set: {
+          downloadZip: newPack.downloadZip,
+          tracks: newPack.tracks
+        }
+      }
+    );
+
+    console.log("ZIP PACK + TRACKS uploadés sur R2 ✅");
+
+    resend.emails.send({
+      from: "Sonara Pack <sonarapack@gmail.com>",
+      to: "luca.dida17@gmail.com",
+      subject: "Nouvelle demande de pack à modérer",
+      html: `
+        <div style="font-family: Arial, sans-serif; background:#080b12; color:white; padding:30px; border-radius:16px;">
+          <h2>Nouvelle demande Sonara Pack</h2>
+
+          <div style="background:#111827; padding:20px; border-radius:14px; margin-top:20px;">
             <p><strong>Titre :</strong> ${newPack.title || "Pack sans titre"}</p>
             <p><strong>Artiste :</strong> ${newPack.artist || "Non renseigné"}</p>
             <p><strong>Prix :</strong> ${newPack.price || newPack.globalPrice || "Non renseigné"}</p>
             <p><strong>Tracks :</strong> ${newPack.tracks?.length || 0}</p>
             <p><strong>Status :</strong> ${newPack.status}</p>
             <p><strong>ID :</strong> ${newPack.id}</p>
-         
 
             <p>
               <strong>Vérification obligatoire :</strong><br>
-              cover,bientôt écoute audio, cohérence du pack, prix, droits, qualité générale.
+              cover, bientôt écoute audio, cohérence du pack, prix, droits, qualité générale.
             </p>
           </div>
-            <div style="margin-top:30px;">
+
+          <div style="margin-top:30px;">
             <a href="https://sonarapack-test.netlify.app/admin.html"
-              style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
+               style="display:inline-block; padding:14px 22px; background:#7ddcff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold;">
               Open Admin
             </a>
-            
-           </div>
+          </div>
         </div>
-          `
-        }).catch(error => {
-          console.error("Erreur mail :", error);
-        });
+      `
+    }).catch(error => {
+      console.error("Erreur mail :", error);
+    });
 
-      } catch (zipError) {
-        console.error("Erreur création ZIP :", zipError);
-      }
-    }, 0);
+  } catch (zipError) {
+    console.error("Erreur création/upload ZIP R2 :", zipError);
+  }
+}, 1000);
 
   } catch (error) {
     console.error("ERREUR /api/packs/pending :", error);
