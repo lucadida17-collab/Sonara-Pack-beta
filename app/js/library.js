@@ -6,27 +6,38 @@ window.location.hostname === "localhost" ||
     : "https://sonara-pack-beta.onrender.com";
 
 
+const R2_PUBLIC_URL = "https://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev";
 
+function getFilePath(file) {
+  if (!file) return "";
+
+  if (file.startsWith("http")) return file;
+
+  if (file.startsWith("/uploads/")) {
+    return `${API_BASE}${file}`;
+  }
+
+  if (file.startsWith("uploads/")) {
+    return `${API_BASE}/${file}`;
+  }
+
+  if (
+    file.startsWith("packs/") ||
+    file.startsWith("tracks/") ||
+    file.startsWith("artists/") ||
+    file.startsWith("zips/")
+  ) {
+    return `${R2_PUBLIC_URL}/${file}`;
+  }
+
+  return `${API_BASE}/uploads/${file}`;
+}
 
 let packs = [];
 
 const content = document.querySelector(".library-content");
 
-function getFilePath(file) {
-    if (!file) return "";
 
-    if (file.startsWith("http")) return file;
-
-    if (file.startsWith("/upload/")) {
-        return `${API_BASE}${file}`;
-    }
-
-    if (file.startsWith("upload/")) {
-        return `${API_BASE}/${file}`;
-    }
-
-    return `${API_BASE}/uploads/${file}`;
-}
 
     function formatDuration(seconds) {
         if (!seconds) return "--:--";
