@@ -75,7 +75,7 @@ function renderCards() {
 
 
         console.log("PACK DATA :", pack);
-        const imageUrl = `${API_BASE}/uploads/${pack.coverPack}`;
+        const imageUrl = `${getFilePath(pack.coverPack || pack.cover)}`;
 
         card.innerHTML = `
   <div class="cover">
