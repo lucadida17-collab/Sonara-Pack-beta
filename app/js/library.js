@@ -286,7 +286,7 @@ function renderDownloadedPack(packId) {
     <span></span>
     <span></span>
   </div>
-   <audio class="track-audio" src="${getFilePath(track.audioName)}"></audio> 
+   <audio class="track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio> 
     </div>
 
       <p class="track-title">${track.title}</p>
@@ -326,7 +326,7 @@ function renderDownloadedPack(packId) {
     <span></span>
   </div>
     
-    <audio class="mobile-track-audio" src="${getFilePath(track.audioName)}"></audio>
+    <audio class="mobile-track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio>
 
     </div>
 

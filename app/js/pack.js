@@ -78,13 +78,13 @@ function renderPack() {
 
     <div class="card">
       <img 
-      src="${uploads}/${packData.coverPack}"
+      src="${getFilePath(packData.coverPack)}"
       class="cover">
       <alt="${packData.title} cover image"
       >
      
           <button class="playerBtnMob play"></button>
-            <audio src="../../${packData.audio}">
+          <audio src="${getFilePath(packData.audio || packData.audioName)}">
             </audio>
     </div>
     
@@ -96,7 +96,7 @@ function renderPack() {
       <div class="pack-info">
         <h1 class="title">${packData.title}</h1>
         <div class="artist-info">
-          <img src="${uploads}/${packData.imageArtist}" class="artist-image">
+          <img src="${getFilePath(packData.imageArtist)}" class="artist-image">
           <p class="artist">${packData.artist}</p>
 
         <button class="btn-acheter">${packData.price}</button>
@@ -128,7 +128,7 @@ function renderPack() {
 <div class="track-title-column">
 
     <div class="track-card">
-      <img src="${track.coverPack ? `${uploads}/${track.coverPack}` : ''}"
+      <img src="${track.coverPack ? `${getFilePath(track.coverPack)}` : ''}"
       alt="${track.title} cover" 
      class="track-cover"
     >
@@ -136,7 +136,10 @@ function renderPack() {
  <span class="track-preview-time">30</span> 
 
  </button>
-   <audio class="track-audio" src="${track.audioName ? `${uploads}/${track.audioName}` : ''}"></audio> 
+  <audio
+class="track-audio"
+src="${getFilePath(track.audioName || track.audio)}"
+></audio>
     </div>
 
       <p class="track-title">${track.title}</p>
@@ -162,12 +165,12 @@ function renderPack() {
 
 
     <div class="track-card-mobile">
-      <img src="${uploads}/${track.coverPack}"
+      <img src="${getFilePath(track.coverPack)}"
       alt="${track.title} cover" 
      class="track-cover-mobile"
     >   
     <span class="mobile-preview-time">30</span>
-    <audio class="mobile-track-audio" src="${uploads}/${track.audioName}"></audio>
+    <audio class="mobile-track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio>
 
     </div>
 

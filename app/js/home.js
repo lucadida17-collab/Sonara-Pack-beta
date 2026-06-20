@@ -184,7 +184,7 @@ fixer un prix, </p>
 console.log("Update modal chargé");
 
 
-const UPDATE_MODAL_VERSION = "v0.1.99";
+const UPDATE_MODAL_VERSION = "v1.0";
 const UPDATE_MODAL_KEY = "sonara-update-modal-seen";
 
 const alreadySeenVersion = localStorage.getItem(UPDATE_MODAL_KEY);
@@ -367,7 +367,7 @@ const packsTelecharges = allPacks.filter(pack =>
   <div class="pack-card" data-pack-id="${pack.id}">
     <img 
   class="pack-cover" 
-  src="src="${getFilePath(pack.cover || pack.coverPack)}"" 
+  src="${getFilePath(pack.cover || pack.coverPack)}"
   alt="${pack.title}"
 >
     <h3>${pack.title}</h3>
