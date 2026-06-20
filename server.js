@@ -524,7 +524,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
   }
 });
 
-app.patch("/api/packs/:id/status", (req, res) => {
+app.patch("/api/packs/:id/status", async (req, res) => {
 
   const packId = req.params.id;
   const { status } = req.body;
