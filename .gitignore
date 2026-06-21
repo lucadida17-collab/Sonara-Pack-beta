@@ -1,2 +1,6 @@
 node_modules/
 .env
+uploads/
+downloads/
+data/users.json
+data/pendingPacks.json

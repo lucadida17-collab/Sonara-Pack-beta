@@ -3,9 +3,10 @@ dns.setDefaultResultOrder("ipv4first")
 
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
+
 const multer = require("multer");
-const path = require("path");
+
+
 
 const AdmZip = require("adm-zip");
 require("dotenv").config();
@@ -13,6 +14,13 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
 const { profileEnd } = require("console");
+const path = require("path");
+const fs = require("fs");
+
+
+
+const isLocal = process.env.NODE_ENV !== "production";
+
 const r2 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT,
@@ -59,6 +67,37 @@ const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
 
 
+async function savePack(pack) {
+  if (isLocal) {
+    const filePath = path.join(__dirname, "data", "pendingPacks.json");
+
+    const packs = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    packs.push(pack);
+
+    fs.writeFileSync(filePath, JSON.stringify(packs, null, 2));
+    console.log("LOCAL PACK saved ✅");
+    return;
+  }
+
+  await packsCollection.insertOne(pack);
+}
+
+async function saveUser(user) {
+  if (isLocal) {
+    const filePath = path.join(__dirname, "data", "users.json");
+    const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+    users.push(user);
+
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
+    console.log("LOCAL USER saved ✅");
+    return;
+  }
+
+  await usersCollection.insertOne(user);
+}
+
+
 async function connectDB() {
   try {
     await client.connect()
@@ -73,7 +112,7 @@ connectDB()
 
 const app = express();
 
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 const PORT = process.env.PORT || 3000;
@@ -131,12 +170,17 @@ app.post("/api/register", upload.any(), async (req, res) => {
     file => file.fieldname === "imageArtist"
   );
 
-  if (imageArtistFile) {
+ if (imageArtistFile) {
+  if (isLocal) {
+    profile.imageArtist = imageArtistFile.filename;
+    console.log("IMAGE ARTIST LOCAL :", profile.imageArtist);
+  } else {
     const imageArtistKey = await uploadToR2(imageArtistFile, "artists");
     profile.imageArtist = imageArtistKey;
 
     console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
   }
+}
 
   console.log("IMAGE ARTIST :", imageArtistFile)
 
@@ -158,7 +202,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
   console.log("avant insert")
 
-  await usersCollection.insertOne(profile);
+  await saveUser(profile);
 
   console.log("apres insert ");
 
@@ -321,11 +365,20 @@ app.get("/api/pending-users", async (req, res) => {
 
 
 
-app.get("/api/users/:id", async (req, res) => {
+app.get("/aps/:id", async (req, res) => {
 
-  const user = await usersCollection.findOne({
+  let user;
+
+if (isLocal) {
+  const filePath = path.join(__dirname, "data", "users.json");
+  const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+  user = users.find(u => u.id === req.params.id);
+} else {
+  user = await usersCollection.findOne({
     id: req.params.id
   });
+}
 
   if (!user) {
     return res.status(404).json({
@@ -344,41 +397,58 @@ app.get("/api/users/:id", async (req, res) => {
 
 
 app.patch("/api/users/:id/status", async (req, res) => {
-
   const userId = req.params.id;
   const { status } = req.body;
 
-  const user = await usersCollection.findOne({
-    id: userId
-  });
+  let updatedUser;
 
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "Utilisateur introuvable"
-    });
-  }
+  if (isLocal) {
+    const filePath = path.join(__dirname, "data", "users.json");
+    const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
-  await usersCollection.updateOne(
-    { id: userId },
-    {
-      $set: {
-        status,
-        moderatedAt: new Date().toISOString()
-      }
+    const userIndex = users.findIndex(user => user.id === userId);
+
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur introuvable"
+      });
     }
-  );
 
-  const updatedUser = await usersCollection.findOne({
-    id: userId
-  });
+    users[userIndex].status = status;
+    users[userIndex].moderatedAt = new Date().toISOString();
+
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
+
+    updatedUser = users[userIndex];
+  } else {
+    const user = await usersCollection.findOne({ id: userId });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur introuvable"
+      });
+    }
+
+    await usersCollection.updateOne(
+      { id: userId },
+      {
+        $set: {
+          status,
+          moderatedAt: new Date().toISOString()
+        }
+      }
+    );
+
+    updatedUser = await usersCollection.findOne({ id: userId });
+  }
 
   res.json({
     success: true,
     message: `Utilisateur ${status}`,
     user: updatedUser
   });
-
 });
 
 app.get("/api/packs/pending", async (req, res) => {
@@ -469,7 +539,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       const trackZipName = `${track.id}.zip`;
     });
 
-    await packsCollection.insertOne(newPack);
+    await savePack(newPack);
 
     res.json({
       success: true,

@@ -392,7 +392,7 @@ Acheter, découvrir et télécharger des packs.
               localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
               localStorage.setItem("sonaraProfileCreated", "true");
               if (data.profile.status === "approved") {
-                window.location.href = "home.html";
+                window.location.href = "pending.html";
               } else {
                 window.location.href = "pending.html";
               }
