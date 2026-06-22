@@ -67,6 +67,35 @@ const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
 
 
+async function savePack(pack) {
+  if (isLocal) {
+    const filePath = path.join(__dirname, "data", "pendingPacks.json");
+
+    const packs = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    packs.push(pack);
+
+    fs.writeFileSync(filePath, JSON.stringify(packs, null, 2));
+    console.log("LOCAL PACK saved ✅");
+    return;
+  }
+
+  await packsCollection.insertOne(pack);
+}
+
+async function saveUser(user) {
+  if (isLocal) {
+    const filePath = path.join(__dirname, "data", "users.json");
+    const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+    users.push(user);
+
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
+    console.log("LOCAL USER saved ✅");
+    return;
+  }
+
+  await usersCollection.insertOne(user);
+}
 
 
 async function connectDB() {
@@ -173,7 +202,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
   console.log("avant insert")
 
-  await usersCollection.insertOne(user);
+  await saveUser(profile);
 
   console.log("apres insert ");
 
@@ -198,6 +227,8 @@ console.log("Register envoyer")
 
 app.post("/api/add-downloaded-pack", async (req, res) => {
 
+
+
   const { userId, packId } = req.body;
 
   const user = await usersCollection.findOne({
@@ -220,7 +251,9 @@ app.post("/api/add-downloaded-pack", async (req, res) => {
   }
 
   if (!user.downloadedPacks) {
-    user.downloadedPacks = [];
+    user.downloadedPacks = [
+
+    ];
   }
 
   if (!user.downloadedPacks.includes(packId)) {
@@ -473,7 +506,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       const trackZipName = `${track.id}.zip`;
     });
 
-   await packsCollection.insertOne(pack);
+    await savePack(newPack);
 
     res.json({
       success: true,

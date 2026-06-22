@@ -1,140 +1,161 @@
 const chaosPage = document.querySelector(".chaos-page");
 
-const API_URL =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.hostname.startsWith("192.168.")
-    ? "http://192.168.1.22:3000"
-    : "https://sonara-pack-beta.onrender.com";
-
-function saveProfileAndRedirect(data) {
-  if (!data || !data.success || !data.profile) {
-    console.error("REGISTER RESPONSE INVALID :", data);
-    return;
-  }
-
-  localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
-  localStorage.setItem("sonaraProfileCreated", "true");
-
-  console.log("PROFILE SAVED :", data.profile);
-  console.log("STATUS :", data.profile.status);
-  console.log("ROLE :", data.profile.role);
-
-  if (data.profile.status === "approved") {
-    window.location.href = "../../home.html";
-    return;
-  }
-
-  if (data.profile.status === "pending") {
-    window.location.href = "pending.html";
-    return;
-  }
-
-  window.location.href = "chaos.html";
-}
-
-async function sendRegister(profile, imageFile = null) {
-  const formData = new FormData();
-  formData.append("profile", JSON.stringify(profile));
-
-  if (imageFile) {
-    formData.append("imageArtist", imageFile);
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/api/register`, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await response.json();
-
-    console.log("BACKEND OK :", data);
-
-    saveProfileAndRedirect(data);
-  } catch (error) {
-    console.error("ERREUR BACKEND :", error);
-  }
-}
-
 function renderChoicePage() {
   chaosPage.innerHTML = `
-    <section class="chaos-hero">
-      <h1>Bienvenue sur Sonara Pack</h1>
-      <p>Choisis comment tu veut utiliser la plateforme.</p>
-    </section>
+<section class="chaos-hero">
 
-    <button class="chaos-card user-card" data-role="user">
-      <h2>Utilisateur</h2>
-      <p>Acheter, découvrir et télécharger des packs.</p>
-    </button>
+<h1> Bienvenue sur Sonara Pack </h1>
 
-    <button class="chaos-card artist-card" data-role="artist">
-      <h2>Artist</h2>
-      <p>Publier des packs et vendre tes créations</p>
-    </button>
+<p>
+Choisis comment tu veut utiliser la plateforme.
+</p>
+</section>
 
-    <button class="chaos-card both-card" data-role="both">
-      <h2>Les deux</h2>
-      <p>Acheter des packs et publier des packs sur la plateforme.</p>
-    </button>
-  `;
 
-  document.querySelectorAll(".chaos-card").forEach((card) => {
+<button class="chaos-card user-card" data-role="user">
+<h2>Utilisateur</h2>
+
+<p>
+Acheter, découvrir et télécharger des packs.
+ </p>
+
+ </button>
+
+<button class="chaos-card artist-card" data-role="artist">
+<h2> Artist</h2>
+
+<p>
+ Publier des packs et vendre tes créations
+ </p>
+
+ </button>
+
+ <button class="chaos-card both-card" data-role="both">
+    <h2> Les deux</h2>
+
+    <p>
+     Acheter des packs et publier des packs sur la plateforme. 
+    </p>
+</button>
+</section>
+
+
+`;
+
+  const btnCardChoice = document.querySelector(".chaos-card");
+
+
+
+
+  const choiceCard = document.querySelectorAll(".chaos-card");
+
+  choiceCard.forEach((card) => {
     card.addEventListener("click", () => {
       const role = card.dataset.role;
 
-      if (role === "user") renderUserForm();
-      if (role === "artist") renderArtistForm();
-      if (role === "both") renderBothForm();
-    });
-  });
-}
+      if (role === "user") {
+        renderUserForm();
+      }
 
-function renderUserForm() {
-  chaosPage.innerHTML = `
-    <section class="form-page"> 
-      <button class="back-btn">Retour</button>
+      function renderUserForm() {
+        chaosPage.innerHTML = `
+            <section class="form-page"> 
+            <button class="back-btn"> Retour</button>
 
-      <h1>Profil Utilisateur</h1>
-      <p>Crée ton compte pour acheter, télécharger et retrouver tes packs.</p>
+            <h1>Profil Utilisateur </h1>
+            <p> Crée ton compte pour acheter, télécharger et retrouver tes packs. </p>
 
-      <form class="user-form">
-        <input type="text" placeholder="Prénom" class="formulaire firstname-input" required>
-        <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
-        <input type="date" class="formulaire date-input" required>
-        <input type="email" placeholder="Email" class="formulaire mail-input" required>
-        <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
-        <input type="tel" placeholder="Téléphone facultatif" class="formulaire phone-input">
+            <form class="user-form">
+              <input type="text" placeholder="Prénom"  class="formulaire firstname-input" required>
+              <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
+              <input type="date" class="formulaire date-input" required>
+              <input type="email" placeholder="Email" class="formulaire mail-input" required>
+              <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
+              <input type="tel" placeholder="Téléphone facultatif" class="formulaire phone-input">
+     
+              <button type="submit" class="create-profil-user">Crée mon profil utilisateur </button>
+            </form>
+            </section>
+            `;
+        const userForm = document.querySelector(".user-form");
 
-        <button type="submit" class="create-profil-user">Crée mon profil utilisateur</button>
-      </form>
-    </section>
-  `;
+        const firstnameInput = document.querySelector(".firstname-input");
+        const lastnameInput = document.querySelector(".lastname-input");
+        const dateInput = document.querySelector(".date-input");
+        const mailInput = document.querySelector(".mail-input");
+        const passwordInput = document.querySelector(".password-input");
+        const telInput = document.querySelector(".phone-input")
 
-  const userForm = document.querySelector(".user-form");
 
-  userForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        userForm.addEventListener("submit", (e) => {
+          e.preventDefault();
 
-    const profile = {
-      firstname: document.querySelector(".firstname-input").value,
-      lastname: document.querySelector(".lastname-input").value,
-      date: document.querySelector(".date-input").value,
-      mail: document.querySelector(".mail-input").value,
-      password: document.querySelector(".password-input").value,
-      phone: document.querySelector(".phone-input").value,
-      role: "user"
-    };
+          console.log(firstnameInput.value);
+          console.log(lastnameInput.value);
+          console.log(dateInput.value);
+          console.log(mailInput.value);
+          console.log(passwordInput.value);
+          console.log(telInput.value);
 
-    await sendRegister(profile);
-  });
+          const profile = {
+            firstname: firstnameInput.value,
+            lastname: lastnameInput.value,
+            date: dateInput.value,
+            mail: mailInput.value,
+            password: passwordInput.value,
+            phone: telInput.value,
+            role: "user",
+            status: "approved",
+            createdAt: new Date().toISOString()
 
-  document.querySelector(".back-btn").addEventListener("click", renderChoicePage);
-}
+          };
 
-function renderArtistForm() {
-  chaosPage.innerHTML = `
+
+          const formData = new FormData();
+
+          formData.append("profile", JSON.stringify(profile));
+
+          console.log(profile)
+          const API_URL =
+            window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.22:3000"
+              : "https://sonara-pack-beta.onrender.com";
+
+
+
+          fetch(`${API_URL}/api/register`, {
+            method: "POST",
+
+            body: formData
+          })
+            .then(res => res.json())
+            .then(data => {
+              console.log("BACKEND OK :", data);
+
+              localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
+              localStorage.setItem("sonaraProfileCreated", "true");
+
+              window.location.href = "/home.html";
+            })
+            .catch(error => {
+              console.error("ERREUR BACKEND :", error);
+            });
+
+        });
+
+        document.querySelector(".back-btn").addEventListener("click", renderChoicePage)
+      }
+
+
+
+      if (role === "artist") {
+        renderArtistForm();
+      }
+
+      function renderArtistForm() {
+        chaosPage.innerHTML = `
     <section class="form-page">
       <button class="back-btn">Retour</button>
 
@@ -144,29 +165,27 @@ function renderArtistForm() {
       <form class="artist-form">
         <input type="text" placeholder="Prénom" class="formulaire firstname-input" required>
         <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
-        <input type="date" class="formulaire date-input" required>
+        <input type="date" class="formulaire date-input"  required>
         <input type="text" placeholder="Adresse complète" class="formulaire adress-input" required>
         <input type="email" placeholder="Email" class="formulaire mail-input" required>
-        <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
-        <input type="tel" placeholder="Téléphone" class="formulaire phone-input" required>
-        <input type="text" placeholder="Nom d’artiste" class="formulaire artistname-input" required>
-
-        <p>Format carré fortement conseillé.</p>
-
+        <input type="password" placeholder="Mot de passe"class="formulaire password-input"  required>
+        <input type="tel" placeholder="Téléphone" class="formulaire phone-input"  required>
+        <input type="text" placeholder="Nom d’artiste"class="formulaire artistname-input"  required>
+           Format carré fortement conseillé allez sur canva ou une IA pour redimensionner votre image au besoin 
         <input 
-          type="file" 
-          accept="image/png,image/jpeg,image/jpg" 
-          class="formulaire artist-image-input"
-          required
-        >
+  type="file" 
+  accept="image/png,image/jpeg,image/jpg" 
+  class="formulaire artist-image-input"
+  required
+>
 
         <label class="checkbox-line">
           <input type="checkbox" required>
-          Je confirme être majeur pour commencer à vendre
+          Je confirme être majeur pour commencer a vendre
         </label>
 
         <label class="checkbox-line">
-          <input type="checkbox" required>
+          <input type="checkbox" required >
           Je confirme posséder les droits des sons que je publierai
         </label>
 
@@ -174,43 +193,103 @@ function renderArtistForm() {
       </form>
     </section>
   `;
+        const artistForm = document.querySelector(".artist-form");
 
-  const artistForm = document.querySelector(".artist-form");
 
-  artistForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        const firstnameInput = document.querySelector(".firstname-input");
+        const lastnameInput = document.querySelector(".lastname-input");
+        const dateInput = document.querySelector(".date-input");
+        const adressInput = document.querySelector(".adress-input")
+        const mailInput = document.querySelector(".mail-input");
+        const passwordInput = document.querySelector(".password-input");
+        const telInput = document.querySelector(".phone-input");
+        const artistName = document.querySelector(".artistname-input");
+        const siretInput = document.querySelector(".siret-input")
 
-    const imageInput = document.querySelector(".artist-image-input");
-    const imageFile = imageInput.files[0];
 
-    const profile = {
-      firstname: document.querySelector(".firstname-input").value,
-      lastname: document.querySelector(".lastname-input").value,
-      date: document.querySelector(".date-input").value,
-      adress: document.querySelector(".adress-input").value,
-      mail: document.querySelector(".mail-input").value,
-      password: document.querySelector(".password-input").value,
-      phone: document.querySelector(".phone-input").value,
-      artistname: document.querySelector(".artistname-input").value,
-      role: "artist"
-    };
 
-    await sendRegister(profile, imageFile);
-  });
+        artistForm.addEventListener("submit", (e) => {
+          e.preventDefault();
 
-  document.querySelector(".back-btn").addEventListener("click", renderChoicePage);
-}
 
-function renderBothForm() {
-  chaosPage.innerHTML = `
+
+          const profile = {
+            firstname: firstnameInput.value,
+            lastname: lastnameInput.value,
+            date: dateInput.value,
+            mail: mailInput.value,
+            password: passwordInput.value,
+            phone: telInput.value,
+            artistname: artistName.value,
+            role: "artist",
+            status: "pending",
+            createdAt: new Date().toISOString()
+          };
+
+          const artistImageInput = document.querySelector(".artist-image-input");
+          const artistImageFile = artistImageInput.files[0];
+
+          const formData = new FormData();
+
+          formData.append("profile", JSON.stringify(profile));
+
+          if (artistImageFile) {
+            formData.append("imageArtist", artistImageFile);
+          }
+
+          const API_URL =
+            window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.22:3000"
+              : "https://sonara-pack-beta.onrender.com";
+
+
+          if (artistImageFile) {
+            alert("IMAGE OK : " + artistImageFile.name);
+          } else {
+            alert("AUCUNE IMAGE");
+          }
+          fetch(`${API_URL}/api/register`, {
+            method: "POST",
+            body: formData
+          })
+            .then(res => res.json())
+            .then(data => {
+              console.log("BACKEND OK :", data);
+
+              localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
+              localStorage.setItem("sonaraProfileCreated", "true");
+
+              if (data.profile.status === "approved") {
+                window.location.href = "../../home.html";
+              } else {
+                window.location.href = "pending.html";
+              }
+            })
+            .catch(error => {
+              console.error("ERREUR BACKEND :", error);
+            });
+        });
+
+        document.querySelector(".back-btn").addEventListener("click", renderChoicePage);
+      }
+
+      if (role === "both") {
+        renderBothForm();
+      }
+
+
+      function renderBothForm() {
+        chaosPage.innerHTML = `
     <section class="form-page">
-      <button class="back-btn">Retour</button>
+    <button class="back-btn">Retour</button>
 
       <h1>Profil complet</h1>
       <p>Crée un compte utilisateur + artiste.</p>
 
       <form class="both-form">
-        <input type="text" placeholder="Prénom" class="formulaire firstname-input" required>
+        <input type="text" placeholder="Prénom"  class="formulaire firstname-input" required>
         <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
         <input type="date" class="formulaire date-input" required>
         <input type="text" placeholder="Adresse complète" class="formulaire adress-input" required>
@@ -218,14 +297,13 @@ function renderBothForm() {
         <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
         <input type="tel" placeholder="Téléphone" class="formulaire phone-input" required>
         <input type="text" placeholder="Nom d’artiste" class="formulaire artistname-input" required>
-
-        <p>Format carré fortement conseillé.</p>
-
+         Format carré fortement conseillé allez sur canva ou une IA pour redimensionner votre image au besoin 
         <input 
-          type="file" 
-          accept="image/png,image/jpeg,image/jpg" 
-          class="formulaire artist-image-input"
-        >
+  type="file" 
+  accept="image/png,image/jpeg,image/jpg" 
+  class="formulaire artist-image-input"
+  image
+>
 
         <label class="checkbox-line">
           <input type="checkbox" required>
@@ -242,30 +320,95 @@ function renderBothForm() {
     </section>
   `;
 
-  const bothForm = document.querySelector(".both-form");
+        const bothForm = document.querySelector(".both-form")
 
-  bothForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        const firstnameInput = document.querySelector(".firstname-input");
+        const lastnameInput = document.querySelector(".lastname-input");
+        const dateInput = document.querySelector(".date-input");
+        const adressInput = document.querySelector(".adress-input")
+        const mailInput = document.querySelector(".mail-input");
+        const passwordInput = document.querySelector(".password-input");
+        const telInput = document.querySelector(".phone-input");
+        const artistName = document.querySelector(".artistname-input");
+        const siretInput = document.querySelector(".siret-input")
 
-    const imageInput = document.querySelector(".artist-image-input");
-    const imageFile = imageInput.files[0];
 
-    const profile = {
-      firstname: document.querySelector(".firstname-input").value,
-      lastname: document.querySelector(".lastname-input").value,
-      date: document.querySelector(".date-input").value,
-      adress: document.querySelector(".adress-input").value,
-      mail: document.querySelector(".mail-input").value,
-      password: document.querySelector(".password-input").value,
-      phone: document.querySelector(".phone-input").value,
-      artistname: document.querySelector(".artistname-input").value,
-      role: "both"
-    };
 
-    await sendRegister(profile, imageFile);
+        bothForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          console.log(firstnameInput.value);
+          console.log(lastnameInput.value);
+          console.log(dateInput.value);
+          console.log(mailInput.value);
+          console.log(passwordInput.value);
+          console.log(telInput.value);
+
+          const profile = {
+            firstname: firstnameInput.value,
+            lastname: lastnameInput.value,
+            date: dateInput.value,
+            mail: mailInput.value,
+            password: passwordInput.value,
+            phone: telInput.value,
+            artistname: artistName.value,
+            role: "both",
+            status: "pending",
+            createdAt: new Date().toISOString()
+          };
+
+          const artistImageInput = document.querySelector(".artist-image-input");
+          const artistImageFile = artistImageInput.files[0];
+
+          const formData = new FormData();
+
+          formData.append("profile", JSON.stringify(profile));
+
+          if (artistImageFile) {
+            formData.append("imageArtist", artistImageFile);
+          }
+
+          const API_URL =
+            window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1" ||
+              window.location.hostname.startsWith("192.168.")
+              ? "http://192.168.1.22:3000"
+              : "https://sonara-pack-beta.onrender.com";
+
+          if (artistImageFile) {
+            alert("IMAGE OK : " + artistImageFile.name);
+          } else {
+            alert("AUCUNE IMAGE");
+          }
+          fetch(`${API_URL}/api/register`, {
+            method: "POST",
+            body: formData
+          })
+
+            .then(res => res.json())
+            .then(data => {
+              console.log("BACKEND OK :", data);
+
+              localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
+              localStorage.setItem("sonaraProfileCreated", "true");
+              if (data.profile.status === "approved") {
+                window.location.href = "../../home.html";
+              } else {
+                window.location.href = "pending.html";
+              }
+            })
+            .catch(error => {
+              console.error("ERREUR BACKEND :", error);
+            });
+
+        });
+
+        document.querySelector(".back-btn").addEventListener("click", renderChoicePage);
+      }
+    });
   });
-
-  document.querySelector(".back-btn").addEventListener("click", renderChoicePage);
 }
 
+
 renderChoicePage();
+
