@@ -142,17 +142,18 @@ app.post("/api/register", upload.any(), async (req, res) => {
     file => file.fieldname === "imageArtist"
   );
 
- if (imageArtistFile) {
-  if (isLocal) {
-    profile.imageArtist = imageArtistFile.filename;
-    console.log("IMAGE ARTIST LOCAL :", profile.imageArtist);
-  } else {
-    const imageArtistKey = await uploadToR2(imageArtistFile, "artists");
-    profile.imageArtist = imageArtistKey;
 
-    console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
-  }
-}
+  const imageArtistKey = await uploadToR2(
+  imageArtistFile,
+  "artists"
+);
+
+profile.imageArtist = imageArtistKey;
+
+console.log(
+  "IMAGE ARTIST UPLOAD R2 :",
+  imageArtistKey
+);
 
   console.log("IMAGE ARTIST :", imageArtistFile)
 
