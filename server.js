@@ -175,7 +175,7 @@ console.log(
 
   console.log("avant insert")
 
-  await usersCollection.insertOne(user);
+  await usersCollection.insertOne(profile);
 
   console.log("apres insert ");
 
@@ -456,7 +456,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       const trackZipName = `${track.id}.zip`;
     });
 
-      await packsCollection.insertOne(pack);
+      await packsCollection.insertOne(newPack);
 
     res.json({
       success: true,
