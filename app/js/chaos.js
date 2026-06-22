@@ -243,13 +243,7 @@ Acheter, découvrir et télécharger des packs.
               window.location.hostname.startsWith("192.168.")
               ? "http://192.168.1.22:3000"
               : "https://sonara-pack-beta.onrender.com";
-
-
-          if (artistImageFile) {
-            alert("IMAGE OK : " + artistImageFile.name);
-          } else {
-            alert("AUCUNE IMAGE");
-          }
+              
           fetch(`${API_URL}/api/register`, {
             method: "POST",
             body: formData
