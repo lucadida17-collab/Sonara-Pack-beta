@@ -252,11 +252,16 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
 
 
-  res.json({
-    success: true,
-    message: "Profil enregistré",
-    profile
-  });
+console.log("Avant response register");
+console.log("Profile Finish =", profile);
+
+res.json({
+  success: true,
+  message: "Profile enregister",
+  profile
+});
+
+console.log("Register envoyer")
 });
 
 app.post("/api/add-downloaded-pack", async (req, res) => {
@@ -355,76 +360,189 @@ app.post("/api/add-downloaded-track", async (req, res) => {
 
 });
 
-app.get("/api/pending-users", async (req, res) => {
-  const pendingUsers = await usersCollection
-    .find({ status: "pending" })
-    .toArray();
 
-  res.json(pendingUsers);
+app.get("/api/pending-users", async (req, res) => {
+  console.log("Pending Request");
+  console.log("IS LOCAL :", isLocal);
+
+  if (isLocal) {
+
+    console.log("MODE LOCAL");
+
+    const filePath = path.join(__dirname, "data", "users.json");
+
+    const users = JSON.parse(
+      fs.readFileSync(filePath, "utf8")
+    );
+
+    const pendingUsers = users.filter(
+      user => user.status === "pending"
+    );
+
+    console.log("Pending User =", pendingUsers.length);
+    console.log(pendingUsers);
+
+    res.json(pendingUsers);
+
+    console.log("Response envoyer");
+
+  } else {
+
+    console.log("MODE MONGO");
+
+    const pendingUsers = await usersCollection
+      .find({ status: "pending" })
+      .toArray();
+
+    console.log("Pending User =", pendingUsers.length);
+    console.log(pendingUsers);
+
+    res.json(pendingUsers);
+
+    console.log("Response envoyer");
+  }
 });
 
 
 
-app.get("/aps/:id", async (req, res) => {
+app.get("/api/users/:id", async (req, res) => {
+
+  console.log("========== GET USER ==========");
+  console.log("ID RECU :", req.params.id);
+  console.log("IS LOCAL :", isLocal);
 
   let user;
 
-if (isLocal) {
-  const filePath = path.join(__dirname, "data", "users.json");
-  const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (isLocal) {
 
-  user = users.find(u => u.id === req.params.id);
-} else {
-  user = await usersCollection.findOne({
-    id: req.params.id
-  });
-}
+    console.log("MODE LOCAL");
+
+    const filePath = path.join(__dirname, "data", "users.json");
+
+    console.log("LECTURE :", filePath);
+
+    const users = JSON.parse(
+      fs.readFileSync(filePath, "utf8")
+    );
+
+    console.log("NB USERS :", users.length);
+
+    user = users.find(u => u.id === req.params.id);
+
+    console.log("USER TROUVE LOCAL :", user);
+
+  } else {
+
+    console.log("MODE MONGO");
+
+    user = await usersCollection.findOne({
+      id: req.params.id
+    });
+
+    console.log("USER TROUVE MONGO :", user);
+  }
 
   if (!user) {
+
+    console.log("USER INTROUVABLE");
+
     return res.status(404).json({
       success: false,
       message: "Utilisateur introuvable"
     });
   }
 
+  console.log("STATUS :", user.status);
+  console.log("REPONSE ENVOYEE");
+
   res.json({
     success: true,
     user
   });
+
 });
 
 
-
-
 app.patch("/api/users/:id/status", async (req, res) => {
+
+  console.log("========== PATCH STATUS ==========");
+  console.log("USER ID :", req.params.id);
+
   const userId = req.params.id;
   const { status } = req.body;
+
+  console.log("STATUS RECU :", status);
+  console.log("IS LOCAL :", isLocal);
 
   let updatedUser;
 
   if (isLocal) {
-    const filePath = path.join(__dirname, "data", "users.json");
-    const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
-    const userIndex = users.findIndex(user => user.id === userId);
+    console.log("MODE LOCAL");
+
+    const filePath = path.join(__dirname, "data", "users.json");
+
+    console.log("FILE :", filePath);
+
+    const users = JSON.parse(
+      fs.readFileSync(filePath, "utf8")
+    );
+
+    console.log("NB USERS :", users.length);
+
+    const userIndex = users.findIndex(
+      user => user.id === userId
+    );
+
+    console.log("USER INDEX :", userIndex);
 
     if (userIndex === -1) {
+
+      console.log("USER INTROUVABLE LOCAL");
+
       return res.status(404).json({
         success: false,
         message: "Utilisateur introuvable"
       });
     }
 
+    console.log("USER AVANT UPDATE :");
+    console.log(users[userIndex]);
+
+    console.log("ANCIEN STATUS :", users[userIndex].status);
+
     users[userIndex].status = status;
     users[userIndex].moderatedAt = new Date().toISOString();
 
-    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
+    console.log("NOUVEAU STATUS :", users[userIndex].status);
+
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(users, null, 2)
+    );
+
+    console.log("USERS.JSON SAUVEGARDE");
 
     updatedUser = users[userIndex];
+
+    console.log("UPDATED USER LOCAL :");
+    console.log(updatedUser);
+
   } else {
-    const user = await usersCollection.findOne({ id: userId });
+
+    console.log("MODE MONGO");
+
+    const user = await usersCollection.findOne({
+      id: userId
+    });
+
+    console.log("USER MONGO TROUVE :");
+    console.log(user);
 
     if (!user) {
+
+      console.log("USER INTROUVABLE MONGO");
+
       return res.status(404).json({
         success: false,
         message: "Utilisateur introuvable"
@@ -441,15 +559,28 @@ app.patch("/api/users/:id/status", async (req, res) => {
       }
     );
 
-    updatedUser = await usersCollection.findOne({ id: userId });
+    console.log("UPDATE MONGO EFFECTUE");
+
+    updatedUser = await usersCollection.findOne({
+      id: userId
+    });
+
+    console.log("UPDATED USER MONGO :");
+    console.log(updatedUser);
   }
+
+  console.log("REPONSE PATCH ENVOYEE");
+  console.log(updatedUser);
 
   res.json({
     success: true,
     message: `Utilisateur ${status}`,
     user: updatedUser
   });
+
 });
+
+
 
 app.get("/api/packs/pending", async (req, res) => {
   try {
