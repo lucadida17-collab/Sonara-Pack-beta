@@ -19,7 +19,6 @@ const fs = require("fs");
 
 
 
-const isLocal = process.env.NODE_ENV !== "production";
 
 const r2 = new S3Client({
   region: "auto",
@@ -65,6 +64,8 @@ const db = client.db("sonara-pack-db");
 
 const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
+
+
 
 
 
@@ -198,6 +199,8 @@ console.log("Register envoyer")
 
 app.post("/api/add-downloaded-pack", async (req, res) => {
 
+
+
   const { userId, packId } = req.body;
 
   const user = await usersCollection.findOne({
@@ -220,7 +223,9 @@ app.post("/api/add-downloaded-pack", async (req, res) => {
   }
 
   if (!user.downloadedPacks) {
-    user.downloadedPacks = [];
+    user.downloadedPacks = [
+
+    ];
   }
 
   if (!user.downloadedPacks.includes(packId)) {
@@ -303,16 +308,11 @@ app.get("/api/users/:id", async (req, res) => {
 
   let user;
 
-if (isLocal) {
-  const filePath = path.join(__dirname, "data", "users.json");
-  const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
-  user = users.find(u => u.id === req.params.id);
-} else {
   user = await usersCollection.findOne({
     id: req.params.id
   });
-}
+
 
   if (!user) {
     return res.status(404).json({
@@ -336,26 +336,8 @@ app.patch("/api/users/:id/status", async (req, res) => {
 
   let updatedUser;
 
-  if (isLocal) {
-    const filePath = path.join(__dirname, "data", "users.json");
-    const users = JSON.parse(fs.readFileSync(filePath, "utf8"));
+{
 
-    const userIndex = users.findIndex(user => user.id === userId);
-
-    if (userIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: "Utilisateur introuvable"
-      });
-    }
-
-    users[userIndex].status = status;
-    users[userIndex].moderatedAt = new Date().toISOString();
-
-    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
-
-    updatedUser = users[userIndex];
-  } else {
     const user = await usersCollection.findOne({ id: userId });
 
     if (!user) {
@@ -375,7 +357,7 @@ app.patch("/api/users/:id/status", async (req, res) => {
       }
     );
 
-    updatedUser = await usersCollection.findOne({ id: userId });
+   const updatedUser = await usersCollection.findOne({ id: userId });
   }
 
   res.json({
@@ -473,7 +455,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
       const trackZipName = `${track.id}.zip`;
     });
 
-   await packsCollection.insertOne(pack);
+      await packsCollection.insertOne(pack);
 
     res.json({
       success: true,
