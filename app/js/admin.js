@@ -5,7 +5,7 @@ const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1" ||
   window.location.hostname.startsWith("192.168.")
-    ? "http://192.168.1.18:3000"
+    ? "http://192.168.1.22:3000"
     : "https://sonara-pack-beta.onrender.com";
 
 {
