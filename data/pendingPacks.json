@@ -33,5 +33,40 @@
     "status": "rejected",
     "createdAt": "2026-06-23T09:25:48.020Z",
     "downloadZip": "/downloads/packs/pack_1782206747909_pack.zip"
+  },
+  {
+    "id": "pack_1782235664281",
+    "title": "hg",
+    "artist": "Luca Dida",
+    "imageArtist": "1782235588413-Luca-Dida.png",
+    "coverPack": "1782235664289-cover-dernier-souffle.PNG",
+    "coverPackName": "cover-dernier-souffle.PNG",
+    "coverPackFile": {},
+    "packLink": "app/pages/pack.html?id=pack_1782235664281",
+    "price": "0€",
+    "categorie": [
+      "cinematique"
+    ],
+    "downloadPage": "download.html?id=pack_1782235664281",
+    "tracks": [
+      {
+        "id": "pack_1782235664281-1",
+        "trackLink": "app/pages/pack.html?id=pack_1782235664281&trackId=pack_1782235664281-1",
+        "downloadPage": "download.html?id=pack_1782235664281&trackId=pack_1782235664281-1",
+        "title": ";;é",
+        "artist": "Luca Dida",
+        "coverPack": "1782235664305-cover-dernier-souffle.PNG",
+        "coverPackFile": {},
+        "audioName": "1782235664317-Dernier-Souffle.mp3",
+        "audioFile": {},
+        "price": "0€",
+        "previewDuration": 30,
+        "duration": 171,
+        "downloadZip": "/downloads/tracks/pack_1782235664281-1.zip"
+      }
+    ],
+    "status": "approved",
+    "createdAt": "2026-06-23T17:27:44.346Z",
+    "downloadZip": "/downloads/packs/pack_1782235664281_pack.zip"
   }
 ]

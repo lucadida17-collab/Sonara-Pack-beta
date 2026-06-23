@@ -131,7 +131,7 @@ app.post("/api/register", upload.any(), (req, res) => {
               Ouvrir Admin sur PC
             </a>
 
-            <a href="http://192.168.1.18:5501/admin.html"
+            <a href="http://192.168.1.22:5501/admin.html"
               style="display:inline-block; padding:14px 22px; background:#ffffff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold; margin-left:10px;">
               Ouvrir Admin sur téléphone
             </a>
@@ -430,7 +430,7 @@ app.post("/api/packs/pending", upload.any(), async (req, res) => {
 
             <a href="http://localhost:5501/admin.html">Ouvrir admin sur PC</a>
             <br><br>
-            <a href="http://192.168.1.18:5501/admin.html">Ouvrir admin sur téléphone</a>
+            <a href="http://192.168.1.22:5501/admin.html">Ouvrir admin sur téléphone</a>
           `
         }).catch(error => {
           console.error("Erreur mail :", error);
