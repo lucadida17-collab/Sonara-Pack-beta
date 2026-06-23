@@ -143,17 +143,19 @@ app.post("/api/register", upload.any(), async (req, res) => {
   );
 
 
+if (imageArtistFile) {
   const imageArtistKey = await uploadToR2(
-  imageArtistFile,
-  "artists"
-);
+    imageArtistFile,
+    "artists"
+  );
 
-profile.imageArtist = imageArtistKey;
+  profile.imageArtist = imageArtistKey;
 
-console.log(
-  "IMAGE ARTIST UPLOAD R2 :",
-  imageArtistKey
-);
+  console.log("IMAGE ARTIST UPLOAD R2 :", imageArtistKey);
+} else {
+  profile.imageArtist = "";
+  console.log("AUCUNE IMAGE ARTISTE");
+}
 
   console.log("IMAGE ARTIST :", imageArtistFile)
 
