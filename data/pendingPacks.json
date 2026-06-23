@@ -1,3 +1,37 @@
 [
-  
+  {
+    "id": "pack_1782206747909",
+    "title": "SZGFER",
+    "artist": "Luca Dida",
+    "imageArtist": "1782206674187-Luca-Dida.png",
+    "coverPack": "1782206747919-cover-dernier-souffle.PNG",
+    "coverPackName": "cover-dernier-souffle.PNG",
+    "coverPackFile": {},
+    "packLink": "app/pages/pack.html?id=pack_1782206747909",
+    "price": "0€",
+    "categorie": [
+      "cinematique"
+    ],
+    "downloadPage": "download.html?id=pack_1782206747909",
+    "tracks": [
+      {
+        "id": "pack_1782206747909-1",
+        "trackLink": "app/pages/pack.html?id=pack_1782206747909&trackId=pack_1782206747909-1",
+        "downloadPage": "download.html?id=pack_1782206747909&trackId=pack_1782206747909-1",
+        "title": "FS",
+        "artist": "Luca Dida",
+        "coverPack": "1782206747941-cover-dernier-souffle.PNG",
+        "coverPackFile": {},
+        "audioName": "1782206747959-Dernier-Souffle.mp3",
+        "audioFile": {},
+        "price": "0€",
+        "previewDuration": 30,
+        "duration": 171,
+        "downloadZip": "/downloads/tracks/pack_1782206747909-1.zip"
+      }
+    ],
+    "status": "rejected",
+    "createdAt": "2026-06-23T09:25:48.020Z",
+    "downloadZip": "/downloads/packs/pack_1782206747909_pack.zip"
+  }
 ]

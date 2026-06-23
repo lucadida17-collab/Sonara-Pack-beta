@@ -1,3 +1,54 @@
 [
- 
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "0001-05-05",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "rejected",
+    "createdAt": "2026-06-23T09:22:44.011Z",
+    "imageArtist": "1782206563993-Luca-Dida.png",
+    "id": "1782206564013",
+    "downloadedPacks": [],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-23T09:24:50.226Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "0002-02-20",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "approved",
+    "createdAt": "2026-06-23T09:24:34.205Z",
+    "imageArtist": "1782206674187-Luca-Dida.png",
+    "id": "1782206674205",
+    "downloadedPacks": [
+      "pack_1782206747909"
+    ],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-23T09:24:51.906Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "0250-05-02",
+    "mail": "lucadida@yahoo.com",
+    "password": "Shiva041021",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "pending",
+    "createdAt": "2026-06-23T15:08:25.450Z",
+    "imageArtist": "1782227305432-Luca-Dida.png",
+    "id": "1782227305451",
+    "downloadedPacks": [],
+    "downloadedTracks": []
+  }
 ]

@@ -2,13 +2,6 @@
 
 let packs = [];
 
-const API_BASE =
- window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.hostname.startsWith("192.168.")
-    ? "http://192.168.1.22:3000"
-    : "https://sonara-pack-beta.onrender.com";
-
     const R2_PUBLIC_URL = "https://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev"
 
 function getFilePath(file) {
@@ -17,11 +10,11 @@ function getFilePath(file) {
   if (file.startsWith("http")) return file;
 
   if (file.startsWith("/uploads/")) {
-    return `${API_BASE}${file}`;
+    return `${API_URL}${file}`;
   }
 
   if (file.startsWith("uploads/")) {
-    return `${API_BASE}/${file}`;
+    return `${API_URL}/${file}`;
   }
 
   if (
@@ -33,11 +26,11 @@ function getFilePath(file) {
     return `${R2_PUBLIC_URL}/${file}`;
   }
 
-  return `${API_BASE}/uploads/${file}`;
+  return `${API_URL}/uploads/${file}`;
 }
 
 async function loadHome() {
-  const response = await fetch(`${API_BASE}/api/packs`);
+  const response = await fetch(`${API_URL}/api/packs`);
 
   packs = await response.json();
 
@@ -330,13 +323,13 @@ async function renderPack() {
   localStorage.getItem("sonaraProfile")
 );
 
-const userResponse = await fetch(`${API_BASE}/api/users/${currentUser.id}`);
+const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
 const freshUserData = await userResponse.json();
 const freshUser = freshUserData.user;
 
 const downloadedIds = freshUser?.downloadedPacks || [];
 
-const response = await fetch(`${API_BASE}/api/packs`);
+const response = await fetch(`${API_URL}/api/packs`);
 const allPacks = await response.json();
 
 const packsTelecharges = allPacks.filter(pack =>

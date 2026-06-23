@@ -116,12 +116,6 @@ Acheter, découvrir et télécharger des packs.
           formData.append("profile", JSON.stringify(profile));
 
           console.log(profile)
-          const API_URL =
-            window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1" ||
-              window.location.hostname.startsWith("192.168.")
-              ? "http://192.168.1.22:3000"
-              : "https://sonara-pack-beta.onrender.com";
 
 
 
@@ -237,12 +231,7 @@ Acheter, découvrir et télécharger des packs.
             formData.append("imageArtist", artistImageFile);
           }
 
-          const API_URL =
-            window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1" ||
-              window.location.hostname.startsWith("192.168.")
-              ? "http://192.168.1.22:3000"
-              : "https://sonara-pack-beta.onrender.com";
+      
 
           fetch(`${API_URL}/api/register`, {
             method: "POST",
@@ -362,12 +351,6 @@ Acheter, découvrir et télécharger des packs.
             formData.append("imageArtist", artistImageFile);
           }
 
-          const API_URL =
-            window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1" ||
-              window.location.hostname.startsWith("192.168.")
-              ? "http://192.168.1.22:3000"
-              : "https://sonara-pack-beta.onrender.com";
 
          
           fetch(`${API_URL}/api/register`, {
