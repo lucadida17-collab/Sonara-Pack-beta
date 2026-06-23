@@ -18,10 +18,6 @@ const creatorPage = document.querySelector(".creator-page")
         <strong>0</strong>
       </div>
 
-      <div class="stat-card">
-        <span>Statut</span>
-        <strong class="status-text">APPROVED</strong>
-      </div>
 
       <div class="stat-card">
         <span>Revenus</span>

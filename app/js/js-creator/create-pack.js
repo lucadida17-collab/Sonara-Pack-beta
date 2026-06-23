@@ -6,16 +6,22 @@ CreatePack.innerHTML = `
  <a href="../creator.html" class="back-btn">← Dashboard</a>
 
     <section class="hero">
-      <p>MISSION CRÉATEUR</p>
-      <h1>Forge ton pack</h1>
+      <h1>Crée Un Pack</h1>
       <span>Construis un pack clair, légal et prêt à être validé.</span>
     </section>
 
     <section class="progress">
-      <div class="step active">Identité</div>
+      <div class="step active">Pack</div>
       <div class="step">track</div>
       <div class="step">Prix Global</div>
       <div class="step">Droit</div>
+    </section>
+
+      <section class="progress-mobile">
+      <div class="step-mobile active">Pack</div>
+      <div class="step-mobile">track</div>
+      <div class="step-mobile">Prix Global</div>
+      <div class="step-mobile">Droit</div>
     </section>
 
     <section class="mission-card" id="missionCard"></section>
@@ -156,10 +162,16 @@ function render() {
 
 function renderIdentity() {
   missionCard.innerHTML = `
-    <h2>Identité du pack</h2>
+<div class="header-pack">
+    <h2>Nom Du Pack</h2>
     <p>Donne une âme au pack. L'utilisateur doit comprendre directement l’ambiance.</p>
+</div>
+
+
+<div class="info-tap">
 
    <label>Titre du pack</label>
+   
 
 <input
   class="pack-title"
@@ -219,12 +231,6 @@ function renderIdentity() {
 
 </select>
 
-<label>Description</label>
-
-<textarea
-  class="pack-description"
-  placeholder="Décris l’univers du pack"
->${packData.identity.description || ""}</textarea>
 
 <label>Cover de la track</label>
 
@@ -253,7 +259,7 @@ function renderIdentity() {
   </div>
 
 </div>
-
+</div>
 <div class="actions">
   <button class="next-btn">Continuer</button>
 </div>

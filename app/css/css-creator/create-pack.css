@@ -14,6 +14,23 @@ body {
   color: white;
 }
 
+.info-tap { 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-pack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  letter-spacing: 0.10px;
+  
+}
+
 .create-pack {
   padding: 26px 18px 80px;
   display: flex;
@@ -53,17 +70,27 @@ body {
 }
 
 .progress {
-  display: grid;
+  display: none;
+}
+
+.progress-mobile {
+  display: flex;
+  flex-direction: row;
   gap: 10px;
   margin: 34px 0;
 }
 
 .step {
+  display:none;
+}
+
+.step-mobile {
   padding: 14px;
   display: flex;
   border-radius: 999px;
   text-align: center;
   align-items: center;
+  flex-direction: row;
   justify-content: center;
   font-weight:800;
   background: rgba(255,255,255,.07);
@@ -71,7 +98,7 @@ body {
   border: 1px solid rgba(255,255,255,.1);
 }
 
-.step.active {
+.step-mobile.active {
   background: linear-gradient(135deg, #0284c7, #38bdf8);
   color: white;
 }
@@ -319,6 +346,9 @@ select option:checked {
 
 
 @media (min-width: 900px) {
+  
+  .progress-mobile {display: none}
+  
   .create-pack-page {
     padding: 50px;
   }
@@ -397,6 +427,10 @@ body {
   display: grid;
   gap: 10px;
   margin: 34px 0;
+}
+
+.step-mobile {
+  display: none;
 }
 
 .step {

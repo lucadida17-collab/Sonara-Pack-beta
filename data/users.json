@@ -70,5 +70,22 @@
     ],
     "downloadedTracks": [],
     "moderatedAt": "2026-06-23T17:27:00.232Z"
+  },
+  {
+    "firstname": "Luca",
+    "lastname": "Dida",
+    "date": "2026-06-23",
+    "mail": "lucadida@yahoo.com",
+    "password": "bh",
+    "phone": "0788485747",
+    "artistname": "Luca Dida",
+    "role": "both",
+    "status": "approved",
+    "createdAt": "2026-06-23T18:47:37.686Z",
+    "imageArtist": "1782240457602-EA93B168-3A3A-4893-AC63-F33CC18D7051.png",
+    "id": "1782240457688",
+    "downloadedPacks": [],
+    "downloadedTracks": [],
+    "moderatedAt": "2026-06-23T18:47:54.504Z"
   }
 ]
