@@ -713,7 +713,7 @@ if (validTracks.length < 1) {
 
 const error = validatePackBeforeSubmit(packData);
 
-ildFinalPack();
+buildFinalPack();
 
 const formData = new FormData();
 
