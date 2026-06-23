@@ -40,7 +40,7 @@ const packData = {
   identity: {
     title: "",
     categorie: "",
-    description: "",
+    
     cover: null,
     coverUrl: "",
     coverName: ""
@@ -291,7 +291,7 @@ packCoverInput.addEventListener("change", () => {
     document.querySelector(".next-btn").addEventListener("click", () => {
   packData.identity.title = document.querySelector(".pack-title").value.trim();
   packData.identity.categorie = document.querySelector(".pack-mood").value;
-  packData.identity.description = document.querySelector(".pack-description").value.trim();
+
 
   packData.identity.cover = packData.packCover || null;
   packData.identity.coverUrl = packData.packCoverUrl || "";
