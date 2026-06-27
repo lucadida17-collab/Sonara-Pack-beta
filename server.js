@@ -142,6 +142,9 @@ app.post("/api/register", upload.any(), async (req, res) => {
     file => file.fieldname === "imageArtist"
   );
 
+  const imageProfileFile = req.files?.find(
+  file => file.fieldname === "imageProfile"
+);
 
 if (imageArtistFile) {
   const imageArtistKey = await uploadToR2(
@@ -157,7 +160,32 @@ if (imageArtistFile) {
   console.log("AUCUNE IMAGE ARTISTE");
 }
 
-  console.log("IMAGE ARTIST :", imageArtistFile)
+ console.log("IMAGE ARTIST :", imageArtistFile)
+
+if (imageProfileFile) {
+
+  const imageProfileKey = await uploadToR2(
+    imageProfileFile,
+    "profiles"
+  );
+
+  profile.imageProfile = imageProfileKey;
+
+  console.log(
+    "IMAGE PROFILE UPLOAD R2 :",
+    imageProfileKey
+  );
+
+} else {
+
+  profile.imageProfile = "";
+
+  console.log("AUCUNE IMAGE PROFILE");
+}
+
+ console.log("IMAGE PROFIL :", imageProfileFile)
+
+ 
 
 
 

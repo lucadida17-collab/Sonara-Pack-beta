@@ -3,7 +3,7 @@
 const CreatePack = document.querySelector(".create-pack")
 
 CreatePack.innerHTML = `
- <a href="../creator.html" class="back-btn">← Dashboard</a>
+ <button class="back-btn">Retour Dashboard</button>
 
     <section class="hero">
       <h1>Crée Un Pack</h1>
@@ -30,6 +30,12 @@ CreatePack.innerHTML = `
 
   <script src="../../js/create-pack.js"></script>
 `;
+
+const backBtn = document.querySelector(".back-btn ");
+
+backBtn.addEventListener("click", () => {
+  window.location.href = "../creator.html"
+});
 
 const missionCard = document.querySelector("#missionCard");
 const steps = document.querySelectorAll(".step");
@@ -59,10 +65,19 @@ const packData = {
 };
 
 function savePackDraft() {
-  localStorage.setItem("sonaraPackDraft", JSON.stringify(packData));
-  console.log("BROUILLON PACK SAUVEGARDÉ :", packData);
-}
+  const artistProfile = JSON.parse(localStorage.getItem("sonaraProfile"));
 
+  if (!artistProfile || !artistProfile.id) {
+    console.warn("Aucun artiste connecté, brouillon non sauvegardé.");
+    return;
+  }
+
+  const draftKey = `sonaraPackDraft_${artistProfile.id}`;
+
+  localStorage.setItem(draftKey, JSON.stringify(packData));
+
+  console.log("BROUILLON PACK SAUVEGARDÉ :", draftKey, packData);
+}
 
 function buildFinalPack() {
   const artistProfile =
@@ -87,7 +102,7 @@ packLink: `app/pages/pack.html?id=${packId}`,
 
 price: `${packData.globalPrice}€`,
 
-categorie: [packData.identity.categorie],
+categorie: getDistributionCategories(packData.identity.categorie),
 
 downloadPage: `download.html?id=${packId}`,
 
@@ -125,11 +140,8 @@ audioFile: track.audioFile || null,
 
 
 function loadPackDraft() {
-  const saved = localStorage.getItem("sonaraPackDraft");
-  if (!saved) return;
-
-  Object.assign(packData, JSON.parse(saved));
-  console.log("BROUILLON PACK RECHARGÉ :", packData);
+  console.log("Chargement auto brouillon désactivé.");
+  return;
 }
 
 const titles = [];
@@ -188,45 +200,45 @@ function renderIdentity() {
   </option>
 
   <option 
-    value="cinematique"
-    ${packData.identity.categorie === "cinematique" ? "selected" : ""}
+    value="dark"
+    ${packData.identity.categorie === "dark" ? "selected" : ""}
   >
-    Cinématique
+    Dark
   </option>
 
   <option 
-    value="sombre"
-    ${packData.identity.categorie === "sombre" ? "selected" : ""}
+    value="emotionnal"
+    ${packData.identity.categorie === "emotional" ? "selected" : ""}
   >
-    Sombre
+    Emotionnal
   </option>
 
   <option 
-    value="calme"
-    ${packData.identity.categorie === "calme" ? "selected" : ""}
+    value="epic"
+    ${packData.identity.categorie === "epic" ? "selected" : ""}
+  >
+    Epique
+  </option>
+
+  <option 
+    value="calm"
+    ${packData.identity.categorie === "calm" ? "selected" : ""}
   >
     Calme
   </option>
 
   <option 
-    value="epique"
-    ${packData.identity.categorie === "epique" ? "selected" : ""}
+    value="cinematic"
+    ${packData.identity.categorie === "cinematic" ? "selected" : ""}
   >
-    Épique
-  </option>
-
-  <option 
-    value="emotionnel"
-    ${packData.identity.categorie === "emotionnel" ? "selected" : ""}
-  >
-    Émotionnel
-  </option>
+    Cinématique
+    </option>
 
     <option 
-    value="dramatique"
-    ${packData.identity.categorie === "dramatique" ? "selected" : ""}
+    value="melancholic"
+    ${packData.identity.categorie === "melancholic" ? "selected" : ""}
   >
-    Dramatique
+    Mélancholic
   </option>
 
 </select>
@@ -769,6 +781,9 @@ localStorage.setItem("creatorToast", "Pack envoyé en préparation");
 
 });
 };
+
+
+
 const params = new URLSearchParams(window.location.search);
 const isNewPack = params.get("new") === "true";
 

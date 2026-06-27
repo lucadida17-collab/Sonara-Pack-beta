@@ -243,158 +243,9 @@ if (btnAccueil) {
   });
 }
 
-function renderLibrary() {
-  content.innerHTML = 
-`
-<head> 
-  <link rel="stylesheet" href="app/css/library.css">
-  </head>
-
-<section class="library-accueil">
-  <section class="library-page">
-  <h1 class="library-title">Bibliothèque</h1>
-
-  <button class="library-downloads-btn">
-  Mes téléchargements
-  </button>
-  </section>
-  </section>
-  `;
-  
-  const libraryChoiceDownload = document.querySelector(".library-downloads-btn")
-
- libraryChoiceDownload.addEventListener("click", () => {
-    renderChoiceTelechargement();
-  });
-
- 
-}
 
 
 
-
-function renderChoiceTelechargement() {
-  content.innerHTML = `
-   <head> 
-  <link rel="stylesheet" href="app/css/library.css">
-  </head>
-
- <button class="choice-back-button">
-  Retour
-  </button>
-
-  <section class="choice-accueil">
-  <section class="choice-page">
- 
-  <button class="choice-btn pack-telecharger">
-  Pack Télécharger
-  </button>
-
-  <button class="choice-btn track-telecharger">
-  Track Télécharger
-  </button>
-  `
-
-  const choiceBackBtn = document.querySelector(".choice-back-button");
-  const packTelecharger = document.querySelector(".pack-telecharger");
-  const trackTelecharger = document.querySelector(".track-telecharger");
-
-
-  choiceBackBtn.addEventListener("click", () => {
-    renderLibrary();
-  });
-
-  packTelecharger.addEventListener("click", () => {
-    renderPack();
-  });
-
-  trackTelecharger.addEventListener("click", () => {
-    renderTrack();
-  });
-};
-
-
-
-
-
-async function renderPack() {
-  
-  const currentUser = JSON.parse(
-  localStorage.getItem("sonaraProfile")
-);
-
-const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
-const freshUserData = await userResponse.json();
-const freshUser = freshUserData.user;
-
-const downloadedIds = freshUser?.downloadedPacks || [];
-
-const response = await fetch(`${API_URL}/api/packs`);
-const allPacks = await response.json();
-
-const packsTelecharges = allPacks.filter(pack =>
-  downloadedIds.includes(pack.id)
-);
-
-  console.log("USER =", currentUser);
-  console.log("DOWNLOADED IDS =", downloadedIds);
-  console.log("ALL PACKS =", allPacks);
-  console.log("PACKS TELECHARGES =", packsTelecharges);
-
-
-  content.innerHTML = `
-  <head> 
-  <link rel="stylesheet" href="app/css/library.css">
-  </head>
-
- <button class="choice-back-button">
-  Retour
-  </button>
-
-    <section class="pack-accueil"
-    <section class="pack-page">
-
-
-    <div class="pack-grid">
-           ${packsTelecharges.map((pack) => `
-  <div class="pack-card" data-pack-id="${pack.id}">
-    <img 
-  class="pack-cover" 
-  src="${getFilePath(pack.cover || pack.coverPack)}"
-  alt="${pack.title}"
->
-    <h3>${pack.title}</h3>
-    <p>${pack.artist}</p>
-  </div>
-`).join("")}
-       
-    </div>
-  </section>
-  `;
-
-   const choiceBackBtn = document.querySelector(".choice-back-button");
-
-  choiceBackBtn.addEventListener("click", () => {
-    renderChoiceTelechargement()
-  });
-};
-
-function renderTrack() {
-  content.innerHTML = `
-   <head> 
-  <link rel="stylesheet" href="app/css/library.css">
-  </head>
-
- <button class="choice-back-button">
-  Retour
-  </button>
-  `;
-   const choiceBackBtn = document.querySelector(".choice-back-button");
-
-    choiceBackBtn.addEventListener("click", () => {
-    renderChoiceTelechargement()
-  });
-};
 
 
 
@@ -450,11 +301,7 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
   window.location.href = "app/pages/library.html" 
 });
 
-document.querySelector(".nav-mobile-search").addEventListener("click", () => {
-setActiveNav(document.querySelector(".nav-mobile-search"))
 
-    window.location.href = "app/pages/recherche.html";
-});
 
 document.querySelector(".nav-mobile-home").classList.add("active");
 

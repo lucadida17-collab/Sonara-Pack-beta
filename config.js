@@ -6,5 +6,5 @@ const IS_LOCAL =
   window.location.hostname.startsWith("192.168.");
 
 const API_URL = IS_LOCAL
-  ? "http://192.168.1.22:3001"
+  ? "http://192.168.1.18:3001"
   : "https://sonara-pack-beta.onrender.com";

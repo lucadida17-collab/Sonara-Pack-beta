@@ -553,11 +553,7 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
   window.location.href = "library.html"
 });
 
-document.querySelector(".nav-mobile-search").addEventListener("click", () => {
-  setActiveNav(document.querySelector(".nav-mobile-search"))
 
-    window.location.href = "recherche.html";
-});
 
 
 

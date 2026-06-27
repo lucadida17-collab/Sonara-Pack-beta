@@ -1,7 +1,7 @@
 const creatorPage = document.querySelector(".creator-page")
 
 
-    creatorPage.innerHTML = `
+creatorPage.innerHTML = `
     
        <section class="creator-header">
        
@@ -31,16 +31,20 @@ const creatorPage = document.querySelector(".creator-page")
         <span>Créer un pack</span>
         <small>Ajouter sons, cover, prix et description</small>
       </button>
+      
+  
 
       <button class="creator-action mes-pack">
         <span>Mes packs</span>
-        <small>Voir les packs envoyés ou publiés</small>
+        <small>Prochain mode avenir En cours</small>
       </button>
 
-      <button class="creator-action regle-creator">
+      
+        <button class="creator-action regle-creator">
         <span>Règles créateur</span>
-        <small>Droits, interdictions et conditions</small>
+        <small>décision en cours</small>
       </button>
+      
 
     </section>
 
@@ -48,7 +52,7 @@ const creatorPage = document.querySelector(".creator-page")
   
     `;
 
-    const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
+const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
 
 if (!profile) {
   window.location.href = "chaos.html";
@@ -71,21 +75,18 @@ if (profile.status === "rejected") {
 }
 
 const createPackBtn = document.querySelector(".crée-un-pack");
-const mesPackBtn = document.querySelector(".mes-pack");
-const regleCreatorBtn = document.querySelector(".regle-creator");
+
+
 
 createPackBtn.addEventListener("click", () => {
   console.log("Créer un pack");
-  window.location.href ="page-creator/create-pack.html"
+  window.location.href = "page-creator/create-pack.html"
 });
 
-mesPackBtn.addEventListener("click", () => {
-  window.location.href = "page-creator/my-pack.html"
-});
 
-regleCreatorBtn.addEventListener("click", () => {
-  window.location.href = "page-creator/creator-rules.html"
-});
+
+
+
 
 const btnHome = document.querySelector(".btn-home")
 
@@ -95,8 +96,8 @@ btnHome.addEventListener("click", () => {
   }
 })
 
-if (profile.role ==="artist"){
-btnHome.style.display = "none"
+if (profile.role === "artist") {
+  btnHome.style.display = "none"
 }
 
 
@@ -121,6 +122,6 @@ if (toastMessage) {
     setTimeout(() => {
       toast.remove();
     }, 5000);
-    
+
   }, 5000);
 }

@@ -32,19 +32,14 @@ body {
 }
 
 .create-pack {
-  padding: 26px 18px 80px;
+  padding: 26px 18px 100px;
   display: flex;
   flex-direction:column;
   justify-content: center;
   align-items:center;
 }
 
-.back-btn {
-  color: #7dd3fc;
-  text-decoration: none;
-  font-weight: 900;
-  margin-top: 0px;
-}
+
 
 .hero {
   margin-top: 34px;
@@ -58,7 +53,7 @@ body {
 }
 
 .hero h1 {
-  margin: 8px 0 30px;
+  margin: 98px 0 30px;
   font-size: 3.7rem;
   line-height: .86;
   letter-spacing: -.07em;
@@ -297,7 +292,7 @@ select option:checked {
 }
 
 .add-track-btn{
-  width: 50%;
+  width: 50px;
   height: 58px;
 
   border-radius: 58px;
@@ -307,9 +302,10 @@ select option:checked {
   border: 1px solid rgba(120, 190, 255, 0.25);
 
   color: #8fd3ff;
-  margin: 20px;
+  margin: 0px;
   margin-bottom: 10px;
-  margin-left: 180px;
+  margin-top: 20px;
+  margin-left: 0px;
   cursor: pointer;
 
   font-weight: 600;
@@ -342,13 +338,152 @@ select option:checked {
   gap: 40px
 }
 
+.clone-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-left: 0px;
+}
 
+.save-btn {
+    position: absolute;
 
+    top: 40px;
+    right: 20px;
+
+    padding: 19px 14px;
+
+    border: 1px solid rgba(255,255,255,0.2);
+
+    border-radius: 999px;
+
+    font-size: 16px;
+    background: rgba(59,130,246,0.18);
+
+    backdrop-filter: blur(20px);
+
+    color: #00a6ff;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 1.25s;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+color: rgb(255, 255, 255);
+    background: rgba(8, 0, 255, 0.141);
+}
+
+.back-btn {
+    position: absolute;
+    
+
+    top: 40px;
+    left: 20px;
+
+    padding: 19px 14px;
+
+    border: 1px solid rgba(255,255,255,0.2);
+
+    border-radius: 999px;
+
+    font-size: 16px;
+    background: rgba(59,130,246,0.18);
+
+    backdrop-filter: blur(20px);
+
+    color: #ff6200;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 1.25s;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+color: rgb(255, 0, 0);
+    background: rgba(6, 0, 194, 0.141);
+}
 
 @media (min-width: 900px) {
   
   .progress-mobile {display: none}
   
+
+
+.save-btn {
+    position: absolute;
+
+    top: 40px;
+    right: 40px;
+
+    padding: 19px 14px;
+
+    border: 1px solid rgba(255,255,255,0.2);
+
+    border-radius: 999px;
+
+    font-size: 16px;
+    background: rgba(59,130,246,0.18);
+
+    backdrop-filter: blur(20px);
+
+    color: #00a6ff;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 1.25s;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+color: rgb(255, 255, 255);
+    background: rgba(8, 0, 255, 0.141);
+}
+
+.back-btn {
+    position: absolute;
+    
+
+    top: 40px;
+    left: 40px;
+
+    padding: 19px 14px;
+
+    border: 1px solid rgba(255,255,255,0.2);
+
+    border-radius: 999px;
+
+    font-size: 16px;
+    background: rgba(59,130,246,0.18);
+
+    backdrop-filter: blur(20px);
+
+    color: #ff6200;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 1.25s;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+color: rgb(255, 0, 0);
+    background: rgba(6, 0, 194, 0.141);
+}
+
+
+
   .create-pack-page {
     padding: 50px;
   }
@@ -393,12 +528,7 @@ body {
   align-items:center;
 }
 
-.back-btn {
-  color: #7dd3fc;
-  text-decoration: none;
-  font-weight: 900;
-  margin-top: 0px;
-}
+
 
 .hero {
   margin-top: 34px;
@@ -459,13 +589,14 @@ body {
 }
 
 .mission-card h2 {
-  margin-top: 0;
+  margin-top: 0px;
   font-size: 2rem;
 }
 
 .mission-card p {
   color: rgba(255,255,255,.58);
-  line-height: 1.6;
+  margin-bottom: 20px;
+  margin-top: 0px;
 }
 
 label {

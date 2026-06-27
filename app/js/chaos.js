@@ -1,4 +1,4 @@
-const chaosPage = document.querySelector(".chaos-page");
+const chaosPage = document.querySelector(".chaos");
 
 function renderChoicePage() {
   chaosPage.innerHTML = `
@@ -12,6 +12,7 @@ Choisis comment tu veut utiliser la plateforme.
 </section>
 
 
+<section class="chaos-page">
 
 <button class="chaos-card user-card" data-role="user">
 <h2>Utilisateur</h2>
@@ -38,6 +39,7 @@ Acheter, découvrir et télécharger des packs.
      Acheter des packs et publier des packs sur la plateforme. 
     </p>
 </button>
+</section>
 </section>
 
 
@@ -73,11 +75,71 @@ Acheter, découvrir et télécharger des packs.
               <input type="email" placeholder="Email" class="formulaire mail-input" required>
               <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
               <input type="tel" placeholder="Téléphone facultatif" class="formulaire phone-input">
+
+                   <div class="profile-upload">
+    <div class="profile-avatar-upload">
+    <i data-lucide="user" class="user-icon"></i>
+        <i data-lucide="camera" class="camera-icon"></i>
+    </div>
+
+    <p>Choisir une photo de profil</p>
+
+    <input
+        type="file"
+        id="imageArtist"
+        name="imageArtist"
+        accept="image/*"
+        hidden
+        required
+    >
+</div>
      
               <button type="submit" class="create-profil-user">Crée mon profil utilisateur </button>
             </form>
             </section>
             `;
+
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+
+
+        const avatarUpload = document.querySelector(".profile-avatar-upload");
+        const imageArtistInput = document.getElementById("imageArtist");
+        const userIcon = document.querySelector(".user-icon");
+        const cameraIcon = document.querySelector(".camera-icon");
+
+        let previewImage = null;
+
+        avatarUpload.addEventListener("click", () => {
+          imageArtistInput.click();
+        });
+
+        imageArtistInput.addEventListener("change", () => {
+          const file = imageArtistInput.files[0];
+
+          if (!file) return;
+
+          if (!file.type.startsWith("image/")) {
+            alert("Choisis une image uniquement.");
+            imageArtistInput.value = "";
+            return;
+          }
+
+          const imageUrl = URL.createObjectURL(file);
+
+          if (!previewImage) {
+            previewImage = document.createElement("img");
+            previewImage.classList.add("artist-preview");
+            avatarUpload.appendChild(previewImage);
+          }
+
+          previewImage.src = imageUrl;
+
+          userIcon.style.opacity = "0";
+          cameraIcon.style.display = "none";
+        });
+
         const userForm = document.querySelector(".user-form");
 
         const firstnameInput = document.querySelector(".firstname-input");
@@ -107,6 +169,7 @@ Acheter, découvrir et télécharger des packs.
             phone: telInput.value,
             role: "user",
             status: "approved",
+            imageProfile: null,
             createdAt: new Date().toISOString()
 
           };
@@ -115,6 +178,12 @@ Acheter, découvrir et télécharger des packs.
           const formData = new FormData();
 
           formData.append("profile", JSON.stringify(profile));
+
+          const imageProfileInput = document.getElementById("imageProfile");
+
+          if (imageProfileInput && imageProfileInput.files[0]) {
+            formData.append("imageProfile", imageProfileInput.files[0]);
+          }
 
           console.log(profile)
 
@@ -166,13 +235,25 @@ Acheter, découvrir et télécharger des packs.
         <input type="password" placeholder="Mot de passe"class="formulaire password-input"  required>
         <input type="tel" placeholder="Téléphone" class="formulaire phone-input"  required>
         <input type="text" placeholder="Nom d’artiste"class="formulaire artistname-input"  required>
-           Format carré fortement conseillé allez sur canva ou une IA pour redimensionner votre image au besoin 
-        <input 
-  type="file" 
-  accept="image/png,image/jpeg,image/jpg" 
-  class="formulaire artist-image-input"
-  required
->
+   
+            
+        <div class="profile-upload">
+    <div class="profile-avatar-upload">
+    <i data-lucide="user" class="user-icon"></i>
+        <i data-lucide="camera" class="camera-icon"></i>
+    </div>
+
+    <p>Choisir une photo de profil</p>
+
+    <input
+        type="file"
+        class="artist-image-input"
+        name="imageArtist"
+        accept="image/*"
+        hidden
+        required
+    >
+</div>
 
         <label class="checkbox-line">
           <input type="checkbox" required>
@@ -188,6 +269,47 @@ Acheter, découvrir et télécharger des packs.
       </form>
     </section>
   `;
+
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+
+
+        const avatarUpload = document.querySelector(".profile-avatar-upload");
+     const imageArtistInput = document.querySelector(".artist-image-input");
+        const userIcon = document.querySelector(".user-icon");
+        const cameraIcon = document.querySelector(".camera-icon");
+
+        let previewImage = null;
+
+        avatarUpload.addEventListener("click", () => {
+          imageArtistInput.click();
+        });
+
+        imageArtistInput.addEventListener("change", () => {
+          const file = imageArtistInput.files[0];
+
+          if (!file) return;
+
+          if (!file.type.startsWith("image/")) {
+            alert("Choisis une image uniquement.");
+            imageArtistInput.value = "";
+            return;
+          }
+
+          const imageUrl = URL.createObjectURL(file);
+0
+          if (!previewImage) {
+            previewImage = document.createElement("img");
+            previewImage.classList.add("artist-preview");
+            avatarUpload.appendChild(previewImage);
+          }
+
+          previewImage.src = imageUrl;
+
+          userIcon.style.opacity = "0";
+          cameraIcon.style.display = "none";
+        });
         const artistForm = document.querySelector(".artist-form");
 
 
@@ -221,7 +343,7 @@ Acheter, découvrir et télécharger des packs.
             createdAt: new Date().toISOString()
           };
 
-          const artistImageInput = document.querySelector(".artist-image-input");
+           const artistImageInput = document.querySelector(".artist-image-input");
           const artistImageFile = artistImageInput.files[0];
 
           const formData = new FormData();
@@ -232,7 +354,7 @@ Acheter, découvrir et télécharger des packs.
             formData.append("imageArtist", artistImageFile);
           }
 
-      
+
 
           fetch(`${API_URL}/api/register`, {
             method: "POST",
@@ -281,22 +403,33 @@ Acheter, découvrir et télécharger des packs.
         <input type="password" placeholder="Mot de passe" class="formulaire password-input" required>
         <input type="tel" placeholder="Téléphone" class="formulaire phone-input" required>
         <input type="text" placeholder="Nom d’artiste" class="formulaire artistname-input" required>
-         Format carré fortement conseillé allez sur canva ou une IA pour redimensionner votre image au besoin 
-        <input 
-  type="file" 
-  accept="image/png,image/jpeg,image/jpg" 
-  class="formulaire artist-image-input"
-  image
->
+   
+        <div class="profile-upload">
+    <div class="profile-avatar-upload">
+       <i data-lucide="user" class="user-icon"></i>
+        <i data-lucide="camera" class="camera-icon"></i>
+    </div>
+
+    <p>Choisir une photo de profil</p>
+
+    <input
+        type="file"
+        class="artist-image-input"
+        name="imageArtist"
+        accept="image/*"
+        hidden
+     required
+     >
+</div>
 
         <label class="checkbox-line">
           <input type="checkbox" required>
-          Je confirme avoir 18 ans ou plus
+          Je confirme être majeur pour commencer a vendre
         </label>
 
         <label class="checkbox-line">
           <input type="checkbox" required>
-          Je confirme posséder les droits des sons que je publierai
+          Je suis consentent a vendre mes fichiers sons 
         </label>
 
         <button type="submit" class="create-profil-both">Créer mon profil complet</button>
@@ -304,6 +437,45 @@ Acheter, découvrir et télécharger des packs.
     </section>
   `;
 
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+
+        const avatarUpload = document.querySelector(".profile-avatar-upload");
+          const imageArtistInput = document.querySelector(".artist-image-input");
+        const userIcon = document.querySelector(".user-icon");
+        const cameraIcon = document.querySelector(".camera-icon");
+
+        let previewImage = null;
+
+        avatarUpload.addEventListener("click", () => {
+          imageArtistInput.click();
+        });
+
+        imageArtistInput.addEventListener("change", () => {
+          const file = imageArtistInput.files[0];
+
+          if (!file) return;
+
+          if (!file.type.startsWith("image/")) {
+            alert("Choisis une image uniquement.");
+            imageArtistInput.value = "";
+            return;
+          }
+
+          const imageUrl = URL.createObjectURL(file);
+
+          if (!previewImage) {
+            previewImage = document.createElement("img");
+            previewImage.classList.add("artist-preview");
+            avatarUpload.appendChild(previewImage);
+          }
+
+          previewImage.src = imageUrl;
+
+          userIcon.style.opacity = "0";
+          cameraIcon.style.display = "none";
+        });
         const bothForm = document.querySelector(".both-form")
 
         const firstnameInput = document.querySelector(".firstname-input");
@@ -341,7 +513,7 @@ Acheter, découvrir et télécharger des packs.
             createdAt: new Date().toISOString()
           };
 
-          const artistImageInput = document.querySelector(".artist-image-input");
+           const artistImageInput = document.querySelector(".artist-image-input");
           const artistImageFile = artistImageInput.files[0];
 
           const formData = new FormData();
@@ -353,7 +525,7 @@ Acheter, découvrir et télécharger des packs.
           }
 
 
-         
+
           fetch(`${API_URL}/api/register`, {
             method: "POST",
             body: formData
@@ -382,6 +554,8 @@ Acheter, découvrir et télécharger des packs.
     });
   });
 }
+
+
 
 
 renderChoicePage();

@@ -1,11 +1,13 @@
   .pack {
-    background:
-        rgba(0, 0, 0, 0.919);
+   background:
+     radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
+     radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
+     #020617;
 
     color: White;
     font-family: inter, sans-serif;
     height: 50%;
-
+    
   }
 
   .track-row {
@@ -615,7 +617,11 @@
       margin: 0;
       padding-top: 0;
 
-      background-color: rgba(92, 72, 72, 0.04);
+    background:
+       radial-gradient(circle at top left, rgba(4, 120, 169, 0.896), transparent 38%),
+       radial-gradient(circle at bottom right, rgba(132, 0, 255, 0.478), transparent 48%),
+       #000000;
+
       color: White;
       font-family: 'inter', sans-serif;
     }
@@ -644,8 +650,10 @@
       padding: 40px 40px 140px;
       box-sizing: border-box;
 
-      background:
-       rgba(0, 0, 0, 0.751);
+     background:
+       radial-gradient(circle at top left, rgba(4, 120, 169, 0.896), transparent 38%),
+       radial-gradient(circle at bottom right, rgba(132, 0, 255, 0.478), transparent 48%),
+       #000000;
     }
 
 
