@@ -1,0 +1,1412 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+    width: 100%;
+  min-height: 100vh;
+
+  background: #000000;
+  color: #ffffff;
+
+  font-family: "Inter", sans-serif;
+}
+
+body.account {
+  width: 100%;
+  min-height: 100vh;
+
+  background: #000000;
+  color: #ffffff;
+
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+}
+
+.app-layout {
+  width: 100%;
+  min-height: 100vh;
+
+  background: #000000;
+}
+
+/* =========================
+   PAGES
+========================= */
+
+.settings-page,
+.account-page {
+  width: 100%;
+  min-height: 100vh;
+
+  padding:
+    max(18px, env(safe-area-inset-top))
+    20px
+    60px;
+
+  background: #000000;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.settings-header {
+  width: 100%;
+  height: 58px;
+
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+}
+
+.settings-back-button {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  color: #ffffff;
+
+  border-radius: 50%;
+}
+
+.settings-back-button:hover {
+  background: #191919;
+}
+
+.settings-back-button:active {
+  transform: scale(0.94);
+}
+
+.settings-back-button svg {
+  width: 28px;
+  height: 28px;
+
+  stroke-width: 2;
+}
+
+.settings-title {
+  color: #ffffff;
+
+  font-size: 22px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.settings-header-space {
+  width: 48px;
+  height: 48px;
+}
+
+/* =========================
+   MENU
+========================= */
+
+.settings-content {
+  width: 100%;
+  max-width: 760px;
+
+  margin: 42px auto 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.settings-group {
+  width: 100%;
+
+  overflow: hidden;
+
+  background: #151515;
+
+  border: 1px solid #292929;
+  border-radius: 18px;
+}
+
+.settings-row {
+  width: 100%;
+  min-height: 68px;
+
+  padding: 0 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: transparent;
+  color: #ffffff;
+
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:hover {
+  background: #202020;
+}
+
+.settings-row:active {
+  background: #292929;
+}
+
+.settings-row-left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 650;
+  text-align: left;
+}
+
+.settings-row-left svg {
+  width: 23px;
+  height: 23px;
+
+  flex-shrink: 0;
+
+  color: #b9b9b9;
+
+  stroke-width: 1.9;
+}
+
+.settings-chevron {
+  width: 22px;
+  height: 22px;
+
+  flex-shrink: 0;
+
+  color: #777777;
+
+  stroke-width: 2;
+}
+
+.settings-row-danger .settings-row-left {
+  color: #ff5d5d;
+}
+
+.settings-row-danger .settings-row-left svg {
+  color: #ff5d5d;
+}
+
+/* =========================
+   ACCOUNT CONTENT
+========================= */
+
+.account-content {
+  width: 100%;
+  max-width: 760px;
+
+  margin: 48px auto 0;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.account-form {
+  width: 100%;
+
+  padding: 30px;
+
+  background: #151515;
+
+  border: 1px solid #292929;
+  border-radius: 18px;
+}
+
+.account-field {
+  width: 100%;
+  min-height: 70px;
+
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  align-items: center;
+
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.account-field-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+
+  gap: 12px;
+
+  padding: 20px 0;
+}
+
+.account-label {
+  color: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-input {
+  width: 100%;
+
+  padding: 14px 0;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+  color: #ffffff;
+
+  font-size: 16px;
+}
+
+.account-input::placeholder {
+  color: #666666;
+}
+
+/* =========================
+   INFORMATION ACTUELLE
+========================= */
+
+.account-info-block {
+  width: 100%;
+
+  padding: 20px 0 28px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.account-info-label {
+  color: #9b9b9b;
+
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.account-info-value {
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 650;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.account-save-button,
+.account-primary-button,
+.account-danger-button,
+.account-secondary-button {
+  width: 100%;
+  min-height: 54px;
+
+  margin-top: 28px;
+  padding: 14px 20px;
+
+  border-radius: 14px;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-save-button,
+.account-primary-button {
+  background: #ffffff;
+  color: #000000;
+}
+
+.account-save-button:active,
+.account-primary-button:active {
+  transform: scale(0.99);
+}
+
+.account-danger-button {
+  background: #d93535;
+  color: #ffffff;
+}
+
+.account-secondary-button {
+  margin-top: 12px;
+
+  background: #292929;
+  color: #ffffff;
+
+  border: 1px solid #3b3b3b;
+}
+
+/* =========================
+   MESSAGE CARD
+========================= */
+
+.account-message-card {
+  width: 100%;
+
+  padding: 42px 30px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  background: #151515;
+
+  border: 1px solid #292929;
+  border-radius: 18px;
+
+  text-align: center;
+}
+
+.account-message-icon {
+  width: 54px;
+  height: 54px;
+
+  color: #ffffff;
+
+  stroke-width: 1.5;
+}
+
+.account-message-title {
+  margin-top: 24px;
+
+  color: #ffffff;
+
+  font-size: 24px;
+  font-weight: 750;
+}
+
+.account-message-text {
+  max-width: 520px;
+
+  margin-top: 14px;
+
+  color: #a8a8a8;
+
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+
+/* =========================
+   ACCOUNT POPUP
+========================= */
+
+.account-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  width: 100%;
+  min-height: 100vh;
+
+  padding: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.78);
+
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.account-popup-content {
+  width: 100%;
+  max-width: 420px;
+
+  padding: 34px 28px 28px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  background: #151515;
+
+  border: 1px solid #303030;
+  border-radius: 22px;
+
+  text-align: center;
+
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.account-popup-icon {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #232323;
+
+  border: 1px solid #343434;
+  border-radius: 50%;
+}
+
+.account-popup-icon svg {
+  width: 30px;
+  height: 30px;
+
+  stroke-width: 2;
+}
+
+/* =========================
+   POPUP TYPES
+========================= */
+
+.account-popup-success .account-popup-icon {
+  color: #7dff9b;
+}
+
+.account-popup-error .account-popup-icon {
+  color: #ff6666;
+}
+
+.account-popup-warning .account-popup-icon {
+  color: #ffc766;
+}
+
+.account-popup-info .account-popup-icon {
+  color: #ffffff;
+}
+
+/* =========================
+   POPUP TEXT
+========================= */
+
+.account-popup-title {
+  margin-top: 22px;
+
+  color: #ffffff;
+
+  font-size: 23px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.account-popup-message {
+  max-width: 340px;
+
+  margin-top: 12px;
+
+  color: #a8a8a8;
+
+  font-size: 16px;
+  font-weight: 450;
+  line-height: 1.55;
+}
+
+/* =========================
+   POPUP BUTTON
+========================= */
+
+.account-popup-button {
+  width: 100%;
+  min-height: 52px;
+
+  margin-top: 28px;
+  padding: 14px 20px;
+
+  background: #ffffff;
+  color: #000000;
+
+  border: none;
+  border-radius: 14px;
+
+  font-size: 16px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.account-popup-button:hover {
+  opacity: 0.9;
+}
+
+.account-popup-button:active {
+  transform: scale(0.98);
+}
+
+/* =========================
+   LISTE DES COMPTES
+========================= */
+
+.accounts-list {
+  width: 100%;
+
+  overflow: hidden;
+
+  background: #151515;
+
+  border: 1px solid #292929;
+  border-radius: 18px;
+}
+
+.account-profile-row {
+  width: 100%;
+  min-height: 84px;
+
+  padding: 14px 20px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  background: transparent;
+  color: #ffffff;
+
+  border-bottom: 1px solid #2b2b2b;
+
+  text-align: left;
+}
+
+.account-profile-row:last-child {
+  border-bottom: none;
+}
+
+.account-profile-row:hover {
+  background: #202020;
+}
+
+.account-profile-row:active {
+  background: #292929;
+}
+
+.account-profile-image {
+  width: 54px;
+  height: 54px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background: #292929;
+
+  border-radius: 50%;
+}
+
+.account-profile-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.account-profile-image svg {
+  width: 25px;
+  height: 25px;
+
+  color: #a8a8a8;
+
+  stroke-width: 1.8;
+}
+
+.account-profile-name {
+  min-width: 0;
+  flex: 1;
+
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-current-icon {
+  width: 23px;
+  height: 23px;
+
+  flex-shrink: 0;
+
+  color: #ffffff;
+
+  stroke-width: 2;
+}
+
+/* =========================
+   ACTIONS COMPTES
+========================= */
+
+.account-actions {
+  width: 100%;
+
+  margin-top: 20px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.account-action-button {
+  width: 100%;
+  min-height: 50px;
+
+  padding: 0 8px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  background: transparent;
+  color: #9b9b9b;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  text-align: left;
+}
+
+.account-action-button:hover {
+  color: #ffffff;
+}
+
+.account-action-button:active {
+  opacity: 0.7;
+}
+
+.account-action-button svg {
+  width: 20px;
+  height: 20px;
+
+  flex-shrink: 0;
+
+  stroke-width: 1.8;
+}
+
+
+/* =========================
+   DESKTOP
+========================= */
+
+@media (min-width: 900px) {
+  .settings-page,
+  .account-page {
+    padding: 28px 54px 80px;
+  }
+
+  .settings-content {
+    margin-top: 58px;
+  }
+
+  .settings-row {
+    min-height: 74px;
+    padding: 0 24px;
+  }
+
+  .settings-row-left {
+    font-size: 18px;
+  }
+
+  .account-content {
+    margin-top: 58px;
+  }
+
+  .account-form {
+    padding: 38px;
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .account-popup {
+    padding: 18px;
+  }
+
+  .account-popup-content {
+    max-width: 100%;
+
+    padding: 30px 22px 22px;
+
+    border-radius: 20px;
+  }
+
+  .account-popup-icon {
+    width: 58px;
+    height: 58px;
+  }
+
+  .account-popup-title {
+    font-size: 21px;
+  }
+
+  .account-popup-message {
+    font-size: 15px;
+  }
+  .account-form {
+    padding: 22px;
+  }
+
+  .account-field {
+    grid-template-columns: 115px 1fr;
+  }
+
+  .account-label,
+  .account-input {
+    font-size: 15px;
+  }
+
+  .account-message-card {
+    padding: 38px 22px;
+  }
+
+  .account-message-title {
+    font-size: 22px;
+  }
+}
+/* =========================
+   AJOUTER UN COMPTE
+========================= */
+
+.add-account-role-choice {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.add-account-role-card {
+  position: relative;
+
+  min-height: 180px;
+  padding: 26px 22px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.055),
+      rgba(255, 255, 255, 0.012)
+    ),
+    #111111;
+
+  color: #ffffff;
+
+  border: 1px solid #2c2c2c;
+  border-radius: 22px;
+
+  text-align: left;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.add-account-role-card::after {
+  content: "";
+
+  position: absolute;
+  right: -42px;
+  bottom: -62px;
+
+  width: 145px;
+  height: 145px;
+
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+.add-account-role-card:hover {
+  transform: translateY(-3px);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.085),
+      rgba(255, 255, 255, 0.022)
+    ),
+    #151515;
+
+  border-color: #484848;
+}
+
+.add-account-role-card:active {
+  transform: scale(0.985);
+}
+
+.add-account-role-card svg {
+  width: 42px;
+  height: 42px;
+
+  padding: 9px;
+
+  color: #ffffff;
+
+  background: #232323;
+
+  border: 1px solid #363636;
+  border-radius: 14px;
+
+  stroke-width: 1.7;
+}
+
+.add-account-role-card span {
+  position: relative;
+  z-index: 1;
+
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+/* =========================
+   FORMULAIRE AJOUT / CONNEXION
+========================= */
+
+.add-account-form,
+.connect-existing-account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.025),
+      rgba(255, 255, 255, 0)
+    ),
+    #121212;
+
+  border-color: #2d2d2d;
+}
+
+.add-account-form .account-input,
+.connect-existing-account-form .account-input {
+  min-height: 58px;
+  padding: 0 18px;
+
+  background: #0b0b0b;
+  color: #ffffff;
+
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.add-account-form .account-input:hover,
+.connect-existing-account-form .account-input:hover {
+  border-color: #3d3d3d;
+}
+
+.add-account-form .account-input:focus,
+.connect-existing-account-form .account-input:focus {
+  background: #101010;
+  border-color: #696969;
+
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.055);
+}
+
+.add-account-form .account-input::placeholder,
+.connect-existing-account-form .account-input::placeholder {
+  color: #737373;
+}
+
+.add-account-form input[type="date"] {
+  color-scheme: dark;
+}
+
+.add-account-form input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.58;
+  cursor: pointer;
+}
+
+.connect-existing-account-form {
+  max-width: 620px;
+  margin: 0 auto;
+
+  grid-template-columns: 1fr;
+}
+
+/* =========================
+   PHOTO DE PROFIL AJOUT COMPTE
+========================= */
+
+.add-account-profile-upload {
+  grid-column: 1 / -1;
+
+  min-height: 178px;
+  padding: 24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  background: #0b0b0b;
+
+  border: 1px dashed #3a3a3a;
+  border-radius: 18px;
+}
+
+.add-account-profile-upload p {
+  color: #9c9c9c;
+
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.add-account-avatar-upload {
+  position: relative;
+
+  width: 94px;
+  height: 94px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      #303030,
+      #171717 68%
+    );
+
+  border: 1px solid #414141;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.add-account-avatar-upload:hover {
+  transform: scale(1.035);
+  border-color: #696969;
+}
+
+.add-account-avatar-upload .add-account-user-icon {
+  width: 46px;
+  height: 46px;
+
+  color: #8d8d8d;
+
+  stroke-width: 1.45;
+}
+
+.add-account-avatar-upload .add-account-camera-icon {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+
+  color: #000000;
+  background: #ffffff;
+
+  border: 3px solid #151515;
+  border-radius: 50%;
+
+  stroke-width: 2.1;
+}
+
+.add-account-avatar-upload .artist-preview {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================
+   CONFIRMATIONS ARTISTE
+========================= */
+
+.add-account-form .checkbox-line {
+  grid-column: 1 / -1;
+
+  min-height: 54px;
+  padding: 14px 16px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  background: #0b0b0b;
+
+  color: #b7b7b7;
+
+  border: 1px solid #292929;
+  border-radius: 13px;
+
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.45;
+
+  cursor: pointer;
+}
+
+.add-account-form .checkbox-line:hover {
+  border-color: #3e3e3e;
+}
+
+.add-account-form .checkbox-line input {
+  width: 18px;
+  height: 18px;
+
+  margin-top: 1px;
+
+  flex-shrink: 0;
+
+  accent-color: #ffffff;
+}
+
+/* =========================
+   BOUTONS AJOUT / CONNEXION
+========================= */
+
+.add-account-submit-button,
+.connect-existing-account-submit {
+  grid-column: 1 / -1;
+
+  min-height: 58px;
+  margin-top: 6px;
+
+  background: #ffffff;
+  color: #000000;
+
+  border-radius: 15px;
+
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.add-account-submit-button:hover,
+.connect-existing-account-submit:hover {
+  opacity: 0.9;
+}
+
+.add-account-submit-button:active,
+.connect-existing-account-submit:active {
+  transform: scale(0.985);
+}
+
+.add-account-submit-button:disabled,
+.connect-existing-account-submit:disabled {
+  opacity: 0.52;
+  cursor: wait;
+}
+
+/* =========================
+   RESPONSIVE AJOUT COMPTE
+========================= */
+
+@media (max-width: 760px) {
+  .add-account-role-choice {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .add-account-role-card {
+    min-height: 112px;
+    padding: 20px;
+
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .add-account-role-card svg {
+    width: 46px;
+    height: 46px;
+
+    flex-shrink: 0;
+  }
+
+  .add-account-role-card span {
+    font-size: 17px;
+  }
+
+  .add-account-form,
+  .connect-existing-account-form {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .add-account-profile-upload,
+  .add-account-form .checkbox-line,
+  .add-account-submit-button,
+  .connect-existing-account-submit {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .add-account-form,
+  .connect-existing-account-form {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .add-account-form .account-input,
+  .connect-existing-account-form .account-input {
+    min-height: 56px;
+    padding: 0 15px;
+  }
+
+  .add-account-profile-upload {
+    min-height: 164px;
+    padding: 20px;
+  }
+
+  .add-account-avatar-upload {
+    width: 86px;
+    height: 86px;
+  }
+
+  .add-account-role-card {
+    border-radius: 18px;
+  }
+}
+
+
+/* =========================
+   MOT DE PASSE AJOUT COMPTE
+========================= */
+
+.account-password-field {
+  position: relative;
+  width: 100%;
+}
+
+.account-password-field .account-input {
+  width: 100%;
+  padding-right: 58px;
+}
+
+.account-password-toggle {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8f8f8f;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.account-password-toggle:hover {
+  color: #ffffff;
+  background: #1b1b1b;
+}
+
+.account-password-toggle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.account-field-message {
+  min-height: 18px;
+  margin: 6px 2px 0;
+  color: #777777;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.account-field-message-error {
+  color: #ff8f8f;
+}
+
+.account-field-message-success {
+  color: #8ee8ad;
+}
+
+.account-input.input-error {
+  border-color: rgba(255, 104, 104, 0.72);
+}
+
+.account-input.input-success {
+  border-color: rgba(104, 222, 145, 0.55);
+}
+
+
+.add-account-submit-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+
+/* =========================
+   V5.0.5.3 - VALIDATION SOUS CHAQUE CHAMP
+========================= */
+
+.add-account-form .account-validation-field,
+.add-account-form .account-password-field {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-bottom: 0;
+}
+
+.add-account-form .account-password-field {
+  position: relative;
+}
+
+.add-account-form .account-password-field .account-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 58px;
+}
+
+.add-account-form .account-password-toggle {
+  top: 8px;
+  right: 9px;
+}
+
+.add-account-form .account-field-message {
+  position: static;
+  display: block;
+  width: 100%;
+  min-height: 18px;
+  margin: 6px 2px 0;
+  padding: 0;
+  text-align: left;
+  line-height: 1.35;
+  order: 2;
+}
+
+.add-account-form .add-account-date,
+.add-account-form .add-account-phone {
+  min-height: 50px;
+}
+
+/* =========================
+   V5.0.5.4 - CHAMP + MESSAGE STRICTEMENT VERTICAL
+========================= */
+.add-account-form .account-validation-field,
+.add-account-form .account-password-field {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-flow: row !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  border: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.add-account-form .account-validation-field > .account-input,
+.add-account-form .account-password-input-row,
+.add-account-form .account-password-input-row > .account-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.add-account-form .account-password-input-row {
+  position: relative;
+}
+
+.add-account-form .account-password-input-row .account-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  transform: translateY(-50%);
+}
+
+.add-account-form .account-validation-field > .account-field-message,
+.add-account-form .account-password-field > .account-field-message {
+  grid-column: 1 / -1 !important;
+  position: static !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 18px;
+  margin: 6px 0 0 !important;
+  padding: 0 2px !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  text-align: left !important;
+}

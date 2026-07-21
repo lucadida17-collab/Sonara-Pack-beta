@@ -1,4 +1,7 @@
- 
+ body{
+  cursor: none;
+  control: none;
+ }
 .Load {
     color: white;
     font-family: 'inter', sans-serif;

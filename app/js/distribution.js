@@ -1,11 +1,12 @@
 const distributionMap = {
    
-    dark: ["dark", "sombre", "souvenir"],
+    dark: ["dark", "melancholic", ],
     emotional: ["emotional", "calm", "melancholic"],
-    epic: ["epic", "cinematic", "puissance", "dramatique"],
+    epic: ["epic", "cinematic", "puissance", ],
     calm: ["calm", "emotional", "souvenir"],
     cinematic: ["cinematic", "epic",  "dramatique"],
-    melancholic: ["melancholic", "calm", "dark", "sombre" ]
+    melancholic: ["melancholic", "calm", "dark",  ],
+    classical: ["classical", "calm", "emotional"],
 };
 
 function getDistributionCategories(mainMood) {

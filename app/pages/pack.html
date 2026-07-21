@@ -14,6 +14,11 @@
 </script>
 
  <link rel="stylesheet" href="../css/pack.css">
+  <link
+  rel="stylesheet"
+  href="app/components/header/header.css"
+>
+
 
   <link rel="icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -25,20 +30,43 @@
 </head>
 
 
-<body class="pack">
+
+
+
+<body class="main-content">
 <main class="app-layout">
 
+        <nav class="mobile-bottom-bar">
+
+            <button class="nav-mobile-btn nav-mobile-home active">
+                <i data-lucide="home"></i>
+                <span>Accueil</span>
+            </button>
+
+            <button class="nav-mobile-btn nav-mobile-create">
+                <i data-lucide="plus-circle"></i>
+                <span>Crée</span>
+            </button>
+
+            <button class="nav-mobile-btn nav-mobile-library ">
+                <i data-lucide="library"></i>
+                <span>Bibliothèque</span>
+            </button>
+
+
+        </nav>
 
 
   
 
-<section class="main-content">
+
 
 <header class="header">
  
 </header>
 
-<section class="scroll-zone">
+<div class="finger">
+</div>
 
 <section class="loader">
   <div class="spinner"></div>
@@ -76,6 +104,7 @@
 
 <script src="../../config.js" defer></script>
 <script src="../js/Memoire/memoire.js"></script>
+
 <script src="../js/pack.js" defer></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 </body>

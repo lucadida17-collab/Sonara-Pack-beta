@@ -24,10 +24,7 @@
  html {
 
    overflow-x: hidden;
-   background:
-     radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
-     radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
-     #020617;
+   background: #0f0f10;
 
    color: White;
    font-family: inter, Arial, sans-serif;
@@ -1062,6 +1059,30 @@ background: #061f5f; /* bleu royal profond */
 
  @media (min-width: 900px) {
 
+   .finger-cursor {
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    width: 34px;
+    height: 34px;
+
+    border: 2px solid rgba(43, 43, 43, 0.981);
+    border-radius: 50%;
+
+    pointer-events: none;
+    z-index: 99999;
+
+    transform: translate(-50%, -50%);
+
+    transition:
+        width .15s,
+        height .15s,
+        border .15s;
+
+    display: none;
+}
+
   .track-row-separator {
 
   display: none;
@@ -1356,8 +1377,7 @@ background: #061f5f; /* bleu royal profond */
      margin-left: 0px;
      background:
        radial-gradient(circle at top left, rgba(3, 23, 112, 0.571), transparent 48%),
-       radial-gradient(circle at bottom right, rgba(136, 0, 255, 0.351), transparent 48%),
-       #000000;
+
    }
 
    .pack-grid:hover {
@@ -1378,10 +1398,7 @@ background: #061f5f; /* bleu royal profond */
 
    .pack-card:hover {
 
-     background:
-       radial-gradient(circle at top left, rgba(4, 120, 169, 0.896), transparent 38%),
-       radial-gradient(circle at bottom right, rgba(132, 0, 255, 0.478), transparent 48%),
-       #000000;
+   
 
      display: flex;
      justify-content: center;

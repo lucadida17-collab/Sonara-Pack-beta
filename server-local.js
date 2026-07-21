@@ -3,32 +3,99 @@ const cors = require("cors");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
-require("dotenv").config()
+require("dotenv").config({
+path: path.resolve(__dirname, ".env.local")
+});
 
-const { MongoClient} = require("mongodb")
+const packsPath = path.join(__dirname, "data", "pendingPacks.json");
 
-const client = new MongoClient(process.env.MONGO_URI)
+function safeDeleteFile(filePath) {
+  if (!filePath) return false;
+
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      fs.unlinkSync(filePath);
+      return true;
+    }
+  } catch (error) {
+    console.error("Suppression fichier pack impossible :", filePath, error.message);
+    throw error;
+  }
+
+  return false;
+}
+
+function deleteRejectedLocalPackFiles(pack) {
+  const deletedFiles = [];
+  const uploadNames = [pack?.coverPack];
+
+  for (const track of Array.isArray(pack?.tracks) ? pack.tracks : []) {
+    uploadNames.push(track?.coverPack, track?.audioName);
+  }
+
+  for (const value of uploadNames) {
+    if (typeof value !== "string" || !value.trim()) continue;
+    const filePath = path.join(__dirname, "uploads", path.basename(value));
+    if (safeDeleteFile(filePath)) deletedFiles.push(filePath);
+  }
+
+  const zipPaths = [
+    path.join(__dirname, "downloads", "packs", `${pack.id}_pack.zip`),
+    ...((Array.isArray(pack?.tracks) ? pack.tracks : []).map((track) =>
+      path.join(__dirname, "downloads", "tracks", `${track.id}.zip`)
+    ))
+  ];
+
+  for (const filePath of zipPaths) {
+    if (safeDeleteFile(filePath)) deletedFiles.push(filePath);
+  }
+
+  return deletedFiles;
+}
+
+function deleteLocalPackNotifications(packId) {
+  if (typeof founderNotificationsPath === "undefined") return;
+
+  const notifications = readJsonArray(founderNotificationsPath);
+  const remaining = notifications.filter((item) =>
+    String(item?.entityId || item?.packId || item?.metadata?.entityId || "") !== String(packId)
+  );
+
+  writeJsonArray(founderNotificationsPath, remaining);
+}
+
+function permanentlyRejectLocalPack(packId) {
+  const packs = readJsonArray(packsPath);
+  const pack = packs.find((item) => String(item?.id || "") === String(packId));
+
+  if (!pack) return null;
+
+  const deletedFiles = deleteRejectedLocalPackFiles(pack);
+  writeJsonArray(
+    packsPath,
+    packs.filter((item) => String(item?.id || "") !== String(packId))
+  );
+  deleteLocalPackNotifications(packId);
+
+  return { pack, deletedFiles };
+}
+
+const Stripe = require("stripe");
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "luca.dida17@gmail.com",
-    pass: "wuks nump bpbe lwmv"
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
   }
 })
 
-async function connectDB() {
-  try {
-    await client.connect()
-    console.log("MongoDB connecté 🔥")
-  } catch (error) {
-    console.error(error)
-  }
-}
-
-connectDB()
 
 const app = express();
 
@@ -37,7 +104,20 @@ const app = express();
 
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Origine non autorisée par Sonara."));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 const storage = multer.diskStorage({
@@ -57,6 +137,268 @@ const upload = multer({ storage });
 
 app.use("/uploads", express.static("uploads"));
 
+
+const PACK_MAX_TRACKS = 20;
+const PACK_MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+const PACK_MAX_AUDIO_SIZE = 250 * 1024 * 1024;
+const PACK_MAX_FILES = 1 + (PACK_MAX_TRACKS * 2);
+
+const PACK_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+]);
+
+const PACK_AUDIO_TYPES = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/flac",
+  "audio/x-flac",
+  "application/octet-stream"
+]);
+
+function isPackImageField(fieldname) {
+  return fieldname === "coverPack" || /^trackCover_\d+$/.test(fieldname);
+}
+
+function isPackAudioField(fieldname) {
+  return /^trackAudio_\d+$/.test(fieldname);
+}
+
+function packFileFilter(req, file, cb) {
+  if (isPackImageField(file.fieldname)) {
+    if (!PACK_IMAGE_TYPES.has(file.mimetype)) {
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    }
+    return cb(null, true);
+  }
+
+  if (isPackAudioField(file.fieldname)) {
+    const extension = path.extname(file.originalname || "").toLowerCase();
+    const validExtension = [".mp3", ".wav", ".flac"].includes(extension);
+
+    if (!PACK_AUDIO_TYPES.has(file.mimetype) && !validExtension) {
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    }
+    return cb(null, true);
+  }
+
+  return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+}
+
+const packUpload = multer({
+  storage,
+  limits: {
+    files: PACK_MAX_FILES,
+    fileSize: PACK_MAX_AUDIO_SIZE,
+    fields: 4,
+    fieldSize: 2 * 1024 * 1024
+  },
+  fileFilter: packFileFilter
+});
+
+function handlePackUpload(req, res, next) {
+  packUpload.any()(req, res, (error) => {
+    if (!error) return next();
+
+    const messages = {
+      LIMIT_FILE_SIZE: "Un fichier dépasse la taille autorisée.",
+      LIMIT_FILE_COUNT: "Le pack contient trop de fichiers.",
+      LIMIT_UNEXPECTED_FILE: "Un fichier, un format ou un champ envoyé n’est pas autorisé.",
+      LIMIT_FIELD_VALUE: "Les informations du pack sont trop volumineuses."
+    };
+
+    return res.status(400).json({
+      success: false,
+      code: error.code || "UPLOAD_ERROR",
+      message: messages[error.code] || "Le serveur a refusé un fichier du pack."
+    });
+  });
+}
+
+function removeFileIfExists(filePath) {
+  if (!filePath) return;
+
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error("Nettoyage fichier impossible :", filePath, error);
+  }
+}
+
+function validatePendingPackRequest(req) {
+  if (!req.body?.packData) {
+    return { valid: false, status: 400, message: "Les informations du pack sont absentes." };
+  }
+
+  let pack;
+  try {
+    pack = JSON.parse(req.body.packData);
+  } catch {
+    return { valid: false, status: 400, message: "Les informations du pack sont invalides." };
+  }
+
+  if (!pack || typeof pack !== "object") {
+    return { valid: false, status: 400, message: "Le pack envoyé est invalide." };
+  }
+
+  const title = String(pack.title || "").trim();
+  const artistId = String(pack.artistId || "").trim();
+  const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+
+  if (!title || title.length > 70) {
+    return {
+      valid: false,
+      status: 400,
+      message: "Le titre du pack est obligatoire et limité à 70 caractères."
+    };
+  }
+
+  if (!artistId) {
+    return { valid: false, status: 400, message: "L’artiste du pack est introuvable." };
+  }
+
+  if (tracks.length < 1 || tracks.length > PACK_MAX_TRACKS) {
+    return {
+      valid: false,
+      status: 400,
+      message: `Un pack doit contenir entre 1 et ${PACK_MAX_TRACKS} tracks.`
+    };
+  }
+
+  if (!pack.rights?.accepted || !pack.rights?.acceptedAt) {
+    return {
+      valid: false,
+      status: 400,
+      message: "La confirmation des droits est obligatoire."
+    };
+  }
+
+  const files = Array.isArray(req.files) ? req.files : [];
+  const fileByField = new Map(files.map((file) => [file.fieldname, file]));
+  const coverPackFile = fileByField.get("coverPack");
+
+  if (!coverPackFile) {
+    return { valid: false, status: 400, message: "La cover du pack est obligatoire." };
+  }
+
+  if (coverPackFile.size > PACK_MAX_IMAGE_SIZE) {
+    return { valid: false, status: 400, message: "La cover du pack dépasse 8 Mo." };
+  }
+
+  for (let index = 0; index < tracks.length; index += 1) {
+    const track = tracks[index];
+    const trackTitle = String(track?.title || "").trim();
+    const trackIsFree =
+      track?.isFree === true ||
+      String(track?.price || "").trim().toLowerCase() === "gratuit";
+
+    const price = trackIsFree
+      ? 0
+      : Number(String(track?.price || "").replace("€", "").replace(",", "."));
+    const cover = fileByField.get(`trackCover_${index}`);
+    const audio = fileByField.get(`trackAudio_${index}`);
+
+    if (!trackTitle || trackTitle.length > 70) {
+      return {
+        valid: false,
+        status: 400,
+        message: `Le titre de la track ${index + 1} est invalide.`
+      };
+    }
+
+    if (
+      (!trackIsFree && (!Number.isFinite(price) || price <= 0)) ||
+      (trackIsFree && price !== 0)
+    ) {
+      return {
+        valid: false,
+        status: 400,
+        message: `Le prix de la track ${index + 1} est invalide.`
+      };
+    }
+
+    if (!cover) {
+      return {
+        valid: false,
+        status: 400,
+        message: `La cover de la track ${index + 1} est obligatoire.`
+      };
+    }
+
+    if (cover.size > PACK_MAX_IMAGE_SIZE) {
+      return {
+        valid: false,
+        status: 400,
+        message: `La cover de la track ${index + 1} dépasse 8 Mo.`
+      };
+    }
+
+    if (!audio) {
+      return {
+        valid: false,
+        status: 400,
+        message: `Le fichier audio de la track ${index + 1} est obligatoire.`
+      };
+    }
+
+    if (audio.size > PACK_MAX_AUDIO_SIZE) {
+      return {
+        valid: false,
+        status: 400,
+        message: `Le fichier audio de la track ${index + 1} dépasse 250 Mo.`
+      };
+    }
+  }
+
+  const expectedFields = new Set([
+    "coverPack",
+    ...tracks.flatMap((_, index) => [
+      `trackCover_${index}`,
+      `trackAudio_${index}`
+    ])
+  ]);
+
+  const unexpectedFile = files.find((file) => !expectedFields.has(file.fieldname));
+
+  if (unexpectedFile) {
+    return { valid: false, status: 400, message: "Le pack contient un fichier inattendu." };
+  }
+
+  if (files.length !== expectedFields.size) {
+    return {
+      valid: false,
+      status: 400,
+      message: "Le nombre de fichiers reçus ne correspond pas au pack."
+    };
+  }
+
+  return { valid: true, pack, fileByField };
+}
+
+function createZipFromPaths(zipPath, filePaths) {
+  const zip = new AdmZip();
+
+  for (const filePath of filePaths) {
+    if (!filePath || !fs.existsSync(filePath)) {
+      throw new Error(`Fichier ZIP introuvable : ${filePath || "chemin vide"}`);
+    }
+
+    zip.addLocalFile(filePath);
+  }
+
+  zip.writeZip(zipPath);
+
+  if (fs.statSync(zipPath).size <= 0) {
+    throw new Error("Le ZIP généré est vide.");
+  }
+}
+
+
 const downloadsPath = path.join(__dirname, "downloads");
 const packsZipPath = path.join(downloadsPath, "packs");
 const tracksZipPath = path.join(downloadsPath, "tracks");
@@ -71,56 +413,370 @@ app.use("/downloads", express.static("downloads"));
 
 const usersPath = path.join(__dirname, "data", "users.json");
 
-app.post("/api/register", upload.any(), (req, res) => {
-  const profile = req.body.profile
-    ? JSON.parse(req.body.profile)
-    : req.body;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 128;
 
-  const imageArtistFile = req.files?.find(
-    file => file.fieldname === "imageArtist"
+function normalizePseudo(pseudo) {
+  return String(pseudo || "").trim().toLowerCase();
+}
+
+function validateNewAccountFields(profile) {
+  const fieldErrors = {};
+  const password = String(profile.password || "");
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    fieldErrors.password =
+      `Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`;
+  } else if (password.length > PASSWORD_MAX_LENGTH) {
+    fieldErrors.password =
+      `Le mot de passe ne peut pas dépasser ${PASSWORD_MAX_LENGTH} caractères.`;
+  }
+
+  return fieldErrors;
+}
+
+
+const verificationCodes = new Map();
+const verifiedTokens = new Map();
+const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
+const VERIFIED_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+function normalizeMail(mail) {
+  return String(mail || "").trim().toLowerCase();
+}
+
+function cleanupVerificationStores() {
+  const now = Date.now();
+  for (const [key, value] of verificationCodes) {
+    if (value.expiresAt <= now) verificationCodes.delete(key);
+  }
+  for (const [key, value] of verifiedTokens) {
+    if (value.expiresAt <= now) verifiedTokens.delete(key);
+  }
+}
+
+function createVerificationKey(mail, purpose, userId = "") {
+  return `${purpose}:${String(userId || "")}:${normalizeMail(mail)}`;
+}
+
+function createVerificationCode() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function createVerificationToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function passwordAlreadyUsedInUsers(users, password) {
+  return users.some((rootUser) =>
+    rootUser.accounts?.some((account) => account.password === password)
   );
+}
 
-  console.log("IMAGE ARTIST :", imageArtistFile)
+function collectLocalDuplicateErrors(users, { mail, pseudo, password }) {
+  const fieldErrors = {};
+  const normalizedMail = normalizeMail(mail);
+  const normalizedPseudo = normalizePseudo(pseudo);
 
-  const imageProfileFile = req.files?.find(
-  file => file.fieldname === "imageProfile"
-);
-
-console.log("REQ FILES :", req.files);
-console.log("IMAGE ARTIST :", imageArtistFile);
-console.log("IMAGE PROFILE :", imageProfileFile);
-
-
-
-  profile.imageArtist = 
-  imageArtistFile ?
-  imageArtistFile.filename : "";
-
-  profile.imageProfile = 
-  imageProfileFile ? 
-  imageProfileFile.filename: "";
-
-
-  if (profile.role === "user") {
-    profile.status = "approved";
-  } else {
-    profile.status = "pending";
+  if (normalizedMail && users.some((rootUser) =>
+    rootUser.accounts?.some((account) => normalizeMail(account.mail) === normalizedMail)
+  )) {
+    fieldErrors.mail = "Cette adresse e-mail est déjà utilisée.";
   }
 
-  profile.createdAt = new Date().toISOString();
-  profile.id = Date.now().toString();
-
-  if (profile.role === "user" || profile.role === "both") {
-    profile.downloadedPacks = [];
-    profile.downloadedTracks = [];
+  if (normalizedPseudo && users.some((rootUser) =>
+    rootUser.accounts?.some((account) => normalizePseudo(account.pseudo) === normalizedPseudo)
+  )) {
+    fieldErrors.pseudo = "Ce pseudo est déjà utilisé.";
   }
 
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  if (password && passwordAlreadyUsedInUsers(users, password)) {
+    fieldErrors.password = "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+  }
 
-  users.push(profile);
+  return fieldErrors;
+}
+
+function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
+  cleanupVerificationStores();
+  const stored = verifiedTokens.get(String(token || ""));
+  const expectedKey = createVerificationKey(mail, purpose, userId);
+
+  if (!stored || stored.key !== expectedKey || stored.expiresAt <= Date.now()) {
+    return false;
+  }
+
+  verifiedTokens.delete(String(token));
+  return true;
+}
+
+app.post("/api/account-security/check", (req, res) => {
+  try {
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const fieldErrors = {
+      ...validateNewAccountFields(req.body || {}),
+      ...collectLocalDuplicateErrors(users, req.body || {})
+    };
+
+    return res.json({
+      success: true,
+      available: Object.keys(fieldErrors).length === 0,
+      fieldErrors
+    });
+  } catch (error) {
+    console.error("Erreur vérification doublons :", error);
+    return res.status(500).json({ success: false, message: "Vérification impossible." });
+  }
+});
+
+app.post("/api/account-security/send-code", async (req, res) => {
+  try {
+    cleanupVerificationStores();
+    const { mail, pseudo, password, purpose = "register", userId = "" } = req.body || {};
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const fieldErrors = {
+      ...validateNewAccountFields({ password }),
+      ...collectLocalDuplicateErrors(users, { mail, pseudo, password })
+    };
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return res.status(409).json({ success: false, message: "Certaines informations sont déjà utilisées.", fieldErrors });
+    }
+
+    const normalizedMail = normalizeMail(mail);
+    if (!normalizedMail) {
+      return res.status(400).json({ success: false, fieldErrors: { mail: "Adresse e-mail obligatoire." } });
+    }
+
+    const code = createVerificationCode();
+    const key = createVerificationKey(normalizedMail, purpose, userId);
+    verificationCodes.set(key, { code, expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS, attempts: 0 });
+
+    await transporter.sendMail({
+      from: "Sonara Pack <luca.dida17@gmail.com>",
+      to: normalizedMail,
+      subject: "Votre code de vérification Sonara Pack",
+      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Vérification de votre adresse e-mail</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
+    });
+
+    return res.json({ success: true, message: "Code envoyé." });
+  } catch (error) {
+    console.error("Erreur envoi code :", error);
+    return res.status(500).json({ success: false, message: "Impossible d'envoyer le code." });
+  }
+});
+
+app.post("/api/account-security/verify-code", (req, res) => {
+  cleanupVerificationStores();
+  const { mail, code, purpose = "register", userId = "" } = req.body || {};
+  const key = createVerificationKey(mail, purpose, userId);
+  const stored = verificationCodes.get(key);
+
+  if (!stored || stored.expiresAt <= Date.now()) {
+    verificationCodes.delete(key);
+    return res.status(400).json({ success: false, message: "Code expiré ou introuvable." });
+  }
+
+  stored.attempts += 1;
+  if (stored.attempts > 5) {
+    verificationCodes.delete(key);
+    return res.status(429).json({ success: false, message: "Trop de tentatives. Demandez un nouveau code." });
+  }
+
+  if (String(code || "").trim() !== stored.code) {
+    return res.status(400).json({ success: false, message: "Code incorrect." });
+  }
+
+  verificationCodes.delete(key);
+  const token = createVerificationToken();
+  verifiedTokens.set(token, { key, expiresAt: Date.now() + VERIFIED_TOKEN_TTL_MS });
+  return res.json({ success: true, verificationToken: token });
+});
+
+
+app.post("/api/register", upload.any(), async (req, res) => {
+ 
+
+  try {
+    const profile = req.body.profile
+      ? JSON.parse(req.body.profile)
+      : req.body;
+
+    const imageProfileFile = req.files?.find(
+      (file) => file.fieldname === "imageProfile"
+    );
+
+    console.log(
+      "IMAGE PROFILE :",
+      imageProfileFile
+    );
+
+    console.log(
+      "REQ FILES :",
+      req.files
+    );
+
+    profile.imageProfile =
+      imageProfileFile
+        ? imageProfileFile.filename
+        : "";
+
+    if (profile.role === "user") {
+      profile.status = "approved";
+    }
+
+    if (
+      profile.role === "artist" ||
+      profile.role === "both"
+    ) {
+      profile.status = "pending";
+    }
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    if (!consumeVerifiedToken({
+      token: req.body.verificationToken,
+      mail: profile.mail,
+      purpose: "register"
+    })) {
+      return res.status(403).json({ success: false, message: "Vérification e-mail requise ou expirée." });
+    }
+
+    const normalizedMail = profile.mail
+      ?.trim()
+      .toLowerCase();
+
+    const normalizedPseudo = normalizePseudo(profile.pseudo);
+    const fieldErrors = validateNewAccountFields(profile);
+
+    const mailAlreadyUsed = users.some((rootUser) =>
+      rootUser.accounts?.some(
+        (account) =>
+          account.mail
+            ?.trim()
+            .toLowerCase() === normalizedMail
+      )
+    );
+
+    const pseudoAlreadyUsed = users.some((rootUser) =>
+      rootUser.accounts?.some(
+        (account) =>
+          normalizePseudo(account.pseudo) === normalizedPseudo
+      )
+    );
+
+    if (mailAlreadyUsed) {
+      fieldErrors.mail =
+        "Vous avez déjà un compte avec cette adresse e-mail.";
+    }
+
+    if (pseudoAlreadyUsed) {
+      fieldErrors.pseudo =
+        "Ce pseudo est déjà utilisé. Choisissez-en un autre.";
+    }
+
+    if (passwordAlreadyUsedInUsers(users, profile.password)) {
+      fieldErrors.password =
+        "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Certaines informations doivent être modifiées.",
+        fieldErrors
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    const userId = String(Date.now());
+
+    const accountId = `acc_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+
+    const account = {
+      id: accountId,
+      accountId,
+
+      firstname:
+        profile.firstname?.trim() || "",
+
+      lastname:
+        profile.lastname?.trim() || "",
+
+      date:
+        profile.date || "",
+
+      mail:
+        normalizedMail || "",
+
+      password:
+        profile.password || "",
+
+      phone:
+        profile.phone?.trim() || "",
+
+      pseudo:
+        profile.pseudo?.trim() || "",
+
+      role:
+        profile.role,
+
+      status:
+        profile.status,
+
+      imageProfile:
+        profile.imageProfile || "",
+
+      downloadedPacks:
+        profile.downloadedPacks || [],
+
+      downloadedTracks:
+        profile.downloadedTracks || [],
+
+      createdAt:
+        now,
+
+      updatedAt:
+        now
+    };
+
+    const rootUser = {
+      id: userId,
+
+      accounts: [
+        account
+      ],
+
+      createdAt:
+        now,
+
+      updatedAt:
+        now
+    };
+
+    users.push(rootUser);
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2),
+      "utf8"
+    );
 
   if (profile.status === "pending") {
-    transporter.sendMail({
+    createLocalFounderNotification({
+      type: "artist",
+      title: "Nouvel artiste à modérer",
+      message: `${profile.pseudo || profile.mail || "Nouvel artiste"} attend une validation.`,
+      entityId: account.id || account.accountId,
+      priority: "normal"
+    });
+
+    false && transporter.sendMail({
       from: "Sonara Pack <luca.dida17@gmail.com>",
       to: "luca.dida17@gmail.com",
       subject: "Nouvelle demande artiste à modérer - Sonara Pack",
@@ -135,9 +791,9 @@ console.log("IMAGE PROFILE :", imageProfileFile);
             <p><strong>Email :</strong> ${profile.mail}</p>
             <p><strong>Téléphone :</strong> ${profile.phone || "Non renseigné"}</p>
             <p><strong>Rôle :</strong> ${profile.role}</p>
-            <p><strong>Nom d’artiste :</strong> ${profile.artistname || "Non renseigné"}</p>
+            <p><strong>Nom d’artiste :</strong> ${profile.pseudo || "Non renseigné"}</p>
             <p><strong>SIRET :</strong> ${profile.siretinput || "Non renseigné"}</p>
-            <p><strong>Image artiste :</strong> ${profile.imageArtist || "Aucune image"}</p>
+            <p><strong>Image artiste :</strong> ${profile.imageProfile || "Aucune image"}</p>
             <p><strong>Status :</strong> ${profile.status}</p>
             <p><strong>Date :</strong> ${profile.createdAt}</p>
           </div>
@@ -160,163 +816,1838 @@ console.log("IMAGE PROFILE :", imageProfileFile);
 
   fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 
-  res.json({
-    success: true,
-    message: "Profil enregistré",
-    profile
-  });
-});
+  
+    const returnedAccount = {
+      ...account,
+      userId
+    };
 
-app.post("/api/add-downloaded-pack", (req, res) => {
+    delete returnedAccount.password;
 
+    return res.status(201).json({
+      success: true,
 
+      message:
+        "Compte créé avec succès.",
 
-  const { userId, packId } = req.body;
+      profile:
+        returnedAccount,
 
-  const users = JSON.parse(
-    fs.readFileSync(usersPath, "utf8")
-  );
+      account:
+        returnedAccount,
 
-  const user = users.find(
-    u => u.id === userId
-  );
-
-  if (!user) {
-    return res.status(404).json({
-      success: false
+      redirectTo:
+        account.role === "artist" ||
+        account.role === "both"
+          ? "/app/pages/creator.html"
+          : "/home.html"
     });
-  }
 
-  if (
-    user.role !== "user" &&
-    user.role !== "both"
-  ) {
-    return res.status(403).json({
-      success: false
-    });
-  }
-
-  if (!user.downloadedPacks) {
-    user.downloadedPacks = [
-      
-    ];
-  }
-
-  if (!user.downloadedPacks.includes(packId)) {
-    user.downloadedPacks.push(packId);
-  }
-
-  fs.writeFileSync(
-    usersPath,
-    JSON.stringify(users, null, 2)
-  );
-
-  res.json({
-    success: true
-  });
-
-});
-
-app.post("/api/add-downloaded-track", (req, res) => {
-
-    const { userId, trackId } = req.body;
-
-    const users = JSON.parse(
-        fs.readFileSync(usersPath, "utf8")
+  } catch (error) {
+    console.error(
+      "Erreur POST /api/register :",
+      error
     );
 
-    const user = users.find(
-        u => u.id === userId
-    );
+    return res.status(500).json({
+      success: false,
 
-    if (!user) {
-        return res.status(404).json({
-            success: false
-        });
+      message:
+        "Impossible de créer le compte."
+    });
+  }
+});
+
+/* =========================
+   AJOUTER UN COMPTE
+========================= */
+
+app.post("/api/accounts", upload.any(), async (req, res) => {
+  try {
+    const profile = req.body.profile
+      ? JSON.parse(req.body.profile)
+      : req.body;
+
+    const userId = String(req.body.userId || "");
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Racine utilisateur introuvable."
+      });
     }
 
     if (
-        user.role !== "user" &&
-        user.role !== "both"
+      !profile.firstname ||
+      !profile.lastname ||
+      !profile.mail ||
+      !profile.password ||
+      !profile.pseudo ||
+      !profile.role
     ) {
-        return res.status(403).json({
-            success: false
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Informations manquantes."
+      });
     }
 
-    if (!user.downloadedTracks) {
-        user.downloadedTracks = [];
+    if (
+      !["user", "artist", "both"].includes(profile.role)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Rôle invalide."
+      });
     }
 
-    if (!user.downloadedTracks.includes(trackId)) {
-        user.downloadedTracks.push(trackId);
-    }
-
-    fs.writeFileSync(
-        usersPath,
-        JSON.stringify(users, null, 2)
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
     );
 
-    res.json({
-        success: true
+    if (!consumeVerifiedToken({
+      token: req.body.verificationToken,
+      mail: profile.mail,
+      purpose: "add-account",
+      userId
+    })) {
+      return res.status(403).json({ success: false, message: "Vérification e-mail requise ou expirée." });
+    }
+
+    const rootUser = users.find(
+      (currentRootUser) =>
+        String(currentRootUser.id) === userId
+    );
+
+    if (!rootUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Racine utilisateur introuvable."
+      });
+    }
+
+    const normalizedMail = profile.mail
+      ?.trim()
+      .toLowerCase();
+
+    const normalizedPseudo = normalizePseudo(profile.pseudo);
+    const fieldErrors = validateNewAccountFields(profile);
+
+    const mailAlreadyUsed = users.some((currentRootUser) =>
+      currentRootUser.accounts?.some(
+        (account) =>
+          account.mail
+            ?.trim()
+            .toLowerCase() === normalizedMail
+      )
+    );
+
+    const pseudoAlreadyUsed = users.some((currentRootUser) =>
+      currentRootUser.accounts?.some(
+        (account) =>
+          normalizePseudo(account.pseudo) === normalizedPseudo
+      )
+    );
+
+    if (mailAlreadyUsed) {
+      fieldErrors.mail =
+        "Vous avez déjà un compte avec cette adresse e-mail.";
+    }
+
+    if (pseudoAlreadyUsed) {
+      fieldErrors.pseudo =
+        "Ce pseudo est déjà utilisé. Choisissez-en un autre.";
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Certaines informations doivent être modifiées.",
+        fieldErrors
+      });
+    }
+
+    const imageProfileFile = req.files?.find(
+      (file) => file.fieldname === "imageProfile"
+    );
+
+    const now = new Date().toISOString();
+
+    const accountId = `acc_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+
+    const status =
+      profile.role === "user"
+        ? "approved"
+        : "pending";
+
+    const account = {
+      id: accountId,
+      accountId,
+
+      firstname:
+        profile.firstname?.trim() || "",
+
+      lastname:
+        profile.lastname?.trim() || "",
+
+      date:
+        profile.date || "",
+
+      mail:
+        normalizedMail || "",
+
+      password:
+        profile.password || "",
+
+      phone:
+        profile.phone?.trim() || "",
+
+      pseudo:
+        profile.pseudo?.trim() || "",
+
+      role:
+        profile.role,
+
+      status,
+
+      imageProfile:
+        imageProfileFile
+          ? imageProfileFile.filename
+          : "",
+
+      downloadedPacks: [],
+      downloadedTracks: [],
+
+      createdAt: now,
+      updatedAt: now
+    };
+
+    if (!Array.isArray(rootUser.accounts)) {
+      rootUser.accounts = [];
+    }
+
+    rootUser.accounts.push(account);
+    rootUser.updatedAt = now;
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2),
+      "utf8"
+    );
+
+    if (status === "pending") {
+      createLocalFounderNotification({
+        type: "artist",
+        title: "Nouvel artiste à modérer",
+        message: `${account.pseudo || account.mail || "Nouvel artiste"} attend une validation.`,
+        entityId: account.id || account.accountId,
+        priority: "normal"
+      });
+
+      false && transporter.sendMail({
+        from: "Sonara Pack <luca.dida17@gmail.com>",
+        to: "luca.dida17@gmail.com",
+        subject:
+          "Nouvelle demande artiste à modérer - Sonara Pack",
+        html: `
+          <div style="font-family: Arial, sans-serif; background:#080b12; color:white; padding:30px; border-radius:16px;">
+            <h1 style="color:#7ddcff;">Nouvelle demande artiste</h1>
+
+            <p>Un nouveau compte artiste a été ajouté sur <strong>Sonara Pack</strong> et attend une validation admin.</p>
+
+            <div style="background:#111827; padding:20px; border-radius:14px; margin-top:20px;">
+              <p><strong>Nom :</strong> ${account.firstname} ${account.lastname}</p>
+              <p><strong>Email :</strong> ${account.mail}</p>
+              <p><strong>Téléphone :</strong> ${account.phone || "Non renseigné"}</p>
+              <p><strong>Rôle :</strong> ${account.role}</p>
+              <p><strong>Nom d’artiste :</strong> ${account.pseudo || "Non renseigné"}</p>
+              <p><strong>Image artiste :</strong> ${account.imageProfile || "Aucune image"}</p>
+              <p><strong>Status :</strong> ${account.status}</p>
+              <p><strong>Date :</strong> ${account.createdAt}</p>
+            </div>
+          </div>
+        `
+      });
+    }
+
+    const returnedAccount = {
+      ...account,
+      userId: rootUser.id
+    };
+
+    delete returnedAccount.password;
+
+    return res.status(201).json({
+      success: true,
+      message: "Compte ajouté avec succès.",
+      profile: returnedAccount,
+      account: returnedAccount
     });
 
+  } catch (error) {
+    console.error(
+      "Erreur POST /api/accounts :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d'ajouter le compte."
+    });
+  }
+});
+
+app.get("/api/profile/:id", (req, res) => {
+  try {
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    const requestedId = String(req.params.id);
+
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === requestedId ||
+            String(currentAccount.accountId) === requestedId
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        error: "Profil introuvable"
+      });
+    }
+
+    const legacyArtistBlocked =
+      String(account.role || "").toLowerCase() === "both" &&
+      ["rejected", "banned"].includes(
+        String(account.status || "").toLowerCase()
+      );
+
+    if (legacyArtistBlocked) {
+      account.artistStatus = account.artistStatus || account.status;
+      account.artistModeratedAt =
+        account.artistModeratedAt ||
+        account.moderatedAt ||
+        new Date().toISOString();
+      account.role = "user";
+      account.status = "approved";
+      account.updatedAt = new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2)
+      );
+    }
+
+    const returnedProfile = {
+      ...account,
+      userId: rootUser.id
+    };
+
+    delete returnedProfile.password;
+
+    return res.status(200).json(
+      returnedProfile
+    );
+
+  } catch (error) {
+    console.error(
+      "Erreur GET /api/profile/:id :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: "Impossible de récupérer le profil"
+    });
+  }
+});
+
+app.post("/api/login", (req, res) => {
+  try {
+    const { mail, password, phone } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    const normalizedMail = mail
+      ?.trim()
+      .toLowerCase();
+
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            currentAccount.mail
+              ?.trim()
+              .toLowerCase() === normalizedMail &&
+            currentAccount.password === password &&
+            (
+              !phone ||
+              String(currentAccount.phone || "").trim() ===
+                String(phone).trim()
+            )
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(401).json({
+        success: false,
+        error: "Email ou mot de passe incorrect."
+      });
+    }
+
+    const legacyArtistBlocked =
+      String(account.role || "").toLowerCase() === "both" &&
+      ["rejected", "banned"].includes(
+        String(account.status || "").toLowerCase()
+      );
+
+    if (legacyArtistBlocked) {
+      account.artistStatus = account.artistStatus || account.status;
+      account.artistModeratedAt =
+        account.artistModeratedAt ||
+        account.moderatedAt ||
+        new Date().toISOString();
+      account.role = "user";
+      account.status = "approved";
+      account.updatedAt = new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2)
+      );
+    }
+
+    let redirectTo = "/home.html";
+
+    if (
+      account.role === "artist" ||
+      account.role === "both"
+    ) {
+      redirectTo = "/app/pages/creator.html";
+    }
+
+    const returnedAccount = {
+      ...account,
+      userId: rootUser.id
+    };
+
+    delete returnedAccount.password;
+
+    return res.status(200).json({
+      success: true,
+      account: returnedAccount,
+      redirectTo
+    });
+
+  } catch (error) {
+    console.error(
+      "Erreur POST /api/login :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: "Connexion impossible."
+    });
+  }
+}); 
+
+
+/* =========================
+   LISTE ET CHANGEMENT DE COMPTE
+========================= */
+
+app.post("/api/accounts/list", (req, res) => {
+  try {
+    const { userId, currentAccountId } = req.body || {};
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const rootUser = users.find((item) => String(item.id) === String(userId));
+    const currentAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(currentAccountId));
+
+    if (!rootUser || !currentAccount) {
+      return res.status(403).json({ success: false, error: "Session non autorisée." });
+    }
+
+    const accounts = rootUser.accounts.map((item) => {
+      const safe = { ...item, userId: rootUser.id };
+      delete safe.password;
+      return safe;
+    });
+
+    return res.json({ success: true, accounts });
+  } catch (error) {
+    console.error("Erreur POST /api/accounts/list :", error);
+    return res.status(500).json({ success: false, error: "Chargement des comptes impossible." });
+  }
+});
+
+app.post("/api/accounts/switch", (req, res) => {
+  try {
+    const { userId, currentAccountId, targetAccountId } = req.body || {};
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const rootUser = users.find((item) => String(item.id) === String(userId));
+    const currentAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(currentAccountId));
+    const targetAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(targetAccountId));
+
+    if (!rootUser || !currentAccount || !targetAccount) {
+      return res.status(403).json({ success: false, error: "Ce compte n'appartient pas à votre profil principal." });
+    }
+
+    const profile = { ...targetAccount, userId: rootUser.id };
+    delete profile.password;
+
+    let redirectTo = "/home.html";
+    if (targetAccount.status === "pending") redirectTo = "/app/pages/pending.html";
+    else if (targetAccount.role === "artist" || targetAccount.role === "both") redirectTo = "/app/pages/creator.html";
+
+    return res.json({ success: true, profile, account: profile, redirectTo });
+  } catch (error) {
+    console.error("Erreur POST /api/accounts/switch :", error);
+    return res.status(500).json({ success: false, error: "Changement de compte impossible." });
+  }
+});
+
+app.post("/api/accounts/login/send-code", async (req, res) => {
+  try {
+    cleanupVerificationStores();
+
+    const { mail, password, phone } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+
+    if (!normalizedMail || !password || !String(phone || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "L'adresse e-mail, le mot de passe et le téléphone sont obligatoires."
+      });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    let targetAccount = null;
+
+    for (const rootUser of users) {
+      targetAccount = rootUser.accounts?.find((item) =>
+        normalizeMail(item.mail) === normalizedMail &&
+        item.password === password &&
+        String(item.phone || "").trim() === String(phone).trim()
+      );
+
+      if (targetAccount) break;
+    }
+
+    if (!targetAccount) {
+      return res.status(403).json({
+        success: false,
+        error: "Les informations de connexion sont incorrectes."
+      });
+    }
+
+    const code = createVerificationCode();
+    const key = createVerificationKey(normalizedMail, "login-existing");
+
+    verificationCodes.set(key, {
+      code,
+      expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS,
+      attempts: 0
+    });
+
+    await transporter.sendMail({
+      from: "Sonara Pack <luca.dida17@gmail.com>",
+      to: normalizedMail,
+      subject: "Code de connexion Sonara Pack",
+      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Connexion à votre compte</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
+    });
+
+    return res.json({ success: true, message: "Code envoyé." });
+  } catch (error) {
+    console.error("Erreur envoi code connexion compte :", error);
+    return res.status(500).json({ success: false, error: "Impossible d'envoyer le code." });
+  }
+});
+
+/* =========================
+   CONNEXION À UN COMPTE EXISTANT
+========================= */
+
+app.post("/api/accounts/login", (req, res) => {
+  try {
+    const { mail, password, phone, verificationToken } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+
+    if (!normalizedMail || !password || !String(phone || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Informations de connexion incomplètes."
+      });
+    }
+
+    if (!consumeVerifiedToken({
+      token: verificationToken,
+      mail: normalizedMail,
+      purpose: "login-existing"
+    })) {
+      return res.status(403).json({
+        success: false,
+        error: "Vérification e-mail obligatoire ou expirée."
+      });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount = currentRootUser.accounts?.find((item) =>
+        normalizeMail(item.mail) === normalizedMail &&
+        item.password === password &&
+        String(item.phone || "").trim() === String(phone).trim()
+      );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+        break;
+      }
+    }
+
+    if (!rootUser || !account) {
+      return res.status(403).json({
+        success: false,
+        error: "Les informations de connexion sont incorrectes."
+      });
+    }
+
+    const returnedAccount = { ...account, userId: rootUser.id };
+    delete returnedAccount.password;
+
+    let redirectTo = "/home.html";
+    if (account.status === "pending") redirectTo = "/app/pages/pending.html";
+    else if (account.role === "artist" || account.role === "both") {
+      redirectTo = "/app/pages/creator.html";
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile: returnedAccount,
+      account: returnedAccount,
+      redirectTo
+    });
+  } catch (error) {
+    console.error("Erreur POST /api/accounts/login :", error);
+    return res.status(500).json({ success: false, error: "Connexion au compte impossible." });
+  }
+});
+
+ app.post("/api/stripe/connect-account", async (req, res) => {
+  try {
+    const { artistId, email } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let rootUser = null;
+    let accountProfile = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount = currentRootUser.accounts?.find(
+        (currentAccount) =>
+          String(currentAccount.id) === String(artistId) ||
+          String(currentAccount.accountId) === String(artistId)
+      );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        accountProfile = foundAccount;
+
+        break;
+      }
+    }
+
+    if (!accountProfile) {
+      return res.status(404).json({
+        error: "Utilisateur introuvable."
+      });
+    }
+
+    if (
+      accountProfile.role !== "artist" &&
+      accountProfile.role !== "both"
+    ) {
+      return res.status(403).json({
+        error:
+          "Seuls les artistes peuvent créer un compte Stripe."
+      });
+    }
+
+    if (accountProfile.stripeAccountId) {
+      const existingStripeAccount =
+        await stripe.accounts.retrieve(
+          accountProfile.stripeAccountId
+        );
+
+      const existingStatus =
+        existingStripeAccount.charges_enabled &&
+        existingStripeAccount.payouts_enabled
+          ? "verified"
+          : "onboarding_started";
+
+      accountProfile.stripeStatus = existingStatus;
+      accountProfile.updatedAt = new Date().toISOString();
+      rootUser.updatedAt = new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2)
+      );
+
+      if (existingStatus === "verified") {
+        const loginLink =
+          await stripe.accounts.createLoginLink(
+            accountProfile.stripeAccountId
+          );
+
+        return res.status(200).json({
+          success: true,
+          reused: true,
+          accountId: accountProfile.stripeAccountId,
+          stripeStatus: existingStatus,
+          url: loginLink.url
+        });
+      }
+
+      const existingAccountLink =
+        await stripe.accountLinks.create({
+          account: accountProfile.stripeAccountId,
+          refresh_url:
+            `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+          return_url:
+            `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+          type: "account_onboarding"
+        });
+
+      return res.status(200).json({
+        success: true,
+        reused: true,
+        accountId: accountProfile.stripeAccountId,
+        stripeStatus: existingStatus,
+        url: existingAccountLink.url
+      });
+    }
+
+    const stripeAccount = await stripe.accounts.create({
+      type: "express",
+      country: "FR",
+      email,
+
+      capabilities: {
+        card_payments: {
+          requested: true
+        },
+
+        transfers: {
+          requested: true
+        }
+      }
+    });
+
+    accountProfile.stripeAccountId =
+      stripeAccount.id;
+
+    accountProfile.stripeStatus =
+      "onboarding_started";
+
+    accountProfile.updatedAt =
+      new Date().toISOString();
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2)
+    );
+
+    const accountLink =
+      await stripe.accountLinks.create({
+        account: stripeAccount.id,
+
+        refresh_url:
+          `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+
+        return_url:
+          `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+
+        type: "account_onboarding"
+      });
+
+    return res.status(200).json({
+      success: true,
+      accountId: stripeAccount.id,
+      stripeStatus: accountProfile.stripeStatus,
+      url: accountLink.url
+    });
+
+  } catch (error) {
+    console.error(
+      "STRIPE CONNECT ERROR :",
+      error
+    );
+
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/stripe/continue-onboarding", async (req, res) => {
+  try {
+    const { artistId } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let rootUser = null;
+    let artist = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === String(artistId) ||
+            String(currentAccount.accountId) === String(artistId)
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        artist = foundAccount;
+        break;
+      }
+    }
+
+    if (!artist || !artist.stripeAccountId) {
+      return res.status(404).json({
+        error: "Compte Stripe introuvable."
+      });
+    }
+
+    const accountLink =
+      await stripe.accountLinks.create({
+        account: artist.stripeAccountId,
+
+        refresh_url:
+          `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+
+        return_url:
+          `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+
+        type: "account_onboarding"
+      });
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    return res.status(200).json({
+      success: true,
+      url: accountLink.url
+    });
+
+  } catch (error) {
+    console.error(
+      "STRIPE CONTINUE ONBOARDING ERROR :",
+      error
+    );
+
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+
+app.post("/api/stripe/login-link", async (req, res) => {
+  try {
+    const { artistId } = req.body || {};
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let artist = null;
+
+    for (const rootUser of users) {
+      artist = rootUser.accounts?.find(
+        (account) =>
+          String(account.id) === String(artistId) ||
+          String(account.accountId) === String(artistId)
+      );
+
+      if (artist) break;
+    }
+
+    if (!artist?.stripeAccountId) {
+      return res.status(404).json({
+        success: false,
+        error: "Compte Stripe introuvable."
+      });
+    }
+
+    const loginLink =
+      await stripe.accounts.createLoginLink(
+        artist.stripeAccountId
+      );
+
+    return res.status(200).json({
+      success: true,
+      url: loginLink.url
+    });
+  } catch (error) {
+    console.error("STRIPE LOGIN LINK ERROR :", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/stripe/account-status", async (req, res) => {
+  try {
+    const { artistId } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let rootUser = null;
+    let artist = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === String(artistId) ||
+            String(currentAccount.accountId) === String(artistId)
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        artist = foundAccount;
+        break;
+      }
+    }
+
+    if (!artist || !artist.stripeAccountId) {
+      return res.status(404).json({
+        error: "Compte Stripe introuvable."
+      });
+    }
+
+    const stripeAccount =
+      await stripe.accounts.retrieve(
+        artist.stripeAccountId
+      );
+
+    artist.stripeStatus =
+      stripeAccount.charges_enabled &&
+      stripeAccount.payouts_enabled
+        ? "verified"
+        : "onboarding_started";
+
+    artist.updatedAt =
+      new Date().toISOString();
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2)
+    );
+
+    return res.status(200).json({
+      success: true,
+      stripeStatus: artist.stripeStatus,
+      stripeAccountId: artist.stripeAccountId,
+      chargesEnabled: stripeAccount.charges_enabled,
+      payoutsEnabled: stripeAccount.payouts_enabled,
+      detailsSubmitted: stripeAccount.details_submitted,
+      requirementsCurrentlyDue:
+        stripeAccount.requirements?.currently_due || []
+    });
+
+  } catch (error) {
+    console.error(
+      "STRIPE ACCOUNT STATUS ERROR :",
+      error
+    );
+
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+
+app.post("/api/add-downloaded-pack", (req, res) => {
+  try {
+    const { userId, packId } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === String(userId) ||
+            String(currentAccount.accountId) === String(userId)
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte introuvable."
+      });
+    }
+
+    if (
+      account.role !== "user" &&
+      account.role !== "both"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Ce compte ne peut pas enregistrer de téléchargements."
+      });
+    }
+
+    if (!account.downloadedPacks) {
+      account.downloadedPacks = [];
+    }
+
+    if (
+      !account.downloadedPacks.includes(packId)
+    ) {
+      account.downloadedPacks.push(packId);
+    }
+
+    account.updatedAt =
+      new Date().toISOString();
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2),
+      "utf8"
+    );
+
+    return res.status(200).json({
+      success: true,
+      downloadedPacks: account.downloadedPacks
+    });
+
+  } catch (error) {
+    console.error(
+      "Erreur POST /api/add-downloaded-pack :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Impossible d'enregistrer le téléchargement."
+    });
+  }
+});
+
+app.post("/api/add-downloaded-track", (req, res) => {
+  try {
+    const { userId, trackId } = req.body;
+
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
+
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === String(userId) ||
+            String(currentAccount.accountId) === String(userId)
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte introuvable."
+      });
+    }
+
+    if (
+      account.role !== "user" &&
+      account.role !== "both"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Ce compte ne peut pas enregistrer de téléchargements."
+      });
+    }
+
+    if (!account.downloadedTracks) {
+      account.downloadedTracks = [];
+    }
+
+    if (
+      !account.downloadedTracks.includes(trackId)
+    ) {
+      account.downloadedTracks.push(trackId);
+    }
+
+    account.updatedAt =
+      new Date().toISOString();
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2),
+      "utf8"
+    );
+
+    return res.status(200).json({
+      success: true,
+      downloadedTracks: account.downloadedTracks
+    });
+
+  } catch (error) {
+    console.error(
+      "Erreur POST /api/add-downloaded-track :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Impossible d'enregistrer le téléchargement."
+    });
+  }
 });
 
 app.get("/api/pending-users", (req, res) => {
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
-  const pendingUsers = users.filter(user => user.status === "pending");
+  try {
+    const rootUsers = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
 
-  res.json(pendingUsers);
+    const pendingAccounts = [];
+
+    for (const rootUser of rootUsers) {
+      if (!Array.isArray(rootUser.accounts)) {
+        continue;
+      }
+
+      for (const account of rootUser.accounts) {
+        if (account.status !== "pending") {
+          continue;
+        }
+
+        const returnedAccount = {
+          ...account,
+          userId: rootUser.id
+        };
+
+        delete returnedAccount.password;
+
+        pendingAccounts.push(returnedAccount);
+      }
+    }
+
+    return res.status(200).json(
+      pendingAccounts
+    );
+
+  } catch (error) {
+    console.error(
+      "Erreur GET /api/pending-users :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Impossible de récupérer les comptes en attente."
+    });
+  }
 });
-
 
 
 app.get("/api/users/:id", (req, res) => {
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  try {
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
 
-  const user = users.find(user => user.id === req.params.id);
+    const requestedId = String(req.params.id);
 
-  if (!user) {
-    return res.status(404).json({
+    let rootUser = null;
+    let account = null;
+
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === requestedId ||
+            String(currentAccount.accountId) === requestedId
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur introuvable"
+      });
+    }
+
+    const returnedAccount = {
+      ...account,
+      userId: rootUser.id
+    };
+
+    delete returnedAccount.password;
+
+    return res.status(200).json({
+      success: true,
+      account: returnedAccount
+    });
+
+  } catch (error) {
+    console.error(
+      "Erreur GET /api/users/:id :",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: "Utilisateur introuvable"
+      message:
+        "Impossible de récupérer l'utilisateur."
     });
   }
-
-  res.json({
-    success: true,
-    user
-  });
 });
-
-
-
 
 app.patch("/api/users/:id/status", (req, res) => {
+  try {
+    const requestedId = String(req.params.id);
 
-  const userId = req.params.id;
-  const { status } = req.body;
+    const { status } = req.body;
 
-  const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
 
-  const user = users.find(user => user.id === userId);
+    let rootUser = null;
+    let account = null;
 
-  if (!user) {
-    return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+    for (const currentRootUser of users) {
+      const foundAccount =
+        currentRootUser.accounts?.find(
+          (currentAccount) =>
+            String(currentAccount.id) === requestedId ||
+            String(currentAccount.accountId) === requestedId
+        );
+
+      if (foundAccount) {
+        rootUser = currentRootUser;
+        account = foundAccount;
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur introuvable"
+      });
+    }
+
+    const moderatedAt = new Date().toISOString();
+
+    if (
+      status === "rejected" &&
+      String(account.role || "").toLowerCase() === "both"
+    ) {
+      account.artistStatus = "rejected";
+      account.artistModeratedAt = moderatedAt;
+      account.role = "user";
+      account.status = "approved";
+    } else {
+      account.status = status;
+    }
+
+    account.moderatedAt = moderatedAt;
+    account.updatedAt = moderatedAt;
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2),
+      "utf8"
+    );
+
+    const returnedAccount = {
+      ...account,
+      userId: rootUser.id
+    };
+
+    delete returnedAccount.password;
+
+    return res.status(200).json({
+      success: true,
+      message: `Utilisateur ${status}`,
+      account: returnedAccount
+    });
+
+  } catch (error) {
+    console.error(
+      "Erreur PATCH /api/users/:id/status :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Impossible de modifier le statut."
+    });
   }
-
-  user.status = status;
-  user.moderatedAt = new Date().toISOString();
-
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
-
-  res.json({
-    success: true,
-    message: `Utilisateur ${status}`,
-    user
-  });
 });
+
+app.patch(
+  "/api/profile",
+  upload.single("imageProfile"),
+  async (req, res) => {
+    try {
+      const id = String(req.body.id || "");
+
+      const pseudo =
+        req.body.pseudo?.trim();
+
+      const biography =
+        String(req.body.biography || "").trim();
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Identifiant utilisateur introuvable."
+        });
+      }
+
+      if (!pseudo) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Le pseudo ne peut pas être vide."
+        });
+      }
+
+      if (pseudo.length > 30) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Le pseudo ne peut pas dépasser 30 caractères."
+        });
+      }
+
+      if (biography.length > 500) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "La biographie ne peut pas dépasser 500 caractères."
+        });
+      }
+
+      const users = JSON.parse(
+        fs.readFileSync(usersPath, "utf8")
+      );
+
+      let rootUser = null;
+      let account = null;
+
+      for (const currentRootUser of users) {
+        const foundAccount =
+          currentRootUser.accounts?.find(
+            (currentAccount) =>
+              String(currentAccount.id) === id ||
+              String(currentAccount.accountId) === id
+          );
+
+        if (foundAccount) {
+          rootUser = currentRootUser;
+          account = foundAccount;
+          break;
+        }
+      }
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Utilisateur introuvable."
+        });
+      }
+
+      account.pseudo = pseudo;
+      account.biography = biography;
+
+      account.updatedAt =
+        new Date().toISOString();
+
+      rootUser.updatedAt =
+        new Date().toISOString();
+
+      if (req.file) {
+        account.imageProfile =
+          req.file.filename;
+      }
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2),
+        "utf8"
+      );
+
+      const updatedProfile = {
+        ...account,
+        userId: rootUser.id
+      };
+
+      delete updatedProfile.password;
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Profil mis à jour avec succès.",
+        profile: updatedProfile
+      });
+
+    } catch (error) {
+      console.error(
+        "Erreur PATCH /api/profile :",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Impossible de modifier le profil."
+      });
+    }
+  }
+);
+
+app.patch(
+  "/api/account/password",
+  (req, res) => {
+    try {
+      const id = String(req.body.id || "");
+
+      const currentPassword =
+        req.body.currentPassword;
+
+      const newPassword =
+        req.body.newPassword;
+
+      if (
+        !id ||
+        !currentPassword ||
+        !newPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Informations manquantes."
+        });
+      }
+
+      const users = JSON.parse(
+        fs.readFileSync(usersPath, "utf8")
+      );
+
+      let rootUser = null;
+      let account = null;
+
+      for (const currentRootUser of users) {
+        const foundAccount =
+          currentRootUser.accounts?.find(
+            (currentAccount) =>
+              String(currentAccount.id) === id ||
+              String(currentAccount.accountId) === id
+          );
+
+        if (foundAccount) {
+          rootUser = currentRootUser;
+          account = foundAccount;
+          break;
+        }
+      }
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Utilisateur introuvable."
+        });
+      }
+
+      if (
+        account.password !== currentPassword
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Mot de passe actuel incorrect."
+        });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Le nouveau mot de passe doit contenir au moins 8 caractères."
+        });
+      }
+
+      account.password = newPassword;
+
+      account.updatedAt =
+        new Date().toISOString();
+
+      rootUser.updatedAt =
+        new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2),
+        "utf8"
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Mot de passe modifié."
+      });
+
+    } catch (error) {
+      console.error(
+        "Erreur PATCH /api/account/password :",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Impossible de modifier le mot de passe."
+      });
+    }
+  }
+);
+
+app.patch(
+  "/api/account/informations",
+  (req, res) => {
+    try {
+      const id = String(req.body.id || "");
+
+      const firstname =
+        req.body.firstname?.trim();
+
+      const lastname =
+        req.body.lastname?.trim();
+
+      const date =
+        req.body.date || "";
+
+      const phone =
+        req.body.phone?.trim() || "";
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Identifiant utilisateur introuvable."
+        });
+      }
+
+      if (!firstname || !lastname) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Le prénom et le nom sont obligatoires."
+        });
+      }
+
+      const users = JSON.parse(
+        fs.readFileSync(usersPath, "utf8")
+      );
+
+      let rootUser = null;
+      let account = null;
+
+      for (const currentRootUser of users) {
+        const foundAccount =
+          currentRootUser.accounts?.find(
+            (currentAccount) =>
+              String(currentAccount.id) === id ||
+              String(currentAccount.accountId) === id
+          );
+
+        if (foundAccount) {
+          rootUser = currentRootUser;
+          account = foundAccount;
+          break;
+        }
+      }
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Utilisateur introuvable."
+        });
+      }
+
+      account.firstname = firstname;
+      account.lastname = lastname;
+      account.date = date;
+      account.phone = phone;
+
+      account.updatedAt =
+        new Date().toISOString();
+
+      rootUser.updatedAt =
+        new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2),
+        "utf8"
+      );
+
+      const updatedAccount = {
+        ...account,
+        userId: rootUser.id
+      };
+
+      delete updatedAccount.password;
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Informations du compte modifiées.",
+        account: updatedAccount
+      });
+
+    } catch (error) {
+      console.error(
+        "Erreur PATCH /api/account/informations :",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Impossible de modifier les informations du compte."
+      });
+    }
+  }
+);
+
+app.patch(
+  "/api/account/email",
+  (req, res) => {
+    try {
+      const id = String(req.body.id || "");
+
+      const newMail =
+        req.body.newMail
+          ?.trim()
+          .toLowerCase();
+
+      const currentPassword =
+        req.body.currentPassword;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Identifiant utilisateur introuvable."
+        });
+      }
+
+      if (!newMail || !currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Veuillez remplir tous les champs."
+        });
+      }
+
+      const users = JSON.parse(
+        fs.readFileSync(usersPath, "utf8")
+      );
+
+      let rootUser = null;
+      let account = null;
+
+      for (const currentRootUser of users) {
+        const foundAccount =
+          currentRootUser.accounts?.find(
+            (currentAccount) =>
+              String(currentAccount.id) === id ||
+              String(currentAccount.accountId) === id
+          );
+
+        if (foundAccount) {
+          rootUser = currentRootUser;
+          account = foundAccount;
+          break;
+        }
+      }
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Utilisateur introuvable."
+        });
+      }
+
+      if (
+        account.password !== currentPassword
+      ) {
+        return res.status(401).json({
+          success: false,
+          message: "Mot de passe incorrect."
+        });
+      }
+
+      const mailAlreadyUsed = users.some(
+        (currentRootUser) =>
+          currentRootUser.accounts?.some(
+            (currentAccount) =>
+              String(currentAccount.accountId) !==
+                String(account.accountId) &&
+              currentAccount.mail
+                ?.trim()
+                .toLowerCase() === newMail
+          )
+      );
+
+      if (mailAlreadyUsed) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Cette adresse e-mail est déjà utilisée."
+        });
+      }
+
+      account.mail = newMail;
+
+      account.updatedAt =
+        new Date().toISOString();
+
+      rootUser.updatedAt =
+        new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2),
+        "utf8"
+      );
+
+      const updatedAccount = {
+        ...account,
+        userId: rootUser.id
+      };
+
+      delete updatedAccount.password;
+
+      return res.status(200).json({
+        success: true,
+        message: "Adresse e-mail modifiée.",
+        account: updatedAccount
+      });
+
+    } catch (error) {
+      console.error(
+        "Erreur PATCH /api/account/email :",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Impossible de modifier l'adresse e-mail."
+      });
+    }
+  }
+);
+
 
 app.get("/api/packs/pending", (req, res) => {
   const packs = JSON.parse(
@@ -360,144 +2691,520 @@ function createZip(zipPath, files) {
 
 }
 
-app.post("/api/packs/pending", upload.any(), async (req, res) => {
-  try {
-    const packs = JSON.parse(fs.readFileSync("./data/pendingPacks.json", "utf8"));
-    const receivedPack = JSON.parse(req.body.packData);
 
-    const coverPackFile = req.files.find(file => file.fieldname === "coverPack");
+app.post(
+  "/api/packs/pending",
+  handlePackUpload,
+  async (req, res) => {
+    try {
+      const validation = validatePendingPackRequest(req);
 
-    receivedPack.coverPack = coverPackFile ? coverPackFile.filename : receivedPack.coverPack;
+      if (!validation.valid) {
+        return res.status(validation.status).json({
+          success: false,
+          message: validation.message
+        });
+      }
 
-    receivedPack.tracks = receivedPack.tracks.map((track, index) => {
-      const trackCoverFile = req.files.find(file => file.fieldname === `trackCover_${index}`);
-      const trackAudioFile = req.files.find(file => file.fieldname === `trackAudio_${index}`);
+      const receivedPack = validation.pack;
+      const fileByField = validation.fileByField;
+      const packs = JSON.parse(fs.readFileSync(packsPath, "utf8"));
 
-      return {
-        ...track,
-        coverPack: trackCoverFile ? trackCoverFile.filename : track.coverPack,
-        audioName: trackAudioFile ? trackAudioFile.filename : track.audioName
+      if (packs.some((pack) => String(pack.id) === String(receivedPack.id))) {
+        return res.status(409).json({
+          success: false,
+          message: "Ce pack existe déjà. Recharge la page avant de recommencer."
+        });
+      }
+
+      const coverPackFile = fileByField.get("coverPack");
+      receivedPack.coverPack = coverPackFile.filename;
+
+      receivedPack.tracks = receivedPack.tracks.map((track, index) => {
+        const trackCoverFile = fileByField.get(`trackCover_${index}`);
+        const trackAudioFile = fileByField.get(`trackAudio_${index}`);
+
+        return {
+          ...track,
+          coverPack: trackCoverFile.filename,
+          audioName: trackAudioFile.filename
+        };
+      });
+
+      const newPack = {
+        ...receivedPack,
+        status: "pending",
+        createdAt: new Date().toISOString()
       };
+
+      const packZipName = `${newPack.id}_pack.zip`;
+      const packZipFullPath = path.join(packsZipPath, packZipName);
+      const packAudioPaths = newPack.tracks.map((track) =>
+        path.join(__dirname, "uploads", track.audioName)
+      );
+
+      createZipFromPaths(packZipFullPath, packAudioPaths);
+      newPack.downloadZip = `/downloads/packs/${packZipName}`;
+
+      newPack.tracks.forEach((track, index) => {
+        const trackZipName = `${track.id}.zip`;
+        const trackZipFullPath = path.join(tracksZipPath, trackZipName);
+
+        createZipFromPaths(trackZipFullPath, [packAudioPaths[index]]);
+        track.downloadZip = `/downloads/tracks/${trackZipName}`;
+      });
+
+      packs.push(newPack);
+
+      fs.writeFileSync(
+        packsPath,
+        JSON.stringify(packs, null, 2)
+      );
+
+      createLocalFounderNotification({
+        type: "pack",
+        title: "Nouveau pack à modérer",
+        message: `${newPack.title} attend une validation.`,
+        entityId: newPack.id,
+        priority: "normal"
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Pack envoyé en modération.",
+        pack: newPack
+      });
+    } catch (error) {
+      console.error("ERREUR /api/packs/pending :", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Le pack n’a pas pu être préparé correctement."
+      });
+    }
+  }
+);
+
+
+app.post("/api/free-download-access", (req, res) => {
+  try {
+    const { userId, packId, trackId } = req.body || {};
+
+    if (!userId || !packId) {
+      return res.status(400).json({
+        success: false,
+        message: "Utilisateur ou pack manquant."
+      });
+    }
+
+    const packs = JSON.parse(fs.readFileSync(packsPath, "utf8"));
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const pack = packs.find((item) => String(item.id) === String(packId));
+
+    if (!pack) {
+      return res.status(404).json({
+        success: false,
+        message: "Pack introuvable."
+      });
+    }
+
+    const item = trackId
+      ? pack.tracks?.find((track) => String(track.id) === String(trackId))
+      : pack;
+
+    const isFree =
+      item?.isFree === true ||
+      String(item?.price || "").trim().toLowerCase() === "gratuit";
+
+    if (!item || !isFree) {
+      return res.status(409).json({
+        success: false,
+        message: "Ce contenu n’est pas gratuit."
+      });
+    }
+
+    let rootUser = null;
+    let account = null;
+
+    for (const candidate of users) {
+      const found = candidate.accounts?.find(
+        (current) =>
+          String(current.id) === String(userId) ||
+          String(current.accountId) === String(userId)
+      );
+
+      if (found) {
+        rootUser = candidate;
+        account = found;
+        break;
+      }
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte utilisateur introuvable."
+      });
+    }
+
+    if (trackId) {
+      account.downloadedTracks = Array.isArray(account.downloadedTracks)
+        ? account.downloadedTracks
+        : [];
+
+      if (!account.downloadedTracks.includes(trackId)) {
+        account.downloadedTracks.push(trackId);
+      }
+    } else {
+      account.downloadedPacks = Array.isArray(account.downloadedPacks)
+        ? account.downloadedPacks
+        : [];
+
+      if (!account.downloadedPacks.includes(packId)) {
+        account.downloadedPacks.push(packId);
+      }
+    }
+
+    account.updatedAt = new Date().toISOString();
+    rootUser.updatedAt = new Date().toISOString();
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), "utf8");
+
+    const pathPart = trackId
+      ? `app/pages/download.html?id=${encodeURIComponent(packId)}&trackId=${encodeURIComponent(trackId)}&free=true`
+      : `app/pages/download.html?id=${encodeURIComponent(packId)}&free=true`;
+
+    return res.json({
+      success: true,
+      free: true,
+      redirectUrl: `${process.env.FRONT_URL}/${pathPart}`
     });
-
-    const newPack = {
-      ...receivedPack,
-      status: "pending",
-      createdAt: new Date().toISOString()
-    };
-
-    const packZipName = `${newPack.id}_pack.zip`;
-    const packZipFullPath = path.join(packsZipPath, packZipName);
-
-    newPack.downloadZip = `/downloads/packs/${packZipName}`;
-
-    newPack.tracks.forEach(track => {
-      const trackZipName = `${track.id}.zip`;
-      track.downloadZip = `/downloads/tracks/${trackZipName}`;
+  } catch (error) {
+    console.error("Erreur accès gratuit :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d’autoriser le téléchargement gratuit."
     });
+  }
+});
 
-    packs.push(newPack);
+app.post("/api/stripe/create-checkout-session", async (req, res) => {
+  console.log("====================================");
+  console.log("🟢 [1] ROUTE CHECKOUT APPELÉE");
+  console.log("Body reçu :", req.body);
 
-    fs.writeFileSync(
-      "./data/pendingPacks.json",
-      JSON.stringify(packs, null, 2)
+  try {
+    const { packId, trackId, userId } = req.body;
+
+    console.log("🟢 [2] Données reçues");
+    console.log("packId :", packId);
+    console.log("trackId :", trackId);
+    console.log("userId :", userId);
+
+    if (!packId) {
+      console.log("🔴 [STOP] packId manquant");
+      return res.status(400).json({ error: "packId manquant." });
+    }
+
+    // Recharge fraîche des fichiers à chaque requête
+    console.log("🟢 [3] Lecture des fichiers JSON");
+
+    const packs = JSON.parse(fs.readFileSync("./data/pendingPacks.json", "utf-8"));
+    const users = JSON.parse(fs.readFileSync("./data/users.json", "utf-8"));
+
+    console.log("Nombre de packs :", packs.length);
+    console.log("Nombre de users :", users.length);
+
+    // Recherche du pack
+    console.log("🟢 [4] Recherche du pack");
+
+    const pack = packs.find(p => String(p.id) === String(packId));
+
+    console.log("Pack trouvé :", pack ? "OUI" : "NON");
+
+    if (!pack) {
+      console.log("🔴 [STOP] Pack introuvable");
+      return res.status(404).json({ error: "Pack introuvable." });
+    }
+
+    console.log("Pack ID :", pack.id);
+    console.log("Pack artistId :", pack.artistId);
+    console.log("Pack artist :", pack.artist);
+    console.log("Pack pseudo:", pack.pseudo);
+
+    // Recherche de l'artiste
+    console.log("🟢 [5] Recherche de l'artiste");
+
+    let artist = null;
+
+    for (const rootUser of users) {
+      const foundArtist = rootUser.accounts?.find(
+        (account) =>
+          (
+            account.role === "artist" ||
+            account.role === "both"
+          ) &&
+          (
+            String(account.id) === String(pack.artistId) ||
+            String(account.accountId) === String(pack.artistId) ||
+            String(account.pseudo) === String(pack.artist) ||
+            String(account.pseudo) === String(pack.pseudo)
+          )
+      );
+
+      if (foundArtist) {
+        artist = foundArtist;
+        break;
+      }
+    }
+
+    console.log("Artiste trouvé :", artist ? "OUI" : "NON");
+
+    if (!artist) {
+      console.log("🔴 [STOP] Artiste introuvable");
+      return res.status(404).json({ error: "Artiste introuvable." });
+    }
+
+    console.log("Artist ID :", artist.id);
+    console.log("Artist name :", artist.pseudo);
+    console.log("Artist stripeAccountId :", artist.stripeAccountId);
+    console.log("Artist stripeStatus :", artist.stripeStatus);
+
+    if (!artist.stripeAccountId) {
+      console.log("🔴 [STOP] Artiste Stripe non connecté");
+      return res.status(400).json({
+        error: "Artiste Stripe non connecté.",
+        artistId: artist.id,
+        pseudo: artist.pseudo,
+        stripeAccountId: artist.stripeAccountId || null,
+      });
+    }
+
+    console.log("🟢 [6] Stripe connecté OK");
+
+    let item;
+    let finalPurchaseType;
+    let successUrl;
+
+    // Achat track seule
+    if (trackId) {
+      console.log("🟢 [7] Mode achat TRACK");
+      console.log("trackId reçu :", trackId);
+
+      const track = pack.tracks?.find(t => String(t.id) === String(trackId));
+
+      console.log("Track trouvée :", track ? "OUI" : "NON");
+
+      if (!track) {
+        console.log("🔴 [STOP] Track introuvable");
+        return res.status(404).json({ error: "Track introuvable." });
+      }
+
+      console.log("Track ID :", track.id);
+      console.log("Track title :", track.title);
+      console.log("Track price :", track.price);
+
+      item = track;
+      finalPurchaseType = "track";
+
+      successUrl = `${process.env.FRONT_URL}/${track.downloadPage}&success=true`;
+    } 
+    
+    // Achat pack complet
+    else {
+      console.log("🟢 [7] Mode achat PACK COMPLET");
+
+      item = pack;
+      finalPurchaseType = "pack";
+
+      successUrl = `${process.env.FRONT_URL}/${pack.downloadPage}&success=true`;
+    }
+
+    console.log("🟢 [8] Item choisi");
+    console.log("Purchase type :", finalPurchaseType);
+    console.log("Item :", item);
+    console.log("Success URL :", successUrl);
+
+    // Prix
+    console.log("🟢 [9] Préparation du prix");
+
+    const itemIsFree =
+      item.isFree === true ||
+      String(item.price || "").trim().toLowerCase() === "gratuit";
+
+    if (itemIsFree) {
+      return res.status(409).json({
+        success: false,
+        error: "Ce contenu est gratuit et ne doit pas passer par Stripe."
+      });
+    }
+
+    const rawPrice = item.price || item.packPrice || item.totalPrice;
+
+    console.log("Prix brut :", rawPrice);
+
+    if (!rawPrice) {
+      console.log("🔴 [STOP] Prix manquant");
+      return res.status(400).json({
+        error: "Prix manquant sur l'item.",
+        item,
+      });
+    }
+
+    const priceNumber = Number(
+      String(rawPrice)
+        .replace("€", "")
+        .replace(",", ".")
+        .trim()
     );
 
-    res.json({
-      success: true,
-      message: "Pack envoyé en modération",
-      pack: newPack
+    console.log("Prix converti :", priceNumber);
+
+    if (!priceNumber || Number.isNaN(priceNumber)) {
+      console.log("🔴 [STOP] Prix invalide");
+      return res.status(400).json({
+        error: "Prix invalide.",
+        rawPrice,
+      });
+    }
+
+    const amount = Math.round(priceNumber * 100);
+
+    console.log("Montant Stripe en centimes :", amount);
+
+    console.log("🟢 [10] Création session Stripe");
+
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+
+        payment_method_types: ["card"],
+
+        line_items: [
+          {
+            price_data: {
+              currency: "eur",
+              product_data: {
+                name:
+                  finalPurchaseType === "track"
+                    ? `${item.title} - ${pack.title || pack.name}`
+                    : pack.title || pack.name || "Pack Sonara",
+              },
+              unit_amount: amount,
+            },
+            quantity: 1,
+          },
+        ],
+
+        metadata: {
+          packId: String(pack.id),
+          trackId: trackId ? String(trackId) : "",
+          userId: userId ? String(userId) : "",
+          artistId: String(artist.id),
+          purchaseType: finalPurchaseType,
+        },
+
+        payment_intent_data: {
+          application_fee_amount: Math.round(amount * 0.1),
+          transfer_data: {
+            destination: artist.stripeAccountId,
+          },
+        },
+
+        success_url: successUrl,
+        cancel_url: `http://192.168.1.18:3001/pack.html?id=${pack.id}&cancel=true`,
+      }
+    );
+
+    console.log("🟢 [11] Session Stripe créée !");
+    console.log("Session ID :", session.id);
+    console.log("Session URL :", session.url);
+
+    console.log("🟢 [12] Réponse envoyée au front");
+    console.log("====================================");
+
+    return res.json({
+      url: session.url,
+      sessionId: session.id,
     });
 
-    setTimeout(() => {
-      try {
-        createZip(
-          packZipFullPath,
-          newPack.tracks.map(track => track.audioName)
-        );
+  } catch (err) {
+    console.log("🔴 [ERREUR CATCH CHECKOUT]");
+    console.error(err);
+    console.log("Message :", err.message);
+    console.log("Type :", err.type);
+    console.log("Code :", err.code);
+    console.log("Raw :", err.raw);
+    console.log("====================================");
 
-        newPack.tracks.forEach(track => {
-          const trackZipName = `${track.id}.zip`;
-          const trackZipFullPath = path.join(tracksZipPath, trackZipName);
-
-          createZip(
-            trackZipFullPath,
-            [track.audioName]
-          );
-        });
-
-        transporter.sendMail({
-          from: "Sonara Pack <luca.dida17@gmail.com>",
-          to: "luca.dida17@gmail.com",
-          subject: "Nouvelle demande de pack à modérer",
-          html: `
-            <h2>Nouvelle demande Sonara Pack</h2>
-
-            <p><strong>Titre :</strong> ${newPack.title || "Pack sans titre"}</p>
-            <p><strong>Artiste :</strong> ${newPack.artist || "Non renseigné"}</p>
-            <p><strong>Prix :</strong> ${newPack.price || newPack.globalPrice || "Non renseigné"}</p>
-            <p><strong>Tracks :</strong> ${newPack.tracks?.length || 0}</p>
-            <p><strong>Status :</strong> ${newPack.status}</p>
-            <p><strong>ID :</strong> ${newPack.id}</p>
-
-            <p>
-              <strong>Vérification obligatoire :</strong><br>
-              cover, audio, cohérence du pack, prix, droits, qualité générale.
-            </p>
-
-            <a href="http://localhost:5501/admin.html">Ouvrir admin sur PC</a>
-            <br><br>
-            <a href="http://192.168.1.18:5501/admin.html">Ouvrir admin sur téléphone</a>
-          `
-        }).catch(error => {
-          console.error("Erreur mail :", error);
-        });
-
-      } catch (zipError) {
-        console.error("Erreur création ZIP :", zipError);
-      }
-    }, 0);
-
-  } catch (error) {
-    console.error("ERREUR /api/packs/pending :", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message
+    return res.status(500).json({
+      error: "Erreur création session Stripe.",
+      message: err.message,
+      type: err.type || null,
+      code: err.code || null,
     });
   }
 });
 
 app.patch("/api/packs/:id/status", (req, res) => {
-  const packId = req.params.id
-  const { status } = req.body
+  try {
+    const packId = String(req.params.id || "");
+    const status = String(req.body?.status || "");
 
-  const packs = JSON.parse(
-    fs.readFileSync("./data/pendingPacks.json", "utf8")
-  )
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Statut de pack invalide"
+      });
+    }
 
-  const pack = packs.find(pack => pack.id === packId)
+    if (status === "rejected") {
+      const deleted = permanentlyRejectLocalPack(packId);
 
-  if (!pack) {
-    return res.status(404).json({
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Pack introuvable"
+        });
+      }
+
+      return res.json({
+        success: true,
+        deleted: true,
+        message: "Pack refusé et supprimé définitivement",
+        deletedFiles: deleted.deletedFiles,
+        pack: { ...deleted.pack, status: "rejected" }
+      });
+    }
+
+    const packs = readJsonArray(packsPath);
+    const pack = packs.find((item) => String(item?.id || "") === packId);
+
+    if (!pack) {
+      return res.status(404).json({
+        success: false,
+        message: "Pack introuvable"
+      });
+    }
+
+    pack.status = status;
+    pack.moderatedAt = new Date().toISOString();
+    writeJsonArray(packsPath, packs);
+
+    return res.json({
+      success: true,
+      message: `Pack ${status}`,
+      pack
+    });
+  } catch (error) {
+    console.error("Erreur modération pack locale :", error);
+    return res.status(500).json({
       success: false,
-      message: "Pack introuvable"
-    })
+      message: "Impossible de terminer la modération du pack.",
+      error: error.message
+    });
   }
-
-  pack.status = status
-
-  fs.writeFileSync(
-    "./data/pendingPacks.json",
-    JSON.stringify(packs, null, 2)
-  )
-
-  res.json({
-    success: true,
-    message: `Pack ${status}`,
-    pack
-  })
 })
+
 
 function checkServerFiles() {
   const checks = [
@@ -533,11 +3240,1045 @@ function checkServerFiles() {
   console.log("🚀 Vérification terminée");
 }
 
+
+
+/* =========================
+   SUPPORT + FOUNDER INTERNE
+========================= */
+
+const supportTicketsPath = path.join(__dirname, "data", "supportTickets.json");
+const founderNotificationsPath = path.join(__dirname, "data", "founderNotifications.json");
+
+function ensureJsonArrayFile(filePath) {
+  const folder = path.dirname(filePath);
+  if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "[]", "utf8");
+}
+
+function readJsonArray(filePath) {
+  ensureJsonArrayFile(filePath);
+  try {
+    const value = JSON.parse(fs.readFileSync(filePath, "utf8") || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    console.error(`Fichier JSON invalide : ${filePath}`, error);
+    return [];
+  }
+}
+
+function writeJsonArray(filePath, value) {
+  ensureJsonArrayFile(filePath);
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+function requireFounderKey(req, res, next) {
+  const expected = String(process.env.FOUNDER_ACCESS_KEY || "").trim();
+  const received = String(req.get("x-founder-key") || "").trim();
+
+  if (!expected) {
+    return res.status(503).json({
+      success: false,
+      message: "FOUNDER_ACCESS_KEY absente sur Sonara local."
+    });
+  }
+
+  const expectedBuffer = Buffer.from(expected);
+  const receivedBuffer = Buffer.from(received);
+
+  if (
+    expectedBuffer.length !== receivedBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Clé Founder invalide."
+    });
+  }
+
+  next();
+}
+
+function createLocalFounderNotification({ type, title, message, entityId, priority = "normal" }) {
+  const notifications = readJsonArray(founderNotificationsPath);
+  const notification = {
+    id: `notif_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+    type: type || "system",
+    title: title || "Nouvelle activité Sonara",
+    message: message || "",
+    entityId: entityId || null,
+    priority,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+
+  notifications.unshift(notification);
+  writeJsonArray(founderNotificationsPath, notifications);
+  return notification;
+}
+
+app.post("/api/support/tickets", (req, res) => {
+  try {
+    const {
+      rootUserId = "",
+      accountId = "",
+      pseudo = "",
+      email = "",
+      role = "user",
+      category = "other",
+      subject = "",
+      message = ""
+    } = req.body || {};
+
+    if (!accountId || !String(subject).trim() || !String(message).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Compte, objet et description obligatoires."
+      });
+    }
+
+    const tickets = readJsonArray(supportTicketsPath);
+    const createdAt = new Date().toISOString();
+    const ticket = {
+      id: `ticket_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      ticketId: `SP-${Date.now().toString().slice(-8)}`,
+      rootUserId: String(rootUserId),
+      accountId: String(accountId),
+      pseudo: String(pseudo).trim(),
+      email: String(email).trim().toLowerCase(),
+      role: String(role),
+      category: String(category),
+      subject: String(subject).trim(),
+      message: String(message).trim(),
+      status: "open",
+      replies: [],
+      priority: category === "security" ? "urgent" : "normal",
+      createdAt,
+      updatedAt: createdAt
+    };
+
+    tickets.unshift(ticket);
+    writeJsonArray(supportTicketsPath, tickets);
+
+    createLocalFounderNotification({
+      type: "support",
+      title: ticket.priority === "urgent" ? "Ticket support urgent" : "Nouveau ticket support",
+      message: `${ticket.pseudo || ticket.email || "Utilisateur"} — ${ticket.subject}`,
+      entityId: ticket.id,
+      priority: ticket.priority
+    });
+
+    return res.status(201).json({ success: true, ticket });
+  } catch (error) {
+    console.error("Erreur création ticket support :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de créer la demande."
+    });
+  }
+});
+
+app.get("/api/support/tickets/:accountId", (req, res) => {
+  try {
+    const accountId = String(req.params.accountId || "");
+    const tickets = readJsonArray(supportTicketsPath)
+      .filter((ticket) => String(ticket.accountId || "") === accountId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return res.json({ success: true, tickets });
+  } catch (error) {
+    console.error("Erreur lecture tickets support :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de charger les demandes."
+    });
+  }
+});
+
+
+app.post("/api/founder/support/:id/replies", requireFounderKey, (req, res) => {
+  try {
+    const message = String(req.body?.message || "").trim();
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "La réponse ne peut pas être vide."
+      });
+    }
+
+    const tickets = readJsonArray(supportTicketsPath);
+    const ticket = tickets.find(
+      (item) => item.id === req.params.id || item.ticketId === req.params.id
+    );
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket introuvable."
+      });
+    }
+
+    if (!Array.isArray(ticket.replies)) ticket.replies = [];
+
+    const reply = {
+      id: `reply_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      sender: "founder",
+      message,
+      createdAt: new Date().toISOString()
+    };
+
+    ticket.replies.push(reply);
+    ticket.status = ticket.status === "resolved" || ticket.status === "closed"
+      ? ticket.status
+      : "in_progress";
+    ticket.updatedAt = new Date().toISOString();
+
+    writeJsonArray(supportTicketsPath, tickets);
+
+    return res.status(201).json({
+      success: true,
+      ticket,
+      reply
+    });
+  } catch (error) {
+    console.error("Erreur réponse support Founder :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d'enregistrer la réponse."
+    });
+  }
+});
+
+app.delete("/api/founder/support/:id", requireFounderKey, (req, res) => {
+  try {
+    const tickets = readJsonArray(supportTicketsPath);
+    const nextTickets = tickets.filter(
+      (item) => item.id !== req.params.id && item.ticketId !== req.params.id
+    );
+
+    if (nextTickets.length === tickets.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket introuvable."
+      });
+    }
+
+    writeJsonArray(supportTicketsPath, nextTickets);
+
+    return res.json({
+      success: true,
+      message: "Ticket supprimé."
+    });
+  } catch (error) {
+    console.error("Erreur suppression ticket Founder :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de supprimer le ticket."
+    });
+  }
+});
+
+app.get("/api/founder/support", requireFounderKey, (_req, res) => {
+  const items = readJsonArray(supportTicketsPath)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.json({ success: true, items, tickets: items });
+});
+
+app.patch("/api/founder/support/:id/status", requireFounderKey, (req, res) => {
+  const tickets = readJsonArray(supportTicketsPath);
+  const ticket = tickets.find(
+    (item) => item.id === req.params.id || item.ticketId === req.params.id
+  );
+
+  if (!ticket) {
+    return res.status(404).json({
+      success: false,
+      message: "Ticket introuvable."
+    });
+  }
+
+  ticket.status = String(req.body.status || "open");
+  ticket.updatedAt = new Date().toISOString();
+  writeJsonArray(supportTicketsPath, tickets);
+
+  res.json({ success: true, ticket });
+});
+
+app.get("/api/founder/notifications", requireFounderKey, (_req, res) => {
+  const items = readJsonArray(founderNotificationsPath)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.json({ success: true, items, notifications: items });
+});
+
+app.patch("/api/founder/notifications/read-all", requireFounderKey, (_req, res) => {
+  const notifications = readJsonArray(founderNotificationsPath).map((item) => ({
+    ...item,
+    read: true,
+    readAt: item.readAt || new Date().toISOString()
+  }));
+
+  writeJsonArray(founderNotificationsPath, notifications);
+  res.json({ success: true });
+});
+
+app.patch("/api/founder/notifications/:id/read", requireFounderKey, (req, res) => {
+  const notifications = readJsonArray(founderNotificationsPath);
+  const notification = notifications.find((item) => item.id === req.params.id);
+
+  if (!notification) {
+    return res.status(404).json({
+      success: false,
+      message: "Notification introuvable."
+    });
+  }
+
+  notification.read = true;
+  notification.readAt = new Date().toISOString();
+  writeJsonArray(founderNotificationsPath, notifications);
+
+  res.json({ success: true, notification });
+});
+
+app.delete("/api/founder/notifications", requireFounderKey, (req, res) => {
+  const ids = Array.isArray(req.body?.ids)
+    ? [...new Set(req.body.ids.map((id) => String(id || "").trim()).filter(Boolean))]
+    : [];
+
+  if (!ids.length) {
+    return res.status(400).json({
+      success: false,
+      message: "Aucune notification sélectionnée."
+    });
+  }
+
+  const notifications = readJsonArray(founderNotificationsPath);
+  const selectedIds = new Set(ids);
+  const remaining = notifications.filter((item) => !selectedIds.has(String(item.id || "")));
+  const deletedCount = notifications.length - remaining.length;
+
+  writeJsonArray(founderNotificationsPath, remaining);
+
+  return res.json({
+    success: true,
+    deletedCount,
+    remainingCount: remaining.length
+  });
+});
+
+
+
+
+/* =========================
+   FOUNDER COHÉRENCE V5.1.6
+========================= */
+
+function sanitizeFounderAccount(account, userId) {
+  if (!account || typeof account !== "object") return null;
+  const safe = { ...account, userId };
+  delete safe.password;
+  delete safe.verificationToken;
+  return safe;
+}
+
+function getLocalFounderState() {
+  const rootUsers = readJsonArray(usersPath);
+  const packs = readJsonArray(packsPath);
+  const tickets = readJsonArray(supportTicketsPath);
+  const notifications = readJsonArray(founderNotificationsPath);
+
+  const accounts = rootUsers.flatMap((rootUser) =>
+    Array.isArray(rootUser.accounts)
+      ? rootUser.accounts.map((account) => sanitizeFounderAccount(account, rootUser.id))
+      : []
+  ).filter(Boolean);
+
+  return { rootUsers, accounts, packs, tickets, notifications };
+}
+
+app.get("/api/founder/health", requireFounderKey, (_req, res) => {
+  try {
+    const state = getLocalFounderState();
+
+    return res.json({
+      success: true,
+      environment: "local",
+      database: "json",
+      storage: {
+        users: fs.existsSync(usersPath),
+        packs: fs.existsSync(packsPath),
+        support: fs.existsSync(supportTicketsPath),
+        notifications: fs.existsSync(founderNotificationsPath)
+      },
+      counts: {
+        users: state.accounts.length,
+        packs: state.packs.length,
+        tickets: state.tickets.length,
+        notifications: state.notifications.length
+      },
+      checkedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+app.get("/api/founder/overview", requireFounderKey, (_req, res) => {
+  const { accounts, packs, tickets, notifications } = getLocalFounderState();
+
+  const counts = {
+    unreadNotifications: notifications.filter((item) => !item.read).length,
+    urgent: notifications.filter((item) => item.priority === "urgent" && !item.read).length,
+    openTickets: tickets.filter((item) => ["open", "in_progress"].includes(item.status)).length,
+    pendingArtists: accounts.filter((item) =>
+      item.status === "pending" && ["artist", "both"].includes(item.role)
+    ).length,
+    pendingPacks: packs.filter((item) => item.status === "pending").length,
+    users: accounts.length,
+    approvedPacks: packs.filter((item) => item.status === "approved").length
+  };
+
+  return res.json({
+    success: true,
+    counts,
+    stats: counts,
+    recentNotifications: notifications
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 8)
+  });
+});
+
+app.get("/api/founder/moderation/artists", requireFounderKey, (_req, res) => {
+  const { accounts } = getLocalFounderState();
+  const items = accounts.filter((account) =>
+    account.status === "pending" && ["artist", "both"].includes(account.role)
+  );
+
+  res.json({ success: true, items, artists: items });
+});
+
+app.get("/api/founder/moderation/packs", requireFounderKey, (_req, res) => {
+  const { packs } = getLocalFounderState();
+  const items = packs.filter((pack) => pack.status === "pending");
+
+  res.json({ success: true, items, packs: items });
+});
+
+app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, res) => {
+  const type = String(req.params.type || "").toLowerCase();
+  const requestedId = String(req.params.id || "");
+  const status = String(req.body?.status || "");
+
+  if (!["approved", "rejected", "pending"].includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Statut de modération invalide."
+    });
+  }
+
+  if (["artist", "artists", "user", "users"].includes(type)) {
+    const rootUsers = readJsonArray(usersPath);
+    let updatedAccount = null;
+
+    for (const rootUser of rootUsers) {
+      const account = Array.isArray(rootUser.accounts)
+        ? rootUser.accounts.find((item) =>
+            String(item.id || "") === requestedId ||
+            String(item.accountId || "") === requestedId
+          )
+        : null;
+
+      if (!account) continue;
+
+      const moderatedAt = new Date().toISOString();
+
+      if (
+        status === "rejected" &&
+        String(account.role || "").toLowerCase() === "both"
+      ) {
+        account.artistStatus = "rejected";
+        account.artistModeratedAt = moderatedAt;
+        account.role = "user";
+        account.status = "approved";
+      } else {
+        account.status = status;
+      }
+
+      account.moderatedAt = moderatedAt;
+      account.updatedAt = moderatedAt;
+      rootUser.updatedAt = moderatedAt;
+      updatedAccount = sanitizeFounderAccount(account, rootUser.id);
+      break;
+    }
+
+    if (!updatedAccount) {
+      return res.status(404).json({
+        success: false,
+        message: "Artiste introuvable."
+      });
+    }
+
+    writeJsonArray(usersPath, rootUsers);
+    return res.json({ success: true, item: updatedAccount, account: updatedAccount });
+  }
+
+  if (["pack", "packs"].includes(type)) {
+    if (status === "rejected") {
+      const deleted = permanentlyRejectLocalPack(requestedId);
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Pack introuvable."
+        });
+      }
+
+      const rejectedPack = { ...deleted.pack, status: "rejected" };
+      return res.json({
+        success: true,
+        deleted: true,
+        deletedFiles: deleted.deletedFiles,
+        item: rejectedPack,
+        pack: rejectedPack
+      });
+    }
+
+    const packs = readJsonArray(packsPath);
+    const pack = packs.find((item) => String(item.id || "") === requestedId);
+
+    if (!pack) {
+      return res.status(404).json({
+        success: false,
+        message: "Pack introuvable."
+      });
+    }
+
+    pack.status = status;
+    pack.moderatedAt = new Date().toISOString();
+    writeJsonArray(packsPath, packs);
+
+    return res.json({ success: true, item: pack, pack });
+  }
+
+  return res.status(400).json({
+    success: false,
+    message: "Type de modération invalide."
+  });
+});
+
+
+
+function getControlAccountRole(account) {
+  const role = String(account.originalRole || account.role || "user").toLowerCase();
+
+  if (
+    role === "user" &&
+    ["rejected", "banned", "suspended", "approved"].includes(
+      String(account.artistStatus || "").toLowerCase()
+    )
+  ) {
+    return "both";
+  }
+
+  return role;
+}
+
+function appendModerationHistory(account, entry) {
+  if (!Array.isArray(account.moderationHistory)) {
+    account.moderationHistory = [];
+  }
+
+  account.moderationHistory.unshift(entry);
+  account.moderationHistory = account.moderationHistory.slice(0, 50);
+}
+
+function applyAccountControl(account, action, options = {}) {
+  const now = new Date().toISOString();
+  const reason = String(options.reason || "").trim();
+  const durationDays = Math.max(1, Math.min(365, Number(options.durationDays) || 7));
+  const controlledRole = getControlAccountRole(account);
+  const previous = {
+    role: account.role,
+    status: account.status,
+    artistStatus: account.artistStatus || null
+  };
+
+  if (!account.originalRole) {
+    account.originalRole = controlledRole;
+  }
+
+  if (action === "ban") {
+    if (controlledRole === "both") {
+      account.role = "user";
+      account.status = "approved";
+      account.artistStatus = "banned";
+    } else if (controlledRole === "artist") {
+      account.role = "artist";
+      account.status = "banned";
+      account.artistStatus = "banned";
+    } else {
+      account.role = "user";
+      account.status = "banned";
+    }
+
+    account.bannedAt = now;
+    account.suspendedUntil = null;
+  } else if (action === "suspend") {
+    const suspendedUntil = new Date(
+      Date.now() + durationDays * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    if (controlledRole === "both") {
+      account.role = "user";
+      account.status = "approved";
+      account.artistStatus = "suspended";
+    } else if (controlledRole === "artist") {
+      account.role = "artist";
+      account.status = "suspended";
+      account.artistStatus = "suspended";
+    } else {
+      account.role = "user";
+      account.status = "suspended";
+    }
+
+    account.suspendedAt = now;
+    account.suspendedUntil = suspendedUntil;
+  } else if (action === "reactivate") {
+    account.status = "approved";
+    account.suspendedUntil = null;
+    account.bannedAt = null;
+
+    if (controlledRole === "artist") {
+      account.role = "artist";
+      account.artistStatus = "approved";
+    } else if (controlledRole === "both") {
+      account.role = "both";
+      account.artistStatus = "approved";
+    } else {
+      account.role = "user";
+    }
+  } else if (action === "restore_creator") {
+    account.role = controlledRole === "artist" ? "artist" : "both";
+    account.status = "approved";
+    account.artistStatus = "approved";
+    account.suspendedUntil = null;
+    account.bannedAt = null;
+    account.artistModeratedAt = now;
+    account.moderationNotice = {
+      id: `notice_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
+      type: "creator_access_restored",
+      message:
+        "Nous avons corrigé une erreur de modération. Désolé pour ce contretemps.",
+      createdAt: now,
+      read: false
+    };
+  } else {
+    throw new Error("Action de contrôle invalide.");
+  }
+
+  account.updatedAt = now;
+
+  appendModerationHistory(account, {
+    id: `moderation_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
+    action,
+    reason,
+    durationDays: action === "suspend" ? durationDays : null,
+    previous,
+    next: {
+      role: account.role,
+      status: account.status,
+      artistStatus: account.artistStatus || null
+    },
+    createdAt: now,
+    source: "founder"
+  });
+
+  return account;
+}
+
+app.get("/api/founder/accounts", requireFounderKey, (_req, res) => {
+  const rootUsers = readJsonArray(usersPath);
+  const accounts = [];
+
+  for (const rootUser of rootUsers) {
+    for (const account of Array.isArray(rootUser.accounts) ? rootUser.accounts : []) {
+      accounts.push({
+        ...sanitizeFounderAccount(account, rootUser.id),
+        artistStatus: account.artistStatus || null,
+        originalRole: account.originalRole || null,
+        suspendedUntil: account.suspendedUntil || null,
+        moderationHistory: Array.isArray(account.moderationHistory)
+          ? account.moderationHistory.slice(0, 5)
+          : []
+      });
+    }
+  }
+
+  accounts.sort((a, b) =>
+    new Date(b.updatedAt || b.createdAt || 0) -
+    new Date(a.updatedAt || a.createdAt || 0)
+  );
+
+  return res.json({ success: true, items: accounts, accounts });
+});
+
+app.patch(
+  "/api/founder/accounts/:id/control",
+  requireFounderKey,
+  (req, res) => {
+    try {
+      const requestedId = String(req.params.id || "");
+      const action = String(req.body?.action || "").toLowerCase();
+
+      if (!["ban", "suspend", "reactivate", "restore_creator"].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          message: "Action de contrôle invalide."
+        });
+      }
+
+      const rootUsers = readJsonArray(usersPath);
+      let rootUser = null;
+      let account = null;
+
+      for (const currentRootUser of rootUsers) {
+        const found = Array.isArray(currentRootUser.accounts)
+          ? currentRootUser.accounts.find((item) =>
+              String(item.id || item.accountId || "") === requestedId
+            )
+          : null;
+
+        if (found) {
+          rootUser = currentRootUser;
+          account = found;
+          break;
+        }
+      }
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Compte introuvable."
+        });
+      }
+
+      applyAccountControl(account, action, req.body || {});
+      rootUser.updatedAt = account.updatedAt;
+      writeJsonArray(usersPath, rootUsers);
+
+      const returnedAccount = {
+        ...sanitizeFounderAccount(account, rootUser.id),
+        artistStatus: account.artistStatus || null,
+        originalRole: account.originalRole || null,
+        suspendedUntil: account.suspendedUntil || null,
+        moderationHistory: account.moderationHistory || []
+      };
+
+      return res.json({
+        success: true,
+        message: "Décision de modération appliquée.",
+        account: returnedAccount,
+        item: returnedAccount
+      });
+    } catch (error) {
+      console.error("Erreur contrôle compte Founder :", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Impossible de contrôler ce compte."
+      });
+    }
+  }
+);
+
+app.patch("/api/profile/:id/moderation-notice/read", (req, res) => {
+  try {
+    const requestedId = String(req.params.id || "");
+    const rootUsers = readJsonArray(usersPath);
+    let account = null;
+
+    for (const rootUser of rootUsers) {
+      account = Array.isArray(rootUser.accounts)
+        ? rootUser.accounts.find((item) =>
+            String(item.id || item.accountId || "") === requestedId
+          )
+        : null;
+
+      if (account) break;
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte introuvable."
+      });
+    }
+
+    if (account.moderationNotice) {
+      account.moderationNotice.read = true;
+      account.moderationNotice.readAt = new Date().toISOString();
+    }
+
+    writeJsonArray(usersPath, rootUsers);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de confirmer la notice."
+    });
+  }
+});
+
+
+/* =========================
+   FEEDBACK SONARA -> FOUNDER
+========================= */
+
+const feedbackPath = path.join(__dirname, "data", "feedback.json");
+
+app.post("/api/feedback", (req, res) => {
+  try {
+    const {
+      rootUserId = "",
+      accountId = "",
+      pseudo = "",
+      email = "",
+      role = "user",
+      type = "general",
+      rating = 0,
+      title = "",
+      message = "",
+      page = ""
+    } = req.body || {};
+
+    const cleanTitle = String(title).trim();
+    const cleanMessage = String(message).trim();
+
+    if (cleanTitle.length < 3 || cleanMessage.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Titre et commentaire obligatoires."
+      });
+    }
+
+    const items = readJsonArray(feedbackPath);
+    const createdAt = new Date().toISOString();
+
+    const feedback = {
+      id: `feedback_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      reference: `FB-${Date.now().toString().slice(-8)}`,
+      rootUserId: String(rootUserId),
+      accountId: String(accountId),
+      pseudo: String(pseudo).trim(),
+      email: String(email).trim().toLowerCase(),
+      role: String(role),
+      type: String(type || "general"),
+      rating: Math.min(5, Math.max(0, Number(rating) || 0)),
+      title: cleanTitle,
+      message: cleanMessage,
+      page: String(page),
+      status: "new",
+      replies: [],
+      createdAt,
+      updatedAt: createdAt
+    };
+
+    items.unshift(feedback);
+    writeJsonArray(feedbackPath, items);
+
+    createLocalFounderNotification({
+      type: "feedback",
+      title: "Nouveau feedback",
+      message: `${feedback.pseudo || feedback.email || "Utilisateur"} — ${feedback.title}`,
+      entityId: feedback.id,
+      priority: feedback.type === "bug" ? "urgent" : "normal"
+    });
+
+    return res.status(201).json({ success: true, feedback });
+  } catch (error) {
+    console.error("Erreur création feedback :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d’envoyer le commentaire."
+    });
+  }
+});
+
+
+
+
+app.get("/api/feedback/mine", (req, res) => {
+  try {
+    const accountId = String(req.query.accountId || "").trim();
+    const email = String(req.query.email || "").trim().toLowerCase();
+
+    if (!accountId && !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Compte utilisateur manquant."
+      });
+    }
+
+    const feedback = readJsonArray(feedbackPath)
+      .filter((item) => {
+        const matchesAccount =
+          accountId && String(item.accountId || "") === accountId;
+        const matchesEmail =
+          email && String(item.email || "").trim().toLowerCase() === email;
+
+        return matchesAccount || matchesEmail;
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return res.json({
+      success: true,
+      feedback
+    });
+  } catch (error) {
+    console.error("Erreur lecture feedback utilisateur :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de charger les commentaires."
+    });
+  }
+});
+
+app.get("/api/founder/feedback", requireFounderKey, (_req, res) => {
+  const feedback = readJsonArray(feedbackPath)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.json({
+    success: true,
+    items: feedback,
+    feedback,
+    newCount: feedback.filter((item) => item.status === "new").length
+  });
+});
+
+
+app.post("/api/founder/feedback/:id/replies", requireFounderKey, async (req, res) => {
+  try {
+    const message = String(req.body?.message || "").trim();
+
+    if (message.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "La réponse ne peut pas être vide."
+      });
+    }
+
+    const items = readJsonArray(feedbackPath);
+    const feedback = items.find(
+      (item) => item.id === req.params.id || item.reference === req.params.id
+    );
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: "Feedback introuvable."
+      });
+    }
+
+    if (!Array.isArray(feedback.replies)) feedback.replies = [];
+
+    const reply = {
+      id: `feedback_reply_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      sender: "founder",
+      message,
+      createdAt: new Date().toISOString()
+    };
+
+    feedback.replies.push(reply);
+    feedback.status = "replied";
+    feedback.updatedAt = new Date().toISOString();
+    writeJsonArray(feedbackPath, items);
+
+    let emailSent = false;
+
+    if (feedback.email) {
+      try {
+        await transporter.sendMail({
+          from: "Sonara Pack <luca.dida17@gmail.com>",
+          to: feedback.email,
+          subject: `Réponse à votre feedback Sonara Pack — ${feedback.title}`,
+          html: `
+            <div style="font-family:Arial,sans-serif;background:#0b0b0b;color:#fff;padding:32px;border-radius:18px">
+              <h1 style="margin:0 0 18px">Réponse de l’équipe Sonara</h1>
+              <p style="color:#aaa">Votre commentaire :</p>
+              <p>${feedback.message}</p>
+              <hr style="border:none;border-top:1px solid #333;margin:24px 0">
+              <p style="color:#aaa">Notre réponse :</p>
+              <p>${message}</p>
+            </div>
+          `
+        });
+        emailSent = true;
+      } catch (emailError) {
+        console.error("Erreur e-mail réponse feedback :", emailError);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      feedback,
+      reply,
+      emailSent
+    });
+  } catch (error) {
+    console.error("Erreur réponse feedback :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d’envoyer la réponse."
+    });
+  }
+});
+
+app.patch("/api/founder/feedback/:id/status", requireFounderKey, (req, res) => {
+  const items = readJsonArray(feedbackPath);
+  const feedback = items.find(
+    (item) => item.id === req.params.id || item.reference === req.params.id
+  );
+
+  if (!feedback) {
+    return res.status(404).json({
+      success: false,
+      message: "Feedback introuvable."
+    });
+  }
+
+  feedback.status = String(req.body?.status || "reviewed");
+  feedback.updatedAt = new Date().toISOString();
+  writeJsonArray(feedbackPath, items);
+
+  res.json({ success: true, feedback });
+});
+
+app.delete("/api/founder/feedback/:id", requireFounderKey, (req, res) => {
+  const items = readJsonArray(feedbackPath);
+  const remaining = items.filter(
+    (item) => item.id !== req.params.id && item.reference !== req.params.id
+  );
+
+  if (remaining.length === items.length) {
+    return res.status(404).json({
+      success: false,
+      message: "Feedback introuvable."
+    });
+  }
+
+  writeJsonArray(feedbackPath, remaining);
+  res.json({ success: true, message: "Feedback supprimé." });
+});
+
+
 app.listen(PORT, () => {
 
-    checkServerFiles();
+  checkServerFiles();
 
-    console.log(`
+  console.log(`
 ━━━━━━━━━━━━━━━━━━
 🔥 SONARA READY
 🌐 http://localhost:${PORT}

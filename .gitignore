@@ -1,6 +1,10 @@
 node_modules/
-.env
+
+.env.prod
+.env.local
+.env.test 
+
 uploads/
 downloads/
-data/users.json
-data/pendingPacks.json
+
+data/*.json

@@ -1,9 +1,16 @@
-html {
-  height: 100vh;
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  display: none;
 }
 
-.scroll-btn{
-  display: none;
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* IE */
+* {
+  -ms-overflow-style: none;
 }
 
 .update-modal-overlay {
@@ -131,15 +138,26 @@ h1 {
   font-size: 28px;
 }
 
-body{ 
-background:
-     radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
-     radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
-     #020617;
+
+html, body {
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+
+body{
+  overflow-y: scroll; 
+  position: fixed;
+  width: 98%;
+ height: 90%;
+  margin: 2px;
+    background: url("image.jpg") center center / cover no-repeat;
+
+  background: #0f0f10;
     color: White;
   font-family: inter, Arial, sans-serif; 
-  height: 100vh;
-  margin: 0;
+ 
 }
 
 
@@ -166,6 +184,7 @@ background:
     border: 1px solid rgba(120, 210, 255, 0.18);
     box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
   }
+
 
   .nav-mobile-btn {
     background: transparent;
@@ -235,15 +254,12 @@ background:
   
 }
 
-.header {
-  background: rgba(255, 255, 255, 0.085);
-}
 
 
 
 .pack-categorie {
   padding: 0px;
-  margin-top: 60px;
+  margin-top: 30px;
   margin-left: 10px;
   flex-direction: row;
 }
@@ -286,7 +302,9 @@ background:
     display: block;
 }
 
-
+.scroll-btn {
+  display: none;
+}
 
 .cover {
   width: 160px;
@@ -338,7 +356,59 @@ overflow: hidden;
  }
 
  @media  (min-width: 900px)  {
+html,
+body,
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+img,
+a,
+button {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+  
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+background: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00d9ff, #0066ff);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #52ecff, #3385ff);
+}
+
+html, body {
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+
+body{
+  overflow-y: scroll; 
+  position: fixed;
+  width: 97%;
+  height: 90%;
+  margin: 2px;
+  
+    background: url("image.jpg") center center / cover no-repeat;
+
+ background: #0f0f10;
+    color: White;
+  font-family: inter, Arial, sans-serif; 
  
+}
 
 
 
@@ -438,20 +508,6 @@ cursor: pointer;
 
 
 
-.scroll-zone {
-  margin-top: 0;
-  margin-bottom: 0;
-
-  height: calc(100vh - 70px);
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding: 40px 40px 140px;
-  box-sizing: border-box;
-
- background:
-    rgba(0, 0, 0, 0.084);
-}
 
 
   .mobile-bottom-bar {
@@ -535,13 +591,11 @@ cursor: pointer;
 }
 
 
-.pack-categorie {
-  margin-top: 0px;
-}
 
 .pack-row {
   display: flex;
-   gap: 30px;
+   gap: 40px;
+   margin-bottom: 20px;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
@@ -578,6 +632,9 @@ cursor: pointer;
   width: 40px;
   height: 40px;
   padding: 5px 10px;
+  margin-right: 40px;
+  margin-left: 0px;
+  margin-bottom: 20px;
   border-radius: 999px;
   cursor: pointer;
   flex-direction: row;
@@ -585,18 +642,24 @@ cursor: pointer;
 
 .scroll-btn.left {
  position: absolute;
- left: 1200px;
+ left: 1150px;
  top: 50%;
  transform: translateY(-50%);
 }
 
 .scroll-btn.right {
   position: absolute;
-  right: 0px;
+  right: -20px;
   top: 50%;
   transform: translateY(-50%);
 }
 
+.pack-categorie {
+  padding: 0px;
+  margin-top: 0px;
+  margin-left: 30px;
+  flex-direction: row;
+}
 
 
 .card {
@@ -609,7 +672,8 @@ cursor: pointer;
     flex-direction:column;
     margin-left: 0;
     gap: 23px;
-    max-width: 220px;
+    height: 220px;
+    max-width: 210px;
     padding-top: -20px;
     margin-top: 0px;
     border-radius: 20px;
@@ -621,6 +685,7 @@ cursor: pointer;
     cursor: pointer;
     all: unset;
     display: block;
+    
 }
 
 

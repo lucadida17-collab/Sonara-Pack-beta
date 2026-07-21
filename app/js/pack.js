@@ -1,6 +1,160 @@
+function showPopup({ type = "info", title = "", message = "" }) {
+  const oldPopup = document.querySelector(".sonara-popup-overlay");
+  if (oldPopup) oldPopup.remove();
+
+  const popup = document.createElement("div");
+  popup.className = "sonara-popup-overlay";
+
+  popup.innerHTML = `
+    <div class="sonara-popup ${type}">
+      <h3>${title}</h3>
+      <p>${message}</p>
+      <button class="sonara-popup-btn">OK</button>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  popup.querySelector(".sonara-popup-btn").addEventListener("click", () => {
+    popup.remove();
+  });
+}
+
+let selectedPackId = null;
+let selectedTrackId = null;
+let selectedPurchaseType = null;
 
 
-const R2_PUBLIC_URL = "https://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev";
+async function startStripePayment() {
+  console.log("====================================");
+  console.log("🟢 [FRONT 1] startStripePayment lancé");
+
+  try {
+    const rawProfile = localStorage.getItem("sonaraProfile");
+
+    console.log("🟢 [FRONT 2] rawProfile :", rawProfile);
+
+    if (!rawProfile) {
+      console.log("🔴 [STOP FRONT] Aucun profil localStorage");
+      showPopup({
+        type: "error",
+        title: "Profil introuvable",
+        message: "Reconnecte-toi puis réessaie."
+      });
+      return;
+    }
+
+    const profile = JSON.parse(rawProfile);
+
+    console.log("🟢 [FRONT 3] Profile parsé :", profile);
+    console.log("profile.id :", profile?.id);
+
+    console.log("🟢 [FRONT 4] Sélection actuelle");
+    console.log("selectedPackId :", selectedPackId);
+    console.log("selectedTrackId :", selectedTrackId);
+    console.log("selectedPurchaseType :", selectedPurchaseType);
+
+    if (!selectedPackId) {
+      console.log("🔴 [STOP FRONT] selectedPackId manquant");
+
+      showPopup({
+        type: "error",
+        title: "Pack introuvable",
+        message: "Recharge la page puis réessaie."
+      });
+
+      return;
+    }
+
+    const purchaseType = selectedTrackId ? "track" : "pack";
+
+    const payload = {
+      userId: profile.id,
+      packId: selectedPackId,
+      trackId: selectedTrackId || null,
+      purchaseType
+    };
+
+    console.log("🟢 [FRONT 5] Payload envoyé au backend :", payload);
+
+    const res = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("🟢 [FRONT 6] Réponse HTTP reçue");
+    console.log("res.ok :", res.ok);
+    console.log("status :", res.status);
+    console.log("statusText :", res.statusText);
+
+    let data;
+
+    try {
+      data = await res.json();
+      console.log("🟢 [FRONT 7] JSON backend :", data);
+    } catch (jsonError) {
+      console.log("🔴 [STOP FRONT] Impossible de lire le JSON");
+      console.error(jsonError);
+
+      showPopup({
+        type: "error",
+        title: "Erreur serveur",
+        message: "Le serveur n'a pas renvoyé de JSON valide."
+      });
+
+      return;
+    }
+
+    if (!res.ok) {
+      console.log("🔴 [STOP FRONT] Backend a refusé la requête");
+      console.log("Erreur backend :", data);
+
+      showPopup({
+        type: "error",
+        title: "Paiement pas trouvé",
+        message: data?.error || data?.message || "Recharge la page puis réessaie."
+      });
+
+      return;
+    }
+
+    if (!data.url) {
+      console.log("🔴 [STOP FRONT] data.url manquant");
+      console.log("Data reçue :", data);
+
+      showPopup({
+        type: "error",
+        title: "Lien Stripe introuvable",
+        message: "Le serveur n'a pas renvoyé de lien de paiement."
+      });
+
+      return;
+    }
+
+    console.log("🟢 [FRONT 8] Redirection Stripe OK");
+    console.log("URL Stripe :", data.url);
+    console.log("====================================");
+
+    window.location.href = data.url;
+
+  } catch (err) {
+    console.log("🔴 [ERREUR FRONT CATCH]");
+    console.error(err);
+    console.log("Message :", err.message);
+    console.log("====================================");
+
+    showPopup({
+      type: "error",
+      title: "Erreur paiement",
+      message: "Impossible de lancer le paiement pour le moment."
+    });
+  }
+}
+
+const R2_PUBLIC_URL = "htt0ps://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev";
 
 function getFilePath(file) {
   if (!file) return "";
@@ -60,7 +214,7 @@ loadPack();
 
 const packList = document.querySelector(".pack-list");
 
-const content = document.querySelector(".scroll-zone");
+
 const btnAccueil = document.querySelector('.accueil-btn');
 const pageName = document.querySelector('.page');
 
@@ -68,6 +222,12 @@ function renderPack() {
 
   if (packData && packList) {
     packList.innerHTML = `
+<button class="retour">
+    <i data-lucide="ChevronLeft"></i>
+   </button>
+    
+
+    <section class="body-pack">
     <div class="pack-hero">
     <div class="left-side">
 
@@ -91,7 +251,7 @@ function renderPack() {
       <div class="pack-info">
         <h1 class="title">${packData.title}</h1>
         <div class="artist-info">
-          <img src="${getFilePath(packData.imageArtist)}" class="artist-image">
+          <img src="${getFilePath(packData.imageProfile)}" class="artist-image">
           <p class="artist">${packData.artist}</p>
 
         <button class="btn-acheter">${packData.price}</button>
@@ -189,8 +349,14 @@ src="${getFilePath(track.audioName || track.audio)}"
     `).join('')}
     </div>
     </div>
-        
+    </section>
     `;
+
+    const retourBtn = document.querySelector('.retour');
+
+    retourBtn.addEventListener('click', () => {
+      window.location.href = "/home.html";
+    });
 
     const trackRow = document.querySelectorAll('.track-row');
     let currentMobileAudio = null;
@@ -293,7 +459,7 @@ src="${getFilePath(track.audioName || track.audio)}"
       btnAccueil.addEventListener("click", () => {
         console.log("click accueil")
 
-        window.location.href = "../../home.html";
+        window.location.href = "/home.html";
         btnAccueil.classList.add("active");
       });
     }
@@ -494,7 +660,9 @@ src="${getFilePath(track.audioName || track.audio)}"
     btnAcheter.forEach(btn => {
       btn.addEventListener("click", () => {
 
-        selectedDownloadUrl = packData.downloadPage
+        selectedPackId = packData.id;
+        selectedTrackId = null;
+        selctedPurchaseType = "pack";
 
         noticeOverlay.style.display = "flex";
       });
@@ -510,7 +678,7 @@ src="${getFilePath(track.audioName || track.audio)}"
     });
 
     noticeAccept.addEventListener("click", () => {
-      window.location.href = selectedDownloadUrl;
+      startStripePayment();
     });
 
 
@@ -540,7 +708,8 @@ function setActiveNav(activeBtn) {
 
 
 document.querySelector(".nav-mobile-home").addEventListener("click", () => {
-  window.location.href = "../../home.html";
+    setActiveNav(document.querySelector(".nav-mobile-home"))
+  window.location.href = "/home.html";
 });
 
 document.querySelector(".nav-mobile-create").addEventListener("click", () => {
@@ -548,7 +717,7 @@ document.querySelector(".nav-mobile-create").addEventListener("click", () => {
 });
 
 document.querySelector(".nav-mobile-library").addEventListener("click", () => {
-  setActiveNav(document.querySelector(".nav-mobile-library"))
+
 
   window.location.href = "library.html"
 });

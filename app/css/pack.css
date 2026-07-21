@@ -1,14 +1,26 @@
-  .pack {
-   background:
-     radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 38%),
-     radial-gradient(circle at bottom right, rgba(147, 51, 234, .22), transparent 40%),
-     #020617;
+
+    html { 
+      overflow-x: hidden;
+        overflow-y: scroll;
+    }
+
+
+    body,
+html {
+   margin: 0px;
+    width: 100%;
+    min-height: 100vh;
+ background: #0f0f10;
 
     color: White;
-    font-family: inter, sans-serif;
-    height: 50%;
-    
-  }
+  font-family: inter, Arial, sans-serif; 
+ 
+}
+
+body {
+    background: url("image.jpg") center center / cover no-repeat;
+    min-height: 100%;
+}
 
   .track-row {
     display: none;
@@ -138,18 +150,20 @@
   }
 
   .pack-hero {
+    
     display: flex;
     flex-direction: column;
     justify-content: left;
     align-items: left;
 
+    margin: 0px;
     gap: 0px;
-    margin-top: -10px;
+    margin-top: 0px;
     margin-bottom: 30px;
   }
 
   .card {
-    position: relative;
+    
     display: flex;
     justify-content: center;
     align-items: center;
@@ -157,6 +171,7 @@
   }
 
   .cover {
+
     width: 100%;
     height: 100%;
     max-height: 440px;
@@ -173,6 +188,7 @@
     align-items: left;
     gap: 0px;
     margin-top: 0px;
+    margin-left: 20px;
   }
 
   .title {
@@ -208,7 +224,8 @@
     align-items: center;
     margin-top: -10px;
     padding: 10px 20px;
-    margin-left: 90px;
+    margin-left: 180px;
+    border: 1px solid white;
     font-size: 16px;
     width: 130px;
     text-shadow: 0 0 5px white;
@@ -572,7 +589,40 @@
     transition: opacity 0.50s ease;
   }
 
+  .retour {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    margin-top: 10px;
+    margin-left: 10px;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    outline: none;
+    background-color: none;
+    
+    cursor: pointer;
+    transition: transform 1.3s ease, background-color 1.3s ease, border-radius 1.3s ease;
+  }
 
+  button.retour:hover {
+
+    transform:scale3d(1.4, 1.4, 1.4);
+  }
+
+.retour svg {
+  position: absolute;
+ 
+   background: none;
+   width: 40px;
+   height: 40px;
+    color: white;
+    cursor: pointer;
+  }
 
   @keyframes spin {
     to {
@@ -583,7 +633,29 @@
   @media (min-width: 900px) {
 
 
+ .finger-cursor {
+    position: fixed;
+    left: 0;
+    top: 0;
 
+    width: 34px;
+    height: 34px;
+
+    border: 2px solid rgba(43, 43, 43, 0.981);
+    border-radius: 50%;
+
+    pointer-events: none;
+    z-index: 99999;
+
+    transform: translate(-50%, -50%);
+
+    transition:
+        width .15s,
+        height .15s,
+        border .15s;
+
+    display: none;
+}
 
 
     .track-title-mobile,
@@ -611,51 +683,34 @@
       display: block;
     }
 
-    body,
-    html {
-      overflow: hidden;
-      margin: 0;
-      padding-top: 0;
-
-    background:
-       radial-gradient(circle at top left, rgba(4, 120, 169, 0.896), transparent 38%),
-       radial-gradient(circle at bottom right, rgba(132, 0, 255, 0.478), transparent 48%),
-       #000000;
-
-      color: White;
-      font-family: 'inter', sans-serif;
-    }
-
-    .main-content {
-      min-height: 100vh;
-      height: 102vh;
-      width: 102%;
-      display: grid;
-      margin-top: -40px;
-      margin-left: -10px;
-      overflow: hidden;
-    }
-
-
-
-    .scroll-zone {
-      margin-top: -50px;
-      margin-bottom: 0;
-
-      margin: 0;
-      height: calc(102vh - 70px);
-      overflow-y: auto;
+    html { 
       overflow-x: hidden;
-
-      padding: 40px 40px 140px;
-      box-sizing: border-box;
-
-     background:
-       radial-gradient(circle at top left, rgba(4, 120, 169, 0.896), transparent 38%),
-       radial-gradient(circle at bottom right, rgba(132, 0, 255, 0.478), transparent 48%),
-       #000000;
+        overflow-y: scroll;
     }
 
+ body,
+html {
+   margin: 0px;
+    width: 100%;
+    min-height: 100vh;
+ background: #0f0f10;
+
+    color: White;
+  font-family: inter, Arial, sans-serif; 
+ 
+}
+
+body {
+    background: url("image.jpg") center center / cover no-repeat;
+    min-height: 100%;
+}
+
+
+   
+
+
+
+  
 
     .mobile-bottom-bar {
       position: fixed;
@@ -874,6 +929,7 @@
     }
 
 
+
     .pack-categorie {
       margin-top: 0px;
     }
@@ -885,9 +941,20 @@
       align-items: center;
       gap: 40px;
       font-size: 25px;
-
+     margin-left: 0px;
       letter-spacing: 0.10px;
-      margin-top: 0px;
+      margin-top: 60px;
+    }
+
+    .body-pack {
+      display: flex;
+      flex-direction: column;
+      justify-content: left;
+      align-items: left;
+      gap: 0px;
+      margin: 30px;
+      margin-left: 30px;
+
     }
 
     .card {
@@ -1041,7 +1108,7 @@
 
 
     .track {
-      margin-top: 80px;
+      margin-top: 0px;
       margin-bottom: 100PX;
     }
 

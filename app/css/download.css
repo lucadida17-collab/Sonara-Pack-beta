@@ -124,6 +124,31 @@ body.Download {
 /* DESKTOP */
 
 @media (min-width: 769px) {
+
+   .finger-cursor {
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    width: 34px;
+    height: 34px;
+
+    border: 2px solid rgba(43, 43, 43, 0.981);
+    border-radius: 50%;
+
+    pointer-events: none;
+    z-index: 99999;
+
+    transform: translate(-50%, -50%);
+
+    transition:
+        width .15s,
+        height .15s,
+        border .15s;
+
+    display: none;
+}
+
   .download-mobile {
     display: none;
   }

@@ -109,12 +109,12 @@ refreshBtn.addEventListener("click", () => {
 
 async function loadPendingUsers() {
   const response = await fetch(`${API_URL}/api/pending-users`);
-  const users = await response.json();
+  const accounts = await response.json();
 
   pendingUsersContainer.innerHTML = "";
-  pendingCount.textContent = users.length;
+  pendingCount.textContent = accounts.length;
 
-  if (users.length === 0) {
+  if (accounts.length === 0) {
     pendingUsersContainer.innerHTML = `
       <div class="empty-state">
         <h3>Aucune demande en attente</h3>
@@ -124,15 +124,15 @@ async function loadPendingUsers() {
     return;
   }
 
-  users.forEach(user => {
+  accounts.forEach(account => {
     const card = document.createElement("article");
     card.className = "user-card";
 
     card.innerHTML = `
       <div class="user-top">
         <div>
-          <h3>${user.artistname || user.firstname}</h3>
-          <p>${user.role} · ${user.createdAt || "date inconnue"}</p>
+          <h3>${account.pseudo || account.pseudo}</h3>
+          <p>${account.role} · ${account.createdAt || "date inconnue"}</p>
         </div>
         <span class="status-badge">PENDING</span>
       </div>
@@ -140,42 +140,42 @@ async function loadPendingUsers() {
       <div class="user-grid">
         <div class="info-box">
           <span>Nom complet</span>
-          <strong>${user.firstname || ""} ${user.lastname || ""}</strong>
+          <strong>${account.firstname || ""} ${account.lastname || ""}</strong>
         </div>
 
         <div class="info-box">
           <span>Email</span>
-          <strong>${user.mail || "Non renseigné"}</strong>
+          <strong>${account.mail || "Non renseigné"}</strong>
         </div>
 
         <div class="info-box">
           <span>Téléphone</span>
-          <strong>${user.phone || "Non renseigné"}</strong>
+          <strong>${account.phone || "Non renseigné"}</strong>
         </div>
 
         <div class="info-box">
           <span>Date de naissance</span>
-          <strong>${user.date || "Non renseignée"}</strong>
+          <strong>${account.date || "Non renseignée"}</strong>
         </div>
 
         <div class="info-box">
           <span>Nom d’artiste</span>
-          <strong>${user.artistname || "Non renseigné"}</strong>
+          <strong>${account.pseudo || "Non renseigné"}</strong>
         </div>
 
         <div class="info-box">
           <span>SIRET</span>
-          <strong>${user.siret || user.siretinput || "Non renseigné"}</strong>
+          <strong>${account.siret || account.siretinput || "Non renseigné"}</strong>
         </div>
 
         <div class="info-box">
           <span>Rôle demandé</span>
-          <strong>${user.role}</strong>
+          <strong>${account.role}</strong>
         </div>
 
         <div class="info-box">
           <span>ID dossier</span>
-          <strong>${user.id}</strong>
+          <strong>${account.id}</strong>
         </div>
       </div>
 
@@ -185,11 +185,11 @@ async function loadPendingUsers() {
       </div>
 
       <div class="action-row">
-        <button class="accept-btn" onclick="updateStatus('${user.id}', 'approved')">
+        <button class="accept-btn" onclick="updateStatus('${account.id}', 'approved')">
           Accepter
         </button>
 
-        <button class="reject-btn" onclick="updateStatus('${user.id}', 'rejected')">
+        <button class="reject-btn" onclick="updateStatus('${account.id}', 'rejected')">
           Refuser
         </button>
       </div>
@@ -244,7 +244,7 @@ if (pendingPacks.length === 0) {
       <div class="user-top">
         <div>
           <h3>${pack.title || pack.identity?.title || "Pack sans titre"}</h3>
-          <p>${pack.artist || pack.artistName || "Artiste inconnu"} · ${pack.status || "pending"}</p>
+          <p>${pack.artist || pack.pseudo || "Artiste inconnu"} · ${pack.status || "pending"}</p>
         </div>
         <span class="status-badge">PACK</span>
       </div>
@@ -325,7 +325,7 @@ function renderPackTracksView(pack) {
 
     trackCard.innerHTML = `
       <h2>${track.title || "Track sans titre"}</h2>
-      <p>${pack.artist || pack.artistName || "Artiste inconnu"} · track ${index + 1}</p>
+      <p>${pack.artist || pack.pseudo || "Artiste inconnu"} · track ${index + 1}</p>
 
       <span class="pack-badge">TRACK</span>
 

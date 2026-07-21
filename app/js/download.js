@@ -100,7 +100,7 @@ function renderError(message) {
   const homeButton = document.querySelector(".download-home-button");
   if (homeButton) {
     homeButton.addEventListener("click", () => {
-      window.location.href = "../../home.html";
+      window.location.href = "/home.html";
     });
   }
 }
@@ -141,7 +141,7 @@ function finishDesktopDownload() {
   if (text) text.textContent = "Merci pour votre achat. Retour automatique à l’accueil...";
 
   setTimeout(() => {
-    window.location.href = "../../home.html";
+    window.location.href = "/home.html";
   }, 6000);
 }
 
@@ -158,7 +158,7 @@ function connectMobileButtons() {
 
   if (homeButton) {
     homeButton.addEventListener("click", () => {
-      window.location.href = "../../home.html";
+      window.location.href = "/home.html";
     });
   }
 }

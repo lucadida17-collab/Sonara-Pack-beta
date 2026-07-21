@@ -10,7 +10,7 @@ if (profile && profile.role === "artist") {
 }
 
 homeAccessBtn.addEventListener("click", () => {
-  window.location.href = "../../home.html";
+  window.location.href = "/home.html";
 });
 
 
@@ -20,22 +20,24 @@ async function checkStatus() {
   const res = await fetch(`${API_URL}/api/users/${profile.id}`);
   const data = await res.json();
 
-  if (data.user.status === "approved") {
+  const account = data.account;
+
+  if (account.status === "approved") {
     localStorage.setItem(
       "sonaraProfile",
-      JSON.stringify(data.user)
+      JSON.stringify(account)
     );
 
     window.location.href = "creator.html";
   }
 
-  if (data.user.status === "rejected") {
-         localStorage.setItem("sonaraProfile", JSON.stringify(data.user));
+  if (account.status === "rejected") {
+         localStorage.setItem("sonaraProfile", JSON.stringify(account));
 
-    if (data.user.role === "both") {
-      window.location.href = "../../home.html";
+    if (account.role === "both") {
+      window.location.href = "/home.html";
     } else {
-      window.location.href = "chaos.html";
+      window.location.href = "inscription.html";
     }
   }
 }

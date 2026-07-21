@@ -6,6 +6,11 @@
 
     <link rel="stylesheet" href="../css/library.css">
 
+    <link
+  rel="stylesheet"
+  href="../components/header/header.css"
+>
+
     <link rel="icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
     <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
 
@@ -21,6 +26,11 @@
 
 <body class="library">
 
+
+
+<div class="finger">
+</div>
+
     <main class="app-layout">
 
         <nav class="mobile-bottom-bar">
@@ -32,7 +42,7 @@
 
             <button class="nav-mobile-btn nav-mobile-create">
                 <i data-lucide="plus-circle"></i>
-                <span>Créer</span>
+                <span>Crée</span>
             </button>
 
             <button class="nav-mobile-btn nav-mobile-library active">
@@ -61,7 +71,12 @@
         </section>
 
     </main>
-<script src="../../config.js" defer></script>
+
+    
+<script src="../../config.js"></script>
+<script src="../components/header/header.js"></script>
+<script src="../../js/auth-guard.js"></script>
+<script>verifySonaraSession()</script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="../js/Memoire/memoire.js"></script>
     <script src="../js/library.js"></script>

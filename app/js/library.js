@@ -1,10 +1,3 @@
-const API_BASE =
-window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.hostname.startsWith("192.168.")
-    ? "http://192.168.1.18:3001"
-    : "https://sonara-pack-beta.onrender.com";
-
 
 const R2_PUBLIC_URL = "https://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev";
 
@@ -14,11 +7,11 @@ function getFilePath(file) {
   if (file.startsWith("http")) return file;
 
   if (file.startsWith("/uploads/")) {
-    return `${API_BASE}${file}`;
+    return `${API_URL}${file}`;
   }
 
   if (file.startsWith("uploads/")) {
-    return `${API_BASE}/${file}`;
+    return `${API_URL}/${file}`;
   }
 
   if (
@@ -30,7 +23,7 @@ function getFilePath(file) {
     return `${R2_PUBLIC_URL}/${file}`;
   }
 
-  return `${API_BASE}/uploads/${file}`;
+  return `${API_URL}/uploads/${file}`;
 }
 
 let packs = [];
@@ -50,7 +43,7 @@ const content = document.querySelector(".library-content");
 async function loadLibrary() {
     try {
 
-        const response = await fetch(`${API_BASE}/api/packs`);
+        const response = await fetch(`${API_URL}/api/packs`);
 
         packs = await response.json();
 
@@ -142,13 +135,13 @@ async function renderPack() {
         localStorage.getItem("sonaraProfile")
     );
 
-    const userResponse = await fetch(`${API_BASE}/api/users/${currentUser.id}`);
-    const freshUserData = await userResponse.json();
-    const freshUser = freshUserData.user;
+    const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
+    const freshAccountData = await userResponse.json();
+    const freshAccount = freshAccountData.account;
 
-    const downloadedIds = freshUser?.downloadedPacks || [];
+    const downloadedIds = freshAccount?.downloadedPacks || [];
 
-    const response = await fetch(`${API_BASE}/api/packs`);
+    const response = await fetch(`${API_URL}/api/packs`);
     const allPacks = await response.json();
 
     const packsTelecharges = allPacks.filter(pack =>
@@ -253,7 +246,7 @@ function renderDownloadedPack(packId) {
       <div class="pack-info">
         <h1 class="title">${packData.title}</h1>
         <div class="artist-info">
-          <img src="${getFilePath(packData.imageArtist)}" class="artist-image">
+          <img src="${getFilePath(packData.imageProfile)}" class="artist-image">
           <p class="artist">${packData.artist}</p>
 
         <button class="js-download-pack"
@@ -927,13 +920,13 @@ async function renderTrack() {
         localStorage.getItem("sonaraProfile")
     );
 
-    const userResponse = await fetch(`${API_BASE}/api/users/${currentUser.id}`);
-    const freshUserData = await userResponse.json();
-    const freshUser = freshUserData.user;
+    const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
+    const freshAccountData = await userResponse.json();
+    const freshAccount = freshAccountData.account;
 
-    const downloadedTrackIds = freshUser?.downloadedTracks || [];
+    const downloadedTrackIds = freshAccount?.downloadedTracks || [];
 
-    const response = await fetch(`${API_BASE}/api/packs`);
+    const response = await fetch(`${API_URL}/api/packs`);
     const allPacks = await response.json();
 
     const downloadedTracks = [];
@@ -1604,7 +1597,7 @@ function setActiveNav(activeBtn) {
 
 
 document.querySelector(".nav-mobile-home").addEventListener("click", () => {
-    window.location.href = "../../home.html";
+    window.location.href = "/home.html";
 });
 
 document.querySelector(".nav-mobile-create").addEventListener("click", () => {

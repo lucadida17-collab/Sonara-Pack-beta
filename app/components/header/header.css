@@ -1,0 +1,143 @@
+.header {
+  width: 100%;
+  flex-shrink: 0; 
+  
+}
+
+.dynamic-header {
+  width: 100%;
+  min-height: 74px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  background: transparent;
+
+ border-bottom: 1px rgb(90, 90, 90);
+
+  position: relative;
+  z-index: 1000;
+}
+
+.dynamic-header-profile {
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+margin-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  background: none;
+  color: #ffffff;
+
+ 
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dynamic-header-avatar {
+  width: 41px;
+  height: 41px;
+  flex-shrink: 0;
+  margin-left: 20px;
+ cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+margin-left: -20px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.dynamic-header-image {
+  width: 100%;
+  height: 100%;
+
+
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.dynamic-header-icon {
+  width: 24px;
+  height: 24px;
+
+  display: block;
+
+  color: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.8;
+}
+
+.dynamic-header-title {
+  color: #ffffff;
+
+  font-family: "Inter", "Arial", sans-serif;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1;
+
+  letter-spacing: -0.9px;
+
+  transform: skewX(1deg) scaleX(0.89);
+
+  text-align: left;
+  white-space: nowrap;
+
+
+}
+
+ .dynamic-header-avatar:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dynamic-header-profile:active {
+  transform: scale(0.98);
+}
+
+@media (min-width: 900px) {
+  .dynamic-header {
+    min-height: 66px;
+    padding: 10px 16px;
+    border-bottom: 1px grey;
+  }
+
+  .dynamic-header-avatar {
+    width: 56px;
+    margin-left: 0px;
+    height: 56px;
+  }
+
+  .dynamic-header-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .dynamic-header-title {
+  color: #ffffff;
+
+  font-family: "Inter", "Arial", sans-serif;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+
+  letter-spacing: -0.9px;
+
+  transform: skewX(1deg) scaleX(0.89);
+
+  text-align: left;
+  white-space: nowrap;
+
+
+}
+
+}
