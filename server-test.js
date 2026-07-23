@@ -702,8 +702,17 @@ function createVerificationToken() {
 }
 
 async function isPasswordAlreadyUsed(password) {
-  if (!password) return false;
-  return Boolean(await usersCollection.findOne({ "accounts.password": password }));
+  const normalizedPassword = String(password || "");
+  if (!normalizedPassword) return false;
+
+  return Boolean(
+    await usersCollection.findOne({
+      $or: [
+        { "accounts.password": normalizedPassword },
+        { password: normalizedPassword }
+      ]
+    })
+  );
 }
 
 async function collectRemoteDuplicateErrors({ mail, pseudo, password }) {
@@ -725,11 +734,29 @@ function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
 
 app.post("/api/account-security/check", async (req, res) => {
   try {
-    const fieldErrors = await collectRemoteDuplicateErrors(req.body || {});
-    return res.json({ success: true, available: Object.keys(fieldErrors).length === 0, fieldErrors });
+    const payload = req.body || {};
+    const fieldErrors = await collectRemoteDuplicateErrors(payload);
+
+    console.log("ACCOUNT SECURITY CHECK MONGODB", {
+      mail: Boolean(payload.mail),
+      pseudo: Boolean(payload.pseudo),
+      password: Boolean(payload.password),
+      available: Object.keys(fieldErrors).length === 0
+    });
+
+    return res.status(200).json({
+      success: true,
+      available: Object.keys(fieldErrors).length === 0,
+      fieldErrors
+    });
   } catch (error) {
-    console.error("Erreur vérification doublons :", error);
-    return res.status(500).json({ success: false, message: "Vérification impossible." });
+    console.error("Erreur vérification MongoDB des doublons :", error);
+    return res.status(500).json({
+      success: false,
+      available: false,
+      fieldErrors: {},
+      message: "Vérification MongoDB impossible."
+    });
   }
 });
 
