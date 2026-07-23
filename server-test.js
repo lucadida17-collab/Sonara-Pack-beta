@@ -29,7 +29,7 @@ const mongoDatabaseName =
 
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
 const { profileEnd } = require("console");
@@ -199,6 +199,74 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "x-founder-key"]
 }));
 app.use(express.json());
+
+/* =========================
+   R2 FILE PROXY
+   - LOCAL keeps /uploads as local static files.
+   - TEST/MAIN read the same keys from their own R2 bucket.
+========================= */
+app.get("/uploads/*", async (req, res) => {
+  try {
+    const key = decodeURIComponent(String(req.params[0] || ""))
+      .replace(/^\/+/, "");
+
+    if (!key || key.includes("..")) {
+      return res.status(400).json({
+        success: false,
+        message: "Chemin de fichier invalide."
+      });
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      ...(req.headers.range ? { Range: req.headers.range } : {})
+    });
+
+    const object = await r2.send(command);
+
+    if (object.ContentType) res.setHeader("Content-Type", object.ContentType);
+    if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
+    if (object.ContentRange) res.setHeader("Content-Range", object.ContentRange);
+    if (object.AcceptRanges) res.setHeader("Accept-Ranges", object.AcceptRanges);
+    else res.setHeader("Accept-Ranges", "bytes");
+    if (object.CacheControl) res.setHeader("Cache-Control", object.CacheControl);
+    else res.setHeader("Cache-Control", "public, max-age=3600");
+    if (object.ETag) res.setHeader("ETag", object.ETag);
+    if (object.LastModified) res.setHeader("Last-Modified", object.LastModified.toUTCString());
+    if (object.ContentDisposition) res.setHeader("Content-Disposition", object.ContentDisposition);
+
+    if (object.ContentRange) res.status(206);
+
+    if (!object.Body || typeof object.Body.pipe !== "function") {
+      throw new Error("Flux R2 introuvable.");
+    }
+
+    object.Body.on("error", (error) => {
+      console.error(`[R2 FILE] Erreur de lecture ${key}:`, error);
+      if (!res.headersSent) res.status(500).end();
+      else res.destroy(error);
+    });
+
+    object.Body.pipe(res);
+  } catch (error) {
+    const status = error?.$metadata?.httpStatusCode;
+
+    if (status === 404 || error?.name === "NoSuchKey") {
+      return res.status(404).json({
+        success: false,
+        message: "Fichier introuvable."
+      });
+    }
+
+    console.error("Erreur GET /uploads/* depuis R2 :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de récupérer le fichier."
+    });
+  }
+});
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

@@ -9,6 +9,26 @@ function getStoredProfile() {
   }
 }
 
+function profileImageUrl(value = "") {
+  if (!value) return "";
+
+  const normalized = String(value).trim();
+
+  if (/^(https?:|blob:|data:)/i.test(normalized)) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("/uploads/")) {
+    return `${API_URL}${normalized}`;
+  }
+
+  if (normalized.startsWith("uploads/")) {
+    return `${API_URL}/${normalized}`;
+  }
+
+  return `${API_URL}/uploads/${normalized.replace(/^\/+/, "")}`;
+}
+
 function renderProfile() {
   const profile = getStoredProfile();
 
@@ -18,12 +38,7 @@ function renderProfile() {
     profile.pseudo;
 
 const rawProfileImage = profile.imageProfile || "";
-
-const profileImage = rawProfileImage
-  ? rawProfileImage.startsWith("http")
-    ? rawProfileImage
-    : `/uploads/${rawProfileImage}`
-  : "";
+  const profileImage = profileImageUrl(rawProfileImage);
 
   appLayout.innerHTML = `
     <section class="profile-page">
@@ -108,12 +123,7 @@ function renderEditProfile() {
 
   const currentPseudo = storedProfile.pseudo || "";
   const rawProfileImage = storedProfile.imageProfile || "";
-
-  const currentProfileImage = rawProfileImage
-    ? rawProfileImage.startsWith("http")
-      ? rawProfileImage
-      : `/uploads/${rawProfileImage}`
-    : "";
+  const currentProfileImage = profileImageUrl(rawProfileImage);
 
   let selectedImageFile = null;
   let previewImageUrl = currentProfileImage;

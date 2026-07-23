@@ -1,29 +1,18 @@
 
-const R2_PUBLIC_URL = "https://pub-17f0bc248a3549bea1cec66ac9f6abe1.r2.dev";
-
 function getFilePath(file) {
   if (!file) return "";
 
-  if (file.startsWith("http")) return file;
+  const value = String(file).trim();
 
-  if (file.startsWith("/uploads/")) {
-    return `${API_URL}${file}`;
-  }
+  if (/^(https?:|blob:|data:)/i.test(value)) return value;
 
-  if (file.startsWith("uploads/")) {
-    return `${API_URL}/${file}`;
-  }
+  if (value.startsWith("/downloads/")) return `${API_URL}${value}`;
+  if (value.startsWith("downloads/")) return `${API_URL}/${value}`;
 
-  if (
-    file.startsWith("packs/") ||
-    file.startsWith("tracks/") ||
-    file.startsWith("artists/") ||
-    file.startsWith("zips/")
-  ) {
-    return `${R2_PUBLIC_URL}/${file}`;
-  }
+  if (value.startsWith("/uploads/")) return `${API_URL}${value}`;
+  if (value.startsWith("uploads/")) return `${API_URL}/${value}`;
 
-  return `${API_URL}/uploads/${file}`;
+  return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
 }
 
 let packs = [];

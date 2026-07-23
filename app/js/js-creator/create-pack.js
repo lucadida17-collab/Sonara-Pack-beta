@@ -928,7 +928,7 @@ function buildFinalPack() {
     title: packData.identity.title.trim(),
     artist: artistProfile.pseudo || "",
     artistId: artistProfile.id || artistProfile.accountId || "",
-    imageProfile: artistProfile.imageProfile || artistProfile.imageArtist || null,
+    imageProfile: artistProfile.imageProfile || null,
     coverPack: packData.identity.coverFile.name,
     packLink: `app/pages/pack.html?id=${packId}`,
     isFree: packData.globalIsFree,

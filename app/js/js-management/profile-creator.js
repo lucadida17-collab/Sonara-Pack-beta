@@ -49,7 +49,7 @@ function renderArtistProfile() {
   const profile = readArtistProfile();
   const pseudo = profile.pseudo || profile.username || "Artiste";
   const biography = profile.biography || "";
-  const image = profileImageUrl(profile.imageProfile || profile.imageArtist || "");
+  const image = profileImageUrl(profile.imageProfile || "");
 
   appLayout.innerHTML = `
     <section class="artist-profile-page">
@@ -104,7 +104,7 @@ function renderArtistProfileEditor() {
   const currentPseudo = storedProfile.pseudo || "";
   const currentBiography = storedProfile.biography || "";
   const currentImage = profileImageUrl(
-    storedProfile.imageProfile || storedProfile.imageArtist || ""
+    storedProfile.imageProfile || ""
   );
 
   let selectedImage = null;

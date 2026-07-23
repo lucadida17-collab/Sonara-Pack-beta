@@ -814,7 +814,7 @@ btnLogin.addEventListener("click", () =>{
 
     <input
         type="file"
-        class="artist-image-input"
+        class="profile-image-input"
         name="imageProfile"
         accept="image/*"
         hidden
@@ -843,7 +843,7 @@ btnLogin.addEventListener("click", () =>{
 
 
         const avatarUpload = document.querySelector(".profile-avatar-upload");
-     const imageProfileInput = document.querySelector(".artist-image-input");
+     const imageProfileInput = document.querySelector(".profile-image-input");
         const userIcon = document.querySelector(".user-icon");
         const cameraIcon = document.querySelector(".camera-icon");
 
@@ -921,15 +921,15 @@ btnLogin.addEventListener("click", () =>{
             createdAt: new Date().toISOString()
           };
 
-           const artistImageInput = document.querySelector(".artist-image-input");
-          const artistImageFile = artistImageInput.files[0];
+           const imageProfileInput = document.querySelector(".profile-image-input");
+          const imageProfileFile = imageProfileInput.files[0];
 
           const formData = new FormData();
 
           formData.append("profile", JSON.stringify(profile));
 
-          if (artistImageFile) {
-            formData.append("imageProfile", artistImageFile);
+          if (imageProfileFile) {
+            formData.append("imageProfile", imageProfileFile);
           }
           await submitRegistration({
             form: artistForm,
@@ -982,7 +982,7 @@ btnLogin.addEventListener("click", () =>{
 
     <input
         type="file"
-        class="artist-image-input"
+        class="profile-image-input"
         name="imageProfile"
         accept="image/*"
         hidden
@@ -1010,7 +1010,7 @@ btnLogin.addEventListener("click", () =>{
         }
 
         const avatarUpload = document.querySelector(".profile-avatar-upload");
-          const imageProfileInput = document.querySelector(".artist-image-input");
+          const imageProfileInput = document.querySelector(".profile-image-input");
         const userIcon = document.querySelector(".user-icon");
         const cameraIcon = document.querySelector(".camera-icon");
 
@@ -1092,15 +1092,15 @@ btnLogin.addEventListener("click", () =>{
             createdAt: new Date().toISOString()
           };
 
-           const artistImageInput = document.querySelector(".artist-image-input");
-          const artistImageFile = artistImageInput.files[0];
+           const imageProfileInput = document.querySelector(".profile-image-input");
+          const imageProfileFile = imageProfileInput.files[0];
 
           const formData = new FormData();
 
           formData.append("profile", JSON.stringify(profile));
 
-          if (artistImageFile) {
-            formData.append("imageProfile", artistImageFile);
+          if (imageProfileFile) {
+            formData.append("imageProfile", imageProfileFile);
           }
           await submitRegistration({
             form: bothForm,
