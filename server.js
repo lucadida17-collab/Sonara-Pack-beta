@@ -735,7 +735,7 @@ app.post("/api/account-security/send-code", async (req, res) => {
     verificationCodes.set(key, { code, expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS, attempts: 0 });
 
     await resend.emails.send({
-      from: "Sonara Pack <sonarapack@gmail.com>",
+      from: "Sonara Pack <notifications@sonarapack.com>",
       to: normalizedMail,
       subject: "Votre code de vérification Sonara Pack",
       html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Vérification de votre adresse e-mail</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
@@ -919,7 +919,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
         );
 
       false && resend.emails.send({
-        from: "Sonara Pack <sonarapack@gmail.com>",
+        from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
           "Nouvelle demande artiste à modérer - Sonara Pack",
@@ -1174,7 +1174,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
         );
 
       false && resend.emails.send({
-        from: "Sonara Pack <sonarapack@gmail.com>",
+        from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
           "Nouvelle demande artiste à modérer - Sonara Pack",
@@ -4018,7 +4018,7 @@ app.post("/api/founder/feedback/:id/replies", requireFounderKey, async (req, res
     if (feedback.email) {
       try {
         await resend.emails.send({
-          from: "Sonara Pack <sonarapack@gmail.com>",
+          from: "Sonara Pack <notifications@sonarapack.com>",
           to: feedback.email,
           subject: `Réponse à votre feedback Sonara Pack — ${feedback.title}`,
           html: `

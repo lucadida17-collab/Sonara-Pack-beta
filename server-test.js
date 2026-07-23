@@ -17,73 +17,15 @@ require("dotenv").config({
 
 /*
   Environnement TEST
-  Les noms actuels de Render restent compatibles.
-  Les variables spécifiques *_TEST peuvent être ajoutées progressivement.
+  - même MONGO_URI que le serveur principal ;
+  - base MongoDB séparée avec MONGO_DB_NAME ;
+  - NODE_ENV forcé à test si absent.
 */
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
 
-process.env.MONGO_URI =
-  process.env.MONGO_TEST_URI ||
-  process.env.MONGO_URI;
-
-process.env.MONGO_DB_NAME =
-  process.env.MONGO_TEST_DB_NAME ||
+const mongoDatabaseName =
   process.env.MONGO_DB_NAME ||
-  process.env.MONGODB_DB_NAME ||
   "sonara_test";
-
-process.env.R2_ENDPOINT =
-  process.env.R2_TEST_ENDPOINT ||
-  process.env.R2_ENDPOINT ||
-  process.env.POINT_DE_TERMINATION;
-
-process.env.R2_ACCESS_KEY_ID =
-  process.env.R2_TEST_ACCESS_KEY_ID ||
-  process.env.R2_ACCESS_KEY_ID;
-
-process.env.R2_SECRET_ACCESS_KEY =
-  process.env.R2_TEST_SECRET_ACCESS_KEY ||
-  process.env.R2_SECRET_ACCESS_KEY ||
-  process.env.R2_KEY_SECRET_ACCESS;
-
-process.env.R2_BUCKET_NAME =
-  process.env.R2_TEST_BUCKET_NAME ||
-  process.env.R2_BUCKET_NAME;
-
-process.env.RESEND_API_KEY =
-  process.env.RESEND_TEST_API_KEY ||
-  process.env.RESEND_API_KEY;
-
-process.env.STRIPE_SECRET_KEY =
-  process.env.STRIPE_TEST_SECRET_KEY ||
-  process.env.STRIPE_SECRET_KEY;
-
-process.env.STRIPE_WEBHOOK_SECRET =
-  process.env.STRIPE_TEST_WEBHOOK_SECRET ||
-  process.env.STRIPE_WEBHOOK_SECRET;
-
-process.env.FRONTEND_URL =
-  process.env.TEST_FRONTEND_URL ||
-  process.env.FRONTEND_URL;
-
-process.env.ALLOWED_ORIGINS =
-  process.env.TEST_ALLOWED_ORIGINS ||
-  process.env.ALLOWED_ORIGINS;
-
-const requiredTestVariables = [
-  "MONGO_URI",
-  "MONGO_DB_NAME"
-];
-
-const missingTestVariables = requiredTestVariables.filter(
-  (name) => !String(process.env[name] || "").trim()
-);
-
-if (missingTestVariables.length > 0) {
-  throw new Error(
-    `Variables TEST manquantes : ${missingTestVariables.join(", ")}`
-  );
-}
 
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -182,7 +124,6 @@ async function permanentlyRejectMongoPack(packId) {
 const resend = new Resend(process.env.RESEND_API_KEY)
 const client = new MongoClient(process.env.MONGO_URI);
 
-const mongoDatabaseName = process.env.MONGO_DB_NAME;
 const db = client.db(mongoDatabaseName);
 
 const usersCollection = db.collection("users");
@@ -809,7 +750,7 @@ app.post("/api/account-security/send-code", async (req, res) => {
     verificationCodes.set(key, { code, expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS, attempts: 0 });
 
     await resend.emails.send({
-      from: "Sonara Pack <sonarapack@gmail.com>",
+      from: "Sonara Pack <notifications@sonarapack.com>",
       to: normalizedMail,
       subject: "Votre code de vérification Sonara Pack",
       html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Vérification de votre adresse e-mail</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
@@ -993,7 +934,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
         );
 
       false && resend.emails.send({
-        from: "Sonara Pack <sonarapack@gmail.com>",
+        from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
           "Nouvelle demande artiste à modérer - Sonara Pack",
@@ -1248,7 +1189,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
         );
 
       false && resend.emails.send({
-        from: "Sonara Pack <sonarapack@gmail.com>",
+        from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
           "Nouvelle demande artiste à modérer - Sonara Pack",
@@ -4092,7 +4033,7 @@ app.post("/api/founder/feedback/:id/replies", requireFounderKey, async (req, res
     if (feedback.email) {
       try {
         await resend.emails.send({
-          from: "Sonara Pack <sonarapack@gmail.com>",
+          from: "Sonara Pack <notifications@sonarapack.com>",
           to: feedback.email,
           subject: `Réponse à votre feedback Sonara Pack — ${feedback.title}`,
           html: `
