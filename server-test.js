@@ -39,12 +39,22 @@ const fs = require("fs");
 
 
 
+const r2Endpoint = String(
+  process.env.R2_ENDPOINT || process.env.POINT_DE_TERMINATION || ""
+).trim();
+const r2SecretAccessKey = String(
+  process.env.R2_KEY_SECRET_ACCESS || process.env.R2_SECRET_ACCESS_KEY || ""
+).trim();
+const frontUrl = String(process.env.FRONT_URL || "https://sonarapack-test.netlify.app")
+  .trim()
+  .replace(/\/+$/, "");
+
 const r2 = new S3Client({
   region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
+  endpoint: r2Endpoint,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
+    secretAccessKey: r2SecretAccessKey
   }
 });
 
@@ -155,19 +165,38 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const PORT = process.env.PORT || 3000;
 
-const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
+const defaultAllowedOrigins = [
+  'https://sonarapack-test.netlify.app',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:5501',
+  'http://127.0.0.1:5501'
+];
+
+const configuredAllowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
+
+const allowedOrigins = new Set([
+  ...defaultAllowedOrigins,
+  ...configuredAllowedOrigins
+]);
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    const normalizedOrigin = String(origin || "").trim().replace(/\/+$/, "");
+
+    if (!origin || allowedOrigins.has(normalizedOrigin)) {
       return callback(null, true);
     }
+
+    console.warn(`[CORS] Origine refusée : ${normalizedOrigin}`);
     return callback(new Error("Origine non autorisée par Sonara."));
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-founder-key"]
 }));
 app.use(express.json());
 
@@ -955,12 +984,12 @@ app.post("/api/register", upload.any(), async (req, res) => {
       const adminUrl =
         process.env.ADMIN_URL ||
         (
-          process.env.FRONT_URL
-            ? `${process.env.FRONT_URL}/admin.html`
+          frontUrl
+            ? `${frontUrl}/admin.html`
             : ""
         );
 
-      false && resend.emails.send({
+      resend.emails.send({
         from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
@@ -1210,12 +1239,12 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       const adminUrl =
         process.env.ADMIN_URL ||
         (
-          process.env.FRONT_URL
-            ? `${process.env.FRONT_URL}/admin.html`
+          frontUrl
+            ? `${frontUrl}/admin.html`
             : ""
         );
 
-      false && resend.emails.send({
+      resend.emails.send({
         from: "Sonara Pack <notifications@sonarapack.com>",
         to: "luca.dida17@gmail.com",
         subject:
@@ -1693,9 +1722,9 @@ app.post(
           await stripe.accountLinks.create({
             account: artist.stripeAccountId,
             refresh_url:
-              `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+              `${frontUrl}/app/pages/page-management/bank.html`,
             return_url:
-              `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+              `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
             type: "account_onboarding"
           });
 
@@ -1741,10 +1770,10 @@ app.post(
           account: stripeAccount.id,
 
           refresh_url:
-            `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+            `${frontUrl}/app/pages/page-management/bank.html`,
 
           return_url:
-            `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+            `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
 
           type: "account_onboarding"
         });
@@ -1791,10 +1820,10 @@ app.post(
           account: artist.stripeAccountId,
 
           refresh_url:
-            `${process.env.FRONT_URL}/app/pages/page-management/bank.html`,
+            `${frontUrl}/app/pages/page-management/bank.html`,
 
           return_url:
-            `${process.env.FRONT_URL}/app/pages/page-management/bank.html?stripe=success`,
+            `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
 
           type: "account_onboarding"
         });
@@ -2806,7 +2835,7 @@ app.post("/api/free-download-access", async (req, res) => {
     return res.json({
       success: true,
       free: true,
-      redirectUrl: `${process.env.FRONT_URL}/${pathPart}`
+      redirectUrl: `${frontUrl}/${pathPart}`
     });
   } catch (error) {
     console.error("Erreur accès gratuit :", error);
@@ -2882,14 +2911,14 @@ app.post(
         purchaseType = "track";
 
         successUrl =
-          `${process.env.FRONT_URL}/${track.downloadPage}&success=true`;
+          `${frontUrl}/${track.downloadPage}&success=true`;
 
       } else {
         item = pack;
         purchaseType = "pack";
 
         successUrl =
-          `${process.env.FRONT_URL}/${pack.downloadPage}&success=true`;
+          `${frontUrl}/${pack.downloadPage}&success=true`;
       }
 
       const itemIsFree =
@@ -2999,7 +3028,7 @@ app.post(
             success_url: successUrl,
 
             cancel_url:
-              `${process.env.FRONT_URL}/pack.html?id=${pack.id}&cancel=true`
+              `${frontUrl}/pack.html?id=${pack.id}&cancel=true`
           }
         );
 
@@ -3474,9 +3503,9 @@ app.get("/api/founder/health", requireFounderKey, async (_req, res) => {
       storage: {
         mongodb: true,
         r2Configured: Boolean(
-          process.env.R2_ENDPOINT &&
+          r2Endpoint &&
           process.env.R2_ACCESS_KEY_ID &&
-          process.env.R2_SECRET_ACCESS_KEY &&
+          r2SecretAccessKey &&
           process.env.R2_BUCKET_NAME
         )
       },
