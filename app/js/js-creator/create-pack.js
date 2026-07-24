@@ -111,7 +111,34 @@ window.addEventListener("beforeunload", () => {
 
 init();
 
+async function verifyStripeBeforeCreatePack() {
+  const artistId = artistProfile.accountId || artistProfile.id || "";
+
+  if (!artistId) return false;
+
+  try {
+    const response = await fetch(`${API_URL}/api/stripe/account-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artistId })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    return response.ok && data.stripeStatus === "verified";
+  } catch (error) {
+    console.warn("Vérification Stripe Create Pack impossible :", error);
+    return false;
+  }
+}
+
 async function init() {
+  const stripeVerified = await verifyStripeBeforeCreatePack();
+
+  if (!stripeVerified) {
+    window.location.replace("../page-management/bank.html");
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const forceNewPack = sessionStorage.getItem(FORCE_NEW_PACK_KEY) === "true";
 

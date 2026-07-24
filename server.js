@@ -2841,6 +2841,33 @@ app.post(
       const receivedPack = validation.pack;
       const fileByField = validation.fileByField;
 
+      const artistResult = await findRootAndAccountById(receivedPack.artistId);
+      const packArtist = artistResult?.account;
+
+      if (!packArtist?.stripeAccountId) {
+        return res.status(403).json({
+          success: false,
+          code: "STRIPE_ACCOUNT_REQUIRED",
+          message: "Vous devez ajouter et vérifier un compte bancaire avant de créer un pack."
+        });
+      }
+
+      const stripeArtistAccount = await stripe.accounts.retrieve(packArtist.stripeAccountId);
+      const stripeVerified =
+        stripeArtistAccount.charges_enabled &&
+        stripeArtistAccount.payouts_enabled;
+
+      packArtist.stripeStatus = stripeVerified ? "verified" : "onboarding_started";
+      await saveAccountState(artistResult.rootUser, packArtist);
+
+      if (!stripeVerified) {
+        return res.status(403).json({
+          success: false,
+          code: "STRIPE_ACCOUNT_NOT_VERIFIED",
+          message: "Votre compte bancaire Stripe doit être entièrement vérifié avant de créer un pack."
+        });
+      }
+
       const existingPack = await packsCollection.findOne({
         id: receivedPack.id
       });

@@ -2844,6 +2844,42 @@ app.post(
 
       const receivedPack = validation.pack;
       const fileByField = validation.fileByField;
+
+      const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+      let packArtist = null;
+
+      for (const currentRootUser of users) {
+        packArtist = currentRootUser.accounts?.find((account) =>
+          String(account.accountId) === String(receivedPack.artistId) ||
+          String(account.id) === String(receivedPack.artistId)
+        );
+        if (packArtist) break;
+      }
+
+      if (!packArtist?.stripeAccountId) {
+        return res.status(403).json({
+          success: false,
+          code: "STRIPE_ACCOUNT_REQUIRED",
+          message: "Vous devez ajouter et vérifier un compte bancaire avant de créer un pack."
+        });
+      }
+
+      const stripeArtistAccount = await stripe.accounts.retrieve(packArtist.stripeAccountId);
+      const stripeVerified =
+        stripeArtistAccount.charges_enabled &&
+        stripeArtistAccount.payouts_enabled;
+
+      packArtist.stripeStatus = stripeVerified ? "verified" : "onboarding_started";
+      fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+
+      if (!stripeVerified) {
+        return res.status(403).json({
+          success: false,
+          code: "STRIPE_ACCOUNT_NOT_VERIFIED",
+          message: "Votre compte bancaire Stripe doit être entièrement vérifié avant de créer un pack."
+        });
+      }
+
       const packs = JSON.parse(fs.readFileSync(packsPath, "utf8"));
 
       if (packs.some((pack) => String(pack.id) === String(receivedPack.id))) {
