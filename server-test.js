@@ -205,10 +205,18 @@ app.use(express.json());
    - LOCAL keeps /uploads as local static files.
    - TEST/MAIN read the same keys from their own R2 bucket.
 ========================= */
-app.get("/uploads/*", async (req, res) => {
+function getR2UploadKey(req) {
+  const wildcard = req.params?.filePath;
+  const rawPath = Array.isArray(wildcard)
+    ? wildcard.join("/")
+    : String(wildcard || "");
+
+  return rawPath.replace(/^\/+/, "");
+}
+
+app.get("/uploads/*filePath", async (req, res) => {
   try {
-    const key = decodeURIComponent(String(req.params[0] || ""))
-      .replace(/^\/+/, "");
+    const key = getR2UploadKey(req);
 
     if (!key || key.includes("..")) {
       return res.status(400).json({

@@ -804,7 +804,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
               Ouvrir Admin sur PC
             </a>
 
-            <a href="http://192.168.1.18:5501/admin.html"
+            <a href="http://192.168.1.22:5501/admin.html"
               style="display:inline-block; padding:14px 22px; background:#ffffff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold; margin-left:10px;">
               Ouvrir Admin sur téléphone
             </a>
@@ -3125,7 +3125,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         },
 
         success_url: successUrl,
-        cancel_url: `http://192.168.1.18:3001/pack.html?id=${pack.id}&cancel=true`,
+        cancel_url: `http://192.168.1.22:3001/pack.html?id=${pack.id}&cancel=true`,
       }
     );
 

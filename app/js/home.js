@@ -1,6 +1,7 @@
 
 
 let packs = [];
+
 function getFilePath(file) {
   if (!file) return "";
 
@@ -167,7 +168,7 @@ function setActiveNav(activeBtn) {
 }
 
 document.querySelector(".nav-mobile-home").addEventListener("click", () => {
-  window.location.href = "home.html";
+  window.location.href = "/home.html";
 });
 
 document.querySelector(".nav-mobile-create").addEventListener("click", () => {
