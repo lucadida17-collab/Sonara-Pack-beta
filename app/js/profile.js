@@ -468,4 +468,21 @@ saveButton.addEventListener("click", async () => {
   updateSaveButton();
 }
 
-renderProfile();
+function initProfilePage() {
+  if (!appLayout) {
+    console.error("Conteneur .app-layout introuvable.");
+    return;
+  }
+
+  renderProfile();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    initProfilePage,
+    { once: true }
+  );
+} else {
+  initProfilePage();
+}
