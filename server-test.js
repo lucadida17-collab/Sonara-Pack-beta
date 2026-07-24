@@ -206,15 +206,14 @@ app.use(express.json());
    - TEST/MAIN read the same keys from their own R2 bucket.
 ========================= */
 function getR2UploadKey(req) {
-  const wildcard = req.params?.filePath;
-  const rawPath = Array.isArray(wildcard)
-    ? wildcard.join("/")
-    : String(wildcard || "");
-
+  const rawPath = String(req.params?.[0] || "");
   return rawPath.replace(/^\/+/, "");
 }
 
-app.get("/uploads/*filePath", async (req, res) => {
+// Route RegExp volontaire : elle évite toute ambiguïté de syntaxe wildcard
+// entre Express 4 et Express 5 / path-to-regexp, tout en conservant les
+// sous-dossiers R2 (profiles/, packs/covers/, tracks/audio/, etc.).
+app.get(/^\/uploads\/(.+)$/, async (req, res) => {
   try {
     const key = getR2UploadKey(req);
 
@@ -267,7 +266,7 @@ app.get("/uploads/*filePath", async (req, res) => {
       });
     }
 
-    console.error("Erreur GET /uploads/* depuis R2 :", error);
+    console.error("Erreur GET /uploads/... depuis R2 :", error);
     return res.status(500).json({
       success: false,
       message: "Impossible de récupérer le fichier."
