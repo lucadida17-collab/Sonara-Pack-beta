@@ -804,7 +804,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
               Ouvrir Admin sur PC
             </a>
 
-            <a href="http://192.168.1.22:5501/admin.html"
+            <a href="http://192.168.1.18:5501/admin.html"
               style="display:inline-block; padding:14px 22px; background:#ffffff; color:#000; text-decoration:none; border-radius:999px; font-weight:bold; margin-left:10px;">
               Ouvrir Admin sur téléphone
             </a>
@@ -1178,40 +1178,110 @@ app.get("/api/profile/:id", (req, res) => {
   }
 });
 
+
+/* =========================
+   CODE DE VÉRIFICATION CONNEXION
+========================= */
+
+app.post("/api/login/send-code", async (req, res) => {
+  try {
+    cleanupVerificationStores();
+
+    const { mail, password, phone } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = String(phone || "").trim();
+
+    if (!normalizedMail || !password || !normalizedPhone) {
+      return res.status(400).json({
+        success: false,
+        error: "L'adresse e-mail, le mot de passe et le téléphone sont obligatoires."
+      });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    const accountExists = users.some((rootUser) =>
+      rootUser.accounts?.some((account) =>
+        normalizeMail(account.mail) === normalizedMail &&
+        account.password === password &&
+        String(account.phone || "").trim() === normalizedPhone
+      )
+    );
+
+    if (!accountExists) {
+      return res.status(403).json({
+        success: false,
+        error: "Les informations de connexion sont incorrectes."
+      });
+    }
+
+    const code = createVerificationCode();
+    const key = createVerificationKey(normalizedMail, "login");
+
+    verificationCodes.set(key, {
+      code,
+      expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS,
+      attempts: 0
+    });
+
+    await transporter.sendMail({
+      from: "Sonara Pack <luca.dida17@gmail.com>",
+      to: normalizedMail,
+      subject: "Code de connexion Sonara Pack",
+      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Connexion à votre compte</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
+    });
+
+    return res.json({ success: true, message: "Code envoyé." });
+  } catch (error) {
+    console.error("Erreur envoi code connexion :", error);
+    return res.status(500).json({
+      success: false,
+      error: "Impossible d'envoyer le code."
+    });
+  }
+});
+
 app.post("/api/login", (req, res) => {
   try {
-    const { mail, password, phone } = req.body;
+    const { mail, password, phone, verificationToken } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = String(phone || "").trim();
+
+    if (!normalizedMail || !password || !normalizedPhone || !verificationToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Informations de connexion incomplètes."
+      });
+    }
+
+    if (!consumeVerifiedToken({
+      token: verificationToken,
+      mail: normalizedMail,
+      purpose: "login"
+    })) {
+      return res.status(403).json({
+        success: false,
+        error: "Vérification e-mail obligatoire ou expirée."
+      });
+    }
 
     const users = JSON.parse(
       fs.readFileSync(usersPath, "utf8")
     );
 
-    const normalizedMail = mail
-      ?.trim()
-      .toLowerCase();
-
     let rootUser = null;
     let account = null;
 
     for (const currentRootUser of users) {
-      const foundAccount =
-        currentRootUser.accounts?.find(
-          (currentAccount) =>
-            currentAccount.mail
-              ?.trim()
-              .toLowerCase() === normalizedMail &&
-            currentAccount.password === password &&
-            (
-              !phone ||
-              String(currentAccount.phone || "").trim() ===
-                String(phone).trim()
-            )
-        );
+      const foundAccount = currentRootUser.accounts?.find(
+        (currentAccount) =>
+          normalizeMail(currentAccount.mail) === normalizedMail &&
+          currentAccount.password === password &&
+          String(currentAccount.phone || "").trim() === normalizedPhone
+      );
 
       if (foundAccount) {
         rootUser = currentRootUser;
         account = foundAccount;
-
         break;
       }
     }
@@ -1219,7 +1289,7 @@ app.post("/api/login", (req, res) => {
     if (!account) {
       return res.status(401).json({
         success: false,
-        error: "Email ou mot de passe incorrect."
+        error: "Les informations de connexion sont incorrectes."
       });
     }
 
@@ -1266,7 +1336,6 @@ app.post("/api/login", (req, res) => {
       account: returnedAccount,
       redirectTo
     });
-
   } catch (error) {
     console.error(
       "Erreur POST /api/login :",
@@ -1278,7 +1347,7 @@ app.post("/api/login", (req, res) => {
       error: "Connexion impossible."
     });
   }
-}); 
+});
 
 
 /* =========================
@@ -3125,7 +3194,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         },
 
         success_url: successUrl,
-        cancel_url: `http://192.168.1.22:3001/pack.html?id=${pack.id}&cancel=true`,
+        cancel_url: `http://192.168.1.18:3001/pack.html?id=${pack.id}&cancel=true`,
       }
     );
 

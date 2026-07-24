@@ -1498,6 +1498,34 @@ async function renderAddAccount() {
    SE CONNECTER À UN COMPTE EXISTANT
 ========================= */
 
+async function sendExistingAccountLoginVerificationCode({ mail, password, phone }) {
+  const response = await fetch(`${API_URL}/api/accounts/login/send-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mail, password, phone })
+  });
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || data.message || "Impossible d'envoyer le code.");
+  }
+}
+
+async function verifyExistingAccountLoginCode({ mail, code }) {
+  const response = await fetch(`${API_URL}/api/account-security/verify-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mail, code, purpose: "login-existing" })
+  });
+  const data = await response.json();
+
+  if (!response.ok || !data.success || !data.verificationToken) {
+    throw new Error(data.message || "Code incorrect ou expiré.");
+  }
+
+  return data.verificationToken;
+}
+
 function renderConnectExistingAccount() {
   appLayout.innerHTML = `
     <section class="account-page">
@@ -1509,7 +1537,7 @@ function renderConnectExistingAccount() {
           </div>
           <div class="account-validation-field account-password-field">
             <div class="account-password-input-row">
-              <input type="password" class="account-input connect-account-password" placeholder="Mot de passe" autocomplete="current-password" minlength="8" required>
+              <input type="password" class="account-input connect-account-password" placeholder="Mot de passe" autocomplete="current-password" minlength="8" maxlength="128" required>
               <button type="button" class="account-password-toggle connect-account-password-toggle" aria-label="Afficher le mot de passe">
                 <i data-lucide="eye"></i>
               </button>
@@ -1521,7 +1549,7 @@ function renderConnectExistingAccount() {
           <div class="account-validation-field connect-code-field" hidden>
             <input type="text" class="account-input connect-account-code" placeholder="Code à 6 chiffres" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
           </div>
-          <button type="submit" class="account-save-button connect-existing-account-submit" disabled>Se connecter</button>
+          <button type="submit" class="account-save-button connect-existing-account-submit" disabled>Envoyer le code de vérification</button>
         </form>
       </div>
     </section>
@@ -1539,10 +1567,17 @@ function renderConnectExistingAccount() {
   const codeInput = form.querySelector(".connect-account-code");
   const codeField = form.querySelector(".connect-code-field");
   let waitingForCode = false;
-  let credentialsRejected = false;
-  let codeRejected = false;
+  let submitting = false;
 
-  const clearMessage = (input) => setAccountFieldMessage(input, "", "");
+  const resetCodeStep = () => {
+    if (!waitingForCode) return;
+
+    waitingForCode = false;
+    codeField.hidden = true;
+    codeInput.value = "";
+    setAccountFieldMessage(codeInput);
+    submitButton.textContent = "Envoyer le code de vérification";
+  };
 
   passwordToggle.addEventListener("click", () => {
     const isVisible = passwordInput.type === "text";
@@ -1559,119 +1594,151 @@ function renderConnectExistingAccount() {
   const updateButtonState = () => {
     const credentialsReady = Boolean(
       mailInput.value.trim() &&
-      passwordInput.value.length >= 8 &&
+      mailInput.checkValidity() &&
+      passwordInput.value.length >= ACCOUNT_PASSWORD_MIN_LENGTH &&
+      passwordInput.value.length <= ACCOUNT_PASSWORD_MAX_LENGTH &&
       phoneInput.value.trim()
     );
     const codeReady = /^\d{6}$/.test(codeInput.value.trim());
 
-    submitButton.disabled = waitingForCode
-      ? !codeReady || codeRejected
-      : !credentialsReady || credentialsRejected;
+    submitButton.disabled = submitting || (
+      waitingForCode
+        ? !codeReady
+        : !credentialsReady
+    );
   };
 
-  mailInput.addEventListener("input", () => {
-    credentialsRejected = false;
-    clearMessage(mailInput);
-    updateButtonState();
+  [mailInput, passwordInput, phoneInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      resetCodeStep();
+      if (input !== passwordInput) {
+        setAccountFieldMessage(input);
+      }
+      updateButtonState();
+    });
   });
-  phoneInput.addEventListener("input", () => {
-    credentialsRejected = false;
-    clearMessage(phoneInput);
-    updateButtonState();
-  });
+
   passwordInput.addEventListener("input", () => {
-    credentialsRejected = false;
-    const remaining = Math.max(0, 8 - passwordInput.value.length);
-    if (!passwordInput.value) setAccountFieldMessage(passwordInput, "8 caractères minimum", "");
-    else if (remaining > 0) setAccountFieldMessage(passwordInput, `${remaining} caractère${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}`, "error");
-    else clearMessage(passwordInput);
-    updateButtonState();
-  });
-  codeInput.addEventListener("input", () => {
-    codeRejected = false;
-    codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
-    clearMessage(codeInput);
+    const remaining = Math.max(0, ACCOUNT_PASSWORD_MIN_LENGTH - passwordInput.value.length);
+
+    if (!passwordInput.value) {
+      setAccountFieldMessage(passwordInput, `${ACCOUNT_PASSWORD_MIN_LENGTH} caractères minimum`);
+    } else if (remaining > 0) {
+      setAccountFieldMessage(
+        passwordInput,
+        `${remaining} caractère${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}`,
+        "error"
+      );
+    } else {
+      setAccountFieldMessage(passwordInput);
+    }
+
     updateButtonState();
   });
 
-  setAccountFieldMessage(passwordInput, "8 caractères minimum", "");
+  codeInput.addEventListener("input", () => {
+    codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
+    setAccountFieldMessage(codeInput);
+    updateButtonState();
+  });
+
+  setAccountFieldMessage(passwordInput, `${ACCOUNT_PASSWORD_MIN_LENGTH} caractères minimum`);
   updateButtonState();
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+
     const mail = mailInput.value.trim();
     const password = passwordInput.value;
     const phone = phoneInput.value.trim();
 
-    if (!waitingForCode) {
-      clearMessage(mailInput); clearMessage(phoneInput);
-      if (!mail) setAccountFieldMessage(mailInput, "Adresse e-mail obligatoire.", "error");
-      if (password.length < 8) setAccountFieldMessage(passwordInput, "8 caractères minimum", "error");
-      if (!phone) setAccountFieldMessage(phoneInput, "Numéro de téléphone obligatoire.", "error");
+    if (
+      !mail ||
+      !mailInput.checkValidity() ||
+      password.length < ACCOUNT_PASSWORD_MIN_LENGTH ||
+      password.length > ACCOUNT_PASSWORD_MAX_LENGTH ||
+      !phone
+    ) {
+      if (!mail || !mailInput.checkValidity()) {
+        setAccountFieldMessage(mailInput, "Adresse e-mail valide obligatoire.", "error");
+      }
+      if (
+        password.length < ACCOUNT_PASSWORD_MIN_LENGTH ||
+        password.length > ACCOUNT_PASSWORD_MAX_LENGTH
+      ) {
+        setAccountFieldMessage(
+          passwordInput,
+          `Le mot de passe doit contenir entre ${ACCOUNT_PASSWORD_MIN_LENGTH} et ${ACCOUNT_PASSWORD_MAX_LENGTH} caractères.`,
+          "error"
+        );
+      }
+      if (!phone) {
+        setAccountFieldMessage(phoneInput, "Numéro de téléphone obligatoire.", "error");
+      }
       updateButtonState();
-      if (!mail || password.length < 8 || !phone) return;
+      return;
+    }
 
-      try {
-        submitButton.disabled = true;
+    try {
+      submitting = true;
+      updateButtonState();
+
+      if (!waitingForCode) {
         submitButton.textContent = "Envoi du code...";
-        const response = await fetch(`${API_URL}/api/accounts/login/send-code`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mail, password, phone })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-          credentialsRejected = true;
-          setAccountFieldMessage(mailInput, "Adresse e-mail ou informations incorrectes.", "error");
-          setAccountFieldMessage(passwordInput, "Mot de passe incorrect.", "error");
-          setAccountFieldMessage(phoneInput, "Numéro de téléphone incorrect.", "error");
-          return;
-        }
+        await sendExistingAccountLoginVerificationCode({ mail, password, phone });
+
         waitingForCode = true;
         codeField.hidden = false;
         setAccountFieldMessage(codeInput, `Code envoyé à ${mail}.`, "success");
         submitButton.textContent = "Valider le code";
         codeInput.focus();
-      } catch (error) {
-        console.error("Erreur envoi code connexion :", error);
-        setAccountFieldMessage(mailInput, "Impossible de contacter le serveur.", "error");
-      } finally {
-        if (!waitingForCode) submitButton.textContent = "Se connecter";
-        updateButtonState();
-      }
-      return;
-    }
-
-    try {
-      submitButton.disabled = true;
-      submitButton.textContent = "Vérification...";
-      const verifyResponse = await fetch(`${API_URL}/api/account-security/verify-code`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mail, code: codeInput.value.trim(), purpose: "login-existing" })
-      });
-      const verifyData = await verifyResponse.json();
-      if (!verifyResponse.ok || !verifyData.success || !verifyData.verificationToken) {
-        codeRejected = true;
-        setAccountFieldMessage(codeInput, verifyData.message || "Code incorrect ou expiré.", "error");
         return;
       }
+
+      submitButton.textContent = "Vérification...";
+      const verificationToken = await verifyExistingAccountLoginCode({
+        mail,
+        code: codeInput.value.trim()
+      });
+
       submitButton.textContent = "Connexion...";
       const response = await fetch(`${API_URL}/api/accounts/login`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mail, password, phone, verificationToken: verifyData.verificationToken })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mail, password, phone, verificationToken })
       });
       const data = await response.json();
+
       if (!response.ok || !data.success || !data.profile) {
-        setAccountFieldMessage(codeInput, data.error || "Connexion impossible.", "error");
-        return;
+        throw new Error(data.error || data.message || "Connexion impossible.");
       }
+
       localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
       localStorage.setItem("sonaraProfileCreated", "true");
       window.location.href = getAccountRedirect(data.profile);
     } catch (error) {
-      console.error("Erreur connexion compte existant :", error);
-      setAccountFieldMessage(codeInput, "Impossible de contacter le serveur.", "error");
+      console.error("Erreur connexion compte existant sécurisée :", error);
+
+      if (waitingForCode) {
+        setAccountFieldMessage(
+          codeInput,
+          error.message || "Code incorrect ou expiré.",
+          "error"
+        );
+        codeField.hidden = false;
+        submitButton.textContent = "Valider le code";
+      } else {
+        setAccountFieldMessage(
+          mailInput,
+          error.message || "Impossible d'envoyer le code.",
+          "error"
+        );
+        setAccountFieldMessage(passwordInput, "Vérifiez votre mot de passe.", "error");
+        setAccountFieldMessage(phoneInput, "Vérifiez votre numéro de téléphone.", "error");
+        submitButton.textContent = "Envoyer le code de vérification";
+      }
     } finally {
-      submitButton.textContent = waitingForCode ? "Valider le code" : "Se connecter";
+      submitting = false;
       updateButtonState();
     }
   });

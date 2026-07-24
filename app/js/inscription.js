@@ -79,7 +79,9 @@ function showInscriptionPopup({
 function getRegistrationFieldKey(input) {
   if (input.classList.contains("mail-input")) return "mail";
   if (input.classList.contains("password-input")) return "password";
+  if (input.classList.contains("phone-input")) return "phone";
   if (input.classList.contains("pseudo-input")) return "pseudo";
+  if (input.classList.contains("login-code-input")) return "login-verification-code";
   if (input.classList.contains("registration-code-input")) return "verification-code";
   return input.name || "field";
 }
@@ -262,6 +264,34 @@ async function verifyRegistrationCode({ mail, code }) {
   }
 
   return verifyData.verificationToken;
+}
+
+async function sendLoginVerificationCode({ mail, password, phone }) {
+  const response = await fetch(`${API_URL}/api/login/send-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mail, password, phone })
+  });
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || data.message || "Impossible d'envoyer le code.");
+  }
+}
+
+async function verifyLoginCode({ mail, code }) {
+  const response = await fetch(`${API_URL}/api/account-security/verify-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mail, code, purpose: "login" })
+  });
+  const data = await response.json();
+
+  if (!response.ok || !data.success || !data.verificationToken) {
+    throw new Error(data.message || "Code incorrect ou expiré.");
+  }
+
+  return data.verificationToken;
 }
 
 function setupRegistrationSubmitProtection(form, submitSelector) {
@@ -1142,63 +1172,169 @@ Connectez-vous à votre compte Sonara Pack.
 </section>
 
 <section class="form-login">
-   <input type="email" placeholder="Email" class="formulaire mail-input" required>
-        <input type="password" placeholder="Mot de passe" class="formulaire password-input" minlength="8" maxlength="128" required>
-        <input type="tel" placeholder="Téléphone" class="formulaire phone-input" required>
+   <input type="email" placeholder="Email" class="formulaire mail-input" autocomplete="email" required>
+        <input type="password" placeholder="Mot de passe" class="formulaire password-input" minlength="8" maxlength="128" autocomplete="current-password" required>
+        <input type="tel" placeholder="Téléphone" class="formulaire phone-input" autocomplete="tel" required>
 </section>
 
 
-              <button type="submit" class="login">Se Connecter </button>
+              <button type="submit" class="login" disabled>Envoyer le code de vérification</button>
             </form>
 </section>
 
-  `
+  `;
 
   if (window.lucide) {
     lucide.createIcons();
   }
 
- setupPasswordExperience(document.querySelector(".form-login"));
+  const loginForm = document.querySelector(".form-login");
+  setupPasswordExperience(loginForm);
 
- const inscriptionBtn = document.querySelector(".login-btn");
+  const inscriptionBtn = document.querySelector(".login-btn");
+  const loginBtn = document.querySelector(".login");
+  const mailInput = loginForm.querySelector(".mail-input");
+  const passwordInput = loginForm.querySelector(".password-input");
+  const phoneInput = loginForm.querySelector(".phone-input");
 
-inscriptionBtn.addEventListener("click", () =>{
-  renderChoicePage();
-});
+  const codeField = document.createElement("div");
+  codeField.className = "registration-validation-field login-code-field";
+  codeField.hidden = true;
+  codeField.innerHTML = `
+    <input type="text" class="formulaire login-code-input" placeholder="Code à 6 chiffres" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+    <p class="field-message" data-for="login-verification-code"></p>
+  `;
+  loginForm.appendChild(codeField);
 
-const loginBtn = document.querySelector(".login");
+  const codeInput = codeField.querySelector(".login-code-input");
+  let waitingForCode = false;
+  let submitting = false;
 
-loginBtn.addEventListener("click", async (e) => {
-  e.preventDefault();
+  const resetCodeStep = () => {
+    if (!waitingForCode) return;
+    waitingForCode = false;
+    codeField.hidden = true;
+    codeInput.value = "";
+    setFieldMessage(codeInput);
+    loginBtn.textContent = "Envoyer le code de vérification";
+  };
 
-  const mail = document.querySelector(".mail-input").value.trim();
-  const password = document.querySelector(".password-input").value.trim();
+  const updateLoginButtonState = () => {
+    const credentialsReady = Boolean(
+      mailInput.value.trim() &&
+      mailInput.checkValidity() &&
+      passwordInput.value.length >= PASSWORD_MIN_LENGTH &&
+      passwordInput.value.length <= PASSWORD_MAX_LENGTH &&
+      phoneInput.value.trim()
+    );
 
-  const res = await fetch(`${API_URL}/api/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ mail, password })
+    loginBtn.disabled = submitting || (
+      waitingForCode
+        ? !/^\d{6}$/.test(codeInput.value.trim())
+        : !credentialsReady
+    );
+  };
+
+  [mailInput, passwordInput, phoneInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      resetCodeStep();
+      if (input !== passwordInput) setFieldMessage(input);
+      updateLoginButtonState();
+    });
   });
 
-  const data = await res.json();
+  codeInput.addEventListener("input", () => {
+    codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
+    setFieldMessage(codeInput);
+    updateLoginButtonState();
+  });
 
-  if (!res.ok) {
-    showInscriptionPopup({
-      title: "Connexion impossible",
-      message: data.error || "Vérifiez vos informations.",
-      type: "error"
-    });
-    return;
-  }
+  inscriptionBtn.addEventListener("click", () => {
+    renderChoicePage();
+  });
 
-  localStorage.setItem("sonaraProfile", JSON.stringify(data.account));
-  localStorage.setItem("sonaraProfileCreated", "true");
+  loginBtn.addEventListener("click", async (event) => {
+    event.preventDefault();
 
-  window.location.href = getAccountRedirect(data.account || data.profile);
-});
+    const mail = mailInput.value.trim();
+    const password = passwordInput.value;
+    const phone = phoneInput.value.trim();
+
+    if (!mail || !mailInput.checkValidity() || password.length < PASSWORD_MIN_LENGTH || !phone) {
+      if (!mail || !mailInput.checkValidity()) {
+        setFieldMessage(mailInput, "Adresse e-mail valide obligatoire.", "error");
+      }
+      if (password.length < PASSWORD_MIN_LENGTH) {
+        setFieldMessage(passwordInput, `${PASSWORD_MIN_LENGTH} caractères minimum`, "error");
+      }
+      if (!phone) {
+        setFieldMessage(phoneInput, "Numéro de téléphone obligatoire.", "error");
+      }
+      updateLoginButtonState();
+      return;
+    }
+
+    try {
+      submitting = true;
+      updateLoginButtonState();
+
+      if (!waitingForCode) {
+        loginBtn.textContent = "Envoi du code...";
+        await sendLoginVerificationCode({ mail, password, phone });
+
+        waitingForCode = true;
+        codeField.hidden = false;
+        setFieldMessage(codeInput, `Code envoyé à ${mail}.`, "success");
+        loginBtn.textContent = "Valider le code";
+        codeInput.focus();
+        return;
+      }
+
+      loginBtn.textContent = "Vérification...";
+      const verificationToken = await verifyLoginCode({
+        mail,
+        code: codeInput.value.trim()
+      });
+
+      loginBtn.textContent = "Connexion...";
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mail, password, phone, verificationToken })
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.account) {
+        throw new Error(data.error || "Connexion impossible.");
+      }
+
+      localStorage.setItem("sonaraProfile", JSON.stringify(data.account));
+      localStorage.setItem("sonaraProfileCreated", "true");
+      window.location.href = getAccountRedirect(data.account || data.profile);
+    } catch (error) {
+      console.error("Erreur connexion sécurisée :", error);
+
+      if (waitingForCode) {
+        setFieldMessage(codeInput, error.message || "Code incorrect ou expiré.", "error");
+        codeField.hidden = false;
+        loginBtn.textContent = "Valider le code";
+      } else {
+        setFieldMessage(mailInput, error.message || "Impossible d'envoyer le code.", "error");
+        setFieldMessage(passwordInput, "Vérifiez votre mot de passe.", "error");
+        setFieldMessage(phoneInput, "Vérifiez votre numéro de téléphone.", "error");
+        loginBtn.textContent = "Envoyer le code de vérification";
+      }
+    } finally {
+      submitting = false;
+      updateLoginButtonState();
+    }
+  });
+
+  updateLoginButtonState();
 }
+
 renderChoicePage();
 
 

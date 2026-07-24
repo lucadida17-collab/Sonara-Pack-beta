@@ -1449,21 +1449,105 @@ app.get("/api/profile/:id", async (req, res) => {
    LOGIN
 ========================= */
 
+
+/* =========================
+   CODE DE VÉRIFICATION CONNEXION
+========================= */
+
+app.post("/api/login/send-code", async (req, res) => {
+  try {
+    cleanupVerificationStores();
+
+    const { mail, password, phone } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = String(phone || "").trim();
+
+    if (!normalizedMail || !password || !normalizedPhone) {
+      return res.status(400).json({
+        success: false,
+        error: "L'adresse e-mail, le mot de passe et le téléphone sont obligatoires."
+      });
+    }
+
+    const rootUser = await usersCollection.findOne({
+      accounts: {
+        $elemMatch: {
+          mail: normalizedMail,
+          password,
+          phone: normalizedPhone
+        }
+      }
+    });
+
+    const accountExists = rootUser?.accounts?.some((account) =>
+      normalizeMail(account.mail) === normalizedMail &&
+      account.password === password &&
+      String(account.phone || "").trim() === normalizedPhone
+    );
+
+    if (!accountExists) {
+      return res.status(403).json({
+        success: false,
+        error: "Les informations de connexion sont incorrectes."
+      });
+    }
+
+    const code = createVerificationCode();
+    const key = createVerificationKey(normalizedMail, "login");
+
+    verificationCodes.set(key, {
+      code,
+      expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS,
+      attempts: 0
+    });
+
+    await resend.emails.send({
+      from: "Sonara Pack <notifications@sonarapack.com>",
+      to: normalizedMail,
+      subject: "Code de connexion Sonara Pack",
+      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Connexion à votre compte</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
+    });
+
+    return res.json({ success: true, message: "Code envoyé." });
+  } catch (error) {
+    console.error("Erreur envoi code connexion :", error);
+    return res.status(500).json({
+      success: false,
+      error: "Impossible d'envoyer le code."
+    });
+  }
+});
+
 app.post("/api/login", async (req, res) => {
   try {
-    const { mail, password, phone } = req.body;
+    const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = String(phone || "").trim();
+
+    if (!normalizedMail || !password || !normalizedPhone || !verificationToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Informations de connexion incomplètes."
+      });
+    }
+
+    if (!consumeVerifiedToken({
+      token: verificationToken,
+      mail: normalizedMail,
+      purpose: "login"
+    })) {
+      return res.status(403).json({
+        success: false,
+        error: "Vérification e-mail obligatoire ou expirée."
+      });
+    }
 
     let rootUser = await usersCollection.findOne({
       accounts: {
         $elemMatch: {
           mail: normalizedMail,
           password,
-          ...(phone
-            ? {
-                phone: String(phone).trim()
-              }
-            : {})
+          phone: normalizedPhone
         }
       }
     });
@@ -1475,19 +1559,14 @@ app.post("/api/login", async (req, res) => {
         (currentAccount) =>
           normalizeMail(currentAccount.mail) === normalizedMail &&
           currentAccount.password === password &&
-          (
-            !phone ||
-            String(currentAccount.phone || "").trim() ===
-              String(phone).trim()
-          )
+          String(currentAccount.phone || "").trim() === normalizedPhone
       );
     }
-
 
     if (!account) {
       return res.status(401).json({
         success: false,
-        error: "Email ou mot de passe incorrect."
+        error: "Les informations de connexion sont incorrectes."
       });
     }
 
@@ -1531,7 +1610,6 @@ app.post("/api/login", async (req, res) => {
       account: returnedAccount,
       redirectTo
     });
-
   } catch (error) {
     console.error(
       "Erreur POST /api/login :",
@@ -1544,7 +1622,6 @@ app.post("/api/login", async (req, res) => {
     });
   }
 });
-
 
 
 /* =========================
