@@ -579,6 +579,13 @@ app.use("/downloads", express.static("downloads"));
    HELPERS USERS / ACCOUNTS
 ========================= */
 
+function normalizeLoginPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
+}
+
 function normalizeMail(mail) {
   return String(mail || "").trim().toLowerCase();
 }
@@ -1450,6 +1457,50 @@ app.get("/api/profile/:id", async (req, res) => {
 ========================= */
 
 
+
+/* =========================
+   VÉRIFICATION CONNEXION EN DIRECT
+========================= */
+
+app.post("/api/login/live-check", async (req, res) => {
+  try {
+    const { mail, password, phone } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = normalizeLoginPhone(phone);
+
+    const rootUser = normalizedMail
+      ? await usersCollection.findOne({ "accounts.mail": normalizedMail })
+      : null;
+    const matchedAccount = rootUser?.accounts?.find(
+      (account) => normalizeMail(account.mail) === normalizedMail
+    ) || null;
+
+    return res.json({
+      success: true,
+      checks: {
+        mail: Boolean(matchedAccount),
+        phone: Boolean(
+          matchedAccount &&
+          normalizedPhone &&
+          normalizeLoginPhone(matchedAccount.phone) === normalizedPhone
+        ),
+        password: Boolean(
+          matchedAccount &&
+          typeof password === "string" &&
+          password.length >= 8 &&
+          matchedAccount.password === password
+        )
+      }
+    });
+  } catch (error) {
+    console.error("Erreur POST /api/login/live-check :", error);
+    return res.status(500).json({
+      success: false,
+      checks: { mail: false, phone: false, password: false }
+    });
+  }
+});
+
 /* =========================
    CODE DE VÉRIFICATION CONNEXION
 ========================= */
@@ -1460,7 +1511,7 @@ app.post("/api/login/send-code", async (req, res) => {
 
     const { mail, password, phone } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
     if (!normalizedMail || !password || !normalizedPhone) {
       return res.status(400).json({
@@ -1470,19 +1521,13 @@ app.post("/api/login/send-code", async (req, res) => {
     }
 
     const rootUser = await usersCollection.findOne({
-      accounts: {
-        $elemMatch: {
-          mail: normalizedMail,
-          password,
-          phone: normalizedPhone
-        }
-      }
+      "accounts.mail": normalizedMail
     });
 
     const accountExists = rootUser?.accounts?.some((account) =>
       normalizeMail(account.mail) === normalizedMail &&
       account.password === password &&
-      String(account.phone || "").trim() === normalizedPhone
+      normalizeLoginPhone(account.phone) === normalizedPhone
     );
 
     if (!accountExists) {
@@ -1522,7 +1567,7 @@ app.post("/api/login", async (req, res) => {
   try {
     const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
     if (!normalizedMail || !password || !normalizedPhone || !verificationToken) {
       return res.status(400).json({
@@ -1679,7 +1724,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
 
     const { mail, password, phone } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
     if (!normalizedMail || !password || !normalizedPhone) {
       return res.status(400).json({
@@ -1689,19 +1734,13 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
     }
 
     const rootUser = await usersCollection.findOne({
-      accounts: {
-        $elemMatch: {
-          mail: normalizedMail,
-          password,
-          phone: normalizedPhone
-        }
-      }
+      "accounts.mail": normalizedMail
     });
 
     const targetAccount = rootUser?.accounts?.find((item) =>
       normalizeMail(item.mail) === normalizedMail &&
       item.password === password &&
-      String(item.phone || "").trim() === normalizedPhone
+      normalizeLoginPhone(item.phone) === normalizedPhone
     );
 
     if (!rootUser || !targetAccount) {
@@ -1742,9 +1781,9 @@ app.post("/api/accounts/login", async (req, res) => {
   try {
     const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
-    if (!normalizedMail || !password || !normalizedPhone) {
+    if (!normalizedMail || !password || !normalizedPhone || !verificationToken) {
       return res.status(400).json({
         success: false,
         error: "Informations de connexion incomplètes."
@@ -1763,19 +1802,13 @@ app.post("/api/accounts/login", async (req, res) => {
     }
 
     const rootUser = await usersCollection.findOne({
-      accounts: {
-        $elemMatch: {
-          mail: normalizedMail,
-          password,
-          phone: normalizedPhone
-        }
-      }
+      "accounts.mail": normalizedMail
     });
 
     const account = rootUser?.accounts?.find((item) =>
       normalizeMail(item.mail) === normalizedMail &&
       item.password === password &&
-      String(item.phone || "").trim() === normalizedPhone
+      normalizeLoginPhone(item.phone) === normalizedPhone
     );
 
     if (!rootUser || !account) {

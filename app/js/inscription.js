@@ -3,6 +3,13 @@ const chaosPage = document.querySelector(".chaos");
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 
+function normalizeLoginPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
+}
+
 function getAccountRedirect(profile = {}) {
   const status = String(profile.status || "").toLowerCase();
   const role = String(profile.role || "").toLowerCase();
@@ -235,6 +242,102 @@ async function checkRegistrationFieldAvailability(form, field) {
     form._updateRegistrationSubmitState?.();
     console.error(`Erreur vérification ${field} :`, error);
   }
+}
+
+
+function createLoginLiveVerifier({
+  mailInput,
+  passwordInput,
+  phoneInput,
+  setMessage,
+  onStateChange
+}) {
+  let timer = null;
+  let requestId = 0;
+  const state = { mail: false, password: false, phone: false, pending: false };
+
+  const publish = () => onStateChange?.({ ...state });
+
+  const schedule = () => {
+    clearTimeout(timer);
+    const mail = mailInput.value.trim();
+    const password = passwordInput.value;
+    const phone = normalizeLoginPhone(phoneInput.value);
+
+    state.mail = false;
+    state.password = false;
+    state.phone = false;
+
+    if (!mail) setMessage(mailInput);
+    else if (!mailInput.checkValidity()) setMessage(mailInput, "Adresse e-mail invalide.", "error");
+    else setMessage(mailInput, "Vérification de l’adresse e-mail…");
+
+    if (!phone) setMessage(phoneInput);
+    else setMessage(phoneInput, "Vérification du numéro…");
+
+    if (password.length >= PASSWORD_MIN_LENGTH) {
+      setMessage(passwordInput, "Vérification du mot de passe…");
+    }
+
+    if (!mail || !mailInput.checkValidity()) {
+      state.pending = false;
+      publish();
+      return;
+    }
+
+    state.pending = true;
+    publish();
+    const currentRequest = ++requestId;
+
+    timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/login/live-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mail, password, phone })
+        });
+        const data = await response.json();
+        if (currentRequest !== requestId) return;
+
+        const checks = data.checks || {};
+        state.mail = checks.mail === true;
+        state.phone = checks.phone === true;
+        state.password = checks.password === true;
+        state.pending = false;
+
+        setMessage(
+          mailInput,
+          state.mail ? "Adresse e-mail reconnue." : "Adresse e-mail incorrecte.",
+          state.mail ? "success" : "error"
+        );
+
+        if (phone) {
+          setMessage(
+            phoneInput,
+            state.phone ? "Numéro de téléphone correct." : "Numéro de téléphone incorrect.",
+            state.phone ? "success" : "error"
+          );
+        }
+
+        if (password.length >= PASSWORD_MIN_LENGTH) {
+          setMessage(
+            passwordInput,
+            state.password ? "Mot de passe correct." : "Mot de passe incorrect.",
+            state.password ? "success" : "error"
+          );
+        }
+
+        publish();
+      } catch (error) {
+        if (currentRequest !== requestId) return;
+        state.pending = false;
+        publish();
+        console.error("Erreur vérification connexion en direct :", error);
+      }
+    }, 450);
+  };
+
+  return { state, schedule };
 }
 
 async function sendRegistrationVerificationCode({ form, mail, pseudo, password }) {
@@ -1209,6 +1312,7 @@ Connectez-vous à votre compte Sonara Pack.
   const codeInput = codeField.querySelector(".login-code-input");
   let waitingForCode = false;
   let submitting = false;
+  let liveChecks = { mail: false, password: false, phone: false, pending: false };
 
   const resetCodeStep = () => {
     if (!waitingForCode) return;
@@ -1225,7 +1329,11 @@ Connectez-vous à votre compte Sonara Pack.
       mailInput.checkValidity() &&
       passwordInput.value.length >= PASSWORD_MIN_LENGTH &&
       passwordInput.value.length <= PASSWORD_MAX_LENGTH &&
-      phoneInput.value.trim()
+      normalizeLoginPhone(phoneInput.value) &&
+      liveChecks.mail &&
+      liveChecks.password &&
+      liveChecks.phone &&
+      !liveChecks.pending
     );
 
     loginBtn.disabled = submitting || (
@@ -1235,10 +1343,21 @@ Connectez-vous à votre compte Sonara Pack.
     );
   };
 
+  const liveVerifier = createLoginLiveVerifier({
+    mailInput,
+    passwordInput,
+    phoneInput,
+    setMessage: setFieldMessage,
+    onStateChange: (nextState) => {
+      liveChecks = nextState;
+      updateLoginButtonState();
+    }
+  });
+
   [mailInput, passwordInput, phoneInput].forEach((input) => {
     input.addEventListener("input", () => {
       resetCodeStep();
-      if (input !== passwordInput) setFieldMessage(input);
+      liveVerifier.schedule();
       updateLoginButtonState();
     });
   });
@@ -1258,7 +1377,7 @@ Connectez-vous à votre compte Sonara Pack.
 
     const mail = mailInput.value.trim();
     const password = passwordInput.value;
-    const phone = phoneInput.value.trim();
+    const phone = normalizeLoginPhone(phoneInput.value);
 
     if (!mail || !mailInput.checkValidity() || password.length < PASSWORD_MIN_LENGTH || !phone) {
       if (!mail || !mailInput.checkValidity()) {

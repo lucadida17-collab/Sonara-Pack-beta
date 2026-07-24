@@ -1,5 +1,12 @@
 const appLayout = document.querySelector(".app-layout");
 
+function normalizeLoginPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
+}
+
 function getAccountRedirect(profile = {}) {
   const status = String(profile.status || "").toLowerCase();
   const role = String(profile.role || "").toLowerCase();
@@ -1498,6 +1505,101 @@ async function renderAddAccount() {
    SE CONNECTER À UN COMPTE EXISTANT
 ========================= */
 
+
+function createExistingAccountLiveVerifier({
+  mailInput,
+  passwordInput,
+  phoneInput,
+  onStateChange
+}) {
+  let timer = null;
+  let requestId = 0;
+  const state = { mail: false, password: false, phone: false, pending: false };
+
+  const publish = () => onStateChange?.({ ...state });
+
+  const schedule = () => {
+    clearTimeout(timer);
+    const mail = mailInput.value.trim();
+    const password = passwordInput.value;
+    const phone = normalizeLoginPhone(phoneInput.value);
+
+    state.mail = false;
+    state.password = false;
+    state.phone = false;
+
+    if (!mail) setAccountFieldMessage(mailInput);
+    else if (!mailInput.checkValidity()) setAccountFieldMessage(mailInput, "Adresse e-mail invalide.", "error");
+    else setAccountFieldMessage(mailInput, "Vérification de l’adresse e-mail…");
+
+    if (!phone) setAccountFieldMessage(phoneInput);
+    else setAccountFieldMessage(phoneInput, "Vérification du numéro…");
+
+    if (password.length >= ACCOUNT_PASSWORD_MIN_LENGTH) {
+      setAccountFieldMessage(passwordInput, "Vérification du mot de passe…");
+    }
+
+    if (!mail || !mailInput.checkValidity()) {
+      state.pending = false;
+      publish();
+      return;
+    }
+
+    state.pending = true;
+    publish();
+    const currentRequest = ++requestId;
+
+    timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/login/live-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mail, password, phone })
+        });
+        const data = await response.json();
+        if (currentRequest !== requestId) return;
+
+        const checks = data.checks || {};
+        state.mail = checks.mail === true;
+        state.phone = checks.phone === true;
+        state.password = checks.password === true;
+        state.pending = false;
+
+        setAccountFieldMessage(
+          mailInput,
+          state.mail ? "Adresse e-mail reconnue." : "Adresse e-mail incorrecte.",
+          state.mail ? "success" : "error"
+        );
+
+        if (phone) {
+          setAccountFieldMessage(
+            phoneInput,
+            state.phone ? "Numéro de téléphone correct." : "Numéro de téléphone incorrect.",
+            state.phone ? "success" : "error"
+          );
+        }
+
+        if (password.length >= ACCOUNT_PASSWORD_MIN_LENGTH) {
+          setAccountFieldMessage(
+            passwordInput,
+            state.password ? "Mot de passe correct." : "Mot de passe incorrect.",
+            state.password ? "success" : "error"
+          );
+        }
+
+        publish();
+      } catch (error) {
+        if (currentRequest !== requestId) return;
+        state.pending = false;
+        publish();
+        console.error("Erreur vérification connexion en direct :", error);
+      }
+    }, 450);
+  };
+
+  return { state, schedule };
+}
+
 async function sendExistingAccountLoginVerificationCode({ mail, password, phone }) {
   const response = await fetch(`${API_URL}/api/accounts/login/send-code`, {
     method: "POST",
@@ -1568,6 +1670,7 @@ function renderConnectExistingAccount() {
   const codeField = form.querySelector(".connect-code-field");
   let waitingForCode = false;
   let submitting = false;
+  let liveChecks = { mail: false, password: false, phone: false, pending: false };
 
   const resetCodeStep = () => {
     if (!waitingForCode) return;
@@ -1597,7 +1700,11 @@ function renderConnectExistingAccount() {
       mailInput.checkValidity() &&
       passwordInput.value.length >= ACCOUNT_PASSWORD_MIN_LENGTH &&
       passwordInput.value.length <= ACCOUNT_PASSWORD_MAX_LENGTH &&
-      phoneInput.value.trim()
+      normalizeLoginPhone(phoneInput.value) &&
+      liveChecks.mail &&
+      liveChecks.password &&
+      liveChecks.phone &&
+      !liveChecks.pending
     );
     const codeReady = /^\d{6}$/.test(codeInput.value.trim());
 
@@ -1608,12 +1715,20 @@ function renderConnectExistingAccount() {
     );
   };
 
+  const liveVerifier = createExistingAccountLiveVerifier({
+    mailInput,
+    passwordInput,
+    phoneInput,
+    onStateChange: (nextState) => {
+      liveChecks = nextState;
+      updateButtonState();
+    }
+  });
+
   [mailInput, passwordInput, phoneInput].forEach((input) => {
     input.addEventListener("input", () => {
       resetCodeStep();
-      if (input !== passwordInput) {
-        setAccountFieldMessage(input);
-      }
+      liveVerifier.schedule();
       updateButtonState();
     });
   });
@@ -1630,7 +1745,7 @@ function renderConnectExistingAccount() {
         "error"
       );
     } else {
-      setAccountFieldMessage(passwordInput);
+      setAccountFieldMessage(passwordInput, "Vérification du mot de passe…");
     }
 
     updateButtonState();
@@ -1650,7 +1765,7 @@ function renderConnectExistingAccount() {
 
     const mail = mailInput.value.trim();
     const password = passwordInput.value;
-    const phone = phoneInput.value.trim();
+    const phone = normalizeLoginPhone(phoneInput.value);
 
     if (
       !mail ||

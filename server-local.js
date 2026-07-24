@@ -441,6 +441,13 @@ const verifiedTokens = new Map();
 const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
 const VERIFIED_TOKEN_TTL_MS = 15 * 60 * 1000;
 
+function normalizeLoginPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
+}
+
 function normalizeMail(mail) {
   return String(mail || "").trim().toLowerCase();
 }
@@ -1179,6 +1186,52 @@ app.get("/api/profile/:id", (req, res) => {
 });
 
 
+
+/* =========================
+   VÉRIFICATION CONNEXION EN DIRECT
+========================= */
+
+app.post("/api/login/live-check", (req, res) => {
+  try {
+    const { mail, password, phone } = req.body || {};
+    const normalizedMail = normalizeMail(mail);
+    const normalizedPhone = normalizeLoginPhone(phone);
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+
+    let matchedAccount = null;
+    for (const rootUser of users) {
+      matchedAccount = rootUser.accounts?.find(
+        (account) => normalizeMail(account.mail) === normalizedMail
+      );
+      if (matchedAccount) break;
+    }
+
+    return res.json({
+      success: true,
+      checks: {
+        mail: Boolean(matchedAccount),
+        phone: Boolean(
+          matchedAccount &&
+          normalizedPhone &&
+          normalizeLoginPhone(matchedAccount.phone) === normalizedPhone
+        ),
+        password: Boolean(
+          matchedAccount &&
+          typeof password === "string" &&
+          password.length >= 8 &&
+          matchedAccount.password === password
+        )
+      }
+    });
+  } catch (error) {
+    console.error("Erreur POST /api/login/live-check :", error);
+    return res.status(500).json({
+      success: false,
+      checks: { mail: false, phone: false, password: false }
+    });
+  }
+});
+
 /* =========================
    CODE DE VÉRIFICATION CONNEXION
 ========================= */
@@ -1189,7 +1242,7 @@ app.post("/api/login/send-code", async (req, res) => {
 
     const { mail, password, phone } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
     if (!normalizedMail || !password || !normalizedPhone) {
       return res.status(400).json({
@@ -1203,7 +1256,7 @@ app.post("/api/login/send-code", async (req, res) => {
       rootUser.accounts?.some((account) =>
         normalizeMail(account.mail) === normalizedMail &&
         account.password === password &&
-        String(account.phone || "").trim() === normalizedPhone
+        normalizeLoginPhone(account.phone) === normalizedPhone
       )
     );
 
@@ -1244,7 +1297,7 @@ app.post("/api/login", (req, res) => {
   try {
     const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
-    const normalizedPhone = String(phone || "").trim();
+    const normalizedPhone = normalizeLoginPhone(phone);
 
     if (!normalizedMail || !password || !normalizedPhone || !verificationToken) {
       return res.status(400).json({
@@ -1425,7 +1478,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
       targetAccount = rootUser.accounts?.find((item) =>
         normalizeMail(item.mail) === normalizedMail &&
         item.password === password &&
-        String(item.phone || "").trim() === String(phone).trim()
+        normalizeLoginPhone(item.phone) === normalizeLoginPhone(phone)
       );
 
       if (targetAccount) break;
@@ -1496,7 +1549,7 @@ app.post("/api/accounts/login", (req, res) => {
       const foundAccount = currentRootUser.accounts?.find((item) =>
         normalizeMail(item.mail) === normalizedMail &&
         item.password === password &&
-        String(item.phone || "").trim() === String(phone).trim()
+        normalizeLoginPhone(item.phone) === normalizeLoginPhone(phone)
       );
 
       if (foundAccount) {
