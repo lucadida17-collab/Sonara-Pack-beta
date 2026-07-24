@@ -1,50 +1,48 @@
-
-
-
 const homeAccessBtn = document.querySelector(".home-access-btn");
+let profile = JSON.parse(localStorage.getItem("sonaraProfile") || "null");
+let decisionInProgress = false;
 
-const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
-
-if (profile && profile.role === "artist") {
+if (profile?.role === "artist" && homeAccessBtn) {
   homeAccessBtn.style.display = "none";
 }
 
-homeAccessBtn.addEventListener("click", () => {
+homeAccessBtn?.addEventListener("click", () => {
   window.location.href = "/home.html";
 });
 
-
 async function checkStatus() {
-  if (!profile || !profile.id) return;
+  if (!profile || !(profile.id || profile.accountId) || decisionInProgress) return;
 
-  const res = await fetch(`${API_URL}/api/users/${profile.id}`);
-  const data = await res.json();
+  try {
+    const requestedId = profile.accountId || profile.id;
+    const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(requestedId)}`);
+    const data = await res.json();
+    const account = data.account;
 
-  const account = data.account;
+    if (!res.ok || !account) return;
 
-  if (account.status === "approved") {
-    localStorage.setItem(
-      "sonaraProfile",
-      JSON.stringify(account)
-    );
+    profile = account;
+    localStorage.setItem("sonaraProfile", JSON.stringify(account));
 
-    window.location.href = "creator.html";
-  }
-
-  if (account.status === "rejected") {
-         localStorage.setItem("sonaraProfile", JSON.stringify(account));
-
-    if (account.role === "both") {
-      window.location.href = "/home.html";
-    } else {
-      window.location.href = "inscription.html";
+    if (account.status === "approved" && account.artistStatus !== "rejected") {
+      window.location.href = "creator.html";
+      return;
     }
+
+    if (account.status === "rejected" || account.artistStatus === "rejected") {
+      decisionInProgress = true;
+      await window.SonaraModeration?.showNext(account);
+
+      if (String(account.role || "").toLowerCase() === "both" || account.status === "approved") {
+        window.location.href = "/home.html";
+      } else {
+        window.location.href = "inscription.html";
+      }
+    }
+  } catch (error) {
+    console.warn("Vérification du statut artiste impossible :", error);
   }
 }
 
 setInterval(checkStatus, 3000);
-
 checkStatus();
-
-
-

@@ -2228,6 +2228,10 @@ app.patch(
 
       const moderatedAt = new Date().toISOString();
 
+      if (status === "rejected" && !result.account.originalRole) {
+        result.account.originalRole = String(result.account.role || "user").toLowerCase();
+      }
+
       if (
         status === "rejected" &&
         String(result.account.role || "").toLowerCase() === "both"
@@ -2246,6 +2250,15 @@ app.patch(
         result.rootUser,
         result.account
       );
+
+      if (status === "rejected") {
+        await createModerationDecisionNotice({
+          accountId: result.account.accountId || result.account.id,
+          decisionType: "artist_rejection",
+          reason: req.body?.reason,
+          initialDecision: "rejected"
+        });
+      }
 
       const returnedAccount = sanitizeAccount(
         result.account,
@@ -3118,22 +3131,34 @@ app.patch("/api/packs/:id/status", async (req, res) => {
     }
 
     if (status === "rejected") {
-      const deleted = await permanentlyRejectMongoPack(packId);
+      const moderatedAt = new Date().toISOString();
+      const result = await packsCollection.findOneAndUpdate(
+        { id: packId },
+        { $set: {
+          status: "rejected",
+          rejectionReason: String(req.body?.reason || "La demande ne respecte pas les critères de validation Sonara.").trim(),
+          moderatedAt,
+          updatedAt: moderatedAt
+        } },
+        { returnDocument: "after" }
+      );
+      const rejectedPack = result?.value || result;
+      if (!rejectedPack) return res.status(404).json({ success: false, message: "Pack introuvable" });
 
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: "Pack introuvable"
-        });
-      }
+      await createModerationDecisionNotice({
+        accountId: rejectedPack.artistId,
+        decisionType: "pack_rejection",
+        resourceId: rejectedPack.id,
+        reason: rejectedPack.rejectionReason,
+        initialDecision: "rejected"
+      });
 
-      const { _id, ...publicPack } = deleted.pack;
+      const { _id, ...publicPack } = rejectedPack;
       return res.json({
         success: true,
-        message: "Pack refusé et supprimé définitivement",
-        deleted: true,
-        deletedR2Keys: deleted.deletedR2Keys,
-        pack: { ...publicPack, status: "rejected" }
+        message: "Pack refusé et conservé pour une éventuelle contestation",
+        deleted: false,
+        pack: publicPack
       });
     }
 
@@ -3181,6 +3206,7 @@ app.patch("/api/packs/:id/status", async (req, res) => {
 
 const supportCollection = db.collection("support_tickets");
 const founderNotificationsCollection = db.collection("founder_notifications");
+const moderationAppealsCollection = db.collection("moderation_appeals");
 
 function requireFounderKey(req, res, next) {
   const expected = String(process.env.FOUNDER_ACCESS_KEY || "").trim();
@@ -3616,6 +3642,412 @@ app.get("/api/founder/overview", requireFounderKey, async (_req, res) => {
   });
 });
 
+
+
+function normalizeDecisionType(value) {
+  const type = String(value || "other").trim().toLowerCase();
+  const allowed = new Set([
+    "artist_rejection",
+    "pack_rejection",
+    "suspension",
+    "ban",
+    "creator_access_removed",
+    "other"
+  ]);
+  return allowed.has(type) ? type : "other";
+}
+
+async function createModerationDecisionNotice({
+  accountId,
+  decisionType,
+  resourceId = null,
+  reason,
+  initialDecision = "rejected"
+}) {
+  const target = await findRootAndAccountById(String(accountId || ""));
+  if (!target?.account) return null;
+
+  const now = new Date().toISOString();
+  const safeReason = String(reason || "La demande ne respecte pas les critères de validation Sonara.").trim();
+  const record = {
+    id: `decision_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+    appealId: null,
+    recordType: "decision_notice",
+    appealSubmitted: false,
+    active: false,
+    accountId: String(target.account.accountId || target.account.id || ""),
+    userId: String(target.rootUser.id || target.rootUser._id || ""),
+    rootUserId: String(target.rootUser.id || target.rootUser._id || ""),
+    email: String(target.account.mail || target.account.email || "").trim().toLowerCase(),
+    mail: String(target.account.mail || target.account.email || "").trim().toLowerCase(),
+    pseudo: String(target.account.pseudo || target.account.artistname || "").trim(),
+    role: String(target.account.originalRole || target.account.role || "user"),
+    decisionType: normalizeDecisionType(decisionType),
+    resourceId: resourceId ? String(resourceId) : null,
+    initialDecision: String(initialDecision || "rejected"),
+    initialReason: safeReason,
+    message: "",
+    environment: "main",
+    status: "decision_sent",
+    initialNoticeRead: false,
+    finalDecisionRead: true,
+    createdAt: now,
+    updatedAt: now,
+    history: [{
+      type: "initial_decision",
+      decision: String(initialDecision || "rejected"),
+      reason: safeReason,
+      createdAt: now,
+      source: "founder"
+    }]
+  };
+
+  await moderationAppealsCollection.insertOne(record);
+  target.account.moderationNotice = {
+    id: record.id,
+    type: "moderation_decision",
+    decisionType: record.decisionType,
+    resourceId: record.resourceId,
+    reason: record.initialReason,
+    createdAt: now,
+    read: false
+  };
+  await saveAccountState(target.rootUser, target.account);
+  return record;
+}
+
+function publicAppealRecord(record) {
+  if (!record || typeof record !== "object") return null;
+  const { _id, ...copy } = record;
+  return copy;
+}
+
+async function sendAppealDecisionEmail(to, decision, message) {
+  const email = String(to || "").trim();
+  if (!email || !process.env.RESEND_API_KEY) return false;
+  try {
+    await resend.emails.send({
+      from: "Sonara Pack <notifications@sonarapack.com>",
+      to: email,
+      subject: decision === "accepted"
+        ? "Votre contestation Sonara a été acceptée"
+        : "Décision concernant votre contestation Sonara",
+      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:#fff;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Décision Sonara</h1><p>${String(message || "").replace(/[&<>\"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[char]))}</p></div>`
+    });
+    return true;
+  } catch (error) {
+    console.error("Erreur e-mail contestation :", error.message);
+    return false;
+  }
+}
+
+app.get("/api/appeals/decisions/:accountId", async (req, res) => {
+  const accountId = String(req.params.accountId || "").trim();
+  if (!accountId) return res.status(400).json({ success: false, message: "Compte obligatoire." });
+
+  const items = await moderationAppealsCollection.find({
+    accountId,
+    $or: [
+      { appealSubmitted: { $ne: true }, initialNoticeRead: { $ne: true } },
+      { appealSubmitted: true, active: false, finalResponse: { $exists: true, $ne: "" }, finalDecisionRead: { $ne: true } }
+    ]
+  }).sort({ updatedAt: -1, createdAt: -1 }).toArray();
+
+  const decisions = items.map(publicAppealRecord);
+  return res.json({ success: true, items: decisions, decisions });
+});
+
+app.post("/api/appeals", async (req, res) => {
+  try {
+    const accountId = String(req.body?.accountId || "").trim();
+    const decisionId = String(req.body?.decisionId || "").trim();
+    const message = String(req.body?.message || "").trim();
+
+    if (!accountId || !decisionId || message.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Décision, compte et message de contestation d’au moins 10 caractères obligatoires."
+      });
+    }
+
+    const existing = await moderationAppealsCollection.findOne({
+      $or: [{ id: decisionId }, { appealId: decisionId }],
+      accountId
+    });
+    if (!existing) return res.status(404).json({ success: false, message: "Décision introuvable pour ce compte." });
+    if (existing.appealSubmitted === true) return res.status(409).json({ success: false, message: "Cette décision a déjà été contestée." });
+
+    const now = new Date().toISOString();
+    const appealId = `appeal_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    const history = Array.isArray(existing.history) ? existing.history : [];
+    history.push({ type: "appeal_submitted", message, createdAt: now, source: "user" });
+
+    const result = await moderationAppealsCollection.findOneAndUpdate(
+      { id: existing.id, accountId, appealSubmitted: { $ne: true } },
+      { $set: {
+        appealId,
+        recordType: "appeal",
+        appealSubmitted: true,
+        active: true,
+        message,
+        status: "pending",
+        submittedAt: now,
+        updatedAt: now,
+        initialNoticeRead: true,
+        history
+      } },
+      { returnDocument: "after" }
+    );
+    const appeal = result?.value || result;
+    if (!appeal) return res.status(409).json({ success: false, message: "Cette décision a déjà été contestée." });
+
+    await createFounderNotification({
+      type: "moderation_appeal",
+      title: "Nouvelle contestation",
+      message: `${appeal.pseudo || appeal.email || appeal.accountId} conteste une décision ${appeal.decisionType}.`,
+      entityId: appeal.appealId,
+      priority: "important"
+    });
+
+    return res.status(201).json({ success: true, appeal: publicAppealRecord(appeal), item: publicAppealRecord(appeal) });
+  } catch (error) {
+    console.error("Erreur création contestation :", error);
+    return res.status(500).json({ success: false, message: "Impossible d’envoyer la contestation." });
+  }
+});
+
+app.patch("/api/appeals/:id/read", async (req, res) => {
+  const accountId = String(req.body?.accountId || "").trim();
+  const stage = String(req.body?.stage || "initial").toLowerCase();
+  const now = new Date().toISOString();
+  const set = stage === "final"
+    ? { finalDecisionRead: true, finalDecisionReadAt: now, updatedAt: now }
+    : { initialNoticeRead: true, initialNoticeReadAt: now, updatedAt: now };
+
+  const result = await moderationAppealsCollection.updateOne(
+    { $or: [{ id: String(req.params.id || "") }, { appealId: String(req.params.id || "") }], ...(accountId ? { accountId } : {}) },
+    { $set: set }
+  );
+  if (!result.matchedCount) return res.status(404).json({ success: false, message: "Décision introuvable." });
+  return res.json({ success: true });
+});
+
+app.get("/api/founder/appeals", requireFounderKey, async (_req, res) => {
+  const appeals = await moderationAppealsCollection.find({
+    appealSubmitted: true,
+    active: true,
+    status: "pending"
+  }).sort({ submittedAt: -1, createdAt: -1 }).toArray();
+  const items = appeals.map(publicAppealRecord);
+  return res.json({ success: true, items, appeals: items });
+});
+
+app.get("/api/founder/appeals/:id", requireFounderKey, async (req, res) => {
+  const item = await moderationAppealsCollection.findOne({
+    $or: [{ id: String(req.params.id || "") }, { appealId: String(req.params.id || "") }],
+    appealSubmitted: true
+  });
+  if (!item) return res.status(404).json({ success: false, message: "Contestation introuvable." });
+  return res.json({ success: true, item: publicAppealRecord(item), appeal: publicAppealRecord(item) });
+});
+
+app.patch("/api/founder/appeals/:id/decision", requireFounderKey, async (req, res) => {
+  try {
+    const requestedId = String(req.params.id || "");
+    const appeal = await moderationAppealsCollection.findOne({
+      $or: [{ id: requestedId }, { appealId: requestedId }],
+      appealSubmitted: true,
+      active: true
+    });
+    if (!appeal) return res.status(404).json({ success: false, message: "Contestation active introuvable." });
+
+    const decision = String(req.body?.decision || "").toLowerCase();
+    const action = String(req.body?.action || "maintain_decision").toLowerCase();
+    const finalResponse = String(req.body?.message || "").trim();
+    const customDecision = String(req.body?.customDecision || "").trim();
+    const allowedActions = new Set([
+      "restore_artist",
+      "restore_pack",
+      "allow_resubmission",
+      "restore_creator",
+      "reactivate",
+      "lift_suspension",
+      "maintain_decision",
+      "maintain_refusal",
+      "maintain_suspension",
+      "maintain_ban",
+      "custom"
+    ]);
+
+    if (!["accepted", "rejected"].includes(decision)) return res.status(400).json({ success: false, message: "Décision finale invalide." });
+    if (!allowedActions.has(action)) return res.status(400).json({ success: false, message: "Action de restauration invalide." });
+    if (!finalResponse) return res.status(400).json({ success: false, message: "Le message envoyé à l’utilisateur est obligatoire." });
+    if (action === "custom" && !customDecision) return res.status(400).json({ success: false, message: "La décision personnalisée doit être écrite." });
+
+    const target = await findRootAndAccountById(appeal.accountId);
+    if (!target?.account) return res.status(404).json({ success: false, message: "Compte lié à la contestation introuvable." });
+
+    const expectedUserId = String(appeal.userId || appeal.rootUserId || "");
+    const expectedEmail = String(appeal.email || appeal.mail || "").toLowerCase();
+    const expectedPseudo = String(appeal.pseudo || "").toLowerCase();
+    const actualUserId = String(target.rootUser.id || target.rootUser._id || "");
+    const actualEmail = String(target.account.mail || target.account.email || "").toLowerCase();
+    const actualPseudo = String(target.account.pseudo || target.account.artistname || "").toLowerCase();
+    if (
+      (expectedUserId && expectedUserId !== actualUserId) ||
+      (expectedEmail && expectedEmail !== actualEmail) ||
+      (expectedPseudo && expectedPseudo !== actualPseudo)
+    ) {
+      return res.status(409).json({ success: false, message: "La cible a changé. Recharge la contestation avant de décider." });
+    }
+
+    const now = new Date().toISOString();
+    const applied = [];
+
+    if (decision === "accepted") {
+      if (["restore_artist", "restore_creator"].includes(action)) {
+        const originalRole = String(target.account.originalRole || target.account.role || appeal.role || "both").toLowerCase();
+        target.account.role = originalRole === "artist" ? "artist" : "both";
+        target.account.status = "approved";
+        target.account.artistStatus = "approved";
+        target.account.suspendedUntil = null;
+        target.account.bannedAt = null;
+        target.account.artistModeratedAt = now;
+        applied.push("creator_access_restored");
+      } else if (["reactivate", "lift_suspension"].includes(action)) {
+        applyAccountControl(target.account, "reactivate", { reason: finalResponse });
+        applied.push("account_reactivated");
+      } else if (action === "allow_resubmission") {
+        if (appeal.resourceId) {
+          const packResult = await packsCollection.findOneAndUpdate(
+            { id: String(appeal.resourceId || "") },
+            { $set: { canResubmit: true, resubmissionAuthorizedAt: now } },
+            { returnDocument: "after" }
+          );
+          const pack = packResult?.value || packResult;
+          if (pack) applied.push("pack_resubmission_allowed");
+        } else {
+          target.account.canResubmitArtist = true;
+          applied.push("artist_resubmission_allowed");
+        }
+      }
+
+      if (action === "restore_pack") {
+        const result = await packsCollection.findOneAndUpdate(
+          { id: String(appeal.resourceId || "") },
+          { $set: { status: "approved", moderatedAt: now, restoredAt: now, rejectionReason: null } },
+          { returnDocument: "after" }
+        );
+        const pack = result?.value || result;
+        if (!pack) return res.status(404).json({ success: false, message: "Pack lié à la contestation introuvable." });
+        applied.push("pack_restored");
+      }
+    }
+
+    appendModerationHistory(target.account, {
+      id: `appeal_history_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
+      action: `appeal_${action}`,
+      reason: finalResponse,
+      decision,
+      appealId: appeal.appealId || appeal.id,
+      staffId: String(req.body?.staffId || "founder"),
+      staffEmail: String(req.body?.staffEmail || ""),
+      staffRole: String(req.body?.staffRole || "founder"),
+      rightsApplied: applied,
+      createdAt: now,
+      source: "appeal"
+    });
+
+    target.account.moderationNotice = {
+      id: appeal.appealId || appeal.id,
+      type: "appeal_decision",
+      decision,
+      action,
+      customDecision: customDecision || null,
+      message: finalResponse,
+      createdAt: now,
+      read: false
+    };
+    target.account.updatedAt = now;
+    await saveAccountState(target.rootUser, target.account);
+
+    const history = Array.isArray(appeal.history) ? appeal.history : [];
+    history.push({
+      type: "final_decision",
+      decision,
+      action,
+      customDecision: customDecision || null,
+      message: finalResponse,
+      staffId: String(req.body?.staffId || "founder"),
+      staffEmail: String(req.body?.staffEmail || ""),
+      staffRole: String(req.body?.staffRole || "founder"),
+      rightsApplied: applied,
+      createdAt: now
+    });
+
+    const update = {
+      status: decision,
+      active: false,
+      decidedAt: now,
+      updatedAt: now,
+      finalDecision: decision,
+      finalResponse,
+      appliedAction: action,
+      customDecision: customDecision || null,
+      rightsApplied: applied,
+      staffId: String(req.body?.staffId || "founder"),
+      staffEmail: String(req.body?.staffEmail || ""),
+      staffRole: String(req.body?.staffRole || "founder"),
+      finalDecisionRead: false,
+      history
+    };
+
+    const result = await moderationAppealsCollection.findOneAndUpdate(
+      { id: appeal.id, active: true },
+      { $set: update },
+      { returnDocument: "after" }
+    );
+    const updated = result?.value || result;
+    await founderNotificationsCollection.deleteMany({
+      type: "moderation_appeal",
+      entityId: { $in: [appeal.id, appeal.appealId].filter(Boolean) }
+    });
+    const emailSent = await sendAppealDecisionEmail(appeal.email || appeal.mail, decision, finalResponse);
+
+    return res.json({
+      success: true,
+      message: "Décision appliquée et contestation retirée de la liste active.",
+      item: publicAppealRecord(updated),
+      appeal: publicAppealRecord(updated),
+      emailSent
+    });
+  } catch (error) {
+    console.error("Erreur décision contestation :", error);
+    return res.status(500).json({ success: false, message: error.message || "Impossible d’appliquer la décision." });
+  }
+});
+
+app.delete("/api/founder/appeals/bulk", requireFounderKey, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [];
+  if (!ids.length) return res.status(400).json({ success: false, message: "Aucune contestation sélectionnée." });
+  const result = await moderationAppealsCollection.deleteMany({
+    $or: [{ id: { $in: ids } }, { appealId: { $in: ids } }]
+  });
+  await founderNotificationsCollection.deleteMany({ type: "moderation_appeal", entityId: { $in: ids } });
+  return res.json({ success: true, deletedCount: result.deletedCount });
+});
+
+
+app.delete("/api/founder/appeals/:id", requireFounderKey, async (req, res) => {
+  const requestedId = String(req.params.id || "");
+  const result = await moderationAppealsCollection.deleteOne({
+    $or: [{ id: requestedId }, { appealId: requestedId }]
+  });
+  if (!result.deletedCount) return res.status(404).json({ success: false, message: "Contestation introuvable." });
+  await founderNotificationsCollection.deleteMany({ type: "moderation_appeal", entityId: requestedId });
+  return res.json({ success: true, deleted: true, id: requestedId });
+});
+
 app.get("/api/founder/moderation/artists", requireFounderKey, async (_req, res) => {
   const accounts = await getRemoteFounderAccounts();
   const items = accounts.filter((account) =>
@@ -3659,6 +4091,10 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (
 
     const moderatedAt = new Date().toISOString();
 
+    if (status === "rejected" && !result.account.originalRole) {
+      result.account.originalRole = String(result.account.role || "user").toLowerCase();
+    }
+
     if (
       status === "rejected" &&
       String(result.account.role || "").toLowerCase() === "both"
@@ -3674,6 +4110,15 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (
     result.account.moderatedAt = moderatedAt;
     await saveAccountState(result.rootUser, result.account);
 
+    if (status === "rejected") {
+      await createModerationDecisionNotice({
+        accountId: result.account.accountId || result.account.id,
+        decisionType: "artist_rejection",
+        reason: req.body?.reason,
+        initialDecision: "rejected"
+      });
+    }
+
     const account = sanitizeFounderAccount(
       result.account,
       result.rootUser.id || String(result.rootUser._id)
@@ -3684,25 +4129,30 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (
 
   if (["pack", "packs"].includes(type)) {
     if (status === "rejected") {
-      const deleted = await permanentlyRejectMongoPack(requestedId);
+      const moderatedAt = new Date().toISOString();
+      const result = await packsCollection.findOneAndUpdate(
+        { id: requestedId },
+        { $set: {
+          status: "rejected",
+          rejectionReason: String(req.body?.reason || "La demande ne respecte pas les critères de validation Sonara.").trim(),
+          moderatedAt,
+          updatedAt: moderatedAt
+        } },
+        { returnDocument: "after" }
+      );
+      const rejectedPack = result?.value || result;
+      if (!rejectedPack) return res.status(404).json({ success: false, message: "Pack introuvable." });
 
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: "Pack introuvable."
-        });
-      }
-
-      const { _id, ...publicPack } = deleted.pack;
-      const rejectedPack = { ...publicPack, status: "rejected" };
-
-      return res.json({
-        success: true,
-        deleted: true,
-        deletedR2Keys: deleted.deletedR2Keys,
-        item: rejectedPack,
-        pack: rejectedPack
+      await createModerationDecisionNotice({
+        accountId: rejectedPack.artistId,
+        decisionType: "pack_rejection",
+        resourceId: rejectedPack.id,
+        reason: rejectedPack.rejectionReason,
+        initialDecision: "rejected"
       });
+
+      const { _id, ...publicPack } = rejectedPack;
+      return res.json({ success: true, deleted: false, item: publicPack, pack: publicPack });
     }
 
     const result = await packsCollection.findOneAndUpdate(
@@ -3812,6 +4262,20 @@ function applyAccountControl(account, action, options = {}) {
 
     account.suspendedAt = now;
     account.suspendedUntil = suspendedUntil;
+  } else if (action === "remove_creator") {
+    if (controlledRole === "both") {
+      account.role = "user";
+      account.status = "approved";
+      account.artistStatus = "rejected";
+    } else if (controlledRole === "artist") {
+      account.role = "artist";
+      account.status = "rejected";
+      account.artistStatus = "rejected";
+    } else {
+      throw new Error("Ce compte ne possède pas d’accès Creator à retirer.");
+    }
+    account.artistModeratedAt = now;
+    account.suspendedUntil = null;
   } else if (action === "reactivate") {
     account.status = "approved";
     account.suspendedUntil = null;
@@ -3884,10 +4348,17 @@ app.patch(
       const requestedId = String(req.params.id || "");
       const action = String(req.body?.action || "").toLowerCase();
 
-      if (!["ban", "suspend", "reactivate", "restore_creator"].includes(action)) {
+      if (!["ban", "suspend", "remove_creator", "reactivate", "restore_creator"].includes(action)) {
         return res.status(400).json({
           success: false,
           message: "Action de contrôle invalide."
+        });
+      }
+
+      if (["ban", "suspend", "remove_creator"].includes(action) && !String(req.body?.reason || "").trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Un motif précis est obligatoire pour cette sanction."
         });
       }
 
@@ -3900,8 +4371,42 @@ app.patch(
         });
       }
 
+      const expectedUserId = String(req.body?.expectedUserId || "").trim();
+      const expectedMail = String(req.body?.expectedMail || "").trim().toLowerCase();
+      const expectedPseudo = String(req.body?.expectedPseudo || "").trim().toLowerCase();
+      const actualUserId = String(result.rootUser.id || result.rootUser._id || "");
+      const actualMail = String(result.account.mail || "").trim().toLowerCase();
+      const actualPseudo = String(result.account.pseudo || result.account.artistname || "").trim().toLowerCase();
+
+      if (
+        (expectedUserId && expectedUserId !== actualUserId) ||
+        (expectedMail && expectedMail !== actualMail) ||
+        (expectedPseudo && expectedPseudo !== actualPseudo)
+      ) {
+        return res.status(409).json({
+          success: false,
+          message: "La cible a changé. Recharge la liste avant de modérer ce compte."
+        });
+      }
+
+      if (action === "restore_creator" && getControlAccountRole(result.account) === "user" && !result.account.artistStatus) {
+        return res.status(400).json({
+          success: false,
+          message: "Ce compte n’a jamais eu d’accès Creator à restaurer."
+        });
+      }
+
       applyAccountControl(result.account, action, req.body || {});
       await saveAccountState(result.rootUser, result.account);
+
+      if (["ban", "suspend", "remove_creator"].includes(action)) {
+        await createModerationDecisionNotice({
+          accountId: result.account.accountId || result.account.id,
+          decisionType: action === "ban" ? "ban" : action === "suspend" ? "suspension" : "creator_access_removed",
+          reason: req.body?.reason,
+          initialDecision: action
+        });
+      }
 
       const account = {
         ...sanitizeFounderAccount(
