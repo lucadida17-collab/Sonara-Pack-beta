@@ -230,8 +230,10 @@ window.SonaraModeration = SonaraModeration;
 
 async function verifySonaraSession() {
   const storedProfile = localStorage.getItem("sonaraProfile");
+  const sessionToken =
+    window.SonaraSession?.getToken() || "";
 
-  if (!storedProfile) {
+  if (!sessionToken) {
     redirectToInscription();
     return false;
   }
@@ -245,13 +247,10 @@ async function verifySonaraSession() {
     return false;
   }
 
-  if (!profile?.accountId) {
-    redirectToInscription();
-    return false;
-  }
-
   try {
-    const response = await fetch(`${API_URL}/api/profile/${profile.accountId}`);
+    const response = await fetch(`${API_URL}/api/auth/session`, {
+      cache: "no-store"
+    });
 
     if (response.status === 404 || response.status === 401 || response.status === 403) {
       await SonaraModeration.showNext(profile);
@@ -347,7 +346,13 @@ async function verifySonaraSession() {
 }
 
 function redirectToInscription() {
-  localStorage.removeItem("sonaraProfile");
-  localStorage.removeItem("sonaraProfileCreated");
+  if (window.SonaraSession) {
+    window.SonaraSession.clear();
+  } else {
+    sessionStorage.removeItem("sonaraSessionToken");
+    localStorage.removeItem("sonaraProfile");
+    localStorage.removeItem("sonaraProfileCreated");
+  }
+
   window.location.replace("/app/pages/inscription.html");
 }

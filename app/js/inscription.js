@@ -666,8 +666,11 @@ async function submitRegistration({
       throw new Error(data.message || "Création impossible.");
     }
 
-    localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
-    localStorage.setItem("sonaraProfileCreated", "true");
+    if (!data.sessionToken || !window.SonaraSession) {
+      throw new Error("La session sécurisée n'a pas été créée.");
+    }
+
+    window.SonaraSession.persist(data.sessionToken, data.profile);
     onSuccess(data);
   } catch (error) {
     console.error("ERREUR BACKEND :", error);
@@ -1433,8 +1436,11 @@ Connectez-vous à votre compte Sonara Pack.
         throw new Error(data.error || "Connexion impossible.");
       }
 
-      localStorage.setItem("sonaraProfile", JSON.stringify(data.account));
-      localStorage.setItem("sonaraProfileCreated", "true");
+      if (!data.sessionToken || !window.SonaraSession) {
+        throw new Error("La session sécurisée n'a pas été créée.");
+      }
+
+      window.SonaraSession.persist(data.sessionToken, data.account);
       window.location.href = getAccountRedirect(data.account || data.profile);
     } catch (error) {
       console.error("Erreur connexion sécurisée :", error);
@@ -1459,4 +1465,3 @@ Connectez-vous à votre compte Sonara Pack.
 }
 
 renderChoicePage();
-

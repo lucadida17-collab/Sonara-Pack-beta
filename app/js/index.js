@@ -15,12 +15,14 @@ async function startSonara() {
   await setLoadingStep("Récupération de votre session…", 350);
 
   const localProfile = getLocalProfile();
+  const sessionToken =
+    window.SonaraSession?.getToken() || "";
 
   /*
     Aucun profil enregistré :
     l’utilisateur doit passer par l’inscription.
   */
-  if (!localProfile?.id) {
+  if (!sessionToken) {
     clearLocalSession();
 
     await setLoadingStep("Aucun compte connecté…", 500);
@@ -35,9 +37,7 @@ async function startSonara() {
   try {
     await setLoadingStep("Connexion au serveur…", 300);
 
-    const serverProfile = await fetchProfileFromServer(
-      localProfile.id
-    );
+    const serverProfile = await fetchProfileFromServer();
 
     await setLoadingStep("Vérification de votre compte…", 350);
 
@@ -155,7 +155,7 @@ function getLocalProfile() {
    VÉRIFICATION DU PROFIL AUPRÈS DU SERVEUR
 ────────────────────────────────────────────── */
 
-async function fetchProfileFromServer(profileId) {
+async function fetchProfileFromServer() {
   const controller = new AbortController();
 
   const timeoutId = setTimeout(() => {
@@ -164,7 +164,7 @@ async function fetchProfileFromServer(profileId) {
 
   try {
     const response = await fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
+      `${API_URL}/api/auth/session`,
       {
         method: "GET",
         cache: "no-store",
@@ -274,6 +274,12 @@ function saveFreshProfile(profile) {
 }
 
 function clearLocalSession() {
+  if (window.SonaraSession) {
+    window.SonaraSession.clear();
+    return;
+  }
+
+  sessionStorage.removeItem("sonaraSessionToken");
   localStorage.removeItem("sonaraProfile");
   localStorage.removeItem("sonaraProfileCreated");
 }

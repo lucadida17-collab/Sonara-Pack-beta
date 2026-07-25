@@ -521,6 +521,164 @@ const usersPath = path.join(__dirname, "data", "users.json");
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const localAccountSessions = new Map();
+
+function getSessionToken(req) {
+  const authorization = String(
+    req.headers.authorization || ""
+  ).trim();
+
+  if (!authorization.startsWith("Bearer ")) {
+    return "";
+  }
+
+  return authorization.slice(7).trim();
+}
+
+function hashSessionToken(token) {
+  return crypto
+    .createHash("sha256")
+    .update(String(token || ""))
+    .digest("hex");
+}
+
+function getAccountIdentifier(account) {
+  return String(
+    account?.accountId ||
+    account?.id ||
+    ""
+  );
+}
+
+async function issueAccountSession(rootUser, account) {
+  const sessionToken =
+    crypto.randomBytes(32).toString("base64url");
+  const now = Date.now();
+
+  localAccountSessions.set(
+    hashSessionToken(sessionToken),
+    {
+      rootUserId: String(rootUser.id),
+      accountId: getAccountIdentifier(account),
+      createdAt: now,
+      lastSeenAt: now,
+      expiresAt: now + SESSION_TTL_MS
+    }
+  );
+
+  return sessionToken;
+}
+
+async function resolveAccountSession(req) {
+  const sessionToken = getSessionToken(req);
+
+  if (!sessionToken) {
+    return null;
+  }
+
+  const tokenHash = hashSessionToken(sessionToken);
+  const session = localAccountSessions.get(tokenHash);
+
+  if (!session || session.expiresAt <= Date.now()) {
+    localAccountSessions.delete(tokenHash);
+    return null;
+  }
+
+  const users = JSON.parse(
+    fs.readFileSync(usersPath, "utf8")
+  );
+  const rootUser = users.find(
+    (currentRootUser) =>
+      String(currentRootUser.id) ===
+      String(session.rootUserId)
+  );
+  const account = rootUser?.accounts?.find(
+    (currentAccount) =>
+      getAccountIdentifier(currentAccount) ===
+      String(session.accountId)
+  );
+
+  if (!rootUser || !account) {
+    localAccountSessions.delete(tokenHash);
+    return null;
+  }
+
+  session.lastSeenAt = Date.now();
+  session.expiresAt =
+    session.lastSeenAt + SESSION_TTL_MS;
+
+  return {
+    tokenHash,
+    rootUser,
+    account
+  };
+}
+
+async function requireAccountSession(req, res, next) {
+  try {
+    const accountSession =
+      await resolveAccountSession(req);
+
+    if (!accountSession) {
+      return res.status(401).json({
+        success: false,
+        error: "Session absente ou expirée."
+      });
+    }
+
+    req.accountSession = accountSession;
+    return next();
+  } catch (error) {
+    console.error(
+      "Vérification de session impossible :",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: "Vérification de session impossible."
+    });
+  }
+}
+
+function sessionOwnsIdentifier(accountSession, identifier) {
+  const requestedId = String(identifier || "");
+
+  return Boolean(
+    requestedId &&
+    (
+      requestedId ===
+        String(accountSession.rootUser.id) ||
+      requestedId ===
+        getAccountIdentifier(accountSession.account)
+    )
+  );
+}
+
+async function updateCurrentAccountSession(
+  req,
+  accountId
+) {
+  const session = localAccountSessions.get(
+    req.accountSession.tokenHash
+  );
+
+  if (session) {
+    session.accountId = String(accountId);
+    session.lastSeenAt = Date.now();
+  }
+}
+
+async function revokeAccountSession(req) {
+  const sessionToken = getSessionToken(req);
+
+  if (sessionToken) {
+    localAccountSessions.delete(
+      hashSessionToken(sessionToken)
+    );
+  }
+}
 
 function normalizePseudo(pseudo) {
   return String(pseudo || "").trim().toLowerCase();
@@ -936,6 +1094,8 @@ app.post("/api/register", upload.any(), async (req, res) => {
     };
 
     delete returnedAccount.password;
+    const sessionToken =
+      await issueAccountSession(rootUser, account);
 
     return res.status(201).json({
       success: true,
@@ -948,6 +1108,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
       account:
         returnedAccount,
+      sessionToken,
 
       redirectTo:
         account.role === "artist" ||
@@ -975,13 +1136,15 @@ app.post("/api/register", upload.any(), async (req, res) => {
    AJOUTER UN COMPTE
 ========================= */
 
-app.post("/api/accounts", upload.any(), async (req, res) => {
+app.post("/api/accounts", requireAccountSession, upload.any(), async (req, res) => {
   try {
     const profile = req.body.profile
       ? JSON.parse(req.body.profile)
       : req.body;
 
-    const userId = String(req.body.userId || "");
+    const userId = String(
+      req.accountSession.rootUser.id
+    );
 
     if (!userId) {
       return res.status(400).json({
@@ -1190,12 +1353,17 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
     };
 
     delete returnedAccount.password;
+    await updateCurrentAccountSession(
+      req,
+      account.accountId
+    );
 
     return res.status(201).json({
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount
+      account: returnedAccount,
+      sessionToken: getSessionToken(req)
     });
 
   } catch (error) {
@@ -1211,8 +1379,20 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
   }
 });
 
-app.get("/api/profile/:id", (req, res) => {
+app.get("/api/profile/:id", requireAccountSession, (req, res) => {
   try {
+    if (
+      !sessionOwnsIdentifier(
+        req.accountSession,
+        req.params.id
+      )
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Ce profil n'appartient pas à la session active."
+      });
+    }
+
     const users = JSON.parse(
       fs.readFileSync(usersPath, "utf8")
     );
@@ -1289,6 +1469,21 @@ app.get("/api/profile/:id", (req, res) => {
       error: "Impossible de récupérer le profil"
     });
   }
+});
+
+app.get("/api/auth/session", requireAccountSession, (req, res) => {
+  const returnedAccount = {
+    ...req.accountSession.account,
+    userId: req.accountSession.rootUser.id
+  };
+
+  delete returnedAccount.password;
+  return res.status(200).json(returnedAccount);
+});
+
+app.post("/api/auth/logout", requireAccountSession, async (req, res) => {
+  await revokeAccountSession(req);
+  return res.status(200).json({ success: true });
 });
 
 
@@ -1399,7 +1594,7 @@ app.post("/api/login/send-code", async (req, res) => {
   }
 });
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
     const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
@@ -1489,10 +1684,13 @@ app.post("/api/login", (req, res) => {
     };
 
     delete returnedAccount.password;
+    const sessionToken =
+      await issueAccountSession(rootUser, account);
 
     return res.status(200).json({
       success: true,
       account: returnedAccount,
+      sessionToken,
       redirectTo
     });
   } catch (error) {
@@ -1513,16 +1711,10 @@ app.post("/api/login", (req, res) => {
    LISTE ET CHANGEMENT DE COMPTE
 ========================= */
 
-app.post("/api/accounts/list", (req, res) => {
+app.post("/api/accounts/list", requireAccountSession, (req, res) => {
   try {
-    const { userId, currentAccountId } = req.body || {};
-    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
-    const rootUser = users.find((item) => String(item.id) === String(userId));
-    const currentAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(currentAccountId));
-
-    if (!rootUser || !currentAccount) {
-      return res.status(403).json({ success: false, error: "Session non autorisée." });
-    }
+    const rootUser =
+      req.accountSession.rootUser;
 
     const accounts = rootUser.accounts.map((item) => {
       const safe = { ...item, userId: rootUser.id };
@@ -1537,15 +1729,14 @@ app.post("/api/accounts/list", (req, res) => {
   }
 });
 
-app.post("/api/accounts/switch", (req, res) => {
+app.post("/api/accounts/switch", requireAccountSession, async (req, res) => {
   try {
-    const { userId, currentAccountId, targetAccountId } = req.body || {};
-    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
-    const rootUser = users.find((item) => String(item.id) === String(userId));
-    const currentAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(currentAccountId));
+    const { targetAccountId } = req.body || {};
+    const rootUser =
+      req.accountSession.rootUser;
     const targetAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(targetAccountId));
 
-    if (!rootUser || !currentAccount || !targetAccount) {
+    if (!rootUser || !targetAccount) {
       return res.status(403).json({ success: false, error: "Ce compte n'appartient pas à votre profil principal." });
     }
 
@@ -1556,7 +1747,18 @@ app.post("/api/accounts/switch", (req, res) => {
     if (targetAccount.status === "pending") redirectTo = "/app/pages/pending.html";
     else if (targetAccount.role === "artist" || targetAccount.role === "both") redirectTo = "/app/pages/creator.html";
 
-    return res.json({ success: true, profile, account: profile, redirectTo });
+    await updateCurrentAccountSession(
+      req,
+      targetAccount.accountId
+    );
+
+    return res.json({
+      success: true,
+      profile,
+      account: profile,
+      sessionToken: getSessionToken(req),
+      redirectTo
+    });
   } catch (error) {
     console.error("Erreur POST /api/accounts/switch :", error);
     return res.status(500).json({ success: false, error: "Changement de compte impossible." });
@@ -1624,7 +1826,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
    CONNEXION À UN COMPTE EXISTANT
 ========================= */
 
-app.post("/api/accounts/login", (req, res) => {
+app.post("/api/accounts/login", async (req, res) => {
   try {
     const { mail, password, phone, verificationToken } = req.body || {};
     const normalizedMail = normalizeMail(mail);
@@ -1674,6 +1876,8 @@ app.post("/api/accounts/login", (req, res) => {
 
     const returnedAccount = { ...account, userId: rootUser.id };
     delete returnedAccount.password;
+    const sessionToken =
+      await issueAccountSession(rootUser, account);
 
     let redirectTo = "/home.html";
     if (account.status === "pending") redirectTo = "/app/pages/pending.html";
@@ -1685,6 +1889,7 @@ app.post("/api/accounts/login", (req, res) => {
       success: true,
       profile: returnedAccount,
       account: returnedAccount,
+      sessionToken,
       redirectTo
     });
   } catch (error) {
@@ -2312,8 +2517,20 @@ app.get("/api/pending-users", (req, res) => {
 });
 
 
-app.get("/api/users/:id", (req, res) => {
+app.get("/api/users/:id", requireAccountSession, (req, res) => {
   try {
+    if (
+      !sessionOwnsIdentifier(
+        req.accountSession,
+        req.params.id
+      )
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Cet utilisateur n'appartient pas à la session active."
+      });
+    }
+
     const users = JSON.parse(
       fs.readFileSync(usersPath, "utf8")
     );

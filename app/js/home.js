@@ -32,8 +32,13 @@ loadHome();
 
 
 function resetAccount() {
-  localStorage.removeItem("sonaraProfile");
-  localStorage.removeItem("sonaraProfileCreated");
+  if (window.SonaraSession) {
+    window.SonaraSession.clear();
+  } else {
+    sessionStorage.removeItem("sonaraSessionToken");
+    localStorage.removeItem("sonaraProfile");
+    localStorage.removeItem("sonaraProfileCreated");
+  }
 
   window.location.href = "app/pages/inscription.html";
 }
@@ -186,4 +191,3 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
 document.querySelector(".nav-mobile-home").classList.add("active");
 
 lucide.createIcons();
-
