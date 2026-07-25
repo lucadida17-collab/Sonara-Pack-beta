@@ -14,7 +14,7 @@ const IS_TEST =
 const IS_MAIN = !IS_LOCAL && !IS_TEST;
 
 const API_URLS = Object.freeze({
-  local: "http://192.168.1.22:3001",
+  local: `${window.location.protocol}//${window.location.hostname}:3001`,
   test: "https://sonara-pack-beta-1.onrender.com",
   main: "https://sonara-pack.onrender.com"
 });

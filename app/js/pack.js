@@ -24,6 +24,12 @@ let selectedPackId = null;
 let selectedTrackId = null;
 let selectedPurchaseType = null;
 
+function isFreeCatalogItem(item = {}) {
+  return (
+    item.isFree === true ||
+    ["gratuit", "free"].includes(String(item.price || "").trim().toLowerCase())
+  );
+}
 
 async function startStripePayment() {
   console.log("====================================");
@@ -66,10 +72,62 @@ async function startStripePayment() {
       return;
     }
 
+    const selectedItem = selectedTrackId
+      ? packData?.tracks?.find((track) => String(track.id) === String(selectedTrackId))
+      : packData;
+
+    if (!selectedItem) {
+      showPopup({
+        type: "error",
+        title: "Contenu introuvable",
+        message: "Recharge la page puis réessaie."
+      });
+      return;
+    }
+
+    const userId = profile.id || profile.accountId;
+
+    if (!userId) {
+      showPopup({
+        type: "error",
+        title: "Compte introuvable",
+        message: "Reconnecte-toi puis réessaie."
+      });
+      return;
+    }
+
     const purchaseType = selectedTrackId ? "track" : "pack";
 
+    if (isFreeCatalogItem(selectedItem)) {
+      const freeResponse = await fetch(`${API_URL}/api/free-download-access`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          packId: selectedPackId,
+          trackId: selectedTrackId || null
+        })
+      });
+
+      const freeData = await freeResponse.json();
+
+      if (!freeResponse.ok || !freeData.redirectUrl) {
+        showPopup({
+          type: "error",
+          title: "Téléchargement impossible",
+          message: freeData.message || freeData.error || "Réessaie dans un instant."
+        });
+        return;
+      }
+
+      window.location.href = freeData.redirectUrl;
+      return;
+    }
+
     const payload = {
-      userId: profile.id,
+      userId,
       packId: selectedPackId,
       trackId: selectedTrackId || null,
       purchaseType
@@ -169,6 +227,25 @@ function getFilePath(file) {
   return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
 }
 
+function displayPriceWithEuro(value) {
+  const price = String(value ?? "").trim();
+
+  if (!price) return "";
+  if (["gratuit", "free"].includes(price.toLowerCase())) return "Gratuit";
+
+  const numericPrice = Number(
+    price
+      .replace(/\s*€\s*$/, "")
+      .replace(",", ".")
+  );
+
+  if (Number.isFinite(numericPrice)) {
+    return `${numericPrice.toFixed(2)}€`;
+  }
+
+  return /€\s*$/.test(price) ? price : `${price}€`;
+}
+
 const params = new URLSearchParams(window.location.search);
 
 const packId = params.get("id");
@@ -242,9 +319,9 @@ function renderPack() {
           <img src="${getFilePath(packData.imageProfile)}" class="artist-image">
           <p class="artist">${packData.artist}</p>
 
-        <button class="btn-acheter">${packData.price}</button>
+        <button class="btn-acheter">${displayPriceWithEuro(packData.price)}</button>
         </div>
-         <button class="btn-acheter-desktop">${packData.price}</button>    
+         <button class="btn-acheter-desktop">${displayPriceWithEuro(packData.price)}</button>
       </div>
     </div>
 
@@ -299,7 +376,7 @@ src="${getFilePath(track.audioName || track.audio)}"
         <button class="track-price"
         data-telechargement-url="${track.downloadZip}"
         data-download="${track.downloadPage}"
-        >${track.price}</button>
+        >${displayPriceWithEuro(track.price)}</button>
       </div> 
 
   <div class="track-row-mobile" data-track-id="${track.id}">
@@ -330,7 +407,7 @@ src="${getFilePath(track.audioName || track.audio)}"
         <button class="track-price-mobile"
         data-telechargement-url="${track.downloadZip}"
         data-download="${track.downloadPage}"
-        >${track.price}</button>
+        >${displayPriceWithEuro(track.price)}</button>
       </div> 
 
   
@@ -633,12 +710,21 @@ src="${getFilePath(track.audioName || track.audio)}"
         e.preventDefault();
         e.stopPropagation();
 
-        console.log("BTN DATASET =", btn.dataset);
-        console.log("BTN DOWNLOAD =", btn.dataset.download);
+        const trackRow = btn.closest("[data-track-id]");
 
+        selectedPackId = packData.id;
+        selectedTrackId = trackRow?.dataset.trackId || null;
+        selectedPurchaseType = "track";
         selectedDownloadUrl = btn.dataset.download;
 
-        console.log("ZIP TRACK CLICK :", selectedDownloadUrl);
+        if (!selectedTrackId) {
+          showPopup({
+            type: "error",
+            title: "Track introuvable",
+            message: "Recharge la page puis réessaie."
+          });
+          return;
+        }
 
         noticeOverlay.style.display = "flex";
       });
@@ -650,7 +736,7 @@ src="${getFilePath(track.audioName || track.audio)}"
 
         selectedPackId = packData.id;
         selectedTrackId = null;
-        selctedPurchaseType = "pack";
+        selectedPurchaseType = "pack";
 
         noticeOverlay.style.display = "flex";
       });
@@ -709,8 +795,4 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
 
   window.location.href = "library.html"
 });
-
-
-
-
 

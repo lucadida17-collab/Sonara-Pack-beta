@@ -16,33 +16,30 @@ creatorPage.innerHTML = `
        <section class="creator-header">
        
       <p class="creator-label">SONARA CREATOR</p>
-      <h1>Dashboard Arstistique</h1>
-      <p class="creator-subtitle">
-        Crée, prépare et gère tes packs audio depuis un espace simple, clair et premium.
-      </p>
+      <h1>Dashboard Artistique</h1>
     </section>
-<button class="btn-home ">Retourner a l'accueil</button>
+<button class="btn-home ">Retourner à l'accueil</button>
     <section class="creator-stats">
-      <div class="stat-card">
+      <div class="stat-card creator-pack-count-card">
         <span>Packs créés</span>
-        <strong>0</strong>
+        <strong id="creator-pack-count">0</strong>
       </div>
 
 
-      <div class="stat-card">
+      <div class="stat-card creator-revenue-card">
         <span>Revenus</span>
-        <strong>0€</strong>
+        <strong id="creator-revenue">0,00 €</strong>
       </div>
     </section>
 
     <section class="creator-actions">
 
       <button class="creator-action crée-un-pack is-locked" type="button" aria-disabled="true">
-        <span class="creator-action-content">
+
           <i data-lucide="SquarePlus" class="svg-create-pack"></i>
           <span>Créer un pack</span>
-          <small>Ajouter sons, cover, prix et description</small>
-        </span>
+          <small>Ajouter sons, cover, prix et droits</small>
+
 
         <span class="create-pack-lock-overlay" aria-live="polite">
           <span class="create-pack-lock-icon">
@@ -57,12 +54,11 @@ creatorPage.innerHTML = `
       <button class="creator-action mes-pack">
       <i data-lucide="library" class="svg-create-pack"></i>
         <span>Mes packs</span>
-        <small>Prochain mode avenir En cours</small>
+        <small>Gérer vos packs créés et publiés</small>
       </button>
 
     </section>
 
-   <h1>Les prochains modes seronts disponibles dans la V2. </h1>
   
     `;
 
@@ -100,8 +96,111 @@ if (profile.status === "rejected") {
 }
 
 const createPackBtn = document.querySelector(".crée-un-pack");
-const creatorStripeStateKey = `sonaraCreatorStripeState:${profile.accountId || profile.id || "unknown"}`;
+const creatorAccountKey = profile.accountId || profile.id || "unknown";
+const creatorStripeUnlockedKey = `sonaraCreatorStripeUnlocked:${creatorAccountKey}`;
+const creatorStripeAnimationKey = `sonaraCreatorStripeAnimationV5355:${creatorAccountKey}`;
 let creatorCanCreatePack = false;
+let creatorStripeVerificationPromise = null;
+
+function isStripeVerifiedState(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "verified";
+}
+
+function hasVerifiedStripeAccess(data = {}) {
+  return (
+    data.canCreatePack === true ||
+    data.stripeVerified === true ||
+    isStripeVerifiedState(data.stripeStatus) ||
+    (data.chargesEnabled === true && data.payoutsEnabled === true)
+  );
+}
+
+function hasPermanentStripeUnlock() {
+  return localStorage.getItem(creatorStripeUnlockedKey) === "true";
+}
+
+function getCurrentCreatorProfile() {
+  try {
+    return JSON.parse(localStorage.getItem("sonaraProfile") || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function hasLocalVerifiedStripeAccess() {
+  const currentProfile = getCurrentCreatorProfile();
+  return (
+    hasPermanentStripeUnlock() ||
+    hasVerifiedStripeAccess(profile) ||
+    hasVerifiedStripeAccess(currentProfile)
+  );
+}
+
+async function refreshCreatorProfileFromServer() {
+  const currentProfile = getCurrentCreatorProfile();
+  const identifiers = [
+    currentProfile.accountId,
+    profile.accountId,
+    currentProfile.id,
+    profile.id,
+    currentProfile.userId,
+    profile.userId
+  ].filter(Boolean);
+
+  if (!identifiers.length) return currentProfile;
+
+  const apiUrl = await waitForApiUrl();
+
+  for (const identifier of [...new Set(identifiers.map(String))]) {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/profile/${encodeURIComponent(identifier)}`
+      );
+      const data = await readCreatorJson(response);
+
+      if (!response.ok) continue;
+
+      const mergedProfile = {
+        ...currentProfile,
+        ...data
+      };
+
+      localStorage.setItem(
+        "sonaraProfile",
+        JSON.stringify(mergedProfile)
+      );
+
+      return mergedProfile;
+    } catch {
+      // On essaie l'identifiant suivant sans casser le dashboard.
+    }
+  }
+
+  return currentProfile;
+}
+
+function persistPermanentStripeUnlock(data = {}) {
+  localStorage.setItem(creatorStripeUnlockedKey, "true");
+
+  const currentProfile = JSON.parse(
+    localStorage.getItem("sonaraProfile") || "{}"
+  );
+
+  const updatedProfile = {
+    ...currentProfile,
+    ...data,
+    canCreatePack: true,
+    stripeVerified: true,
+    stripeStatus: "verified"
+  };
+
+  localStorage.setItem(
+    "sonaraProfile",
+    JSON.stringify(updatedProfile)
+  );
+}
 
 function readCreatorJson(response) {
   return response.text().then((text) => {
@@ -112,6 +211,28 @@ function readCreatorJson(response) {
     } catch {
       throw new Error(`Réponse serveur invalide (${response.status}).`);
     }
+  });
+}
+
+function waitForApiUrl(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+
+    const check = () => {
+      if (typeof API_URL !== "undefined" && API_URL) {
+        resolve(API_URL);
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeout) {
+        reject(new Error("Configuration API indisponible."));
+        return;
+      }
+
+      window.setTimeout(check, 40);
+    };
+
+    check();
   });
 }
 
@@ -134,7 +255,7 @@ function showCreatorUnlockPopup() {
         <strong>Conseils pour donner plus de force à votre pack :</strong>
         <span>Présentez-le sur vos réseaux avec un extrait clair et mémorable.</span>
         <span>Utilisez une cover lisible qui représente vraiment l’ambiance du pack.</span>
-        <span>Expliquez à qui il s’adresse et ce que les acheteurs peuvent créer avec.</span>
+
       </div>
       <button type="button" class="creator-unlock-start">Créer mon premier pack</button>
     </div>
@@ -159,64 +280,172 @@ function showCreatorUnlockPopup() {
   });
 }
 
-function applyCreatePackLock(isVerified, { animateUnlock = false } = {}) {
-  creatorCanCreatePack = Boolean(isVerified);
-  createPackBtn.classList.toggle("is-locked", !creatorCanCreatePack);
-  createPackBtn.setAttribute("aria-disabled", String(!creatorCanCreatePack));
+function removeCreatePackLockPermanently({ animate = false } = {}) {
+  creatorCanCreatePack = true;
+  persistPermanentStripeUnlock();
 
-  if (creatorCanCreatePack && animateUnlock) {
-    createPackBtn.classList.add("is-unlocking");
-    setTimeout(() => createPackBtn.classList.remove("is-unlocking"), 1200);
-    setTimeout(showCreatorUnlockPopup, 700);
+  createPackBtn.classList.remove("is-locked");
+  createPackBtn.setAttribute("aria-disabled", "false");
+
+  const lockOverlay = createPackBtn.querySelector(".create-pack-lock-overlay");
+
+  if (!animate) {
+    lockOverlay?.remove();
+    return;
   }
+
+  createPackBtn.classList.remove("is-unlocking");
+  void createPackBtn.offsetWidth;
+  createPackBtn.classList.add("is-unlocking");
+
+  window.setTimeout(() => {
+    createPackBtn.classList.remove("is-unlocking");
+    lockOverlay?.remove();
+    localStorage.setItem(creatorStripeAnimationKey, "true");
+    showCreatorUnlockPopup();
+  }, 1150);
+}
+
+function keepCreatePackLocked() {
+  if (hasPermanentStripeUnlock()) {
+    removeCreatePackLockPermanently();
+    return;
+  }
+
+  creatorCanCreatePack = false;
+  createPackBtn.classList.add("is-locked");
+  createPackBtn.setAttribute("aria-disabled", "true");
 }
 
 async function verifyCreatorStripeAccess() {
-  const artistId = profile.accountId || profile.id || "";
-  const previousState = localStorage.getItem(creatorStripeStateKey);
-
-  if (!artistId) {
-    applyCreatePackLock(false);
-    return;
+  if (creatorStripeVerificationPromise) {
+    return creatorStripeVerificationPromise;
   }
 
+  creatorStripeVerificationPromise = (async () => {
+    if (hasLocalVerifiedStripeAccess()) {
+      const currentProfile = getCurrentCreatorProfile();
+      persistPermanentStripeUnlock(currentProfile);
+
+      const animationAlreadyPlayed =
+        localStorage.getItem(creatorStripeAnimationKey) === "true";
+
+      removeCreatePackLockPermanently({
+        animate: !animationAlreadyPlayed
+      });
+
+      return true;
+    }
+
+    let latestProfile = getCurrentCreatorProfile();
+
+    try {
+      latestProfile = await refreshCreatorProfileFromServer();
+    } catch (error) {
+      console.warn("Actualisation du profil Creator impossible :", error);
+    }
+
+    if (hasVerifiedStripeAccess(latestProfile)) {
+      persistPermanentStripeUnlock(latestProfile);
+
+      const animationAlreadyPlayed =
+        localStorage.getItem(creatorStripeAnimationKey) === "true";
+
+      removeCreatePackLockPermanently({
+        animate: !animationAlreadyPlayed
+      });
+
+      return true;
+    }
+
+    const identifiers = [
+      latestProfile.accountId,
+      profile.accountId,
+      latestProfile.id,
+      profile.id,
+      latestProfile.userId,
+      profile.userId
+    ].filter(Boolean);
+
+    if (!identifiers.length) {
+      keepCreatePackLocked();
+      return false;
+    }
+
+    try {
+      const apiUrl = await waitForApiUrl();
+
+      for (const artistId of [...new Set(identifiers.map(String))]) {
+        const response = await fetch(`${apiUrl}/api/stripe/account-status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ artistId })
+        });
+        const data = await readCreatorJson(response);
+
+        if (!response.ok) continue;
+
+        if (hasVerifiedStripeAccess(data)) {
+          persistPermanentStripeUnlock({
+            ...latestProfile,
+            stripeAccountId:
+              data.stripeAccountId || latestProfile.stripeAccountId || null,
+            chargesEnabled: data.chargesEnabled === true,
+            payoutsEnabled: data.payoutsEnabled === true,
+            stripeStatus: "verified"
+          });
+
+          const animationAlreadyPlayed =
+            localStorage.getItem(creatorStripeAnimationKey) === "true";
+
+          removeCreatePackLockPermanently({
+            animate: !animationAlreadyPlayed
+          });
+
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn("Vérification Stripe Creator impossible :", error);
+    }
+
+    // Un accès déjà validé n'est jamais révoqué par une erreur réseau.
+    if (hasLocalVerifiedStripeAccess()) {
+      removeCreatePackLockPermanently();
+      return true;
+    }
+
+    keepCreatePackLocked();
+    return false;
+  })();
+
   try {
-    const response = await fetch(`${API_URL}/api/stripe/account-status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artistId })
-    });
-    const data = await readCreatorJson(response);
-    const verified = response.ok && data.stripeStatus === "verified";
-
-    const updatedProfile = {
-      ...profile,
-      stripeAccountId: data.stripeAccountId || profile.stripeAccountId || null,
-      stripeStatus: data.stripeStatus || profile.stripeStatus || "not_connected"
-    };
-    localStorage.setItem("sonaraProfile", JSON.stringify(updatedProfile));
-
-    applyCreatePackLock(verified, {
-      animateUnlock: verified && previousState === "locked"
-    });
-    localStorage.setItem(creatorStripeStateKey, verified ? "verified" : "locked");
-  } catch (error) {
-    console.warn("Vérification Stripe Creator impossible :", error);
-    applyCreatePackLock(false);
-    localStorage.setItem(creatorStripeStateKey, "locked");
+    return await creatorStripeVerificationPromise;
+  } finally {
+    creatorStripeVerificationPromise = null;
   }
 }
 
-createPackBtn.addEventListener("click", () => {
-  if (!creatorCanCreatePack) {
-    window.location.href = "page-management/bank.html";
+createPackBtn.addEventListener("click", async () => {
+  // Dès qu'un compte a déjà été validé, le clic mène définitivement à Create Pack.
+  if (creatorCanCreatePack || hasLocalVerifiedStripeAccess()) {
+    removeCreatePackLockPermanently();
+    window.location.href = "page-creator/create-pack.html";
     return;
   }
 
-  window.location.href = "page-creator/create-pack.html";
+  const verified = await verifyCreatorStripeAccess();
+
+  if (verified) {
+    window.location.href = "page-creator/create-pack.html";
+    return;
+  }
+
+  window.location.href = "page-management/bank.html";
 });
 
 verifyCreatorStripeAccess();
+
 
 
 
@@ -236,6 +465,61 @@ if (profile.role === "artist") {
 }
 
 
+
+
+
+/* =========================
+   DASHBOARD CREATOR — STATS ET REDIRECTION MES PACKS
+========================= */
+
+const creatorPackCountElement = document.querySelector("#creator-pack-count");
+const creatorRevenueElement = document.querySelector("#creator-revenue");
+const mesPacksButton = document.querySelector(".mes-pack");
+
+function getCreatorAccountId() {
+  const current = getCurrentCreatorProfile();
+  return current.accountId || profile.accountId || current.id || profile.id || null;
+}
+
+function formatCreatorMoney(value) {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR"
+  }).format(Number(value || 0));
+}
+
+async function refreshCreatorDashboardStats() {
+  const accountId = getCreatorAccountId();
+  if (!accountId) return;
+
+  try {
+    const apiUrl = await waitForApiUrl();
+    const response = await fetch(
+      `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`
+    );
+    const data = await readCreatorJson(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Statistiques Creator indisponibles.");
+    }
+
+    if (creatorPackCountElement) {
+      creatorPackCountElement.textContent = String(data.stats?.packCount || 0);
+    }
+
+    if (creatorRevenueElement) {
+      creatorRevenueElement.textContent = formatCreatorMoney(data.stats?.revenue || 0);
+    }
+  } catch (error) {
+    console.warn("Statistiques Creator indisponibles :", error);
+  }
+}
+
+mesPacksButton?.addEventListener("click", () => {
+  window.location.href = "page-creator/my-pack.html";
+});
+
+refreshCreatorDashboardStats();
 
 async function consumeCreatorModerationNotice() {
   const currentProfile = JSON.parse(
@@ -280,10 +564,17 @@ async function consumeCreatorModerationNotice() {
 
 consumeCreatorModerationNotice();
 
-const toastMessage = localStorage.getItem("creatorToast");
+const creatorReturnParams = new URLSearchParams(window.location.search);
+const returnedPackId = creatorReturnParams.get("packSent");
+const storedCreatorToast = localStorage.getItem("creatorToast");
+const toastMessage =
+  storedCreatorToast ||
+  (returnedPackId ? "Pack envoyé en validation" : "");
 
 if (toastMessage) {
-  localStorage.removeItem("creatorToast");
+  if (storedCreatorToast) {
+    localStorage.removeItem("creatorToast");
+  }
 
   const toast = document.createElement("div");
   toast.className = "creator-toast";
@@ -305,6 +596,12 @@ if (toastMessage) {
   }, 5000);
 }
 
+if (returnedPackId && window.history?.replaceState) {
+  const cleanDashboardUrl = new URL(window.location.href);
+  cleanDashboardUrl.searchParams.delete("packSent");
+  window.history.replaceState({}, "", cleanDashboardUrl.href);
+}
+
 function renderCreatorManagement() {
   creatorPage.innerHTML = `
     <button class="creator-settings-btn">
@@ -320,7 +617,7 @@ function renderCreatorManagement() {
     </section>
 
     <button class="btn-home back-creator-dashboard">
-      Retourner a l'espace Artistique
+      Retourner à l'espace Artistique
     </button>
 
     <section class="creator-actions">
@@ -336,12 +633,6 @@ function renderCreatorManagement() {
         <small>Gérer ton image, ton nom et tes informations publiques</small>
       </button>
 
-      <button class="creator-action creator-rules-btn">
-        <i data-lucide="shield-check"></i>
-        <span>Règles créateur</span>
-        <small>Consulter les règles de publication Sonara Pack</small>
-      </button>
-      
     </section>
   `;
 

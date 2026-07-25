@@ -10,7 +10,7 @@ function readSonaraProfile() {
 }
 
 function getArtistId(profile = {}) {
-  return profile.id || profile.accountId || "";
+  return profile.accountId || profile.id || "";
 }
 
 function stripeIcons() {
@@ -89,6 +89,30 @@ async function fetchFreshArtistProfile() {
   );
 
   return mergedProfile;
+}
+
+
+function persistCreatorStripeUnlock(account = {}, { replayAnimation = false } = {}) {
+  if (String(account.stripeStatus || "").toLowerCase() !== "verified") return;
+
+  const accountKey = account.accountId || account.id || "unknown";
+  localStorage.setItem(`sonaraCreatorStripeUnlocked:${accountKey}`, "true");
+
+  if (replayAnimation) {
+    localStorage.removeItem(`sonaraCreatorStripeAnimationV5355:${accountKey}`);
+  }
+
+  const currentProfile = readSonaraProfile();
+  localStorage.setItem(
+    "sonaraProfile",
+    JSON.stringify({
+      ...currentProfile,
+      ...account,
+      canCreatePack: true,
+      stripeVerified: true,
+      stripeStatus: "verified"
+    })
+  );
 }
 
 function bankStatusMarkup(account = {}) {
@@ -373,6 +397,10 @@ async function refreshStripeStatus(account, silent = false) {
       JSON.stringify(updatedProfile)
     );
 
+    if (updatedProfile.stripeStatus === "verified") {
+      persistCreatorStripeUnlock(updatedProfile, { replayAnimation: true });
+    }
+
     renderBankPage(updatedProfile);
 
     if (!silent) {
@@ -444,6 +472,7 @@ async function initBankPage() {
 
   try {
     const account = await fetchFreshArtistProfile();
+    persistCreatorStripeUnlock(account);
     renderBankPage(account);
 
     const params = new URLSearchParams(window.location.search);

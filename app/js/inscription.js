@@ -352,6 +352,8 @@ async function sendRegistrationVerificationCode({ form, mail, pseudo, password }
     applyRegistrationFieldErrors(form, sendData.fieldErrors || {});
     throw new Error(sendData.message || "Impossible d'envoyer le code.");
   }
+
+  return sendData;
 }
 
 async function verifyRegistrationCode({ mail, code }) {
@@ -380,6 +382,8 @@ async function sendLoginVerificationCode({ mail, password, phone }) {
   if (!response.ok || !data.success) {
     throw new Error(data.error || data.message || "Impossible d'envoyer le code.");
   }
+
+  return data;
 }
 
 async function verifyLoginCode({ mail, code }) {
@@ -1455,6 +1459,4 @@ Connectez-vous à votre compte Sonara Pack.
 }
 
 renderChoicePage();
-
-
 

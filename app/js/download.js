@@ -21,7 +21,7 @@ const params = new URLSearchParams(window.location.search);
 const packId = params.get("id");
 const trackId = params.get("trackId");
 
-const currentUser = JSON.parse(
+let currentUser = JSON.parse(
   localStorage.getItem("sonaraProfile")
 );
 
@@ -151,78 +151,99 @@ function connectMobileButtons() {
   }
 }
 
-async function loadDownloadData() {
-  renderLayout();
+async function readJsonResponse(response) {
+  const data = await response.json().catch(() => ({}));
 
-  try {
-    const response = await fetch(`${API_URL}/api/packs`);
-    const packs = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || data.error || "Accès au téléchargement refusé.");
+  }
 
-    const selectedPack = packs.find((pack) => pack.id === packId);
+  return data;
+}
 
+function getCurrentUserId() {
+  return currentUser?.id || currentUser?.accountId || "";
+}
 
-    if (currentUser && selectedPack && !trackId) {
-  console.log("ENVOI ADD PACK =", {
-    userId: currentUser.id,
-    packId: selectedPack.id
-  });
+async function refreshCurrentUser() {
+  const userId = getCurrentUserId();
 
-  const addResponse = await fetch(`${API_URL}/api/add-downloaded-pack`, {
+  if (!userId) {
+    throw new Error("Reconnecte-toi pour accéder à ce téléchargement.");
+  }
+
+  const response = await fetch(`${API_URL}/api/profile/${encodeURIComponent(userId)}`);
+  const profile = await readJsonResponse(response);
+
+  currentUser = {
+    ...currentUser,
+    ...profile
+  };
+
+  localStorage.setItem("sonaraProfile", JSON.stringify(currentUser));
+  return currentUser;
+}
+
+function hasDownloadAccess(profile) {
+  const ownedIds = trackId
+    ? profile.downloadedTracks
+    : profile.downloadedPacks;
+  const expectedId = trackId || packId;
+
+  return (
+    Array.isArray(ownedIds) &&
+    ownedIds.some((id) => String(id) === String(expectedId))
+  );
+}
+
+async function confirmStripePurchase() {
+  const sessionId = params.get("session_id");
+
+  if (!sessionId) return;
+
+  const response = await fetch(`${API_URL}/api/stripe/confirm-checkout-session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      userId: currentUser.id,
-      packId: selectedPack.id
+      sessionId,
+      userId: getCurrentUserId()
     })
   });
 
-  const addData = await addResponse.json();
-
-  console.log("REPONSE ADD PACK =", addData);
+  await readJsonResponse(response);
 }
 
-if (currentUser && selectedPack && trackId) {
+async function loadDownloadData() {
+  renderLayout();
 
-    const addResponse = await fetch(`${API_URL}/api/add-downloaded-track`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            userId: currentUser.id,
-            trackId: trackId
-        })
-    });
+  try {
+    if (!currentUser) {
+      throw new Error("Reconnecte-toi pour accéder à ce téléchargement.");
+    }
 
-    const addData = await addResponse.json();
-
-    console.log("REPONSE ADD TRACK =", addData);
-}
-
-    console.log("PACK ID URL =", packId);
-    console.log("TRACK ID URL =", trackId);
-    console.log("SELECTED PACK =", selectedPack);
+    const response = await fetch(`${API_URL}/api/packs`);
+    const packs = await readJsonResponse(response);
+    const selectedPack = packs.find((pack) => String(pack.id) === String(packId));
 
     if (!selectedPack) {
-      renderError("Pack introuvable.");
-      return;
+      throw new Error("Pack introuvable.");
     }
 
-    if (trackId) {
-      selectedDownload = selectedPack.tracks.find(
-        (track) => String(track.id) === String(trackId)
-      );
-    } else {
-      selectedDownload = selectedPack;
+    await confirmStripePurchase();
+    const freshProfile = await refreshCurrentUser();
+
+    if (!hasDownloadAccess(freshProfile)) {
+      throw new Error("Achat ou accès gratuit non vérifié pour ce compte.");
     }
 
-    console.log("DOWNLOAD DATA =", selectedDownload);
+    selectedDownload = trackId
+      ? selectedPack.tracks?.find((track) => String(track.id) === String(trackId))
+      : selectedPack;
 
     if (!selectedDownload) {
-      renderError("Fichier introuvable.");
-      return;
+      throw new Error("Fichier introuvable.");
     }
 
     if (isMobile) {
@@ -235,7 +256,7 @@ if (currentUser && selectedPack && trackId) {
     }
   } catch (error) {
     console.error("Erreur download :", error);
-    renderError("Erreur de connexion au serveur.");
+    renderError(error.message || "Erreur de connexion au serveur.");
   }
 }
 

@@ -29,6 +29,7 @@ const mongoDatabaseName =
 
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
 const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
 const { MongoClient } = require("mongodb");
@@ -48,6 +49,10 @@ const r2SecretAccessKey = String(
 const frontUrl = String(process.env.FRONT_URL || "https://sonarapack-test.netlify.app")
   .trim()
   .replace(/\/+$/, "");
+
+if (!stripeWebhookSecret) {
+  console.warn("Stripe webhook désactivé : STRIPE_WEBHOOK_SECRET absente.");
+}
 
 const r2 = new S3Client({
   region: "auto",
@@ -84,6 +89,51 @@ async function uploadLocalFileToR2(filePath, key, contentType = "application/zip
   );
 
   return key;
+}
+
+function normalizePackR2Key(value) {
+  const key = String(value || "").trim().replace(/^\/+/, "");
+  if (!key || /^https?:\/\//i.test(key) || key.startsWith("uploads/") || key.includes("..")) {
+    return "";
+  }
+  return key;
+}
+
+async function downloadPackR2File(key, filePath) {
+  const normalizedKey = normalizePackR2Key(key);
+  if (!normalizedKey) throw new Error("Clé audio R2 invalide.");
+
+  const object = await r2.send(new GetObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: normalizedKey
+  }));
+
+  if (!object.Body || typeof object.Body.pipe !== "function") {
+    throw new Error("Flux audio R2 introuvable.");
+  }
+
+  await new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(filePath);
+    object.Body.on("error", reject);
+    output.on("error", reject);
+    output.on("finish", resolve);
+    object.Body.pipe(output);
+  });
+
+  return filePath;
+}
+
+async function deletePackR2KeysBestEffort(keys) {
+  for (const key of [...new Set(keys.map(normalizePackR2Key).filter(Boolean))]) {
+    try {
+      await r2.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key
+      }));
+    } catch (error) {
+      console.error(`Suppression R2 impossible (${key}) :`, error.message);
+    }
+  }
 }
 
 function collectPackR2Keys(pack) {
@@ -198,6 +248,49 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-founder-key"]
 }));
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    if (!stripeWebhookSecret) {
+      return res.status(503).json({
+        success: false,
+        message: "STRIPE_WEBHOOK_SECRET absente."
+      });
+    }
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        req.headers["stripe-signature"],
+        stripeWebhookSecret
+      );
+    } catch (error) {
+      console.error("Signature webhook Stripe invalide :", error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+
+    try {
+      if (
+        event.type === "checkout.session.completed" ||
+        event.type === "checkout.session.async_payment_succeeded"
+      ) {
+        await fulfillPaidStripeCheckout(event.data.object);
+      }
+
+      return res.json({ received: true });
+    } catch (error) {
+      console.error("Traitement webhook Stripe impossible :", error);
+      return res.status(500).json({
+        success: false,
+        message: "Le paiement a été reçu mais son accès n’a pas pu être enregistré."
+      });
+    }
+  }
+);
+
 app.use(express.json());
 
 /* =========================
@@ -298,7 +391,7 @@ if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
 }
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 const PACK_MAX_TRACKS = 20;
@@ -381,6 +474,42 @@ function handlePackUpload(req, res, next) {
   });
 }
 
+const packRevisionUpload = multer({
+  storage,
+  limits: {
+    files: PACK_MAX_TRACKS,
+    fileSize: PACK_MAX_AUDIO_SIZE,
+    fields: 4,
+    fieldSize: 2 * 1024 * 1024
+  },
+  fileFilter(req, file, cb) {
+    if (!isPackAudioField(file.fieldname)) {
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    }
+
+    return packFileFilter(req, file, cb);
+  }
+});
+
+function handlePackRevisionUpload(req, res, next) {
+  packRevisionUpload.any()(req, res, (error) => {
+    if (!error) return next();
+
+    const messages = {
+      LIMIT_FILE_SIZE: "Une nouvelle version audio dépasse 250 Mo.",
+      LIMIT_FILE_COUNT: "Trop de versions audio ont été envoyées.",
+      LIMIT_UNEXPECTED_FILE: "Un fichier, un format ou un champ audio n’est pas autorisé.",
+      LIMIT_FIELD_VALUE: "Les informations de modification sont trop volumineuses."
+    };
+
+    return res.status(400).json({
+      success: false,
+      code: error.code || "UPLOAD_ERROR",
+      message: messages[error.code] || "Le serveur a refusé la nouvelle version audio."
+    });
+  });
+}
+
 function removeFileIfExists(filePath) {
   if (!filePath) return;
 
@@ -409,9 +538,17 @@ function validatePendingPackRequest(req) {
     return { valid: false, status: 400, message: "Le pack envoyé est invalide." };
   }
 
+  delete pack.description;
+
   const title = String(pack.title || "").trim();
   const artistId = String(pack.artistId || "").trim();
   const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+  const packIsFree =
+    pack.isFree === true ||
+    String(pack.price || "").trim().toLowerCase() === "gratuit";
+  const packPrice = packIsFree
+    ? 0
+    : Number(String(pack.price || "").replace("€", "").replace(",", "."));
 
   if (!title || title.length > 70) {
     return {
@@ -432,6 +569,13 @@ function validatePendingPackRequest(req) {
       message: `Un pack doit contenir entre 1 et ${PACK_MAX_TRACKS} tracks.`
     };
   }
+
+  if (!packIsFree && (!Number.isFinite(packPrice) || packPrice <= 0)) {
+    return { valid: false, status: 400, message: "Le prix du pack est invalide." };
+  }
+
+  pack.isFree = packIsFree;
+  pack.price = packIsFree ? "Gratuit" : `${packPrice.toFixed(2)}€`;
 
   if (!pack.rights?.accepted || !pack.rights?.acceptedAt) {
     return {
@@ -484,6 +628,9 @@ function validatePendingPackRequest(req) {
         message: `Le prix de la track ${index + 1} est invalide.`
       };
     }
+
+    track.isFree = trackIsFree;
+    track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
 
     if (!cover) {
       return {
@@ -572,7 +719,7 @@ const tracksZipPath = path.join(downloadsPath, "tracks");
   }
 });
 
-app.use("/downloads", express.static("downloads"));
+app.use("/downloads", express.static(downloadsPath));
 
 
 /* =========================
@@ -2164,6 +2311,28 @@ app.post(
         });
       }
 
+      const pack = await packsCollection.findOne({
+        id: String(packId),
+        status: "approved"
+      });
+      const packIsFree =
+        pack?.isFree === true ||
+        String(pack?.price || "").trim().toLowerCase() === "gratuit";
+
+      if (!pack) {
+        return res.status(404).json({
+          success: false,
+          message: "Pack introuvable."
+        });
+      }
+
+      if (!packIsFree) {
+        return res.status(409).json({
+          success: false,
+          message: "Un achat Stripe vérifié est requis pour ce pack."
+        });
+      }
+
       if (!Array.isArray(account.downloadedPacks)) {
         account.downloadedPacks = [];
       }
@@ -2225,6 +2394,31 @@ app.post(
           success: false,
           message:
             "Ce compte ne peut pas enregistrer de téléchargements."
+        });
+      }
+
+      const sourcePack = await packsCollection.findOne({
+        status: "approved",
+        "tracks.id": String(trackId)
+      });
+      const sourceTrack = sourcePack?.tracks?.find(
+        (track) => String(track.id) === String(trackId)
+      );
+      const trackIsFree =
+        sourceTrack?.isFree === true ||
+        String(sourceTrack?.price || "").trim().toLowerCase() === "gratuit";
+
+      if (!sourceTrack) {
+        return res.status(404).json({
+          success: false,
+          message: "Track introuvable."
+        });
+      }
+
+      if (!trackIsFree) {
+        return res.status(409).json({
+          success: false,
+          message: "Un achat Stripe vérifié est requis pour cette track."
         });
       }
 
@@ -2788,6 +2982,540 @@ app.patch(
 );
 
 
+
+/* =========================
+   CREATOR — MES PACKS
+========================= */
+
+function creatorPackPrice(value) {
+  const parsed = Number(String(value ?? 0).replace("€", "").replace(",", ".").trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function creatorPackBelongsTo(pack, accountId) {
+  return [pack?.artistId, pack?.accountId, pack?.artistAccountId]
+    .filter(Boolean)
+    .some((value) => String(value) === String(accountId));
+}
+
+function creatorPackWasPublished(pack) {
+  return Boolean(
+    pack?.wasPublished ||
+    pack?.publishedAt ||
+    String(pack?.status || "").toLowerCase() === "approved"
+  );
+}
+
+async function fetchCreatorStripeSales(artistIds) {
+  const acceptedArtistIds = new Set(
+    (Array.isArray(artistIds) ? artistIds : [artistIds])
+      .filter(Boolean)
+      .map((value) => String(value))
+  );
+  const sales = [];
+  let startingAfter;
+
+  do {
+    const page = await stripe.checkout.sessions.list({
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+      expand: ["data.payment_intent"]
+    });
+
+    for (const session of page.data) {
+      const metadata = session.metadata || {};
+      if (
+        session.mode !== "payment" ||
+        session.payment_status !== "paid" ||
+        !acceptedArtistIds.has(String(metadata.artistId || ""))
+      ) {
+        continue;
+      }
+
+      let paymentIntent = session.payment_intent;
+      if (typeof paymentIntent === "string") {
+        paymentIntent = await stripe.paymentIntents.retrieve(paymentIntent);
+      }
+
+      const amountTotal = Number(
+        session.amount_total ?? paymentIntent?.amount_received ?? 0
+      );
+      const applicationFee = Number(
+        paymentIntent?.application_fee_amount ?? 0
+      );
+      const artistRevenue = Math.max(0, amountTotal - applicationFee);
+      const buyerId = String(
+        metadata.userId ||
+        session.customer_details?.email ||
+        session.customer_email ||
+        session.customer ||
+        session.id
+      );
+
+      sales.push({
+        sessionId: session.id,
+        packId: String(metadata.packId || ""),
+        trackId: String(metadata.trackId || ""),
+        buyerId,
+        amountTotal,
+        applicationFee,
+        artistRevenue,
+        paidAt: session.created ? new Date(session.created * 1000).toISOString() : null
+      });
+    }
+
+    startingAfter = page.has_more && page.data.length
+      ? page.data[page.data.length - 1].id
+      : null;
+  } while (startingAfter);
+
+  return sales;
+}
+
+
+async function buildCreatorPackOverview(accountId, artistIds = [accountId]) {
+  const packs = await packsCollection.find({}).toArray();
+  const creatorPacks = packs.filter((pack) => creatorPackBelongsTo(pack, accountId));
+  let stripeSales = [];
+  let stripeStatsAvailable = true;
+
+  try {
+    stripeSales = await fetchCreatorStripeSales(artistIds);
+  } catch (error) {
+    stripeStatsAvailable = false;
+    console.error("Erreur statistiques Stripe Creator :", error);
+  }
+
+  const enriched = creatorPacks.map((pack) => {
+    const packSales = stripeSales.filter(
+      (sale) => String(sale.packId) === String(pack.id)
+    );
+    const buyers = new Set(packSales.map((sale) => sale.buyerId));
+    const revenueCents = packSales.reduce(
+      (sum, sale) => sum + sale.artistRevenue,
+      0
+    );
+    const { _id, ...publicPack } = pack;
+
+    return {
+      ...publicPack,
+      trackCount: Array.isArray(pack.tracks) ? pack.tracks.length : 0,
+      salesCount: packSales.length,
+      buyerCount: buyers.size,
+      revenue: Number((revenueCents / 100).toFixed(2))
+    };
+  });
+
+  return {
+    packs: enriched.sort(
+      (a, b) =>
+        new Date(b.updatedAt || b.createdAt || 0) -
+        new Date(a.updatedAt || a.createdAt || 0)
+    ),
+    stats: {
+      packCount: enriched.length,
+      publishedCount: enriched.filter((pack) => pack.status === "approved").length,
+      salesCount: stripeSales.length,
+      buyerCount: new Set(stripeSales.map((sale) => sale.buyerId)).size,
+      revenue: Number(
+        (stripeSales.reduce((sum, sale) => sum + sale.artistRevenue, 0) / 100).toFixed(2)
+      ),
+      stripeStatsAvailable
+    }
+  };
+}
+
+app.get("/api/creator/packs/:accountId", async (req, res) => {
+  try {
+    const accountId = String(req.params.accountId || "").trim();
+    if (!accountId) return res.status(400).json({ success: false, message: "Compte artiste manquant." });
+    const result = await findRootAndAccountById(accountId);
+    if (!result?.account || !["artist", "both"].includes(String(result.account.role || "").toLowerCase())) {
+      return res.status(403).json({ success: false, message: "Compte artiste invalide." });
+    }
+    const artistIds = [
+      result.account.accountId,
+      result.account.id,
+      result.rootUser?.id,
+      accountId
+    ].filter(Boolean);
+    return res.json({ success: true, ...(await buildCreatorPackOverview(accountId, artistIds)) });
+  } catch (error) {
+    console.error("Erreur GET /api/creator/packs/:accountId :", error);
+    return res.status(500).json({ success: false, message: "Impossible de récupérer les packs de l’artiste." });
+  }
+});
+
+app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) => {
+  const uploadedTemporaryFiles = Array.isArray(req.files)
+    ? req.files.map((file) => file.path)
+    : [];
+  const downloadedTemporaryFiles = [];
+  const temporaryZips = [];
+  const newR2Keys = [];
+  let revisionCommitted = false;
+
+  try {
+    const packId = String(req.params.id || "");
+    const accountId = String(req.body?.accountId || "");
+    const pack = await packsCollection.findOne({ id: packId });
+
+    if (!pack) {
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    if (!creatorPackBelongsTo(pack, accountId)) {
+      return res.status(403).json({ success: false, message: "Ce pack ne vous appartient pas." });
+    }
+
+    const tracks = (Array.isArray(pack.tracks) ? pack.tracks : []).map((track) => ({ ...track }));
+    const updates = {};
+    const now = new Date().toISOString();
+    let requestedTracks = null;
+    let contentChanged = false;
+    let audioVersionsUpdated = 0;
+
+    if (req.body?.tracksData !== undefined) {
+      try {
+        requestedTracks = JSON.parse(String(req.body.tracksData || "[]"));
+      } catch {
+        return res.status(400).json({ success: false, message: "Les informations des sons sont invalides." });
+      }
+
+      if (!Array.isArray(requestedTracks) || requestedTracks.length !== tracks.length) {
+        return res.status(400).json({ success: false, message: "La liste des sons ne correspond pas au pack." });
+      }
+    }
+
+    if (typeof req.body?.title === "string") {
+      const title = req.body.title.trim();
+      if (!title || title.length > 70) {
+        return res.status(400).json({ success: false, message: "Le titre du pack est invalide." });
+      }
+      if (title !== String(pack.title || "")) contentChanged = true;
+      updates.title = title;
+    }
+
+    if (req.body?.price !== undefined) {
+      const price = creatorPackPrice(req.body.price);
+      if (price < 1 || price > 100000) {
+        return res.status(400).json({ success: false, message: "Prix invalide." });
+      }
+      updates.price = `${price.toFixed(2)}€`;
+    }
+
+    if (requestedTracks) {
+      requestedTracks.forEach((requestedTrack, trackIndex) => {
+        const track = tracks[trackIndex];
+        const requestedId = String(requestedTrack?.id || "");
+        const currentId = String(track?.id || "");
+        const title = String(requestedTrack?.title || "").trim();
+
+        if (requestedId !== currentId || !title || title.length > 70) {
+          throw Object.assign(new Error(`Les informations du son ${trackIndex + 1} sont invalides.`), {
+            statusCode: 400
+          });
+        }
+
+        if (title !== String(track.title || "")) contentChanged = true;
+        track.title = title;
+      });
+    }
+
+    const fileByField = new Map();
+    for (const file of Array.isArray(req.files) ? req.files : []) {
+      if (fileByField.has(file.fieldname)) {
+        return res.status(400).json({ success: false, message: "Une version audio a été envoyée plusieurs fois." });
+      }
+      fileByField.set(file.fieldname, file);
+    }
+
+    const replacements = [];
+    for (const [fieldname, file] of fileByField.entries()) {
+      const match = /^trackAudio_(\d+)$/.exec(fieldname);
+      const trackIndex = match ? Number(match[1]) : -1;
+
+      if (!Number.isInteger(trackIndex) || trackIndex < 0 || trackIndex >= tracks.length) {
+        return res.status(400).json({ success: false, message: "La version audio ne correspond à aucun son du pack." });
+      }
+
+      const track = tracks[trackIndex];
+      const previousAudioName = track.audioName;
+      const previousDownloadZip = track.downloadZip;
+      const audioKey = await uploadToR2(file, "tracks/audio");
+      newR2Keys.push(audioKey);
+      track.audioName = audioKey;
+      track.audioVersion = Math.max(1, Number.parseInt(track.audioVersion, 10) || 1) + 1;
+      track.audioUpdatedAt = now;
+      replacements.push({
+        index: trackIndex,
+        file,
+        previousAudioName,
+        previousDownloadZip
+      });
+      audioVersionsUpdated += 1;
+      contentChanged = true;
+    }
+
+    const oldR2Keys = [];
+    if (audioVersionsUpdated > 0) {
+      const revisionId = `${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
+      const localAudioPaths = [];
+
+      for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
+        const replacement = replacements.find((item) => item.index === trackIndex);
+        if (replacement) {
+          localAudioPaths.push(replacement.file.path);
+          continue;
+        }
+
+        const extension = path.extname(String(tracks[trackIndex].audioName || "")) || ".audio";
+        const temporaryAudioPath = path.join(
+          __dirname,
+          "uploads",
+          `${pack.id}-${trackIndex}-${revisionId}${extension}`
+        );
+        await downloadPackR2File(tracks[trackIndex].audioName, temporaryAudioPath);
+        downloadedTemporaryFiles.push(temporaryAudioPath);
+        localAudioPaths.push(temporaryAudioPath);
+      }
+
+      const packZipPath = path.join(packsZipPath, `${pack.id}-${revisionId}.zip`);
+      createZipFromPaths(packZipPath, localAudioPaths);
+      temporaryZips.push(packZipPath);
+      const packZipKey = `zips/packs/${pack.id}-${revisionId}.zip`;
+      await uploadLocalFileToR2(packZipPath, packZipKey);
+      newR2Keys.push(packZipKey);
+      updates.downloadZip = packZipKey;
+      oldR2Keys.push(pack.downloadZip);
+
+      for (const replacement of replacements) {
+        const track = tracks[replacement.index];
+        const trackId = track.id || `${pack.id}-${replacement.index}`;
+        const trackZipPath = path.join(tracksZipPath, `${trackId}-${revisionId}.zip`);
+        createZipFromPaths(trackZipPath, [replacement.file.path]);
+        temporaryZips.push(trackZipPath);
+        const trackZipKey = `zips/tracks/${trackId}-${revisionId}.zip`;
+        await uploadLocalFileToR2(trackZipPath, trackZipKey);
+        newR2Keys.push(trackZipKey);
+        track.downloadZip = trackZipKey;
+        oldR2Keys.push(replacement.previousAudioName, replacement.previousDownloadZip);
+      }
+    }
+
+    updates.tracks = tracks;
+    updates.updatedAt = now;
+    const previousStatus = String(pack.status || "draft").toLowerCase();
+    const moderationRequired =
+      contentChanged && ["approved", "pending"].includes(previousStatus);
+
+    if (moderationRequired) {
+      if (previousStatus === "approved") {
+        updates.wasPublished = true;
+        updates.publishedAt = pack.publishedAt || pack.moderatedAt || now;
+      }
+      updates.status = "pending";
+      updates.submissionType = creatorPackWasPublished({ ...pack, ...updates })
+        ? "republish"
+        : "publish";
+      updates.submittedAt = now;
+    }
+
+    const unset = { description: "" };
+    if (moderationRequired) {
+      unset.rejectionReason = "";
+      unset.rejectedAt = "";
+      unset.moderatedAt = "";
+      unset.moderatedBy = "";
+    }
+
+    const result = await packsCollection.findOneAndUpdate(
+      { id: packId },
+      { $set: updates, $unset: unset },
+      { returnDocument: "after" }
+    );
+    const updated = result?.value || result;
+    if (!updated) throw new Error("Le pack n’a pas été retrouvé après sa modification.");
+    revisionCommitted = true;
+
+    await deletePackR2KeysBestEffort(oldR2Keys);
+
+    const { _id, ...publicPack } = updated;
+    if (moderationRequired) {
+      try {
+        await founderNotificationsCollection.deleteMany({
+          $or: [
+            { entityId: packId },
+            { packId },
+            { "metadata.entityId": packId }
+          ]
+        });
+        await createFounderNotification({
+          type: "pack",
+          title: "Pack modifié à revérifier",
+          message: `${publicPack.title || "Un pack"} a été modifié et attend une validation.`,
+          entityId: publicPack.id,
+          entityType: "pack",
+          environment: "test",
+          priority: "normal"
+        });
+      } catch (notificationError) {
+        console.error("Notification Founder de révision non créée :", notificationError);
+      }
+    }
+
+    return res.json({
+      success: true,
+      pack: publicPack,
+      audioVersionsUpdated,
+      moderationRequired
+    });
+  } catch (error) {
+    if (!revisionCommitted) await deletePackR2KeysBestEffort(newR2Keys);
+    console.error("Erreur PATCH /api/creator/packs/:id :", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode
+        ? error.message
+        : "Impossible de modifier ce pack."
+    });
+  } finally {
+    uploadedTemporaryFiles.forEach(removeFileIfExists);
+    downloadedTemporaryFiles.forEach(removeFileIfExists);
+    temporaryZips.forEach(removeFileIfExists);
+  }
+});
+
+app.post("/api/creator/packs/bulk", async (req, res) => {
+  try {
+    const accountId = String(req.body?.accountId || "");
+    const action = String(req.body?.action || "");
+    const packIds = [...new Set((Array.isArray(req.body?.packIds) ? req.body.packIds : []).map(String))];
+    const allowedActions = ["delete", "draft", "publish", "republish"];
+
+    if (!accountId || !packIds.length || !allowedActions.includes(action)) {
+      return res.status(400).json({ success: false, message: "Action ou sélection invalide." });
+    }
+
+    const packs = await packsCollection.find({ id: { $in: packIds } }).toArray();
+    const owned = packs.filter((pack) => creatorPackBelongsTo(pack, accountId));
+    if (owned.length !== packIds.length) {
+      return res.status(403).json({ success: false, message: "Un ou plusieurs packs ne vous appartiennent pas." });
+    }
+
+    const now = new Date().toISOString();
+
+    if (action === "draft") {
+      for (const pack of owned) {
+        const updates = {
+          status: "draft",
+          draftAt: now,
+          updatedAt: now
+        };
+        if (String(pack.status || "").toLowerCase() === "approved") {
+          updates.wasPublished = true;
+          updates.publishedAt = pack.publishedAt || pack.moderatedAt || now;
+        }
+        await packsCollection.updateOne({ id: pack.id }, { $set: updates });
+      }
+
+      await founderNotificationsCollection.deleteMany({
+        $or: [
+          { entityId: { $in: packIds } },
+          { packId: { $in: packIds } },
+          { "metadata.entityId": { $in: packIds } }
+        ]
+      });
+      return res.json({ success: true, message: `${packIds.length} pack(s) placé(s) en brouillon.` });
+    }
+
+    if (action === "publish" || action === "republish") {
+      const invalidStatus = owned.some((pack) =>
+        !["draft", "rejected"].includes(String(pack.status || "draft").toLowerCase())
+      );
+      const invalidHistory = owned.some((pack) =>
+        action === "publish" ? creatorPackWasPublished(pack) : !creatorPackWasPublished(pack)
+      );
+
+      if (invalidStatus || invalidHistory) {
+        return res.status(409).json({
+          success: false,
+          message: action === "publish"
+            ? "Seuls les brouillons jamais publiés peuvent être publiés."
+            : "Seuls les anciens packs publiés peuvent être republiés."
+        });
+      }
+
+      const updates = {
+        status: "pending",
+        submissionType: action,
+        submittedAt: now,
+        updatedAt: now,
+        ...(action === "republish" ? { republishedAt: now } : {})
+      };
+
+      await packsCollection.updateMany(
+        { id: { $in: packIds } },
+        {
+          $set: updates,
+          $unset: {
+            rejectionReason: "",
+            rejectedAt: "",
+            moderatedAt: "",
+            moderatedBy: ""
+          }
+        }
+      );
+      await founderNotificationsCollection.deleteMany({
+        $or: [
+          { entityId: { $in: packIds } },
+          { packId: { $in: packIds } },
+          { "metadata.entityId": { $in: packIds } }
+        ]
+      });
+
+      for (const pack of owned) {
+        try {
+          await createFounderNotification({
+            type: "pack",
+            title: action === "publish" ? "Nouveau pack à publier" : "Pack republié à modérer",
+            message: `${pack.title || "Un pack"} attend une validation avant publication.`,
+            entityId: pack.id,
+            entityType: "pack",
+            environment: "test",
+            priority: "normal"
+          });
+        } catch (notificationError) {
+          console.error("Notification Founder de publication non créée :", notificationError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: action === "publish"
+          ? `${packIds.length} pack(s) envoyé(s) en modération pour publication.`
+          : `${packIds.length} pack(s) envoyé(s) en modération pour republication.`
+      });
+    }
+
+    for (const pack of owned) {
+      await deleteRejectedPackFromR2(pack);
+    }
+    await packsCollection.deleteMany({ id: { $in: packIds } });
+    await founderNotificationsCollection.deleteMany({
+      $or: [
+        { entityId: { $in: packIds } },
+        { packId: { $in: packIds } },
+        { "metadata.entityId": { $in: packIds } }
+      ]
+    });
+    return res.json({ success: true, message: `${packIds.length} pack(s) supprimé(s).` });
+  } catch (error) {
+    console.error("Erreur POST /api/creator/packs/bulk :", error);
+    return res.status(500).json({ success: false, message: "Impossible d’appliquer cette action." });
+  }
+});
+
 app.get("/api/packs/pending", async (req, res) => {
   try {
     const packs = await packsCollection.find({}).toArray();
@@ -2911,12 +3639,13 @@ app.post(
           uploadToR2(trackAudioFile, "tracks/audio")
         ]);
 
-        preparedTracks.push({
-          ...track,
-          coverPack: trackCoverKey,
-          audioName: trackAudioKey,
-          _audioLocalPath: trackAudioFile.path
-        });
+         preparedTracks.push({
+           ...track,
+           coverPack: trackCoverKey,
+           audioName: trackAudioKey,
+           audioVersion: 1,
+           _audioLocalPath: trackAudioFile.path
+         });
       }
 
       const newPack = {
@@ -2924,6 +3653,8 @@ app.post(
         coverPack: packCoverKey,
         tracks: preparedTracks,
         status: "pending",
+        submissionType: "publish",
+        submittedAt: new Date().toISOString(),
         createdAt: new Date().toISOString()
       };
 
@@ -2956,20 +3687,42 @@ app.post(
         delete track._audioLocalPath;
       }
 
-      await packsCollection.insertOne(newPack);
+      const insertResult = await packsCollection.insertOne(newPack);
 
-      await createFounderNotification({
-        type: "pack",
-        title: "Nouveau pack à modérer",
-        message: `${newPack.title} attend une validation.`,
-        entityId: newPack.id,
-        priority: "normal"
-      });
+      if (!insertResult.acknowledged) {
+        throw new Error("MongoDB n’a pas confirmé l’enregistrement du pack.");
+      }
+
+      const storedPackDocument = await packsCollection.findOne({ id: newPack.id });
+
+      if (!storedPackDocument) {
+        throw new Error("Le pack n’a pas été retrouvé après son enregistrement.");
+      }
+
+      const { _id, ...storedPack } = storedPackDocument;
+      let notificationCreated = true;
+
+      try {
+        await createFounderNotification({
+          type: "pack",
+          title: "Nouveau pack à modérer",
+          message: `${storedPack.title} attend une validation.`,
+          entityId: storedPack.id,
+          entityType: "pack",
+          environment: "test",
+          priority: "normal"
+        });
+      } catch (notificationError) {
+        notificationCreated = false;
+        console.error("Notification Founder du pack non créée :", notificationError);
+      }
 
       return res.status(201).json({
         success: true,
+        persisted: true,
+        notificationCreated,
         message: "Pack envoyé en modération.",
-        pack: newPack
+        pack: storedPack
       });
     } catch (error) {
       console.error("ERREUR /api/packs/pending :", error);
@@ -3033,6 +3786,13 @@ app.post("/api/free-download-access", async (req, res) => {
       });
     }
 
+    if (result.account.role !== "user" && result.account.role !== "both") {
+      return res.status(403).json({
+        success: false,
+        message: "Ce compte ne peut pas effectuer de téléchargement."
+      });
+    }
+
     if (trackId) {
       result.account.downloadedTracks = Array.isArray(result.account.downloadedTracks)
         ? result.account.downloadedTracks
@@ -3071,6 +3831,102 @@ app.post("/api/free-download-access", async (req, res) => {
   }
 });
 
+async function fulfillPaidStripeCheckout(session) {
+  if (!session || session.payment_status !== "paid") {
+    throw new Error("La session Stripe n’est pas payée.");
+  }
+
+  const metadata = session.metadata || {};
+  const userId = String(metadata.userId || "").trim();
+  const packId = String(metadata.packId || "").trim();
+  const trackId = String(metadata.trackId || "").trim();
+  const purchaseType = String(metadata.purchaseType || (trackId ? "track" : "pack"));
+
+  if (!userId || !packId) {
+    throw new Error("Métadonnées Stripe incomplètes.");
+  }
+
+  const result = await findRootAndAccountById(userId);
+  const account = result?.account;
+
+  if (!account) {
+    throw new Error("Compte acheteur introuvable.");
+  }
+
+  if (purchaseType === "track") {
+    if (!trackId) throw new Error("Track Stripe manquante.");
+    account.downloadedTracks = Array.isArray(account.downloadedTracks)
+      ? account.downloadedTracks
+      : [];
+
+    if (!account.downloadedTracks.some((id) => String(id) === trackId)) {
+      account.downloadedTracks.push(trackId);
+    }
+  } else {
+    account.downloadedPacks = Array.isArray(account.downloadedPacks)
+      ? account.downloadedPacks
+      : [];
+
+    if (!account.downloadedPacks.some((id) => String(id) === packId)) {
+      account.downloadedPacks.push(packId);
+    }
+  }
+
+  account.lastStripePurchase = {
+    sessionId: String(session.id || ""),
+    paymentIntentId: String(session.payment_intent || ""),
+    packId,
+    trackId: trackId || null,
+    purchaseType,
+    amountTotal: Number(session.amount_total || 0),
+    currency: String(session.currency || "eur"),
+    paidAt: new Date().toISOString()
+  };
+
+  await saveAccountState(result.rootUser, account);
+
+  return { account, packId, trackId: trackId || null, purchaseType };
+}
+
+app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
+  try {
+    const sessionId = String(req.body?.sessionId || "").trim();
+    const userId = String(req.body?.userId || "").trim();
+
+    if (!sessionId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Session Stripe ou utilisateur manquant."
+      });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (String(session.metadata?.userId || "") !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Cette session Stripe ne correspond pas à ce compte."
+      });
+    }
+
+    const fulfilled = await fulfillPaidStripeCheckout(session);
+
+    return res.json({
+      success: true,
+      paymentStatus: session.payment_status,
+      purchaseType: fulfilled.purchaseType,
+      packId: fulfilled.packId,
+      trackId: fulfilled.trackId
+    });
+  } catch (error) {
+    console.error("Confirmation Stripe impossible :", error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Impossible de confirmer le paiement Stripe."
+    });
+  }
+});
+
 app.post(
   "/api/stripe/create-checkout-session",
   async (req, res) => {
@@ -3083,6 +3939,12 @@ app.post(
         });
       }
 
+      if (!userId) {
+        return res.status(400).json({
+          error: "Utilisateur manquant."
+        });
+      }
+
       const pack = await packsCollection.findOne({
         id: String(packId)
       });
@@ -3090,6 +3952,29 @@ app.post(
       if (!pack) {
         return res.status(404).json({
           error: "Pack introuvable."
+        });
+      }
+
+      if (String(pack.status || "").toLowerCase() !== "approved") {
+        return res.status(409).json({
+          error: "Ce pack n’est pas disponible à l’achat."
+        });
+      }
+
+      const buyerResult =
+        await findRootAndAccountById(userId);
+
+      const buyer = buyerResult?.account;
+
+      if (!buyer) {
+        return res.status(404).json({
+          error: "Compte acheteur introuvable."
+        });
+      }
+
+      if (buyer.role !== "user" && buyer.role !== "both") {
+        return res.status(403).json({
+          error: "Ce compte ne peut pas effectuer d’achat."
         });
       }
 
@@ -3115,6 +4000,12 @@ app.post(
         });
       }
 
+      if (String(artist.stripeStatus || "").toLowerCase() !== "verified") {
+        return res.status(409).json({
+          error: "Le compte Stripe de l’artiste n’est pas encore vérifié."
+        });
+      }
+
       let item;
       let purchaseType;
       let successUrl;
@@ -3136,14 +4027,14 @@ app.post(
         purchaseType = "track";
 
         successUrl =
-          `${frontUrl}/${track.downloadPage}&success=true`;
+          `${frontUrl}/${track.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
 
       } else {
         item = pack;
         purchaseType = "pack";
 
         successUrl =
-          `${frontUrl}/${pack.downloadPage}&success=true`;
+          `${frontUrl}/${pack.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
       }
 
       const itemIsFree =
@@ -3177,8 +4068,8 @@ app.post(
       );
 
       if (
-        !priceNumber ||
-        Number.isNaN(priceNumber)
+        !Number.isFinite(priceNumber) ||
+        priceNumber <= 0
       ) {
         return res.status(400).json({
           error: "Prix invalide.",
@@ -3227,14 +4118,11 @@ app.post(
                   ? String(trackId)
                   : "",
 
-              userId:
-                userId
-                  ? String(userId)
-                  : "",
+              userId: String(userId),
 
               artistId: String(
-                artist.id ||
-                artist.accountId
+                artist.accountId ||
+                artist.id
               ),
 
               purchaseType
@@ -3306,6 +4194,13 @@ app.patch("/api/packs/:id/status", async (req, res) => {
       );
       const rejectedPack = result?.value || result;
       if (!rejectedPack) return res.status(404).json({ success: false, message: "Pack introuvable" });
+      await founderNotificationsCollection.deleteMany({
+        $or: [
+          { entityId: packId },
+          { packId },
+          { "metadata.entityId": packId }
+        ]
+      });
 
       await createModerationDecisionNotice({
         accountId: rejectedPack.artistId,
@@ -3324,13 +4219,27 @@ app.patch("/api/packs/:id/status", async (req, res) => {
       });
     }
 
+    const moderatedAt = new Date().toISOString();
+    const existingPack = status === "approved"
+      ? await packsCollection.findOne({ id: packId })
+      : null;
     const result = await packsCollection.findOneAndUpdate(
       { id: packId },
       {
         $set: {
           status,
-          moderatedAt: new Date().toISOString()
-        }
+          moderatedAt,
+          updatedAt: moderatedAt,
+          ...(status === "approved"
+            ? {
+                wasPublished: true,
+                publishedAt: existingPack?.publishedAt || moderatedAt
+              }
+            : {})
+        },
+        ...(status === "approved"
+          ? { $unset: { rejectionReason: "", rejectedAt: "" } }
+          : {})
       },
       { returnDocument: "after" }
     );
@@ -3343,6 +4252,13 @@ app.patch("/api/packs/:id/status", async (req, res) => {
         message: "Pack introuvable"
       });
     }
+    await founderNotificationsCollection.deleteMany({
+      $or: [
+        { entityId: packId },
+        { packId },
+        { "metadata.entityId": packId }
+      ]
+    });
 
     const { _id, ...publicPack } = updatedPack;
     return res.json({
@@ -3402,6 +4318,8 @@ async function createFounderNotification({
   title,
   message,
   entityId,
+  entityType = null,
+  environment = "test",
   priority = "normal"
 }) {
   const notification = {
@@ -3410,6 +4328,8 @@ async function createFounderNotification({
     title: title || "Nouvelle activité Sonara",
     message: message || "",
     entityId: entityId || null,
+    entityType: entityType || type || null,
+    environment,
     priority,
     read: false,
     createdAt: new Date().toISOString()
@@ -4097,7 +5017,14 @@ app.patch("/api/founder/appeals/:id/decision", requireFounderKey, async (req, re
       if (action === "restore_pack") {
         const result = await packsCollection.findOneAndUpdate(
           { id: String(appeal.resourceId || "") },
-          { $set: { status: "approved", moderatedAt: now, restoredAt: now, rejectionReason: null } },
+          { $set: {
+            status: "approved",
+            wasPublished: true,
+            publishedAt: now,
+            moderatedAt: now,
+            restoredAt: now,
+            rejectionReason: null
+          } },
           { returnDocument: "after" }
         );
         const pack = result?.value || result;
@@ -4897,4 +5824,3 @@ app.listen(PORT, () => {
 `);
 
 });
-

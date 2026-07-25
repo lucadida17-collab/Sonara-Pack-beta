@@ -124,6 +124,196 @@ function getStoredProfile() {
   }
 }
 
+const KNOWN_ACCOUNTS_STORAGE_KEY = "sonaraKnownAccounts";
+const KNOWN_ACCOUNTS_LIMIT = 50;
+
+function getKnownAccountKey(profile = {}) {
+  const userId = String(profile.userId || "").trim();
+  const accountId = String(
+    profile.accountId ||
+    profile.id ||
+    ""
+  ).trim();
+
+  return userId && accountId
+    ? `${userId}:${accountId}`
+    : "";
+}
+
+function sanitizeKnownAccount(profile = {}) {
+  const key = getKnownAccountKey(profile);
+
+  if (!key) {
+    return null;
+  }
+
+  const safeProfile = {
+    ...profile,
+    userId: String(profile.userId),
+    accountId: String(
+      profile.accountId ||
+      profile.id
+    )
+  };
+
+  [
+    "password",
+    "verificationToken",
+    "token",
+    "accessToken",
+    "refreshToken"
+  ].forEach((field) => {
+    delete safeProfile[field];
+  });
+
+  return safeProfile;
+}
+
+function getKnownAccounts() {
+  try {
+    const storedAccounts = JSON.parse(
+      localStorage.getItem(
+        KNOWN_ACCOUNTS_STORAGE_KEY
+      )
+    );
+
+    if (!Array.isArray(storedAccounts)) {
+      return [];
+    }
+
+    const uniqueAccounts = new Map();
+
+    storedAccounts.forEach((profile) => {
+      const safeProfile =
+        sanitizeKnownAccount(profile);
+
+      if (!safeProfile) {
+        return;
+      }
+
+      const key =
+        getKnownAccountKey(safeProfile);
+
+      uniqueAccounts.set(
+        key,
+        uniqueAccounts.has(key)
+          ? {
+              ...uniqueAccounts.get(key),
+              ...safeProfile
+            }
+          : safeProfile
+      );
+    });
+
+    return [
+      ...uniqueAccounts.values()
+    ].slice(0, KNOWN_ACCOUNTS_LIMIT);
+  } catch (error) {
+    console.error(
+      "Impossible de récupérer les comptes mémorisés :",
+      error
+    );
+
+    return [];
+  }
+}
+
+function saveKnownAccounts(accounts = []) {
+  const uniqueAccounts = new Map();
+
+  accounts.forEach((profile) => {
+    const safeProfile =
+      sanitizeKnownAccount(profile);
+
+    if (!safeProfile) {
+      return;
+    }
+
+    const key =
+      getKnownAccountKey(safeProfile);
+
+    uniqueAccounts.set(
+      key,
+      uniqueAccounts.has(key)
+        ? {
+            ...uniqueAccounts.get(key),
+            ...safeProfile
+          }
+        : safeProfile
+    );
+  });
+
+  const savedAccounts = [
+    ...uniqueAccounts.values()
+  ].slice(0, KNOWN_ACCOUNTS_LIMIT);
+
+  try {
+    localStorage.setItem(
+      KNOWN_ACCOUNTS_STORAGE_KEY,
+      JSON.stringify(savedAccounts)
+    );
+  } catch (error) {
+    console.error(
+      "Impossible de mémoriser les comptes :",
+      error
+    );
+  }
+
+  return savedAccounts;
+}
+
+function rememberKnownAccounts(accounts = []) {
+  const knownAccounts =
+    getKnownAccounts();
+
+  const indexesByKey = new Map(
+    knownAccounts.map(
+      (profile, index) => [
+        getKnownAccountKey(profile),
+        index
+      ]
+    )
+  );
+
+  accounts.forEach((profile) => {
+    const safeProfile =
+      sanitizeKnownAccount(profile);
+
+    if (!safeProfile) {
+      return;
+    }
+
+    const key =
+      getKnownAccountKey(safeProfile);
+
+    if (indexesByKey.has(key)) {
+      const index = indexesByKey.get(key);
+
+      knownAccounts[index] = {
+        ...knownAccounts[index],
+        ...safeProfile
+      };
+
+      return;
+    }
+
+    indexesByKey.set(
+      key,
+      knownAccounts.length
+    );
+
+    knownAccounts.push(safeProfile);
+  });
+
+  return saveKnownAccounts(
+    knownAccounts
+  );
+}
+
+function rememberKnownAccount(profile = {}) {
+  return rememberKnownAccounts([profile]);
+}
+
 
 const ACCOUNT_PASSWORD_MIN_LENGTH = 8;
 const ACCOUNT_PASSWORD_MAX_LENGTH = 128;
@@ -1365,6 +1555,239 @@ document
    AJOUTER UN COMPTE
 ========================= */
 
+function escapeKnownAccountHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderKnownAccountRows(
+  accountsList,
+  accounts,
+  currentProfile
+) {
+  const safeAccounts = saveKnownAccounts(
+    accounts
+  );
+
+  if (safeAccounts.length === 0) {
+    accountsList.innerHTML = `
+      <p class="account-profile-name">
+        Aucun compte mémorisé.
+      </p>
+    `;
+
+    lucide.createIcons();
+    return;
+  }
+
+  const currentAccountKey =
+    getKnownAccountKey(currentProfile);
+
+  const accountsByKey = new Map(
+    safeAccounts.map((account) => [
+      getKnownAccountKey(account),
+      account
+    ])
+  );
+
+  accountsList.innerHTML = safeAccounts
+    .map((account) => {
+      const accountKey =
+        getKnownAccountKey(account);
+
+      const isCurrent =
+        accountKey === currentAccountKey;
+
+      const pseudo =
+        account.pseudo ||
+        account.artistname ||
+        "Utilisateur";
+
+      const imageProfile =
+        account.imageProfile || "";
+
+      const imageProfileUrl =
+        `${API_URL}/uploads/${imageProfile}`;
+
+      return `
+        <button
+          type="button"
+          class="account-profile-row${isCurrent ? " account-profile-row-current" : ""}"
+          data-user-id="${escapeKnownAccountHtml(account.userId)}"
+          data-account-id="${escapeKnownAccountHtml(account.accountId)}"
+          ${isCurrent ? `aria-current="true"` : ""}
+        >
+          <div class="account-profile-image">
+            ${imageProfile
+              ? `<img src="${escapeKnownAccountHtml(imageProfileUrl)}" alt="${escapeKnownAccountHtml(pseudo)}">`
+              : `<i data-lucide="user-round"></i>`}
+          </div>
+          <span class="account-profile-name">${escapeKnownAccountHtml(pseudo)}</span>
+          ${isCurrent
+            ? `<i data-lucide="circle-check-big" class="account-current-icon"></i>`
+            : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  accountsList
+    .querySelectorAll(".account-profile-row")
+    .forEach((row) => {
+      row.addEventListener("click", async () => {
+        const targetUserId =
+          row.dataset.userId;
+
+        const targetAccountId =
+          row.dataset.accountId;
+
+        const targetKey =
+          `${targetUserId}:${targetAccountId}`;
+
+        if (targetKey === currentAccountKey) {
+          return;
+        }
+
+        row.disabled = true;
+
+        try {
+          let nextProfile = null;
+
+          if (
+            String(targetUserId) ===
+            String(currentProfile.userId)
+          ) {
+            const switchResponse = await fetch(
+              `${API_URL}/api/accounts/switch`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  userId: String(
+                    currentProfile.userId
+                  ),
+                  currentAccountId: String(
+                    currentProfile.accountId
+                  ),
+                  targetAccountId: String(
+                    targetAccountId
+                  )
+                })
+              }
+            );
+
+            const switchData =
+              await switchResponse.json();
+
+            if (
+              !switchResponse.ok ||
+              !switchData.success ||
+              !switchData.profile
+            ) {
+              throw new Error(
+                switchData.error ||
+                "Changement de compte impossible."
+              );
+            }
+
+            nextProfile =
+              switchData.profile;
+          } else {
+            const targetResponse = await fetch(
+              `${API_URL}/api/accounts/list`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  userId: String(
+                    targetUserId
+                  ),
+                  currentAccountId: String(
+                    targetAccountId
+                  )
+                })
+              }
+            );
+
+            const targetData =
+              await targetResponse.json();
+
+            if (
+              !targetResponse.ok ||
+              !targetData.success ||
+              !Array.isArray(
+                targetData.accounts
+              )
+            ) {
+              throw new Error(
+                targetData.error ||
+                "Ce compte mémorisé n'est plus disponible."
+              );
+            }
+
+            rememberKnownAccounts(
+              targetData.accounts
+            );
+
+            nextProfile =
+              targetData.accounts.find(
+                (account) =>
+                  getKnownAccountKey(account) ===
+                  targetKey
+              ) ||
+              accountsByKey.get(targetKey);
+          }
+
+          if (!nextProfile) {
+            throw new Error(
+              "Compte mémorisé introuvable."
+            );
+          }
+
+          rememberKnownAccount(nextProfile);
+
+          localStorage.setItem(
+            "sonaraProfile",
+            JSON.stringify(nextProfile)
+          );
+
+          localStorage.setItem(
+            "sonaraProfileCreated",
+            "true"
+          );
+
+          window.location.href =
+            getAccountRedirect(nextProfile);
+        } catch (error) {
+          console.error(
+            "Erreur changement de compte :",
+            error
+          );
+
+          row.disabled = false;
+
+          showAccountPopup({
+            title: "Changement impossible",
+            message:
+              error.message ||
+              "Impossible de changer de compte.",
+            type: "error"
+          });
+        }
+      });
+    });
+
+  lucide.createIcons();
+}
+
 async function renderAddAccount() {
   const currentProfile = getStoredProfile();
 
@@ -1376,6 +1799,8 @@ async function renderAddAccount() {
     });
     return;
   }
+
+  rememberKnownAccount(currentProfile);
 
   appLayout.innerHTML = `
     <section class="account-page">
@@ -1422,82 +1847,36 @@ async function renderAddAccount() {
       throw new Error(data.error || "Impossible de charger les comptes.");
     }
 
-    const accountsList = document.querySelector(".accounts-list");
+    rememberKnownAccounts(data.accounts);
 
-    accountsList.innerHTML = data.accounts.map((account) => {
-      const isCurrent = String(account.accountId) === String(currentProfile.accountId);
-      const pseudo = account.pseudo || account.artistname || "Utilisateur";
-      const imageProfile = account.imageProfile || "";
-
-      return `
-        <button
-          type="button"
-          class="account-profile-row${isCurrent ? " account-profile-row-current" : ""}"
-          data-account-id="${String(account.accountId)}"
-          ${isCurrent ? `aria-current="true"` : ""}
-        >
-          <div class="account-profile-image">
-            ${imageProfile
-              ? `<img src="${API_URL}/uploads/${imageProfile}" alt="${pseudo}">`
-              : `<i data-lucide="user-round"></i>`}
-          </div>
-          <span class="account-profile-name">${pseudo}</span>
-          ${isCurrent
-            ? `<i data-lucide="circle-check-big" class="account-current-icon"></i>`
-            : ""}
-        </button>
-      `;
-    }).join("");
-
-    accountsList.querySelectorAll(".account-profile-row").forEach((row) => {
-      row.addEventListener("click", async () => {
-        const targetAccountId = row.dataset.accountId;
-
-        if (String(targetAccountId) === String(currentProfile.accountId)) {
-          return;
-        }
-
-        row.disabled = true;
-
-        try {
-          const switchResponse = await fetch(`${API_URL}/api/accounts/switch`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: String(currentProfile.userId),
-              currentAccountId: String(currentProfile.accountId),
-              targetAccountId: String(targetAccountId)
-            })
-          });
-
-          const switchData = await switchResponse.json();
-
-          if (!switchResponse.ok || !switchData.success || !switchData.profile) {
-            throw new Error(switchData.error || "Changement de compte impossible.");
-          }
-
-          localStorage.setItem("sonaraProfile", JSON.stringify(switchData.profile));
-          localStorage.setItem("sonaraProfileCreated", "true");
-          window.location.href = getAccountRedirect(switchData.profile);
-        } catch (error) {
-          console.error("Erreur changement de compte :", error);
-          row.disabled = false;
-          showAccountPopup({
-            title: "Changement impossible",
-            message: error.message || "Impossible de changer de compte.",
-            type: "error"
-          });
-        }
-      });
-    });
-
-    lucide.createIcons();
+    renderKnownAccountRows(
+      document.querySelector(".accounts-list"),
+      getKnownAccounts(),
+      currentProfile
+    );
   } catch (error) {
     console.error("Erreur chargement comptes :", error);
-    document.querySelector(".accounts-list").innerHTML = `
-      <p class="account-profile-name">Impossible de charger les comptes.</p>
-    `;
-    lucide.createIcons();
+
+    const knownAccounts =
+      getKnownAccounts();
+
+    if (knownAccounts.length > 0) {
+      renderKnownAccountRows(
+        document.querySelector(".accounts-list"),
+        knownAccounts,
+        currentProfile
+      );
+    } else {
+      document.querySelector(
+        ".accounts-list"
+      ).innerHTML = `
+        <p class="account-profile-name">
+          Impossible de charger les comptes.
+        </p>
+      `;
+
+      lucide.createIcons();
+    }
   }
 }
 
@@ -1827,6 +2206,8 @@ function renderConnectExistingAccount() {
       if (!response.ok || !data.success || !data.profile) {
         throw new Error(data.error || data.message || "Connexion impossible.");
       }
+
+      rememberKnownAccount(data.profile);
 
       localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
       localStorage.setItem("sonaraProfileCreated", "true");
@@ -2293,6 +2674,8 @@ function renderAddAccountForm(role) {
 
           return;
         }
+
+        rememberKnownAccount(data.profile);
 
         localStorage.setItem(
           "sonaraProfile",

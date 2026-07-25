@@ -132,13 +132,9 @@ async function verifyStripeBeforeCreatePack() {
 }
 
 async function init() {
-  const stripeVerified = await verifyStripeBeforeCreatePack();
-
-  if (!stripeVerified) {
-    window.location.replace("../page-management/bank.html");
-    return;
-  }
-
+  // L'accès à Create Pack est décidé depuis le dashboard Creator.
+  // Aucune redirection automatique vers bank.html ne doit se produire ici :
+  // un compte déjà vérifié doit conserver définitivement son accès.
   const params = new URLSearchParams(window.location.search);
   const forceNewPack = sessionStorage.getItem(FORCE_NEW_PACK_KEY) === "true";
 
@@ -642,7 +638,11 @@ function bindTrackCards() {
     });
 
     priceInput?.addEventListener("blur", () => {
-      const normalized = normalizePriceInput(priceInput.value).trim();
+      const rawPrice = priceInput.value.trim();
+      const numericPrice = normalizePrice(rawPrice);
+      const normalized = rawPrice && Number.isFinite(numericPrice)
+        ? numericPrice.toFixed(2)
+        : normalizePriceInput(rawPrice);
       track.price = normalized;
       priceInput.value = normalized;
       syncGlobalPriceFromTracks();
@@ -936,7 +936,8 @@ async function submitPack() {
       );
     }
 
-    showPackSentSuccess();
+    const storedPack = await confirmPackPersistence(finalPack, result);
+    showPackSentSuccess(storedPack);
     return;
   } catch (error) {
     submitError.hidden = false;
@@ -947,6 +948,72 @@ async function submitPack() {
   }
 }
 
+async function confirmPackPersistence(finalPack, result) {
+  const responsePack = result?.pack;
+
+  if (
+    result?.success !== true ||
+    !responsePack?.id ||
+    String(responsePack.id) !== String(finalPack.id) ||
+    String(responsePack.status || "").toLowerCase() !== "pending"
+  ) {
+    throw new Error(
+      "Le serveur n’a pas confirmé l’enregistrement du pack. Le formulaire est conservé."
+    );
+  }
+
+  if (result.persisted === true) {
+    return responsePack;
+  }
+
+  const verificationResponse = await fetch(
+    `${API_URL}/api/packs/pending?packId=${encodeURIComponent(finalPack.id)}`,
+    { cache: "no-store" }
+  );
+  const verificationText = await verificationResponse.text();
+  let verificationData = [];
+
+  try {
+    verificationData = verificationText
+      ? JSON.parse(verificationText)
+      : [];
+  } catch {
+    throw new Error(
+      "Le pack a été reçu, mais sa sauvegarde n’a pas pu être vérifiée. Le formulaire est conservé."
+    );
+  }
+
+  if (!verificationResponse.ok) {
+    throw new Error(
+      verificationData.message ||
+      verificationData.error ||
+      "Impossible de vérifier la sauvegarde du pack."
+    );
+  }
+
+  const packs = Array.isArray(verificationData)
+    ? verificationData
+    : Array.isArray(verificationData.items)
+      ? verificationData.items
+      : Array.isArray(verificationData.packs)
+        ? verificationData.packs
+        : [];
+
+  const storedPack = packs.find(
+    (pack) =>
+      String(pack?.id || "") === String(finalPack.id) &&
+      String(pack?.status || "").toLowerCase() === "pending"
+  );
+
+  if (!storedPack) {
+    throw new Error(
+      "Le serveur n’a pas retrouvé le pack après l’envoi. Le formulaire est conservé."
+    );
+  }
+
+  return storedPack;
+}
+
 function buildFinalPack() {
   const packId = `pack_${Date.now()}`;
 
@@ -954,12 +1021,15 @@ function buildFinalPack() {
     id: packId,
     title: packData.identity.title.trim(),
     artist: artistProfile.pseudo || "",
-    artistId: artistProfile.id || artistProfile.accountId || "",
+    artistId: artistProfile.accountId || artistProfile.id || "",
+    accountId: artistProfile.accountId || artistProfile.id || "",
+    userId: artistProfile.userId || artistProfile.rootUserId || "",
+    rootUserId: artistProfile.rootUserId || artistProfile.userId || "",
     imageProfile: artistProfile.imageProfile || null,
     coverPack: packData.identity.coverFile.name,
     packLink: `app/pages/pack.html?id=${packId}`,
     isFree: packData.globalIsFree,
-    price: packData.globalIsFree ? "Gratuit" : `${normalizePrice(packData.globalPrice).toFixed(2)}€`,
+    price: packData.globalIsFree ? "Gratuit" : formatPriceForSubmission(packData.globalPrice),
     categorie: getDistributionCategories(packData.identity.categorie),
     downloadPage: `app/pages/download.html?id=${packId}`,
     tracks: packData.tracks.map((track, index) => ({
@@ -971,7 +1041,7 @@ function buildFinalPack() {
       coverPack: track.coverFile.name,
       audioName: track.audioFile.name,
       isFree: track.isFree,
-      price: track.isFree ? "Gratuit" : `${normalizePrice(track.price).toFixed(2)}€`,
+      price: track.isFree ? "Gratuit" : formatPriceForSubmission(track.price),
       previewDuration: 30,
       duration: track.duration || 0
     })),
@@ -1189,6 +1259,10 @@ function normalizePriceInput(value) {
   return String(value).replace(",", ".");
 }
 
+function formatPriceForSubmission(value) {
+  return `${normalizePrice(value).toFixed(2)}€`;
+}
+
 function calculateTracksTotal() {
   return packData.tracks.reduce((total, track) => {
     if (track.isFree) return total;
@@ -1367,12 +1441,21 @@ async function deleteDraftSafely(key) {
   }
 }
 
-function showPackSentSuccess() {
+function showPackSentSuccess(storedPack = {}) {
   isSubmitting = true;
   stopPendingDraftSave();
   sessionStorage.setItem(FORCE_NEW_PACK_KEY, "true");
   localStorage.setItem("creatorToast", "Pack envoyé en validation");
   void deleteDraftSafely(draftKey);
+
+  const dashboardUrl = new URL(
+    "/app/pages/creator.html",
+    window.location.origin
+  );
+  dashboardUrl.searchParams.set(
+    "packSent",
+    String(storedPack.id || "confirmed")
+  );
 
   const overlay = document.createElement("div");
   overlay.className = "pack-sent-overlay";
@@ -1380,22 +1463,23 @@ function showPackSentSuccess() {
     <div class="pack-sent-dialog" role="status" aria-live="assertive">
       <strong>Pack envoyé en validation</strong>
       <span>Retour au dashboard…</span>
+      <button type="button" class="submit-btn pack-sent-dashboard">
+        Ouvrir le dashboard Creator
+      </button>
     </div>
   `;
 
   document.body.appendChild(overlay);
 
-  const dashboardUrl = `${window.location.origin}/app/pages/creator.html`;
+  const navigateToDashboard = () => {
+    window.location.assign(dashboardUrl.href);
+  };
 
-  window.setTimeout(() => {
-    window.location.replace(dashboardUrl);
-  }, 700);
+  overlay
+    .querySelector(".pack-sent-dashboard")
+    .addEventListener("click", navigateToDashboard);
 
-  window.setTimeout(() => {
-    if (window.location.pathname.includes("create-pack.html")) {
-      window.location.href = dashboardUrl;
-    }
-  }, 1600);
+  window.setTimeout(navigateToDashboard, 600);
 }
 
 function leaveCreatePackAndClearDraft() {
