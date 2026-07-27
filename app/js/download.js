@@ -162,7 +162,7 @@ async function readJsonResponse(response) {
 }
 
 function getCurrentUserId() {
-  return currentUser?.id || currentUser?.accountId || "";
+  return currentUser?.accountId || currentUser?.id || "";
 }
 
 async function refreshCurrentUser() {

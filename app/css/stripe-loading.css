@@ -1,0 +1,202 @@
+* { box-sizing: border-box; }
+
+:root {
+  color-scheme: dark;
+  --bg: #050914;
+  --card: rgba(8, 19, 40, 0.86);
+  --line: rgba(125, 220, 255, 0.22);
+  --cyan: #61e9ff;
+  --blue: #2e75ff;
+  --text: #f5fbff;
+  --muted: #9eb0c7;
+  --danger: #ff9ca8;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(46, 117, 255, 0.28), transparent 34%),
+    radial-gradient(circle at 20% 82%, rgba(97, 233, 255, 0.12), transparent 30%),
+    var(--bg);
+}
+
+.stripe-loading-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  perspective: 1000px;
+}
+
+.stripe-loading-card {
+  width: min(560px, 100%);
+  padding: clamp(28px, 6vw, 52px);
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 32px;
+  background: linear-gradient(145deg, rgba(12, 28, 57, 0.92), var(--card));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+}
+
+.stripe-loading-kicker {
+  margin: 0 0 26px;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.stripe-loader-scene {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 30px;
+  transform-style: preserve-3d;
+}
+
+.stripe-loader-ring,
+.stripe-loader-core {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+}
+
+.stripe-loader-ring {
+  width: 132px;
+  height: 132px;
+  border: 3px solid transparent;
+  border-top-color: var(--cyan);
+  border-right-color: rgba(46, 117, 255, 0.76);
+  filter: drop-shadow(0 0 13px rgba(97, 233, 255, 0.55));
+}
+
+.stripe-loader-ring-a { animation: ring-a 1.25s linear infinite; }
+.stripe-loader-ring-b {
+  width: 96px;
+  height: 96px;
+  border-top-color: #ffffff;
+  border-right-color: var(--blue);
+  animation: ring-b 0.95s linear infinite reverse;
+}
+
+.stripe-loader-core {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  color: #071226;
+  background: linear-gradient(145deg, #ffffff, var(--cyan));
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 0 34px rgba(97, 233, 255, 0.7);
+  animation: core-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ring-a {
+  to { transform: rotateX(64deg) rotateZ(360deg); }
+}
+
+@keyframes ring-b {
+  to { transform: rotateY(66deg) rotateZ(360deg); }
+}
+
+@keyframes core-pulse {
+  50% { transform: translateZ(18px) scale(1.08); }
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(30px, 7vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.stripe-loading-status {
+  min-height: 48px;
+  margin: 18px auto 28px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.stripe-progress {
+  height: 11px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.stripe-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  box-shadow: 0 0 22px rgba(97, 233, 255, 0.48);
+  transition: width 240ms ease;
+}
+
+.stripe-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stripe-progress-meta strong { color: var(--text); }
+
+.stripe-loading-error {
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid rgba(255, 156, 168, 0.32);
+  border-radius: 18px;
+  background: rgba(93, 19, 34, 0.2);
+}
+
+.stripe-loading-error p {
+  margin: 0 0 14px;
+  color: var(--danger);
+  line-height: 1.5;
+}
+
+.stripe-loading-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stripe-loading-actions button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 13px;
+  color: #041020;
+  background: linear-gradient(90deg, var(--cyan), #7eb7ff);
+  font-weight: 800;
+}
+
+.stripe-loading-actions button.secondary {
+  color: var(--text);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 520px) {
+  .stripe-loading-page { padding: 14px; }
+  .stripe-loading-card { padding: 32px 20px; border-radius: 24px; }
+  .stripe-loading-actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stripe-loader-ring-a,
+  .stripe-loader-ring-b,
+  .stripe-loader-core { animation-duration: 3s; }
+  .stripe-progress-bar { transition: none; }
+}

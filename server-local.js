@@ -172,6 +172,10 @@ app.post(
 
 app.use(express.json());
 
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads", { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -744,7 +748,7 @@ function passwordAlreadyUsedInUsers(users, password) {
   );
 }
 
-function collectLocalDuplicateErrors(users, { mail, pseudo, password }) {
+function collectLocalDuplicateErrors(users, { mail, pseudo, password, phone }) {
   const fieldErrors = {};
   const normalizedMail = normalizeMail(mail);
   const normalizedPseudo = normalizePseudo(pseudo);
@@ -763,6 +767,15 @@ function collectLocalDuplicateErrors(users, { mail, pseudo, password }) {
 
   if (password && passwordAlreadyUsedInUsers(users, password)) {
     fieldErrors.password = "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+  }
+
+  const normalizedPhone = normalizeLoginPhone(phone);
+  if (normalizedPhone && users.some((rootUser) =>
+    rootUser.accounts?.some((account) =>
+      normalizeLoginPhone(account.phone) === normalizedPhone
+    )
+  )) {
+    fieldErrors.phone = "Ce numéro de téléphone est déjà utilisé.";
   }
 
   return fieldErrors;
@@ -803,11 +816,11 @@ app.post("/api/account-security/check", (req, res) => {
 app.post("/api/account-security/send-code", async (req, res) => {
   try {
     cleanupVerificationStores();
-    const { mail, pseudo, password, purpose = "register", userId = "" } = req.body || {};
+    const { mail, pseudo, password, phone, purpose = "register", userId = "" } = req.body || {};
     const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
     const fieldErrors = {
       ...validateNewAccountFields({ password }),
-      ...collectLocalDuplicateErrors(users, { mail, pseudo, password })
+      ...collectLocalDuplicateErrors(users, { mail, pseudo, password, phone })
     };
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -892,6 +905,27 @@ app.post("/api/register", upload.any(), async (req, res) => {
         ? imageProfileFile.filename
         : "";
 
+    if (
+      !profile.firstname ||
+      !profile.lastname ||
+      !profile.mail ||
+      !profile.password ||
+      !profile.pseudo ||
+      !profile.role
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Informations manquantes."
+      });
+    }
+
+    if (!["user", "artist", "both"].includes(profile.role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rôle invalide."
+      });
+    }
+
     if (profile.role === "user") {
       profile.status = "approved";
     }
@@ -951,6 +985,20 @@ app.post("/api/register", upload.any(), async (req, res) => {
     if (passwordAlreadyUsedInUsers(users, profile.password)) {
       fieldErrors.password =
         "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+    }
+
+    const normalizedPhone = normalizeLoginPhone(profile.phone);
+
+    if ((profile.role === "artist" || profile.role === "both") && !normalizedPhone) {
+      fieldErrors.phone = "Le numéro de téléphone est obligatoire.";
+    }
+
+    if (normalizedPhone && users.some((rootUser) =>
+      rootUser.accounts?.some((account) =>
+        normalizeLoginPhone(account.phone) === normalizedPhone
+      )
+    )) {
+      fieldErrors.phone = "Ce numéro de téléphone est déjà utilisé.";
     }
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -4126,6 +4174,13 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     console.log("🟢 [5] Recherche de l'artiste");
 
     let artist = null;
+    const artistIdentifiers = [
+      pack.accountId,
+      pack.artistAccountId,
+      pack.artistId
+    ]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
 
     for (const rootUser of users) {
       const foundArtist = rootUser.accounts?.find(
@@ -4135,8 +4190,10 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
             account.role === "both"
           ) &&
           (
-            String(account.id) === String(pack.artistId) ||
-            String(account.accountId) === String(pack.artistId) ||
+            artistIdentifiers.some((identifier) =>
+              String(account.id) === identifier ||
+              String(account.accountId) === identifier
+            ) ||
             String(account.pseudo) === String(pack.artist) ||
             String(account.pseudo) === String(pack.pseudo)
           )
@@ -4170,7 +4227,32 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       });
     }
 
-    if (String(artist.stripeStatus || "").toLowerCase() !== "verified") {
+    let stripeArtistAccount;
+
+    try {
+      stripeArtistAccount = await stripe.accounts.retrieve(artist.stripeAccountId);
+    } catch (stripeAccountError) {
+      console.error("Compte Stripe artiste introuvable :", stripeAccountError.message);
+      return res.status(409).json({
+        error: "Le compte Stripe de l’artiste est introuvable ou inaccessible."
+      });
+    }
+
+    const stripeVerified = Boolean(
+      stripeArtistAccount.charges_enabled &&
+      stripeArtistAccount.payouts_enabled
+    );
+
+    const currentStripeStatus = stripeVerified
+      ? "verified"
+      : "onboarding_started";
+
+    if (artist.stripeStatus !== currentStripeStatus) {
+      artist.stripeStatus = currentStripeStatus;
+      writeJsonArray(usersPath, users);
+    }
+
+    if (!stripeVerified) {
       return res.status(409).json({
         error: "Le compte Stripe de l’artiste n’est pas encore vérifié."
       });
@@ -4301,14 +4383,14 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         },
 
         payment_intent_data: {
-          application_fee_amount: Math.round(amount * 0.1),
+          application_fee_amount: Math.round(amount * 0.20),
           transfer_data: {
             destination: artist.stripeAccountId,
           },
         },
 
         success_url: successUrl,
-        cancel_url: `${frontUrl}/pack.html?id=${pack.id}&cancel=true`,
+        cancel_url: `${frontUrl}/app/pages/pack.html?id=${pack.id}&cancel=true`,
       }
     );
 
@@ -4482,6 +4564,54 @@ function readJsonArray(filePath) {
 function writeJsonArray(filePath, value) {
   ensureJsonArrayFile(filePath);
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+function findRootAndAccountById(id) {
+  const requestedId = String(id || "").trim();
+
+  if (!requestedId) return null;
+
+  const users = readJsonArray(usersPath);
+
+  for (const rootUser of users) {
+    const account = (rootUser.accounts || []).find(
+      (currentAccount) =>
+        String(currentAccount.id || "") === requestedId ||
+        String(currentAccount.accountId || "") === requestedId
+    );
+
+    if (account) {
+      return { users, rootUser, account };
+    }
+  }
+
+  return null;
+}
+
+async function saveAccountState(rootUser, account) {
+  const users = readJsonArray(usersPath);
+  const storedRootUser = users.find(
+    (currentRootUser) => String(currentRootUser.id || "") === String(rootUser?.id || "")
+  );
+
+  if (!storedRootUser) {
+    throw new Error("Racine utilisateur locale introuvable.");
+  }
+
+  const storedAccount = (storedRootUser.accounts || []).find(
+    (currentAccount) =>
+      String(currentAccount.accountId || currentAccount.id || "") ===
+      String(account?.accountId || account?.id || "")
+  );
+
+  if (!storedAccount) {
+    throw new Error("Compte local introuvable.");
+  }
+
+  const now = new Date().toISOString();
+  Object.assign(storedAccount, account, { updatedAt: now });
+  storedRootUser.updatedAt = now;
+  writeJsonArray(usersPath, users);
 }
 
 function requireFounderKey(req, res, next) {
