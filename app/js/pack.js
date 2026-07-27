@@ -85,7 +85,7 @@ async function startStripePayment() {
       return;
     }
 
-    const userId = profile.id || profile.accountId;
+    const userId = profile.accountId || profile.id;
 
     if (!userId) {
       showPopup({
@@ -133,70 +133,27 @@ async function startStripePayment() {
       purchaseType
     };
 
-    console.log("🟢 [FRONT 5] Payload envoyé au backend :", payload);
+    console.log("🟢 [FRONT 5] Préparation du chargement Stripe :", payload);
 
-    const res = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    sessionStorage.setItem(
+      "sonaraStripePurchase",
+      JSON.stringify({
+        ...payload,
+        returnUrl: window.location.href,
+        createdAt: Date.now()
+      })
+    );
 
-    console.log("🟢 [FRONT 6] Réponse HTTP reçue");
-    console.log("res.ok :", res.ok);
-    console.log("status :", res.status);
-    console.log("statusText :", res.statusText);
+    const noticeOverlay = document.querySelector(".notice-overlay");
+    const acceptButton = document.querySelector(".notice-accept");
 
-    let data;
-
-    try {
-      data = await res.json();
-      console.log("🟢 [FRONT 7] JSON backend :", data);
-    } catch (jsonError) {
-      console.log("🔴 [STOP FRONT] Impossible de lire le JSON");
-      console.error(jsonError);
-
-      showPopup({
-        type: "error",
-        title: "Erreur serveur",
-        message: "Le serveur n'a pas renvoyé de JSON valide."
-      });
-
-      return;
+    if (noticeOverlay) noticeOverlay.style.display = "none";
+    if (acceptButton) {
+      acceptButton.disabled = true;
+      acceptButton.textContent = "Chargement...";
     }
 
-    if (!res.ok) {
-      console.log("🔴 [STOP FRONT] Backend a refusé la requête");
-      console.log("Erreur backend :", data);
-
-      showPopup({
-        type: "error",
-        title: "Paiement pas trouvé",
-        message: data?.error || data?.message || "Recharge la page puis réessaie."
-      });
-
-      return;
-    }
-
-    if (!data.url) {
-      console.log("🔴 [STOP FRONT] data.url manquant");
-      console.log("Data reçue :", data);
-
-      showPopup({
-        type: "error",
-        title: "Lien Stripe introuvable",
-        message: "Le serveur n'a pas renvoyé de lien de paiement."
-      });
-
-      return;
-    }
-
-    console.log("🟢 [FRONT 8] Redirection Stripe OK");
-    console.log("URL Stripe :", data.url);
-    console.log("====================================");
-
-    window.location.href = data.url;
+    window.location.href = "/app/pages/stripe-loading.html";
 
   } catch (err) {
     console.log("🔴 [ERREUR FRONT CATCH]");

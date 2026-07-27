@@ -1,4 +1,6 @@
 const myPackPage = document.querySelector(".create-pack");
+const MY_PACK_MIN_LOADING_TIME = 6000;
+const MY_PACK_IMAGE_LOADING_TIMEOUT = 14000;
 
 function ensureMyPackLucide() {
   if (window.lucide) return Promise.resolve();
@@ -153,6 +155,29 @@ async function fetchMyPacksOverview() {
   return data;
 }
 
+function copyMyPackTextFallback(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  textarea.style.left = "-9999px";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+
+  return copied;
+}
+
 async function shareMyPacks(packs) {
   const shareable = packs.filter((pack) => pack.status === "approved");
 
@@ -165,17 +190,44 @@ async function shareMyPacks(packs) {
     .map((pack) => `${pack.title || pack.name}: ${myPackPublicUrl(pack.id)}`)
     .join("\n");
 
-  if (shareable.length === 1 && navigator.share) {
-    await navigator.share({
-      title: shareable[0].title || "Pack Sonara",
-      text: "Découvrez ce pack sur Sonara Pack.",
-      url: myPackPublicUrl(shareable[0].id)
-    });
-    return;
+  if (typeof navigator.share === "function") {
+    try {
+      if (shareable.length === 1) {
+        await navigator.share({
+          title: shareable[0].title || "Pack Sonara",
+          text: "Découvrez ce pack sur Sonara Pack.",
+          url: myPackPublicUrl(shareable[0].id)
+        });
+      } else {
+        await navigator.share({
+          title: "Packs Sonara",
+          text
+        });
+      }
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+    }
   }
 
-  await navigator.clipboard.writeText(text);
-  showMyPackMessage(`Lien${shareable.length > 1 ? "s" : ""} copié${shareable.length > 1 ? "s" : "s"}.`);
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+    } else if (!copyMyPackTextFallback(text)) {
+      throw new Error("Copie indisponible");
+    }
+
+    showMyPackMessage(
+      `Lien${shareable.length > 1 ? "s" : ""} copié${shareable.length > 1 ? "s" : ""}.`
+    );
+  } catch (error) {
+    showMyPackMessage(
+      "Le partage automatique est indisponible sur ce navigateur.",
+      "error"
+    );
+  }
 }
 
 function openMyPackEditor(pack, onSaved) {
@@ -307,8 +359,90 @@ function openMyPackEditor(pack, onSaved) {
   });
 }
 
+
+function updateMyPackLoading(progress, message) {
+  const loader = document.querySelector(".my-pack-page-loader");
+  const fill = loader?.querySelector(".my-pack-loader-progress-fill");
+  const label = loader?.querySelector(".my-pack-loader-message");
+  const value = Math.min(100, Math.max(0, Number(progress) || 0));
+
+  if (fill) fill.style.width = `${value}%`;
+  if (label && message) label.textContent = message;
+  loader?.setAttribute("aria-valuenow", String(value));
+}
+
+function waitForMyPackMinimum(startedAt) {
+  const elapsed = Date.now() - startedAt;
+  const remaining = Math.max(0, MY_PACK_MIN_LOADING_TIME - elapsed);
+  return new Promise((resolve) => window.setTimeout(resolve, remaining));
+}
+
+function waitForMyPackImage(image) {
+  if (image.complete) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const finish = () => resolve();
+    image.addEventListener("load", finish, { once: true });
+    image.addEventListener("error", finish, { once: true });
+  });
+}
+
+async function waitForMyPackImages(container) {
+  const images = [...container.querySelectorAll(".my-pack-cover img")];
+  if (!images.length) return;
+
+  await Promise.race([
+    Promise.all(images.map(waitForMyPackImage)),
+    new Promise((resolve) =>
+      window.setTimeout(resolve, MY_PACK_IMAGE_LOADING_TIMEOUT)
+    )
+  ]);
+}
+
+async function finishMyPackLoading(startedAt, message = "Vos packs sont prêts") {
+  updateMyPackLoading(92, "Finalisation de l’affichage…");
+  await waitForMyPackMinimum(startedAt);
+  updateMyPackLoading(100, message);
+
+  await new Promise((resolve) => window.setTimeout(resolve, 280));
+
+  const loader = document.querySelector(".my-pack-page-loader");
+  const content = document.querySelector(".my-pack-loaded-content");
+
+  loader?.classList.add("is-hidden");
+  content?.classList.add("is-ready");
+  myPackPage?.setAttribute("aria-busy", "false");
+
+  window.setTimeout(() => loader?.remove(), 500);
+}
+
 function renderMyPacksStructure() {
+  myPackPage.setAttribute("aria-busy", "true");
   myPackPage.innerHTML = `
+    <section
+      class="my-pack-page-loader"
+      role="progressbar"
+      aria-label="Chargement de vos packs"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="5"
+    >
+      <div class="my-pack-loader-scene" aria-hidden="true">
+        <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
+        <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
+        <span class="my-pack-loader-core">
+          <span></span><span></span><span></span>
+        </span>
+      </div>
+      <p class="my-pack-loader-label">SONARA CREATOR</p>
+      <h1>Chargement de vos packs</h1>
+      <p class="my-pack-loader-message">Connexion au serveur Sonara…</p>
+      <div class="my-pack-loader-progress" aria-hidden="true">
+        <span class="my-pack-loader-progress-fill"></span>
+      </div>
+    </section>
+
+    <div class="my-pack-loaded-content">
     <section class="my-pack-header">
       <p class="my-pack-label">SONARA CREATOR</p>
       <h1>Mes packs</h1>
@@ -339,12 +473,14 @@ function renderMyPacksStructure() {
 
     <section class="my-pack-list">
       <p class="my-pack-loading">Chargement de vos packs…</p>
-    </section>`;
+    </section>
+    </div>`;
 
   if (window.lucide) lucide.createIcons();
 }
 
 async function initializeMyPacks() {
+  const loadingStartedAt = Date.now();
   await ensureMyPackLucide().catch(() => {});
 
   const profile = getMyPackProfile();
@@ -355,6 +491,7 @@ async function initializeMyPacks() {
   }
 
   renderMyPacksStructure();
+  updateMyPackLoading(12, "Compte Creator identifié…");
 
   document.querySelector(".my-pack-back").addEventListener("click", () => {
     window.location.href = "../creator.html";
@@ -431,7 +568,9 @@ async function initializeMyPacks() {
   };
 
   const load = async () => {
+    updateMyPackLoading(28, "Chargement des packs depuis le serveur…");
     const data = await fetchMyPacksOverview();
+    updateMyPackLoading(58, "Packs reçus, préparation de l’affichage…");
     currentPacks = data.packs || [];
     selected.clear();
 
@@ -449,6 +588,7 @@ async function initializeMyPacks() {
           <p>Votre premier pack apparaîtra ici dès sa sauvegarde ou son envoi.</p>
         </div>`;
       if (window.lucide) lucide.createIcons();
+      updateMyPackLoading(84, "Aucun pack à afficher…");
       return;
     }
 
@@ -490,6 +630,10 @@ async function initializeMyPacks() {
     }).join("");
 
     if (window.lucide) lucide.createIcons();
+
+    updateMyPackLoading(76, "Chargement des covers…");
+    await waitForMyPackImages(list);
+    updateMyPackLoading(88, "Covers chargées…");
 
     list.querySelectorAll(".my-pack-card").forEach((card) => {
       const pack = currentPacks.find((item) => String(item.id) === card.dataset.packId);
@@ -605,12 +749,17 @@ async function initializeMyPacks() {
 
   try {
     await load();
+    await finishMyPackLoading(loadingStartedAt);
   } catch (error) {
     list.innerHTML = `
       <div class="my-pack-empty">
         <h2>Impossible de charger vos packs</h2>
-        <p>${error.message}</p>
+        <p>${escapeMyPackHtml(error.message)}</p>
       </div>`;
+    await finishMyPackLoading(
+      loadingStartedAt,
+      "Le chargement est terminé avec une erreur"
+    );
   }
 }
 

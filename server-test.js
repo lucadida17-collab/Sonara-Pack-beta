@@ -875,9 +875,15 @@ async function isMailAlreadyUsed(mail, excludedAccountId = null) {
 }
 
 async function findArtistAccountForPack(pack) {
-  const artistId = String(pack.artistId || "");
+  const artistIds = [
+    pack?.accountId,
+    pack?.artistAccountId,
+    pack?.artistId
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
 
-  if (artistId) {
+  for (const artistId of [...new Set(artistIds)]) {
     const byId = await findRootAndAccountById(artistId);
 
     if (
@@ -973,11 +979,28 @@ async function isPasswordAlreadyUsed(password) {
   );
 }
 
-async function collectRemoteDuplicateErrors({ mail, pseudo, password }) {
+async function isPhoneAlreadyUsed(phone) {
+  const normalizedPhone = normalizeLoginPhone(phone);
+  if (!normalizedPhone) return false;
+
+  const roots = await usersCollection.find(
+    { "accounts.phone": { $exists: true, $ne: "" } },
+    { projection: { "accounts.phone": 1 } }
+  ).toArray();
+
+  return roots.some((rootUser) =>
+    (rootUser.accounts || []).some((account) =>
+      normalizeLoginPhone(account.phone) === normalizedPhone
+    )
+  );
+}
+
+async function collectRemoteDuplicateErrors({ mail, pseudo, password, phone }) {
   const fieldErrors = validateNewAccountFields({ password });
   if (mail && await isMailAlreadyUsed(mail)) fieldErrors.mail = "Cette adresse e-mail est déjà utilisée.";
   if (pseudo && await isPseudoAlreadyUsed(pseudo)) fieldErrors.pseudo = "Ce pseudo est déjà utilisé.";
   if (password && await isPasswordAlreadyUsed(password)) fieldErrors.password = "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+  if (phone && await isPhoneAlreadyUsed(phone)) fieldErrors.phone = "Ce numéro de téléphone est déjà utilisé.";
   return fieldErrors;
 }
 
@@ -1021,8 +1044,8 @@ app.post("/api/account-security/check", async (req, res) => {
 app.post("/api/account-security/send-code", async (req, res) => {
   try {
     cleanupVerificationStores();
-    const { mail, pseudo, password, purpose = "register", userId = "" } = req.body || {};
-    const fieldErrors = await collectRemoteDuplicateErrors({ mail, pseudo, password });
+    const { mail, pseudo, password, phone, purpose = "register", userId = "" } = req.body || {};
+    const fieldErrors = await collectRemoteDuplicateErrors({ mail, pseudo, password, phone });
     if (Object.keys(fieldErrors).length > 0) {
       return res.status(409).json({ success: false, message: "Certaines informations sont déjà utilisées.", fieldErrors });
     }
@@ -1102,6 +1125,13 @@ app.post("/api/register", upload.any(), async (req, res) => {
       });
     }
 
+    if (!["user", "artist", "both"].includes(profile.role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rôle invalide."
+      });
+    }
+
     const normalizedMail = normalizeMail(profile.mail);
     const fieldErrors = validateNewAccountFields(profile);
 
@@ -1118,6 +1148,16 @@ app.post("/api/register", upload.any(), async (req, res) => {
     if (await isPasswordAlreadyUsed(profile.password)) {
       fieldErrors.password =
         "Ce mot de passe est déjà utilisé. Choisissez-en un autre.";
+    }
+
+    const normalizedPhone = normalizeLoginPhone(profile.phone);
+
+    if ((profile.role === "artist" || profile.role === "both") && !normalizedPhone) {
+      fieldErrors.phone = "Le numéro de téléphone est obligatoire.";
+    }
+
+    if (normalizedPhone && await isPhoneAlreadyUsed(profile.phone)) {
+      fieldErrors.phone = "Ce numéro de téléphone est déjà utilisé.";
     }
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -4000,7 +4040,32 @@ app.post(
         });
       }
 
-      if (String(artist.stripeStatus || "").toLowerCase() !== "verified") {
+      let stripeArtistAccount;
+
+      try {
+        stripeArtistAccount = await stripe.accounts.retrieve(artist.stripeAccountId);
+      } catch (stripeAccountError) {
+        console.error("Compte Stripe artiste introuvable :", stripeAccountError.message);
+        return res.status(409).json({
+          error: "Le compte Stripe de l’artiste est introuvable ou inaccessible."
+        });
+      }
+
+      const stripeVerified = Boolean(
+        stripeArtistAccount.charges_enabled &&
+        stripeArtistAccount.payouts_enabled
+      );
+
+      const currentStripeStatus = stripeVerified
+        ? "verified"
+        : "onboarding_started";
+
+      if (artist.stripeStatus !== currentStripeStatus) {
+        artist.stripeStatus = currentStripeStatus;
+        await saveAccountState(artistResult.rootUser, artist);
+      }
+
+      if (!stripeVerified) {
         return res.status(409).json({
           error: "Le compte Stripe de l’artiste n’est pas encore vérifié."
         });
@@ -4130,7 +4195,7 @@ app.post(
 
             payment_intent_data: {
               application_fee_amount:
-                Math.round(amount * 0.1),
+                Math.round(amount * 0.20),
 
               transfer_data: {
                 destination:
@@ -4141,7 +4206,7 @@ app.post(
             success_url: successUrl,
 
             cancel_url:
-              `${frontUrl}/pack.html?id=${pack.id}&cancel=true`
+              `${frontUrl}/app/pages/pack.html?id=${pack.id}&cancel=true`
           }
         );
 

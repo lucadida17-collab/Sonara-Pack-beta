@@ -1,10 +1,62 @@
-node_modules/
+# ============================================================
+# SONARA PACK — FICHIERS À NE JAMAIS ENVOYER SUR GIT / GITHUB
+# ============================================================
 
+# Variables d'environnement et secrets
+.env
+.env.*
+!.env.example
+
+# Entrées explicites fournies
 .env.prod
 .env.local
-.env.test 
+.env.test
 
-uploads/
-downloads/
+# Dépendances Node.js
+node_modules/
 
+# Données locales et fichiers générés
 data/*.json
+uploads/*
+downloads/*
+tmp/
+temp/
+.cache/
+
+# Conserver les dossiers vides si des .gitkeep existent
+!uploads/.gitkeep
+!downloads/.gitkeep
+!data/.gitkeep
+
+# Journaux et diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Clés, certificats et fichiers sensibles
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Archives et sauvegardes locales
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.backup
+
+# Éditeurs et système
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# IMPORTANT :
+# server-local.js, server-test.js et server.js restent volontairement suivis.
+# Render doit pouvoir les récupérer depuis Git.
+# Un .gitignore ne peut pas rendre ces fichiers privés dans un dépôt public.

@@ -89,8 +89,8 @@ CreatePack.innerHTML = `
 const missionCard = document.querySelector("#missionCard");
 const steps = [...document.querySelectorAll(".step")];
 
-document.querySelector(".back-btn").addEventListener("click", () => {
-  leaveCreatePackAndClearDraft();
+document.querySelector(".back-btn").addEventListener("click", async () => {
+  await leaveCreatePackAndSaveDraft();
 });
 
 steps.forEach((step) => {
@@ -293,13 +293,11 @@ function renderIdentity() {
   titleInput.addEventListener("input", () => {
     packData.identity.title = titleInput.value;
     clearFieldError("identity-title");
-    scheduleDraftSave();
   });
 
   moodInput.addEventListener("change", () => {
     packData.identity.categorie = moodInput.value;
     clearFieldError("identity-mood");
-    scheduleDraftSave();
   });
 
   coverInput.addEventListener("change", async () => {
@@ -316,14 +314,12 @@ function renderIdentity() {
 
     packData.identity.coverFile = file;
     clearFieldError("identity-cover");
-    await saveDraftNow();
     renderIdentity();
   });
 
   document.querySelector(".next-btn").addEventListener("click", async () => {
     if (!validateIdentity()) return;
 
-    await saveDraftNow();
     currentStep = 1;
     render();
   });
@@ -372,12 +368,10 @@ function renderTracks() {
 
     packData.tracks.push(createEmptyTrack());
     syncGlobalPriceFromTracks();
-    await saveDraftNow();
     renderTracks();
   });
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
-    await saveDraftNow();
     currentStep = 0;
     render();
   });
@@ -390,7 +384,6 @@ function renderTracks() {
       return;
     }
 
-    await saveDraftNow();
     currentStep = 2;
     render();
   });
@@ -617,15 +610,13 @@ function bindTrackCards() {
       const previewTitle = card.querySelector(".sonara-preview-title");
       if (previewTitle) previewTitle.textContent = nextTitle;
       clearTrackError(card, "title");
-      scheduleDraftSave();
-    });
+      });
 
     card.querySelectorAll("[data-price-mode]").forEach((button) => {
       button.addEventListener("click", async () => {
         track.isFree = button.dataset.priceMode === "free";
         track.price = track.isFree ? "0.00" : "";
         syncGlobalPriceFromTracks();
-        await saveDraftNow();
         renderTracks();
       });
     });
@@ -634,8 +625,7 @@ function bindTrackCards() {
       track.price = normalizePriceInput(priceInput.value);
       syncGlobalPriceFromTracks();
       clearTrackError(card, "price");
-      scheduleDraftSave();
-    });
+      });
 
     priceInput?.addEventListener("blur", () => {
       const rawPrice = priceInput.value.trim();
@@ -662,7 +652,6 @@ function bindTrackCards() {
 
       track.coverFile = file;
       clearTrackError(card, "cover");
-      await saveDraftNow();
       renderTracks();
     });
 
@@ -681,14 +670,12 @@ function bindTrackCards() {
       track.audioFile = file;
       track.duration = await readAudioDuration(file);
       clearTrackError(card, "audio");
-      await saveDraftNow();
       renderTracks();
     });
 
     card.querySelector(".remove-track-btn")?.addEventListener("click", async () => {
       packData.tracks.splice(index, 1);
       syncGlobalPriceFromTracks();
-      await saveDraftNow();
       renderTracks();
     });
   });
@@ -800,14 +787,12 @@ function renderPrice() {
   });
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
-    await saveDraftNow();
     currentStep = 1;
     render();
   });
 
   document.querySelector(".next-btn").addEventListener("click", async () => {
     if (!validateGlobalPrice()) return;
-    await saveDraftNow();
     currentStep = 3;
     render();
   });
@@ -845,7 +830,7 @@ function renderLegal() {
 
       <div class="actions">
         <button type="button" class="prev-btn">Retour</button>
-        <button type="button" class="submit-btn">Envoyer en validation</button>
+        <button type="button" class="submit-btn">Publier</button>
       </div>
     </section>
   `;
@@ -856,11 +841,9 @@ function renderLegal() {
     packData.rights.accepted = checkbox.checked;
     packData.rights.acceptedAt = checkbox.checked ? new Date().toISOString() : null;
     clearFieldError("rights");
-    scheduleDraftSave();
   });
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
-    await saveDraftNow();
     currentStep = 2;
     render();
   });
@@ -937,7 +920,7 @@ async function submitPack() {
     }
 
     const storedPack = await confirmPackPersistence(finalPack, result);
-    showPackSentSuccess(storedPack);
+    await finalizePublishedPack(storedPack);
     return;
   } catch (error) {
     submitError.hidden = false;
@@ -1384,12 +1367,6 @@ function scrollToFirstError() {
   });
 }
 
-function scheduleDraftSave() {
-  updateDraftState("Sauvegarde…", "saving");
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveDraftNow, 350);
-}
-
 async function persistCurrentScreen() {
   if (currentStep === 0) {
     packData.identity.title = document.querySelector(".pack-title")?.value ?? packData.identity.title;
@@ -1418,9 +1395,11 @@ async function saveDraftNow() {
   try {
     await writeDraft(draftKey, structuredClone(packData));
     updateDraftState("Brouillon sauvegardé", "saved");
+    return true;
   } catch (error) {
     console.error("Sauvegarde du brouillon impossible :", error);
     updateDraftState("Sauvegarde impossible", "error");
+    return false;
   }
 }
 
@@ -1441,12 +1420,22 @@ async function deleteDraftSafely(key) {
   }
 }
 
-function showPackSentSuccess(storedPack = {}) {
+async function finalizePublishedPack(storedPack = {}) {
   isSubmitting = true;
   stopPendingDraftSave();
+
+  // Un pack confirmé "pending" ne doit plus rester dans Create Pack.
+  // On attend réellement la suppression IndexedDB avant la redirection.
+  let draftDeleted = await deleteDraftSafely(draftKey);
+
+  if (!draftDeleted) {
+    draftDeleted = await deleteDraftSafely(draftKey);
+  }
+
+  // Sécurité de reprise : même si IndexedDB refuse exceptionnellement la suppression,
+  // le prochain accès à Create Pack supprimera ce brouillon avant tout affichage.
   sessionStorage.setItem(FORCE_NEW_PACK_KEY, "true");
   localStorage.setItem("creatorToast", "Pack envoyé en validation");
-  void deleteDraftSafely(draftKey);
 
   const dashboardUrl = new URL(
     "/app/pages/creator.html",
@@ -1472,7 +1461,7 @@ function showPackSentSuccess(storedPack = {}) {
   document.body.appendChild(overlay);
 
   const navigateToDashboard = () => {
-    window.location.assign(dashboardUrl.href);
+    window.location.replace(dashboardUrl.href);
   };
 
   overlay
@@ -1482,15 +1471,16 @@ function showPackSentSuccess(storedPack = {}) {
   window.setTimeout(navigateToDashboard, 600);
 }
 
-function leaveCreatePackAndClearDraft() {
+async function leaveCreatePackAndSaveDraft() {
   stopPendingDraftSave();
+  await persistCurrentScreen();
 
-  // Sécurité : si IndexedDB est interrompu pendant la navigation,
-  // le prochain accès à Create Pack repartira quand même de zéro.
-  sessionStorage.setItem(FORCE_NEW_PACK_KEY, "true");
+  const saved = await saveDraftNow();
 
-  // Nettoyage en arrière-plan, sans bloquer la redirection.
-  void deleteDraftSafely(draftKey);
+  if (!saved) {
+    updateDraftState("Retour impossible : brouillon non sauvegardé", "error");
+    return;
+  }
 
   const dashboardUrl = new URL("../creator.html", window.location.href).href;
   window.location.replace(dashboardUrl);

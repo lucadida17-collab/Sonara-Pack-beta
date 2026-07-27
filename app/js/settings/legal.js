@@ -180,10 +180,6 @@ const legalContent = {
       </p>
 
       <p>
-        Adresse : À COMPLÉTER
-      </p>
-
-      <p>
         Adresse e-mail : sonarapack.support@gmail.com
       </p>
 
