@@ -24,6 +24,63 @@ let selectedPackId = null;
 let selectedTrackId = null;
 let selectedPurchaseType = null;
 
+function getStoredPackProfile() {
+  const rawProfile = localStorage.getItem("sonaraProfile");
+
+  if (!rawProfile) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawProfile);
+  } catch (error) {
+    console.error("Profil Sonara local invalide :", error);
+    return null;
+  }
+}
+
+
+const PACK_MIN_LOADING_TIME = 6000;
+
+function updatePackLoading(progress, message) {
+  const loader = document.querySelector(".my-pack-page-loader");
+  const fill = loader?.querySelector(".my-pack-loader-progress-fill");
+  const label = loader?.querySelector(".my-pack-loader-message");
+  const value = Math.min(100, Math.max(0, Number(progress) || 0));
+
+  if (fill) fill.style.width = `${value}%`;
+  if (label && message) label.textContent = message;
+  loader?.setAttribute("aria-valuenow", String(value));
+}
+
+function waitForPackMinimum(startedAt) {
+  const elapsed = Date.now() - startedAt;
+  const remaining = Math.max(0, PACK_MIN_LOADING_TIME - elapsed);
+
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, remaining);
+  });
+}
+
+async function finishPackLoading(startedAt, message = "Pack prêt") {
+  updatePackLoading(92, "Finalisation de l’affichage…");
+  await waitForPackMinimum(startedAt);
+
+  updatePackLoading(100, message);
+
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, 280);
+  });
+
+  const loader = document.querySelector(".my-pack-page-loader");
+  const content = document.querySelector(".my-pack-loaded-content");
+
+  loader?.classList.add("is-hidden");
+  content?.classList.add("is-ready");
+
+  window.setTimeout(() => loader?.remove(), 500);
+}
+
 function isFreeCatalogItem(item = {}) {
   return (
     item.isFree === true ||
@@ -212,7 +269,15 @@ let packData = null;
 
 async function loadPack() {
 
-  const response = await fetch(`${API_URL}/api/packs`);
+  const response = await fetch(`${API_URL}/api/packs`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { Accept: "application/json" }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Chargement du pack impossible (${response.status}).`);
+  }
 
   const packs = await response.json();
 
@@ -226,13 +291,14 @@ async function loadPack() {
 
   console.log("PACK :", packData);
 
-  if (!packData) return;
+  if (!packData) {
+    throw new Error("Pack introuvable.");
+  }
 
   renderPack();
+  return packData;
 
 }
-
-loadPack();
 
 const packList = document.querySelector(".pack-list");
 
@@ -470,13 +536,6 @@ src="${getFilePath(track.audioName || track.audio)}"
       pageName.textContent = "V0.9.3 - Sonara ";
     };
 
-    const loaderText = document.querySelector('.loader-text')
-
-    if (loaderText) {
-      loaderText.textContent = 'Chargement...'
-    };
-
-
     if (btnAccueil) {
       btnAccueil.addEventListener("click", () => {
         console.log("click accueil")
@@ -487,18 +546,6 @@ src="${getFilePath(track.audioName || track.audio)}"
     }
 
     lucide.createIcons();
-
-    setTimeout(() => {
-      const loader = document.querySelector('.loader');
-
-      if (loader) {
-        loader.classList.add("hide");
-
-        setTimeout(() => {
-          loader.remove();
-        }, 300);
-      }
-    });
 
     const btnAcheter = document.querySelectorAll('.btn-acheter, .btn-acheter-desktop');
     const btnAcheterTrack = document.querySelectorAll('.track-price')
@@ -721,11 +768,11 @@ src="${getFilePath(track.audioName || track.audio)}"
 
 
 
-const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
+const profile = getStoredPackProfile();
 
 const mobileCreateBtn = document.querySelector(".nav-mobile-create");
 
-if (profile?.role !== "both") {
+if (mobileCreateBtn && profile?.role !== "both") {
   mobileCreateBtn.style.display = "none";
 }
 
@@ -752,4 +799,39 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
 
   window.location.href = "library.html"
 });
+
+async function initializePackPage() {
+  const loadingStartedAt = Date.now();
+
+  try {
+    updatePackLoading(10, "Préparation du pack…");
+
+    if (!packId) {
+      throw new Error("Lien de pack invalide.");
+    }
+
+    updatePackLoading(48, "Connexion au catalogue Sonara…");
+    updatePackLoading(66, "Chargement du pack…");
+
+    await loadPack();
+    await finishPackLoading(loadingStartedAt, "Pack prêt");
+  } catch (error) {
+    console.error("Erreur ouverture du pack :", error);
+
+    const message =
+      error?.message ||
+      "Impossible d’ouvrir ce pack.";
+
+    updatePackLoading(100, message);
+    await waitForPackMinimum(loadingStartedAt);
+
+    showPopup({
+      type: "error",
+      title: "Pack indisponible",
+      message
+    });
+  }
+}
+
+initializePackPage();
 

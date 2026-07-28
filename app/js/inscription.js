@@ -3,6 +3,54 @@ const chaosPage = document.querySelector(".chaos");
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 
+
+const SHARED_PACK_REDIRECT_KEY = "sonaraRedirectAfterAuth";
+
+function normalizeSharedPackRedirect(value) {
+  if (!value) return null;
+
+  try {
+    const target = new URL(value, window.location.origin);
+    const packId = target.searchParams.get("id");
+
+    if (
+      target.origin !== window.location.origin ||
+      target.pathname !== "/app/pages/pack.html" ||
+      !packId
+    ) {
+      return null;
+    }
+
+    return `${target.pathname}${target.search}`;
+  } catch (error) {
+    return null;
+  }
+}
+
+function rememberSharedPackRedirectFromUrl() {
+  const redirect = normalizeSharedPackRedirect(
+    new URLSearchParams(window.location.search).get("redirect")
+  );
+
+  if (redirect) {
+    sessionStorage.setItem(SHARED_PACK_REDIRECT_KEY, redirect);
+  }
+}
+
+function consumeSharedPackRedirect() {
+  const redirect = normalizeSharedPackRedirect(
+    sessionStorage.getItem(SHARED_PACK_REDIRECT_KEY)
+  );
+
+  if (redirect) {
+    sessionStorage.removeItem(SHARED_PACK_REDIRECT_KEY);
+  }
+
+  return redirect;
+}
+
+rememberSharedPackRedirectFromUrl();
+
 function normalizeLoginPhone(value) {
   const digits = String(value || "").replace(/\D/g, "");
   if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
@@ -20,6 +68,12 @@ function getAccountRedirect(profile = {}) {
 
   if (status === "pending") {
     return "/app/pages/pending.html";
+  }
+
+  const sharedPackRedirect = consumeSharedPackRedirect();
+
+  if (sharedPackRedirect) {
+    return sharedPackRedirect;
   }
 
   if (role === "artist" || role === "both") {
@@ -158,7 +212,8 @@ function applyRegistrationFieldErrors(form, fieldErrors = {}) {
   const selectors = {
     mail: ".mail-input",
     pseudo: ".pseudo-input",
-    password: ".password-input"
+    password: ".password-input",
+    phone: ".phone-input"
   };
 
   Object.entries(fieldErrors).forEach(([field, message]) => {
@@ -175,7 +230,8 @@ async function checkRegistrationFieldAvailability(form, field) {
   const inputs = {
     mail: form.querySelector(".mail-input"),
     pseudo: form.querySelector(".pseudo-input"),
-    password: form.querySelector(".password-input")
+    password: form.querySelector(".password-input"),
+    phone: form.querySelector(".phone-input")
   };
 
   const input = inputs[field];
@@ -188,10 +244,15 @@ async function checkRegistrationFieldAvailability(form, field) {
       ? rawValue !== "" && input.checkValidity()
       : field === "pseudo"
         ? rawValue !== ""
-        : rawValue.length >= PASSWORD_MIN_LENGTH && rawValue.length <= PASSWORD_MAX_LENGTH;
+        : field === "phone"
+          ? normalizeLoginPhone(rawValue) !== ""
+          : rawValue.length >= PASSWORD_MIN_LENGTH && rawValue.length <= PASSWORD_MAX_LENGTH;
 
   if (!canCheck) {
-    form._registrationAvailability[field] = "unknown";
+    form._registrationAvailability[field] =
+      field === "phone" && !input.required && !normalizeLoginPhone(rawValue)
+        ? "valid"
+        : "unknown";
     form._updateRegistrationSubmitState?.();
     return;
   }
@@ -228,7 +289,8 @@ async function checkRegistrationFieldAvailability(form, field) {
       const successMessages = {
         mail: "Adresse e-mail disponible.",
         pseudo: "Pseudo disponible.",
-        password: "Mot de passe disponible."
+        password: "Mot de passe disponible.",
+        phone: "Numéro de téléphone disponible."
       };
       setFieldMessage(input, successMessages[field], "success");
       form._blockedRegistrationFields.delete(field);
@@ -340,11 +402,11 @@ function createLoginLiveVerifier({
   return { state, schedule };
 }
 
-async function sendRegistrationVerificationCode({ form, mail, pseudo, password }) {
+async function sendRegistrationVerificationCode({ form, mail, pseudo, password, phone }) {
   const sendResponse = await fetch(`${API_URL}/api/account-security/send-code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mail, pseudo, password, purpose: "register" })
+    body: JSON.stringify({ mail, pseudo, password, phone, purpose: "register" })
   });
   const sendData = await sendResponse.json();
 
@@ -423,7 +485,8 @@ function setupRegistrationSubmitProtection(form, submitSelector) {
   const watchedFields = {
     mail: form.querySelector(".mail-input"),
     pseudo: form.querySelector(".pseudo-input"),
-    password: form.querySelector(".password-input")
+    password: form.querySelector(".password-input"),
+    phone: form.querySelector(".phone-input")
   };
 
   form._blockedRegistrationFields = new Set();
@@ -431,9 +494,10 @@ function setupRegistrationSubmitProtection(form, submitSelector) {
   form._registrationAvailability = {
     mail: "unknown",
     pseudo: "unknown",
-    password: "unknown"
+    password: "unknown",
+    phone: watchedFields.phone?.required ? "unknown" : "valid"
   };
-  form._registrationRequestIds = { mail: 0, pseudo: 0, password: 0 };
+  form._registrationRequestIds = { mail: 0, pseudo: 0, password: 0, phone: 0 };
   form._registrationWaitingForCode = false;
   form._registrationOriginalButtonText = submitButton.textContent;
 
@@ -483,7 +547,10 @@ function setupRegistrationSubmitProtection(form, submitSelector) {
         submitButton.textContent = form._registrationOriginalButtonText;
       }
       form._blockedRegistrationFields.delete(field);
-      form._registrationAvailability[field] = "unknown";
+      form._registrationAvailability[field] =
+        field === "phone" && !input.required && !normalizeLoginPhone(input.value)
+          ? "valid"
+          : "unknown";
 
       if (field !== "password") {
         setFieldMessage(input);
@@ -633,7 +700,8 @@ async function submitRegistration({
         form,
         mail: profile.mail,
         pseudo: profile.pseudo,
-        password: profile.password
+        password: profile.password,
+        phone: profile.phone
       });
 
       form._registrationWaitingForCode = true;
@@ -666,11 +734,8 @@ async function submitRegistration({
       throw new Error(data.message || "Création impossible.");
     }
 
-    if (!data.sessionToken || !window.SonaraSession) {
-      throw new Error("La session sécurisée n'a pas été créée.");
-    }
-
-    window.SonaraSession.persist(data.sessionToken, data.profile);
+    localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
+    localStorage.setItem("sonaraProfileCreated", "true");
     onSuccess(data);
   } catch (error) {
     console.error("ERREUR BACKEND :", error);
@@ -909,8 +974,8 @@ btnLogin.addEventListener("click", () =>{
             form: userForm,
             formData,
             submitButton: document.querySelector(".create-profil-user"),
-            onSuccess: () => {
-              window.location.href = "/home.html";
+            onSuccess: (data) => {
+              window.location.href = getAccountRedirect(data.profile);
             }
           });
 
@@ -1376,7 +1441,32 @@ Connectez-vous à votre compte Sonara Pack.
   });
 
   inscriptionBtn.addEventListener("click", () => {
-    renderChoicePage();
+    function startInscriptionPage() {
+  const storedProfile = localStorage.getItem("sonaraProfile");
+
+  if (storedProfile) {
+    try {
+      const profile = JSON.parse(storedProfile);
+      const profileId = profile?.accountId || profile?.id;
+
+      if (profileId && profile?.role) {
+        window.location.replace(
+          getAccountRedirect(profile)
+        );
+        return;
+      }
+    } catch (error) {
+      console.warn(
+        "Profil local illisible, affichage de l'inscription :",
+        error
+      );
+    }
+  }
+
+  renderChoicePage();
+}
+
+startInscriptionPage();
   });
 
   loginBtn.addEventListener("click", async (event) => {
@@ -1436,11 +1526,8 @@ Connectez-vous à votre compte Sonara Pack.
         throw new Error(data.error || "Connexion impossible.");
       }
 
-      if (!data.sessionToken || !window.SonaraSession) {
-        throw new Error("La session sécurisée n'a pas été créée.");
-      }
-
-      window.SonaraSession.persist(data.sessionToken, data.account);
+      localStorage.setItem("sonaraProfile", JSON.stringify(data.account));
+      localStorage.setItem("sonaraProfileCreated", "true");
       window.location.href = getAccountRedirect(data.account || data.profile);
     } catch (error) {
       console.error("Erreur connexion sécurisée :", error);
@@ -1465,3 +1552,4 @@ Connectez-vous à votre compte Sonara Pack.
 }
 
 renderChoicePage();
+

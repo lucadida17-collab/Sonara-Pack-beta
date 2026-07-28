@@ -2,7 +2,7 @@
 
 const PURCHASE_STORAGE_KEY = "sonaraStripePurchase";
 const PURCHASE_MAX_AGE_MS = 10 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 30001;
+const REQUEST_TIMEOUT_MS = 30000;
 
 const statusElement = document.getElementById("stripeLoadingStatus");
 const stepElement = document.getElementById("stripeProgressStep");

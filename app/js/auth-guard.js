@@ -230,10 +230,8 @@ window.SonaraModeration = SonaraModeration;
 
 async function verifySonaraSession() {
   const storedProfile = localStorage.getItem("sonaraProfile");
-  const sessionToken =
-    window.SonaraSession?.getToken() || "";
 
-  if (!sessionToken) {
+  if (!storedProfile) {
     redirectToInscription();
     return false;
   }
@@ -247,15 +245,27 @@ async function verifySonaraSession() {
     return false;
   }
 
-  try {
-    const response = await fetch(`${API_URL}/api/auth/session`, {
-      cache: "no-store"
-    });
+  const profileId = profile?.accountId || profile?.id;
 
-    if (response.status === 404 || response.status === 401 || response.status === 403) {
-      await SonaraModeration.showNext(profile);
-      redirectToInscription();
-      return false;
+  if (!profileId) {
+    redirectToInscription();
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/profile/${encodeURIComponent(profileId)}`
+    );
+
+    if (
+      response.status === 404 ||
+      response.status === 401 ||
+      response.status === 403
+    ) {
+      console.warn(
+        "Profil distant temporairement non vérifiable : session locale conservée."
+      );
+      return true;
     }
 
     if (!response.ok) {
@@ -341,18 +351,20 @@ async function verifySonaraSession() {
     return true;
   } catch (error) {
     console.error("Impossible de vérifier la session :", error);
-    return false;
+
+    /*
+      Une panne réseau ou Render endormi ne doit jamais
+      déconnecter automatiquement le compte déjà enregistré.
+    */
+    return Boolean(profile);
   }
 }
 
 function redirectToInscription() {
-  if (window.SonaraSession) {
-    window.SonaraSession.clear();
-  } else {
-    sessionStorage.removeItem("sonaraSessionToken");
-    localStorage.removeItem("sonaraProfile");
-    localStorage.removeItem("sonaraProfileCreated");
-  }
-
+  /*
+    Cette redirection ne supprime jamais le compte.
+    La suppression est réservée au bouton Se déconnecter
+    dans les paramètres du compte.
+  */
   window.location.replace("/app/pages/inscription.html");
 }

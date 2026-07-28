@@ -188,7 +188,6 @@ const db = client.db(mongoDatabaseName);
 
 const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
-const sessionsCollection = db.collection("sessions");
 
 
 
@@ -198,10 +197,6 @@ const sessionsCollection = db.collection("sessions");
 async function connectDB() {
   try {
     await client.connect();
-    await sessionsCollection.createIndex(
-      { expiresAt: 1 },
-      { expireAfterSeconds: 0 }
-    );
     console.log(
       `MongoDB TEST connecté 🔥 — base : ${mongoDatabaseName}`
     );
@@ -803,178 +798,6 @@ function sanitizeAccount(account, rootUserId) {
   return returnedAccount;
 }
 
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-
-function getSessionToken(req) {
-  const authorization = String(
-    req.headers.authorization || ""
-  ).trim();
-
-  if (!authorization.startsWith("Bearer ")) {
-    return "";
-  }
-
-  return authorization.slice(7).trim();
-}
-
-function hashSessionToken(token) {
-  return crypto
-    .createHash("sha256")
-    .update(String(token || ""))
-    .digest("hex");
-}
-
-function getAccountIdentifier(account) {
-  return String(
-    account?.accountId ||
-    account?.id ||
-    ""
-  );
-}
-
-async function issueAccountSession(rootUser, account) {
-  const sessionToken =
-    crypto.randomBytes(32).toString("base64url");
-  const now = new Date();
-
-  await sessionsCollection.insertOne({
-    tokenHash: hashSessionToken(sessionToken),
-    rootUserId: String(rootUser.id),
-    accountId: getAccountIdentifier(account),
-    createdAt: now,
-    lastSeenAt: now,
-    expiresAt: new Date(
-      now.getTime() + SESSION_TTL_MS
-    )
-  });
-
-  return sessionToken;
-}
-
-async function resolveAccountSession(req) {
-  const sessionToken = getSessionToken(req);
-
-  if (!sessionToken) {
-    return null;
-  }
-
-  const tokenHash = hashSessionToken(sessionToken);
-  const session = await sessionsCollection.findOne({
-    tokenHash
-  });
-
-  if (
-    !session ||
-    new Date(session.expiresAt).getTime() <= Date.now()
-  ) {
-    if (session) {
-      await sessionsCollection.deleteOne({ tokenHash });
-    }
-
-    return null;
-  }
-
-  const rootUser = await usersCollection.findOne({
-    id: String(session.rootUserId)
-  });
-  const account = rootUser?.accounts?.find(
-    (currentAccount) =>
-      getAccountIdentifier(currentAccount) ===
-      String(session.accountId)
-  );
-
-  if (!rootUser || !account) {
-    await sessionsCollection.deleteOne({ tokenHash });
-    return null;
-  }
-
-  const now = new Date();
-
-  await sessionsCollection.updateOne(
-    { tokenHash },
-    {
-      $set: {
-        lastSeenAt: now,
-        expiresAt: new Date(
-          now.getTime() + SESSION_TTL_MS
-        )
-      }
-    }
-  );
-
-  return {
-    tokenHash,
-    rootUser,
-    account
-  };
-}
-
-async function requireAccountSession(req, res, next) {
-  try {
-    const accountSession =
-      await resolveAccountSession(req);
-
-    if (!accountSession) {
-      return res.status(401).json({
-        success: false,
-        error: "Session absente ou expirée."
-      });
-    }
-
-    req.accountSession = accountSession;
-    return next();
-  } catch (error) {
-    console.error(
-      "Vérification de session impossible :",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      error: "Vérification de session impossible."
-    });
-  }
-}
-
-function sessionOwnsIdentifier(accountSession, identifier) {
-  const requestedId = String(identifier || "");
-
-  return Boolean(
-    requestedId &&
-    (
-      requestedId ===
-        String(accountSession.rootUser.id) ||
-      requestedId ===
-        getAccountIdentifier(accountSession.account)
-    )
-  );
-}
-
-async function updateCurrentAccountSession(
-  req,
-  accountId
-) {
-  await sessionsCollection.updateOne(
-    { tokenHash: req.accountSession.tokenHash },
-    {
-      $set: {
-        accountId: String(accountId),
-        lastSeenAt: new Date()
-      }
-    }
-  );
-}
-
-async function revokeAccountSession(req) {
-  const sessionToken = getSessionToken(req);
-
-  if (sessionToken) {
-    await sessionsCollection.deleteOne({
-      tokenHash: hashSessionToken(sessionToken)
-    });
-  }
-}
-
 async function findRootAndAccountById(id) {
   const requestedId = String(id || "");
 
@@ -1478,8 +1301,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
     const returnedAccount =
       sanitizeAccount(account, rootUser.id);
-    const sessionToken =
-      await issueAccountSession(rootUser, account);
 
     const redirectTo =
       account.role === "artist" ||
@@ -1492,7 +1313,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
       message: "Compte créé avec succès.",
       profile: returnedAccount,
       account: returnedAccount,
-      sessionToken,
 
       redirectTo,
       stripeOnboardingUrl: null
@@ -1516,15 +1336,13 @@ app.post("/api/register", upload.any(), async (req, res) => {
    AJOUTER UN COMPTE
 ========================= */
 
-app.post("/api/accounts", requireAccountSession, upload.any(), async (req, res) => {
+app.post("/api/accounts", upload.any(), async (req, res) => {
   try {
     const profile = req.body.profile
       ? JSON.parse(req.body.profile)
       : req.body;
 
-    const userId = String(
-      req.accountSession.rootUser.id
-    );
+    const userId = String(req.body.userId || "");
 
     if (!consumeVerifiedToken({
       token: req.body.verificationToken,
@@ -1738,17 +1556,12 @@ app.post("/api/accounts", requireAccountSession, upload.any(), async (req, res) 
 
     const returnedAccount =
       sanitizeAccount(account, rootUser.id);
-    await updateCurrentAccountSession(
-      req,
-      account.accountId
-    );
 
     return res.status(201).json({
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount,
-      sessionToken: getSessionToken(req)
+      account: returnedAccount
     });
 
   } catch (error) {
@@ -1769,20 +1582,8 @@ app.post("/api/accounts", requireAccountSession, upload.any(), async (req, res) 
    PROFILE GET
 ========================= */
 
-app.get("/api/profile/:id", requireAccountSession, async (req, res) => {
+app.get("/api/profile/:id", async (req, res) => {
   try {
-    if (
-      !sessionOwnsIdentifier(
-        req.accountSession,
-        req.params.id
-      )
-    ) {
-      return res.status(403).json({
-        success: false,
-        error: "Ce profil n'appartient pas à la session active."
-      });
-    }
-
     const result =
       await findRootAndAccountById(req.params.id);
 
@@ -1835,20 +1636,6 @@ app.get("/api/profile/:id", requireAccountSession, async (req, res) => {
       error: "Impossible de récupérer le profil"
     });
   }
-});
-
-app.get("/api/auth/session", requireAccountSession, (req, res) => {
-  return res.status(200).json(
-    sanitizeAccount(
-      req.accountSession.account,
-      req.accountSession.rootUser.id
-    )
-  );
-});
-
-app.post("/api/auth/logout", requireAccountSession, async (req, res) => {
-  await revokeAccountSession(req);
-  return res.status(200).json({ success: true });
 });
 
 
@@ -2049,13 +1836,10 @@ app.post("/api/login", async (req, res) => {
       account,
       rootUser.id
     );
-    const sessionToken =
-      await issueAccountSession(rootUser, account);
 
     return res.status(200).json({
       success: true,
       account: returnedAccount,
-      sessionToken,
       redirectTo
     });
   } catch (error) {
@@ -2076,10 +1860,14 @@ app.post("/api/login", async (req, res) => {
    LISTE ET CHANGEMENT DE COMPTE
 ========================= */
 
-app.post("/api/accounts/list", requireAccountSession, async (req, res) => {
+app.post("/api/accounts/list", async (req, res) => {
   try {
-    const rootUser =
-      req.accountSession.rootUser;
+    const { userId, currentAccountId } = req.body || {};
+    const rootUser = await usersCollection.findOne({ id: String(userId), "accounts.accountId": String(currentAccountId) });
+
+    if (!rootUser) {
+      return res.status(403).json({ success: false, error: "Session non autorisée." });
+    }
 
     const accounts = rootUser.accounts.map((item) => sanitizeAccount(item, rootUser.id));
     return res.json({ success: true, accounts });
@@ -2089,11 +1877,16 @@ app.post("/api/accounts/list", requireAccountSession, async (req, res) => {
   }
 });
 
-app.post("/api/accounts/switch", requireAccountSession, async (req, res) => {
+app.post("/api/accounts/switch", async (req, res) => {
   try {
-    const { targetAccountId } = req.body || {};
-    const rootUser =
-      req.accountSession.rootUser;
+    const { userId, currentAccountId, targetAccountId } = req.body || {};
+    const rootUser = await usersCollection.findOne({
+      id: String(userId),
+      accounts: { $all: [
+        { $elemMatch: { accountId: String(currentAccountId) } },
+        { $elemMatch: { accountId: String(targetAccountId) } }
+      ] }
+    });
 
     const targetAccount = rootUser?.accounts?.find((item) => String(item.accountId) === String(targetAccountId));
     if (!rootUser || !targetAccount) {
@@ -2105,18 +1898,7 @@ app.post("/api/accounts/switch", requireAccountSession, async (req, res) => {
     if (targetAccount.status === "pending") redirectTo = "/app/pages/pending.html";
     else if (targetAccount.role === "artist" || targetAccount.role === "both") redirectTo = "/app/pages/creator.html";
 
-    await updateCurrentAccountSession(
-      req,
-      targetAccount.accountId
-    );
-
-    return res.json({
-      success: true,
-      profile,
-      account: profile,
-      sessionToken: getSessionToken(req),
-      redirectTo
-    });
+    return res.json({ success: true, profile, account: profile, redirectTo });
   } catch (error) {
     console.error("Erreur POST /api/accounts/switch :", error);
     return res.status(500).json({ success: false, error: "Changement de compte impossible." });
@@ -2224,8 +2006,6 @@ app.post("/api/accounts/login", async (req, res) => {
     }
 
     const returnedAccount = sanitizeAccount(account, rootUser.id);
-    const sessionToken =
-      await issueAccountSession(rootUser, account);
 
     let redirectTo = "/home.html";
     if (account.status === "pending") redirectTo = "/app/pages/pending.html";
@@ -2237,7 +2017,6 @@ app.post("/api/accounts/login", async (req, res) => {
       success: true,
       profile: returnedAccount,
       account: returnedAccount,
-      sessionToken,
       redirectTo
     });
   } catch (error) {
@@ -2764,20 +2543,8 @@ app.get("/api/pending-users", async (req, res) => {
   }
 });
 
-app.get("/api/users/:id", requireAccountSession, async (req, res) => {
+app.get("/api/users/:id", async (req, res) => {
   try {
-    if (
-      !sessionOwnsIdentifier(
-        req.accountSession,
-        req.params.id
-      )
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Cet utilisateur n'appartient pas à la session active."
-      });
-    }
-
     const result =
       await findRootAndAccountById(req.params.id);
 

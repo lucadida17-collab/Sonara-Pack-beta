@@ -15,16 +15,17 @@ async function startSonara() {
   await setLoadingStep("Récupération de votre session…", 350);
 
   const localProfile = getLocalProfile();
-  const sessionToken =
-    window.SonaraSession?.getToken() || "";
 
   /*
     Aucun profil enregistré :
     l’utilisateur doit passer par l’inscription.
   */
-  if (!sessionToken) {
-    clearLocalSession();
+  const localProfileId =
+    localProfile?.accountId ||
+    localProfile?.id ||
+    null;
 
+  if (!localProfileId) {
     await setLoadingStep("Aucun compte connecté…", 500);
     await setLoadingStep("Ouverture de l’inscription…", 500);
 
@@ -37,7 +38,9 @@ async function startSonara() {
   try {
     await setLoadingStep("Connexion au serveur…", 300);
 
-    const serverProfile = await fetchProfileFromServer();
+    const serverProfile = await fetchProfileFromServer(
+      localProfileId
+    );
 
     await setLoadingStep("Vérification de votre compte…", 350);
 
@@ -75,27 +78,21 @@ async function startSonara() {
       Le compte n’existe plus, a été supprimé,
       banni, rejeté ou possède des données invalides.
     */
-    if (error.name === "InvalidAccountError") {
-      clearLocalSession();
-
+    if (localProfile?.role) {
       await setLoadingStep(
-        "Compte introuvable ou désactivé…",
-        800
+        "Votre compte reste connecté…",
+        450
       );
 
-      await setLoadingStep(
-        "Retour à l’inscription…",
-        500
-      );
-
-      goToInscription();
+      await respectMinimumLoadingTime();
+      redirectByRole(localProfile);
       return;
     }
 
     /*
-      Le serveur est temporairement inaccessible.
-      On ne supprime pas la session locale car le
-      compte peut toujours exister.
+      Aucun effacement automatique du compte :
+      seul le bouton Se déconnecter des paramètres
+      peut supprimer la session locale.
     */
     showServerError();
   }
@@ -155,7 +152,7 @@ function getLocalProfile() {
    VÉRIFICATION DU PROFIL AUPRÈS DU SERVEUR
 ────────────────────────────────────────────── */
 
-async function fetchProfileFromServer() {
+async function fetchProfileFromServer(profileId) {
   const controller = new AbortController();
 
   const timeoutId = setTimeout(() => {
@@ -164,7 +161,7 @@ async function fetchProfileFromServer() {
 
   try {
     const response = await fetch(
-      `${API_URL}/api/auth/session`,
+      `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
       {
         method: "GET",
         cache: "no-store",
@@ -215,7 +212,10 @@ async function fetchProfileFromServer() {
 ────────────────────────────────────────────── */
 
 function validateServerProfile(profile) {
-  if (!profile?.id || !profile?.role) {
+  if (
+    !(profile?.accountId || profile?.id) ||
+    !profile?.role
+  ) {
     throw createInvalidAccountError();
   }
 
@@ -273,17 +273,6 @@ function saveFreshProfile(profile) {
   );
 }
 
-function clearLocalSession() {
-  if (window.SonaraSession) {
-    window.SonaraSession.clear();
-    return;
-  }
-
-  sessionStorage.removeItem("sonaraSessionToken");
-  localStorage.removeItem("sonaraProfile");
-  localStorage.removeItem("sonaraProfileCreated");
-}
-
 /* ──────────────────────────────────────────────
    REDIRECTION SELON LE RÔLE
 ────────────────────────────────────────────── */
@@ -305,7 +294,6 @@ function redirectByRole(profile) {
     return;
   }
 
-  clearLocalSession();
   goToInscription();
 }
 

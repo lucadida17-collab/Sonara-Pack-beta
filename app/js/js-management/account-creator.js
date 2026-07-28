@@ -172,7 +172,7 @@ function sanitizeKnownAccount(profile = {}) {
 function getKnownAccounts() {
   try {
     const storedAccounts = JSON.parse(
-      sessionStorage.getItem(
+      localStorage.getItem(
         KNOWN_ACCOUNTS_STORAGE_KEY
       )
     );
@@ -248,7 +248,7 @@ function saveKnownAccounts(accounts = []) {
   ].slice(0, KNOWN_ACCOUNTS_LIMIT);
 
   try {
-    sessionStorage.setItem(
+    localStorage.setItem(
       KNOWN_ACCOUNTS_STORAGE_KEY,
       JSON.stringify(savedAccounts)
     );
@@ -1754,9 +1754,14 @@ function renderKnownAccountRows(
 
           rememberKnownAccount(nextProfile);
 
-          window.SonaraSession.persist(
-            window.SonaraSession.getToken(),
-            nextProfile
+          localStorage.setItem(
+            "sonaraProfile",
+            JSON.stringify(nextProfile)
+          );
+
+          localStorage.setItem(
+            "sonaraProfileCreated",
+            "true"
           );
 
           window.location.href =
@@ -2202,19 +2207,10 @@ function renderConnectExistingAccount() {
         throw new Error(data.error || data.message || "Connexion impossible.");
       }
 
-      if (!data.sessionToken || !window.SonaraSession) {
-        throw new Error("La session sécurisée n'a pas été créée.");
-      }
-
-      if (
-        String(data.profile.userId) !==
-        String(currentProfile.userId)
-      ) {
-        sessionStorage.removeItem(KNOWN_ACCOUNTS_STORAGE_KEY);
-      }
-
       rememberKnownAccount(data.profile);
-      window.SonaraSession.persist(data.sessionToken, data.profile);
+
+      localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
+      localStorage.setItem("sonaraProfileCreated", "true");
       window.location.href = getAccountRedirect(data.profile);
     } catch (error) {
       console.error("Erreur connexion compte existant sécurisée :", error);
@@ -2681,10 +2677,14 @@ function renderAddAccountForm(role) {
 
         rememberKnownAccount(data.profile);
 
-        window.SonaraSession.persist(
-          data.sessionToken ||
-            window.SonaraSession.getToken(),
-          data.profile
+        localStorage.setItem(
+          "sonaraProfile",
+          JSON.stringify(data.profile)
+        );
+
+        localStorage.setItem(
+          "sonaraProfileCreated",
+          "true"
         );
 
         window.location.href = getAccountRedirect(data.profile);
@@ -2772,16 +2772,13 @@ function renderLogout() {
 
   document
     .querySelector(".logout-confirm-button")
-    .addEventListener("click", async () => {
-      if (window.SonaraSession) {
-        await window.SonaraSession.logout();
-      } else {
-        sessionStorage.removeItem("sonaraSessionToken");
-        sessionStorage.removeItem(KNOWN_ACCOUNTS_STORAGE_KEY);
-        localStorage.removeItem("sonaraProfile");
-        localStorage.removeItem("sonaraProfileCreated");
-        localStorage.removeItem(KNOWN_ACCOUNTS_STORAGE_KEY);
-      }
+    .addEventListener("click", () => {
+      localStorage.removeItem("sonaraProfile");
+      localStorage.removeItem("sonaraProfileCreated");
+      localStorage.removeItem("sonaraSessionToken");
+      localStorage.removeItem("sonaraAccountAccessToken");
+      localStorage.removeItem("sonaraAccountIdentity");
+      sessionStorage.removeItem("sonaraSessionToken");
 
       window.location.href = "/index.html";
     });

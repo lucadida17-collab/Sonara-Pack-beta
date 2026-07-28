@@ -1,3 +1,88 @@
+const HOME_CREATOR_CACHE_KEY =
+  "sonaraHomeCreatorPayload";
+
+function consumeHomeCreatorPayload() {
+  const rawPayload =
+    sessionStorage.getItem(
+      HOME_CREATOR_CACHE_KEY
+    );
+
+  if (!rawPayload) return null;
+
+  try {
+    const payload =
+      JSON.parse(rawPayload);
+
+    const currentProfile =
+      JSON.parse(
+        localStorage.getItem(
+          "sonaraProfile"
+        ) || "null"
+      );
+
+    const currentAccountId =
+      String(
+        currentProfile?.accountId ||
+        currentProfile?.id ||
+        ""
+      );
+
+    const payloadAccountId =
+      String(payload?.accountId || "");
+
+    const valid =
+      payload &&
+      Number(payload.expiresAt || 0) >= Date.now() &&
+      payloadAccountId &&
+      payloadAccountId === currentAccountId &&
+      payload.stats &&
+      typeof payload.stats === "object";
+
+    sessionStorage.removeItem(
+      HOME_CREATOR_CACHE_KEY
+    );
+
+    return valid ? payload : null;
+  } catch (error) {
+    sessionStorage.removeItem(
+      HOME_CREATOR_CACHE_KEY
+    );
+
+    console.warn(
+      "Préchargement Creator invalide :",
+      error
+    );
+
+    return null;
+  }
+}
+
+const homeCreatorPayload =
+  consumeHomeCreatorPayload();
+
+const initialCreatorPackCount =
+  Number(
+    homeCreatorPayload?.stats?.packCount
+  );
+
+const initialCreatorRevenue =
+  Number(
+    homeCreatorPayload?.stats?.revenue
+  );
+
+const initialCreatorPackCountText =
+  Number.isFinite(initialCreatorPackCount)
+    ? String(initialCreatorPackCount)
+    : "0";
+
+const initialCreatorRevenueText =
+  Number.isFinite(initialCreatorRevenue)
+    ? new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: "EUR"
+      }).format(initialCreatorRevenue)
+    : "0,00 €";
+
 const creatorPage = document.querySelector(".creator-page")
 
 
@@ -18,17 +103,17 @@ creatorPage.innerHTML = `
       <p class="creator-label">SONARA CREATOR</p>
       <h1>Dashboard Artistique</h1>
     </section>
-<button class="btn-home ">Retourner à l'accueil</button>
+<button class="btn-home creator-home-return">Retourner à l'accueil</button>
     <section class="creator-stats">
       <div class="stat-card creator-pack-count-card">
         <span>Packs créés</span>
-        <strong id="creator-pack-count">0</strong>
+        <strong id="creator-pack-count">${initialCreatorPackCountText}</strong>
       </div>
 
 
       <div class="stat-card creator-revenue-card">
         <span>Revenus</span>
-        <strong id="creator-revenue">0,00 €</strong>
+        <strong id="creator-revenue">${initialCreatorRevenueText}</strong>
       </div>
     </section>
 
@@ -452,16 +537,16 @@ verifyCreatorStripeAccess();
 
 
 
-const btnHome = document.querySelector(".btn-home")
+const btnHome =
+  document.querySelector(
+    ".creator-home-return"
+  );
 
-btnHome.addEventListener("click", () => {
-  if (profile.role === "both") {
-    window.location.href = "/home.html"
-  }
-})
-
-if (profile.role === "artist") {
-  btnHome.style.display = "none"
+if (
+  profile.role === "artist" &&
+  btnHome
+) {
+  btnHome.style.display = "none";
 }
 
 
@@ -488,30 +573,64 @@ function formatCreatorMoney(value) {
   }).format(Number(value || 0));
 }
 
+function applyCreatorDashboardStats(
+  stats = {}
+) {
+  if (creatorPackCountElement) {
+    creatorPackCountElement.textContent =
+      String(Number(stats.packCount || 0));
+  }
+
+  if (creatorRevenueElement) {
+    creatorRevenueElement.textContent =
+      formatCreatorMoney(
+        stats.revenue || 0
+      );
+  }
+}
+
 async function refreshCreatorDashboardStats() {
+  if (homeCreatorPayload?.stats) {
+    applyCreatorDashboardStats(
+      homeCreatorPayload.stats
+    );
+
+    return;
+  }
+
   const accountId = getCreatorAccountId();
   if (!accountId) return;
 
   try {
     const apiUrl = await waitForApiUrl();
+
     const response = await fetch(
-      `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`
+      `${apiUrl}/api/creator/packs/${
+        encodeURIComponent(accountId)
+      }`,
+      {
+        cache: "no-store"
+      }
     );
-    const data = await readCreatorJson(response);
+
+    const data =
+      await readCreatorJson(response);
 
     if (!response.ok) {
-      throw new Error(data.message || "Statistiques Creator indisponibles.");
+      throw new Error(
+        data.message ||
+        "Statistiques Creator indisponibles."
+      );
     }
 
-    if (creatorPackCountElement) {
-      creatorPackCountElement.textContent = String(data.stats?.packCount || 0);
-    }
-
-    if (creatorRevenueElement) {
-      creatorRevenueElement.textContent = formatCreatorMoney(data.stats?.revenue || 0);
-    }
+    applyCreatorDashboardStats(
+      data.stats || {}
+    );
   } catch (error) {
-    console.warn("Statistiques Creator indisponibles :", error);
+    console.warn(
+      "Statistiques Creator indisponibles :",
+      error
+    );
   }
 }
 

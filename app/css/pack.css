@@ -1336,3 +1336,474 @@ body {
       }
     }
   }
+
+/* Chargeur du lien partagé : copie visuelle exacte du chargeur Mes packs. */
+.my-pack-loaded-content {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.my-pack-loaded-content.is-ready {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.my-pack-page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(19, 134, 255, .24), transparent 31%),
+    radial-gradient(circle at 50% 50%, rgba(0, 241, 225, .09), transparent 45%),
+    linear-gradient(150deg, #020713 0%, #041328 56%, #020a18 100%);
+  opacity: 1;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+.my-pack-page-loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.my-pack-loader-scene {
+  position: relative;
+  width: 176px;
+  height: 176px;
+  margin-bottom: 32px;
+  perspective: 1250px;
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.my-pack-loader-scene::before,
+.my-pack-loader-scene::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.my-pack-loader-scene::before {
+  width: 116px;
+  height: 116px;
+  margin: -58px 0 0 -58px;
+  border-radius: 30px;
+  border: 1px solid rgba(118, 239, 255, .16);
+  background:
+    linear-gradient(145deg, rgba(87, 225, 255, .09), rgba(9, 34, 78, .015)),
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, .14), transparent 34%);
+  box-shadow:
+    inset 0 0 28px rgba(66, 211, 255, .06),
+    0 30px 50px rgba(0, 22, 67, .38);
+  animation: myPackBackPlateReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+}
+
+.my-pack-loader-scene::after {
+  width: 92px;
+  height: 24px;
+  margin: 59px 0 0 -46px;
+  border-radius: 50%;
+  background: rgba(0, 13, 42, .7);
+  box-shadow:
+    0 0 26px rgba(18, 135, 255, .3),
+    0 0 58px rgba(0, 221, 255, .17);
+  filter: blur(8px);
+  animation: myPackShadowReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+}
+
+.my-pack-loader-core {
+  position: absolute;
+  inset: 47px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 7px;
+  padding: 18px;
+  border: 1px solid rgba(132, 243, 255, .68);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(18, 79, 151, .96), rgba(2, 15, 39, .99)),
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, .18), transparent 34%);
+  box-shadow:
+    0 30px 64px rgba(0, 83, 255, .38),
+    0 10px 22px rgba(0, 0, 0, .48),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -14px 26px rgba(0, 7, 24, .46),
+    inset 0 0 30px rgba(75, 225, 255, .15);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  animation: myPackCoreReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+}
+
+.my-pack-loader-core::before,
+.my-pack-loader-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.my-pack-loader-core::before {
+  background: linear-gradient(115deg, rgba(255, 255, 255, .2), transparent 40%);
+  transform: translateZ(10px);
+  opacity: .62;
+}
+
+.my-pack-loader-core::after {
+  inset: 9px;
+  border: 1px solid rgba(121, 239, 255, .14);
+  transform: translateZ(16px);
+  box-shadow:
+    0 0 22px rgba(82, 220, 255, .12),
+    inset 0 0 16px rgba(255, 255, 255, .03);
+}
+.my-pack-loader-core span {
+  position: relative;
+  display: block;
+  width: 8px;
+  border-radius: 999px;
+  transform-origin: center bottom;
+  background: linear-gradient(180deg, #c9fdff 0%, #59ebff 34%, #0785ff 100%);
+  box-shadow:
+    0 0 17px rgba(89, 235, 255, .88),
+    0 8px 16px rgba(0, 38, 104, .5);
+  will-change: transform;
+}
+
+.my-pack-loader-core span::after {
+  content: "";
+  position: absolute;
+  inset: 2px 1px auto;
+  height: 34%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, .46);
+  filter: blur(.4px);
+}
+
+.my-pack-loader-core span:nth-child(1) {
+  height: 20px;
+  animation: myPackEqualizerOne .34s ease-in-out infinite;
+}
+
+.my-pack-loader-core span:nth-child(2) {
+  height: 35px;
+  animation: myPackEqualizerTwo .29s ease-in-out .06s infinite;
+}
+
+.my-pack-loader-core span:nth-child(3) {
+  height: 27px;
+  animation: myPackEqualizerThree .37s ease-in-out .11s infinite;
+}
+
+.my-pack-loader-orbit {
+  position: absolute;
+  z-index: 2;
+  inset: 14px;
+  border: 1px solid rgba(92, 231, 255, .44);
+  border-radius: 50%;
+  box-shadow:
+    0 0 30px rgba(25, 139, 255, .2),
+    inset 0 0 20px rgba(78, 225, 255, .08);
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  animation-duration: 6s;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+.my-pack-loader-orbit::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0 10%, #8cf9ff 24%, #27e2ff 62%, #087dff 100%);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, .72),
+    0 0 24px #25dfff,
+    0 0 42px rgba(20, 121, 255, .48);
+  transform: translateZ(18px);
+}
+
+.my-pack-loader-orbit-one {
+  animation-name: myPackOrbitRevealOne;
+}
+
+.my-pack-loader-orbit-two {
+  inset: 29px;
+  border-color: rgba(111, 139, 255, .5);
+  animation-name: myPackOrbitRevealTwo;
+}
+
+.my-pack-loader-label {
+  margin: 0 0 10px;
+  color: #58eaff;
+  font-size: .73rem;
+  font-weight: 900;
+  letter-spacing: .25em;
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+  transform: translateY(8px);
+  text-shadow: 0 0 18px rgba(88, 234, 255, .34);
+  animation: myPackSonaraWrite 6s cubic-bezier(.2, .76, .22, 1) both;
+}
+
+.my-pack-page-loader h1 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4rem);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+.my-pack-loader-message {
+  min-height: 24px;
+  margin: 17px 0 24px;
+  color: rgba(233, 247, 255, .68);
+  font-size: .92rem;
+}
+
+.my-pack-loader-progress {
+  width: min(460px, 84vw);
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 227, 255, .22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .055);
+  box-shadow: inset 0 1px 8px rgba(0, 0, 0, .38);
+}
+
+.my-pack-loader-progress-fill {
+  display: block;
+  width: 5%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0bd4d6, #0d8dff 58%, #775dff);
+  box-shadow: 0 0 18px rgba(28, 190, 255, .72);
+  transition: width .48s cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes myPackCoreReveal {
+  0%,
+  34% {
+    transform:
+      rotateX(60deg)
+      rotateY(-10deg)
+      rotateZ(45deg)
+      translateZ(22px)
+      scale(.96);
+  }
+
+  52% {
+    transform:
+      rotateX(18deg)
+      rotateY(-3deg)
+      rotateZ(12deg)
+      translateZ(38px)
+      scale(1.02);
+  }
+
+  68%,
+  100% {
+    transform:
+      rotateX(0deg)
+      rotateY(0deg)
+      rotateZ(0deg)
+      translateZ(42px)
+      scale(1);
+  }
+}
+
+@keyframes myPackBackPlateReveal {
+  0%,
+  34% {
+    transform: translateZ(-36px) rotateX(67deg) rotateZ(45deg) scale(.98);
+    opacity: .9;
+  }
+
+  52% {
+    transform: translateZ(-31px) rotateX(18deg) rotateZ(12deg) scale(1);
+    opacity: .66;
+  }
+
+  68%,
+  100% {
+    transform: translateZ(-28px) rotateX(0deg) rotateZ(0deg) scale(.96);
+    opacity: .34;
+  }
+}
+
+@keyframes myPackShadowReveal {
+  0%,
+  34% {
+    transform: translateZ(-66px) rotateX(78deg) scaleX(1);
+    opacity: .76;
+  }
+
+  52% {
+    transform: translateZ(-66px) rotateX(82deg) scaleX(.88);
+    opacity: .56;
+  }
+
+  68%,
+  100% {
+    transform: translateZ(-66px) rotateX(86deg) scaleX(.7);
+    opacity: .38;
+  }
+}
+
+@keyframes myPackOrbitRevealOne {
+  0% {
+    transform: rotateX(68deg) rotateY(-12deg) rotateZ(0deg) translateZ(10px);
+    opacity: 1;
+  }
+
+  38% {
+    transform: rotateX(68deg) rotateY(-12deg) rotateZ(520deg) translateZ(10px);
+    opacity: 1;
+  }
+
+  54% {
+    transform: rotateX(42deg) rotateY(-7deg) rotateZ(720deg) translateZ(22px) scale(.9);
+    opacity: .55;
+    filter: blur(.4px);
+  }
+
+  66%,
+  100% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(900deg) translateZ(36px) scale(.72);
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+
+@keyframes myPackOrbitRevealTwo {
+  0% {
+    transform: rotateY(72deg) rotateX(10deg) rotateZ(0deg) translateZ(28px);
+    opacity: 1;
+  }
+
+  38% {
+    transform: rotateY(72deg) rotateX(10deg) rotateZ(-620deg) translateZ(28px);
+    opacity: 1;
+  }
+
+  54% {
+    transform: rotateY(44deg) rotateX(6deg) rotateZ(-820deg) translateZ(38px) scale(.86);
+    opacity: .5;
+    filter: blur(.5px);
+  }
+
+  66%,
+  100% {
+    transform: rotateY(0deg) rotateX(0deg) rotateZ(-980deg) translateZ(48px) scale(.66);
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+
+
+
+
+
+
+
+
+@keyframes myPackEqualizerOne {
+  0%,
+  100% {
+    transform: translateZ(24px) scaleY(.45);
+  }
+
+  34% {
+    transform: translateZ(24px) scaleY(1.22);
+  }
+
+  68% {
+    transform: translateZ(24px) scaleY(.7);
+  }
+}
+
+@keyframes myPackEqualizerTwo {
+  0%,
+  100% {
+    transform: translateZ(24px) scaleY(1);
+  }
+
+  28% {
+    transform: translateZ(24px) scaleY(.48);
+  }
+
+  62% {
+    transform: translateZ(24px) scaleY(1.3);
+  }
+}
+
+@keyframes myPackEqualizerThree {
+  0%,
+  100% {
+    transform: translateZ(24px) scaleY(.62);
+  }
+
+  40% {
+    transform: translateZ(24px) scaleY(1.16);
+  }
+
+  76% {
+    transform: translateZ(24px) scaleY(.46);
+  }
+}
+
+@keyframes myPackSonaraWrite {
+  0%,
+  46% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateY(8px);
+    letter-spacing: .42em;
+  }
+
+  64% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+    letter-spacing: .25em;
+  }
+
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+    letter-spacing: .25em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-pack-loader-core,
+  .my-pack-loader-scene::before,
+  .my-pack-loader-scene::after,
+  .my-pack-loader-orbit,
+  .my-pack-loader-core span,
+  .my-pack-loader-label {
+    animation-duration: .01ms;
+    animation-delay: 0s;
+    animation-iteration-count: 1;
+  }
+}

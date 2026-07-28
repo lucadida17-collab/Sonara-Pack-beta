@@ -1,0 +1,20 @@
+html,
+body.sonara-home-creator-loading {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body.sonara-home-creator-loading {
+  min-height: 100dvh;
+  background: #020713;
+}
+
+body.sonara-home-creator-loading main {
+  min-height: 100dvh;
+}
+
+body.sonara-home-creator-loading .my-pack-page-loader {
+  overflow: hidden;
+}

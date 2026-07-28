@@ -1,5 +1,5 @@
 <!DOCTYPE html> 
-<html lang="fr">
+<html lang="fr" translate="yes">
 
 <head>
  <meta Charset="UTF-8">
@@ -13,7 +13,7 @@
   gtag('config', 'G-NEBG1Z3EE0');
 </script>
 
- <link rel="stylesheet" href="../css/pack.css">
+ <link rel="stylesheet" href="../css/pack.css?v=5.3.8.36-pack-loader">
   <link
   rel="stylesheet"
   href="../components/header/header.css"
@@ -27,6 +27,7 @@
  <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
  <meta name="viewport" content="width=device-width, Initial-scale=1.0">
  <title>Sonara Pack - Catalogue de Pack</title>
+  <link rel="stylesheet" href="../css/i18n.css">
 </head>
 
 
@@ -68,13 +69,31 @@
 <div class="finger">
 </div>
 
-<section class="loader">
-  <div class="spinner"></div>
-  <p class="loader-text"></p>
+<section
+  class="my-pack-page-loader"
+  role="progressbar"
+  aria-label="Ouverture du pack"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow="5"
+>
+  <div class="my-pack-loader-scene" aria-hidden="true">
+    <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
+    <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
+    <span class="my-pack-loader-core">
+      <span></span><span></span><span></span>
+    </span>
+  </div>
+  <p class="my-pack-loader-label">SONARA PACK</p>
+  <h1>Ouverture du pack</h1>
+  <p class="my-pack-loader-message">Préparation du pack…</p>
+  <div class="my-pack-loader-progress" aria-hidden="true">
+    <span class="my-pack-loader-progress-fill"></span>
+  </div>
 </section>
 
 
-<section class="pack-list">
+<section class="pack-list my-pack-loaded-content">
   <!-- Les packs seront générés ici par JavaScript -->
 </section>
 
@@ -105,8 +124,9 @@
 <script src="../../config.js" defer></script>
 <script src="../js/Memoire/memoire.js"></script>
 
-<script src="../js/pack.js?v=5.3.8.24-stripe-stability" defer></script>
+<script src="../js/pack.js?v=5.3.8.37-pack-profile-fix" defer></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/i18n.js" defer></script>
 </body>
 
 </html>

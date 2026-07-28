@@ -1,6 +1,6 @@
 const myPackPage = document.querySelector(".create-pack");
 const MY_PACK_MIN_LOADING_TIME = 6000;
-const MY_PACK_IMAGE_LOADING_TIMEOUT = 14000;
+const MY_PACK_IMAGE_LOADING_TIMEOUT = 12000;
 
 function ensureMyPackLucide() {
   if (window.lucide) return Promise.resolve();
@@ -119,7 +119,10 @@ function myPackStatusLabel(status) {
 }
 
 function myPackPublicUrl(packId) {
-  return `${window.location.origin}/app/pages/pack.html?id=${encodeURIComponent(packId)}`;
+  return (
+    `${window.location.origin}/app/pages/share.html` +
+    `?id=${encodeURIComponent(packId)}`
+  );
 }
 
 function showMyPackMessage(message, type = "success") {
