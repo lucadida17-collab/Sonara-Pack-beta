@@ -37,13 +37,22 @@ function rememberSharedPackRedirectFromUrl() {
   }
 }
 
-function consumeSharedPackRedirect() {
-  const redirect = normalizeSharedPackRedirect(
-    sessionStorage.getItem(SHARED_PACK_REDIRECT_KEY)
+function getRememberedSharedPackRedirect() {
+  return normalizeSharedPackRedirect(
+    sessionStorage.getItem(
+      SHARED_PACK_REDIRECT_KEY
+    )
   );
+}
+
+function consumeSharedPackRedirect() {
+  const redirect =
+    getRememberedSharedPackRedirect();
 
   if (redirect) {
-    sessionStorage.removeItem(SHARED_PACK_REDIRECT_KEY);
+    sessionStorage.removeItem(
+      SHARED_PACK_REDIRECT_KEY
+    );
   }
 
   return redirect;
@@ -734,8 +743,22 @@ async function submitRegistration({
       throw new Error(data.message || "Création impossible.");
     }
 
-    localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
-    localStorage.setItem("sonaraProfileCreated", "true");
+    if (data.sessionToken && window.SonaraSession) {
+      window.SonaraSession.persist(
+        data.sessionToken,
+        data.profile
+      );
+    } else {
+      localStorage.setItem(
+        "sonaraProfile",
+        JSON.stringify(data.profile)
+      );
+      localStorage.setItem(
+        "sonaraProfileCreated",
+        "true"
+      );
+    }
+
     onSuccess(data);
   } catch (error) {
     console.error("ERREUR BACKEND :", error);
@@ -1440,34 +1463,10 @@ Connectez-vous à votre compte Sonara Pack.
     updateLoginButtonState();
   });
 
-  inscriptionBtn.addEventListener("click", () => {
-    function startInscriptionPage() {
-  const storedProfile = localStorage.getItem("sonaraProfile");
-
-  if (storedProfile) {
-    try {
-      const profile = JSON.parse(storedProfile);
-      const profileId = profile?.accountId || profile?.id;
-
-      if (profileId && profile?.role) {
-        window.location.replace(
-          getAccountRedirect(profile)
-        );
-        return;
-      }
-    } catch (error) {
-      console.warn(
-        "Profil local illisible, affichage de l'inscription :",
-        error
-      );
-    }
-  }
-
-  renderChoicePage();
-}
-
-startInscriptionPage();
-  });
+  inscriptionBtn.addEventListener(
+    "click",
+    renderChoicePage
+  );
 
   loginBtn.addEventListener("click", async (event) => {
     event.preventDefault();
@@ -1526,9 +1525,31 @@ startInscriptionPage();
         throw new Error(data.error || "Connexion impossible.");
       }
 
-      localStorage.setItem("sonaraProfile", JSON.stringify(data.account));
-      localStorage.setItem("sonaraProfileCreated", "true");
-      window.location.href = getAccountRedirect(data.account || data.profile);
+      const connectedProfile =
+        data.account ||
+        data.profile;
+
+      if (
+        data.sessionToken &&
+        window.SonaraSession
+      ) {
+        window.SonaraSession.persist(
+          data.sessionToken,
+          connectedProfile
+        );
+      } else {
+        localStorage.setItem(
+          "sonaraProfile",
+          JSON.stringify(connectedProfile)
+        );
+        localStorage.setItem(
+          "sonaraProfileCreated",
+          "true"
+        );
+      }
+
+      window.location.href =
+        getAccountRedirect(connectedProfile);
     } catch (error) {
       console.error("Erreur connexion sécurisée :", error);
 
@@ -1551,5 +1572,194 @@ startInscriptionPage();
   updateLoginButtonState();
 }
 
-renderChoicePage();
+async function recoverStoredInscriptionSession(
+  storedProfile = null
+) {
+  const normalizedStoredProfile =
+    storedProfile &&
+    typeof storedProfile === "object"
+      ? storedProfile
+      : null;
+
+  const token =
+    window.SonaraSession
+      ?.getToken?.() || "";
+
+  if (token) {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/auth/session`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json"
+          }
+        }
+      );
+
+      if (response.ok) {
+        const profile =
+          await response.json();
+
+        if (
+          profile &&
+          (profile.accountId || profile.id) &&
+          profile.role
+        ) {
+          window.SonaraSession
+            ?.persist?.(
+              token,
+              profile
+            );
+
+          return profile;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "Lecture de session impossible :",
+        error
+      );
+    }
+  }
+
+  if (
+    normalizedStoredProfile &&
+    window.SonaraSession?.restore
+  ) {
+    try {
+      const restoredProfile =
+        await window.SonaraSession.restore(
+          normalizedStoredProfile
+        );
+
+      if (
+        restoredProfile &&
+        (
+          restoredProfile.accountId ||
+          restoredProfile.id
+        ) &&
+        restoredProfile.role
+      ) {
+        return restoredProfile;
+      }
+    } catch (error) {
+      console.warn(
+        "Restauration du compte impossible :",
+        error
+      );
+    }
+  }
+
+  return null;
+}
+
+async function startInscriptionPage() {
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const mode =
+    String(
+      params.get("mode") || ""
+    ).toLowerCase();
+
+  const sharedPackRedirect =
+    normalizeSharedPackRedirect(
+      params.get("redirect")
+    ) ||
+    getRememberedSharedPackRedirect();
+
+  const storedProfileRaw =
+    localStorage.getItem(
+      "sonaraProfile"
+    );
+
+  let storedProfile = null;
+
+  if (storedProfileRaw) {
+    try {
+      storedProfile =
+        JSON.parse(
+          storedProfileRaw
+        );
+    } catch (error) {
+      console.warn(
+        "Profil local illisible, tentative de récupération de session :",
+        error
+      );
+    }
+  }
+
+  /*
+    Dans le flux d'un pack partagé, un profil local seul
+    ne suffit pas : on vérifie ou restaure d'abord la session.
+    Cela évite d'afficher l'inscription à un compte encore valide
+    et évite aussi de sauter la connexion avec un profil périmé.
+  */
+  if (sharedPackRedirect) {
+    const recoveredProfile =
+      await recoverStoredInscriptionSession(
+        storedProfile
+      );
+
+    if (recoveredProfile) {
+      window.location.replace(
+        getAccountRedirect(
+          recoveredProfile
+        )
+      );
+
+      return;
+    }
+
+    renderLogin();
+    return;
+  }
+
+  if (storedProfile) {
+    const profileId =
+      storedProfile?.accountId ||
+      storedProfile?.id;
+
+    if (
+      profileId &&
+      storedProfile?.role
+    ) {
+      window.location.replace(
+        getAccountRedirect(
+          storedProfile
+        )
+      );
+
+      return;
+    }
+  }
+
+  const recoveredProfile =
+    await recoverStoredInscriptionSession(
+      storedProfile
+    );
+
+  if (recoveredProfile) {
+    window.location.replace(
+      getAccountRedirect(
+        recoveredProfile
+      )
+    );
+
+    return;
+  }
+
+  if (mode === "login") {
+    renderLogin();
+    return;
+  }
+
+  renderChoicePage();
+}
+
+startInscriptionPage();
 

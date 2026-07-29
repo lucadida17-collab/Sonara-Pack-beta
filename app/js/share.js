@@ -1,38 +1,91 @@
 const SHARE_REDIRECT_KEY = "sonaraRedirectAfterAuth";
 const SHARE_MIN_LOADING_TIME = 6000;
 const SHARE_REQUEST_TIMEOUT = 20000;
+const SHARE_NAVIGATION_FALLBACK_DELAY = 1400;
 
-const shareParams = new URLSearchParams(window.location.search);
-const sharedPackId = shareParams.get("id");
+const shareParams =
+  new URLSearchParams(window.location.search);
+
+const sharedPackId =
+  String(shareParams.get("id") || "").trim();
+
+let shareInitializationStarted = false;
+let shareNavigationStarted = false;
+
+function normalizeShareProfile(profile) {
+  return profile && typeof profile === "object"
+    ? profile
+    : null;
+}
 
 function getStoredShareProfile() {
-  const rawProfile = localStorage.getItem("sonaraProfile");
+  const rawProfile =
+    localStorage.getItem("sonaraProfile");
 
   if (!rawProfile) return null;
 
   try {
-    return JSON.parse(rawProfile);
+    return normalizeShareProfile(
+      JSON.parse(rawProfile)
+    );
   } catch (error) {
-    console.error("Profil Sonara local invalide :", error);
+    console.error(
+      "Profil Sonara local invalide :",
+      error
+    );
+
     return null;
   }
 }
 
-function getShareProfileId(profile = {}) {
-  return profile.accountId || profile.id || null;
+function getShareProfileId(profile) {
+  const normalizedProfile =
+    normalizeShareProfile(profile);
+
+  if (!normalizedProfile) {
+    return null;
+  }
+
+  return (
+    normalizedProfile.accountId ||
+    normalizedProfile.id ||
+    null
+  );
 }
 
 function getSharedPackDestination() {
   if (!sharedPackId) return null;
 
-  return `/app/pages/pack.html?id=${encodeURIComponent(sharedPackId)}`;
+  return (
+    "/app/pages/pack.html?id=" +
+    encodeURIComponent(sharedPackId)
+  );
 }
 
-function updateShareLoading(progress, message) {
-  const loader = document.querySelector(".my-pack-page-loader");
-  const fill = loader?.querySelector(".my-pack-loader-progress-fill");
-  const label = loader?.querySelector(".my-pack-loader-message");
-  const value = Math.min(100, Math.max(0, Number(progress) || 0));
+function updateShareLoading(
+  progress,
+  message
+) {
+  const loader =
+    document.querySelector(
+      ".my-pack-page-loader"
+    );
+
+  const fill =
+    loader?.querySelector(
+      ".my-pack-loader-progress-fill"
+    );
+
+  const label =
+    loader?.querySelector(
+      ".my-pack-loader-message"
+    );
+
+  const value =
+    Math.min(
+      100,
+      Math.max(0, Number(progress) || 0)
+    );
 
   if (fill) {
     fill.style.width = `${value}%`;
@@ -42,58 +95,194 @@ function updateShareLoading(progress, message) {
     label.textContent = message;
   }
 
-  loader?.setAttribute("aria-valuenow", String(value));
+  loader?.setAttribute(
+    "aria-valuenow",
+    String(value)
+  );
 }
 
 function waitForShareMinimum(startedAt) {
-  const elapsed = Date.now() - startedAt;
-  const remaining = Math.max(0, SHARE_MIN_LOADING_TIME - elapsed);
+  const elapsed =
+    Date.now() - startedAt;
+
+  const remaining =
+    Math.max(
+      0,
+      SHARE_MIN_LOADING_TIME - elapsed
+    );
 
   return new Promise((resolve) => {
     window.setTimeout(resolve, remaining);
   });
 }
 
-async function fetchSharedAccount(profileId) {
-  const controller = new AbortController();
+function waitShareDelay(duration = 280) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, duration);
+  });
+}
 
-  const timeoutId = window.setTimeout(() => {
-    controller.abort();
-  }, SHARE_REQUEST_TIMEOUT);
+async function readShareJson(response) {
+  const text = await response.text();
+
+  if (!text.trim()) return {};
 
   try {
-    const response = await fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          Accept: "application/json"
-        },
-        signal: controller.signal
-      }
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Réponse serveur invalide (${response.status}).`
     );
+  }
+}
 
-    if ([401, 403, 404].includes(response.status)) {
-      return null;
-    }
+async function shareFetch(
+  url,
+  options = {}
+) {
+  const controller =
+    new AbortController();
 
-    if (!response.ok) {
-      throw new Error(
-        `Vérification du compte impossible (${response.status}).`
-      );
-    }
+  const timeoutId =
+    window.setTimeout(() => {
+      controller.abort();
+    }, SHARE_REQUEST_TIMEOUT);
 
-    const data = await response.json();
-
-    return data.profile || data;
+  try {
+    return await fetch(url, {
+      cache: "no-store",
+      ...options,
+      signal: controller.signal
+    });
   } finally {
     window.clearTimeout(timeoutId);
   }
 }
 
-function isShareProfileAllowed(profile = {}) {
-  if (!getShareProfileId(profile)) return false;
+function navigateShare(
+  destination,
+  {
+    replace = true
+  } = {}
+) {
+  if (
+    shareNavigationStarted ||
+    !destination
+  ) {
+    return;
+  }
+
+  shareNavigationStarted = true;
+
+  const target =
+    new URL(
+      destination,
+      window.location.origin
+    );
+
+  const targetValue =
+    target.origin ===
+      window.location.origin
+      ? (
+          target.pathname +
+          target.search +
+          target.hash
+        )
+      : target.href;
+
+  try {
+    if (replace) {
+      window.location.replace(
+        targetValue
+      );
+    } else {
+      window.location.assign(
+        targetValue
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Navigation principale impossible, utilisation du fallback :",
+      error
+    );
+
+    window.location.href =
+      targetValue;
+  }
+
+  /*
+    Certains navigateurs intégrés peuvent retarder une navigation.
+    Ce fallback ne crée pas une deuxième destination :
+    il répète uniquement la même URL si la page est toujours active.
+  */
+  window.setTimeout(() => {
+    try {
+      if (
+        window.location.href !==
+        target.href
+      ) {
+        window.location.href =
+          targetValue;
+      }
+    } catch {
+      window.location.href =
+        targetValue;
+    }
+  }, SHARE_NAVIGATION_FALLBACK_DELAY);
+}
+
+function persistShareProfile(profile) {
+  const normalizedProfile =
+    normalizeShareProfile(profile);
+
+  if (
+    !normalizedProfile ||
+    !getShareProfileId(
+      normalizedProfile
+    )
+  ) {
+    return null;
+  }
+
+  const token =
+    window.SonaraSession
+      ?.getToken?.() || "";
+
+  if (
+    window.SonaraSession?.persist
+  ) {
+    window.SonaraSession.persist(
+      token,
+      normalizedProfile
+    );
+  } else {
+    localStorage.setItem(
+      "sonaraProfile",
+      JSON.stringify(
+        normalizedProfile
+      )
+    );
+
+    localStorage.setItem(
+      "sonaraProfileCreated",
+      "true"
+    );
+  }
+
+  return normalizedProfile;
+}
+
+function isShareProfileAllowed(profile) {
+  const normalizedProfile =
+    normalizeShareProfile(profile);
+
+  if (
+    !getShareProfileId(
+      normalizedProfile
+    )
+  ) {
+    return false;
+  }
 
   const forbiddenStatuses = [
     "banned",
@@ -103,17 +292,128 @@ function isShareProfileAllowed(profile = {}) {
   ];
 
   return !forbiddenStatuses.includes(
-    String(profile.status || "").toLowerCase()
+    String(
+      normalizedProfile.status || ""
+    ).toLowerCase()
+  );
+}
+
+async function fetchActiveShareSession() {
+  const sessionToken =
+    window.SonaraSession
+      ?.getToken?.() || "";
+
+  if (!sessionToken) {
+    return {
+      state: "missing",
+      profile: null
+    };
+  }
+
+  const response =
+    await shareFetch(
+      `${API_URL}/api/auth/session`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        }
+      }
+    );
+
+  if (
+    [401, 403, 404].includes(
+      response.status
+    )
+  ) {
+    return {
+      state: "invalid",
+      profile: null
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      "Vérification de session impossible " +
+      `(${response.status}).`
+    );
+  }
+
+  const data =
+    await readShareJson(response);
+
+  const profile =
+    normalizeShareProfile(
+      data.profile || data
+    );
+
+  return {
+    state:
+      profile &&
+      isShareProfileAllowed(profile)
+        ? "valid"
+        : "invalid",
+    profile
+  };
+}
+
+async function restoreShareSession(
+  localProfile
+) {
+  const normalizedProfile =
+    normalizeShareProfile(
+      localProfile
+    );
+
+  if (
+    !isShareProfileAllowed(
+      normalizedProfile
+    ) ||
+    !window.SonaraSession?.restore
+  ) {
+    return null;
+  }
+
+  const restoredProfile =
+    await window.SonaraSession.restore(
+      normalizedProfile
+    );
+
+  if (
+    !isShareProfileAllowed(
+      restoredProfile
+    )
+  ) {
+    return null;
+  }
+
+  /*
+    La restauration a déjà créé un nouveau token.
+    Une lecture distante confirme immédiatement
+    que ce token est utilisable avant la redirection.
+  */
+  const activeSession =
+    await fetchActiveShareSession();
+
+  if (
+    activeSession.state === "valid" &&
+    isShareProfileAllowed(
+      activeSession.profile
+    )
+  ) {
+    return persistShareProfile(
+      activeSession.profile
+    );
+  }
+
+  return persistShareProfile(
+    restoredProfile
   );
 }
 
 async function verifySharedAccount() {
-  const localProfile = getStoredShareProfile();
-  const profileId = getShareProfileId(localProfile);
-
-  if (!profileId) {
-    return false;
-  }
+  const localProfile =
+    getStoredShareProfile();
 
   updateShareLoading(
     24,
@@ -121,80 +421,90 @@ async function verifySharedAccount() {
   );
 
   try {
-    let sessionToken =
-      window.SonaraSession?.getToken?.() ||
-      "";
-
-    if (!sessionToken && window.SonaraSession?.restore) {
-      const restoredProfile =
-        await window.SonaraSession.restore(localProfile);
-
-      if (restoredProfile) {
-        localStorage.setItem(
-          "sonaraProfile",
-          JSON.stringify(restoredProfile)
-        );
-
-        localStorage.setItem(
-          "sonaraProfileCreated",
-          "true"
-        );
-      }
-
-      sessionToken =
-        window.SonaraSession.getToken();
-    }
-
-    if (!sessionToken) {
-      return false;
-    }
-
-    const serverProfile =
-      await fetchSharedAccount(profileId);
+    const activeSession =
+      await fetchActiveShareSession();
 
     if (
-      serverProfile &&
-      isShareProfileAllowed(serverProfile)
+      activeSession.state === "valid" &&
+      isShareProfileAllowed(
+        activeSession.profile
+      )
     ) {
-      localStorage.setItem(
-        "sonaraProfile",
-        JSON.stringify(serverProfile)
+      return Boolean(
+        persistShareProfile(
+          activeSession.profile
+        )
       );
-
-      localStorage.setItem(
-        "sonaraProfileCreated",
-        "true"
-      );
-
-      return true;
     }
 
-    /*
-      Une réponse distante temporairement indisponible
-      ne déconnecte jamais un compte local déjà valide.
-    */
-    return isShareProfileAllowed(localProfile);
+    if (
+      isShareProfileAllowed(
+        localProfile
+      )
+    ) {
+      const restoredProfile =
+        await restoreShareSession(
+          localProfile
+        );
+
+      if (
+        isShareProfileAllowed(
+          restoredProfile
+        )
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   } catch (error) {
     console.warn(
-      "Vérification distante impossible, compte local conservé :",
+      "Vérification distante impossible :",
       error
     );
 
-    return isShareProfileAllowed(localProfile);
+    /*
+      Si le serveur est momentanément indisponible,
+      un profil local complet peut encore ouvrir
+      la page publique du pack. Sans profil local,
+      aucune identité n'est supposée.
+    */
+    return isShareProfileAllowed(
+      localProfile
+    );
   }
 }
 
-function goToShareAuthentication(destination) {
-  if (destination) {
+function rememberShareRedirect(
+  destination
+) {
+  if (!destination) return;
+
+  try {
     sessionStorage.setItem(
       SHARE_REDIRECT_KEY,
       destination
     );
+  } catch (error) {
+    console.warn(
+      "Mémorisation temporaire du partage impossible :",
+      error
+    );
   }
+}
 
-  const authUrl = new URL(
-    "/app/pages/inscription.html",
-    window.location.origin
+function getShareAuthenticationUrl(
+  destination
+) {
+  const authUrl =
+    new URL(
+      "/app/pages/inscription.html",
+      window.location.origin
+    );
+
+  authUrl.searchParams.set(
+    "mode",
+    "login"
   );
 
   if (destination) {
@@ -204,14 +514,122 @@ function goToShareAuthentication(destination) {
     );
   }
 
-  window.location.replace(
-    `${authUrl.pathname}${authUrl.search}`
+  return (
+    authUrl.pathname +
+    authUrl.search
+  );
+}
+
+function goToShareAuthentication(
+  destination
+) {
+  rememberShareRedirect(
+    destination
+  );
+
+  navigateShare(
+    getShareAuthenticationUrl(
+      destination
+    )
+  );
+}
+
+async function finishShareNavigation(
+  startedAt,
+  message,
+  destination
+) {
+  await waitForShareMinimum(
+    startedAt
+  );
+
+  updateShareLoading(
+    100,
+    message
+  );
+
+  await waitShareDelay();
+
+  navigateShare(destination);
+}
+
+async function recoverShareFailure(
+  error,
+  destination,
+  startedAt
+) {
+  console.error(
+    "Erreur ouverture du partage :",
+    error
+  );
+
+  if (!destination) {
+    updateShareLoading(
+      100,
+      "Lien de pack partagé invalide."
+    );
+
+    return;
+  }
+
+  const localProfile =
+    getStoredShareProfile();
+
+  if (
+    isShareProfileAllowed(
+      localProfile
+    )
+  ) {
+    updateShareLoading(
+      84,
+      "Session locale retrouvée…"
+    );
+
+    await finishShareNavigation(
+      startedAt,
+      "Ouverture du pack…",
+      destination
+    );
+
+    return;
+  }
+
+  updateShareLoading(
+    84,
+    error?.name === "AbortError"
+      ? "Le serveur met trop de temps. Connexion requise…"
+      : "Connexion Sonara requise…"
+  );
+
+  await waitForShareMinimum(
+    startedAt
+  );
+
+  updateShareLoading(
+    100,
+    "Ouverture de la connexion…"
+  );
+
+  await waitShareDelay();
+
+  goToShareAuthentication(
+    destination
   );
 }
 
 async function initializeSharedPackLoading() {
+  if (
+    shareInitializationStarted
+  ) {
+    return;
+  }
+
+  shareInitializationStarted = true;
+
   const startedAt = Date.now();
-  const destination = getSharedPackDestination();
+
+  const destination =
+    getSharedPackDestination();
 
   try {
     updateShareLoading(
@@ -220,7 +638,9 @@ async function initializeSharedPackLoading() {
     );
 
     if (!destination) {
-      throw new Error("Lien de pack partagé invalide.");
+      throw new Error(
+        "Lien de pack partagé invalide."
+      );
     }
 
     const hasValidAccount =
@@ -228,60 +648,49 @@ async function initializeSharedPackLoading() {
 
     if (!hasValidAccount) {
       updateShareLoading(
-        58,
-        "Compte Sonara requis pour ouvrir ce pack…"
+        62,
+        "Connexion Sonara requise pour ouvrir ce pack…"
       );
 
-      await waitForShareMinimum(startedAt);
+      await waitForShareMinimum(
+        startedAt
+      );
 
       updateShareLoading(
         100,
-        "Ouverture de l’inscription…"
+        "Ouverture de la connexion…"
       );
 
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, 280);
-      });
+      await waitShareDelay();
 
-      goToShareAuthentication(destination);
+      goToShareAuthentication(
+        destination
+      );
+
       return;
     }
 
     updateShareLoading(
-      55,
+      62,
       "Compte Sonara vérifié…"
     );
 
     updateShareLoading(
-      82,
+      86,
       "Préparation du pack partagé…"
     );
 
-    await waitForShareMinimum(startedAt);
-
-    updateShareLoading(
-      100,
-      "Ouverture du pack…"
+    await finishShareNavigation(
+      startedAt,
+      "Ouverture du pack…",
+      destination
     );
-
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 280);
-    });
-
-    window.location.replace(destination);
   } catch (error) {
-    console.error(
-      "Erreur ouverture du partage :",
-      error
+    await recoverShareFailure(
+      error,
+      destination,
+      startedAt
     );
-
-    const message =
-      error?.name === "AbortError"
-        ? "Le serveur Sonara met trop de temps à répondre."
-        : error?.message ||
-          "Impossible d’ouvrir ce partage.";
-
-    updateShareLoading(100, message);
   }
 }
 
