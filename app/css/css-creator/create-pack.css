@@ -2780,3 +2780,17 @@ html {
     height: 48px;
   }
 }
+
+/* Le formulaire ne doit pas agrandir le sélecteur de langue global. */
+#sonara-language-switcher label {
+  display: flex;
+  margin: 0;
+}
+
+#sonara-language-switcher #sonara-language-select {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+}
