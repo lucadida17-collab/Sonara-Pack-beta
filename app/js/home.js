@@ -2,23 +2,156 @@
 
 let packs = [];
 
+const desktopBrandVersion =
+  document.querySelector(
+    ".desktop-brand-version"
+  );
+
+if (desktopBrandVersion) {
+  desktopBrandVersion.textContent =
+    `Version ${
+      window.SONARA_VERSION ||
+      "V5.3.8.56"
+    }`;
+}
+
 function getFilePath(file) {
   if (!file) return "";
 
-  const value = String(file).trim();
+  const rawValue =
+    typeof file === "object"
+      ? (
+          file.url ||
+          file.path ||
+          file.key ||
+          file.location ||
+          file.src ||
+          ""
+        )
+      : file;
 
-  if (/^(https?:|blob:|data:)/i.test(value)) return value;
+  const value =
+    String(rawValue || "")
+      .trim()
+      .replace(/\\/g, "/");
 
-  if (value.startsWith("/downloads/")) return `${API_URL}${value}`;
-  if (value.startsWith("downloads/")) return `${API_URL}/${value}`;
+  if (!value) return "";
 
-  if (value.startsWith("/uploads/")) return `${API_URL}${value}`;
-  if (value.startsWith("uploads/")) return `${API_URL}/${value}`;
+  if (
+    /^(https?:|blob:|data:)/i.test(value)
+  ) {
+    return encodeURI(value);
+  }
 
-  return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
+  if (value.startsWith("/downloads/")) {
+    return encodeURI(`${API_URL}${value}`);
+  }
+
+  if (value.startsWith("downloads/")) {
+    return encodeURI(`${API_URL}/${value}`);
+  }
+
+  if (value.startsWith("/uploads/")) {
+    return encodeURI(`${API_URL}${value}`);
+  }
+
+  if (value.startsWith("uploads/")) {
+    return encodeURI(`${API_URL}/${value}`);
+  }
+
+  return encodeURI(
+    `${API_URL}/uploads/${
+      value.replace(/^\/+/, "")
+    }`
+  );
+}
+
+function getPackCategories(pack = {}) {
+  if (Array.isArray(pack.categorie)) {
+    return pack.categorie
+      .map((category) =>
+        String(category || "").trim()
+      )
+      .filter(Boolean);
+  }
+
+  const singleCategory =
+    String(
+      pack.categorie ||
+      pack.category ||
+      ""
+    ).trim();
+
+  return singleCategory
+    ? [singleCategory]
+    : [];
+}
+
+function getPackCoverValue(pack = {}) {
+  return (
+    pack.coverPack ||
+    pack.cover ||
+    pack.coverUrl ||
+    pack.imagePack ||
+    pack.image ||
+    ""
+  );
+}
+
+function getPackDestination(pack = {}) {
+  if (pack.packLink) {
+    return String(pack.packLink);
+  }
+
+  if (pack.id) {
+    return (
+      "/app/pages/pack.html?id=" +
+      encodeURIComponent(pack.id)
+    );
+  }
+
+  return "";
+}
+
+function createHomeCoverFallback() {
+  const fallback =
+    document.createElement("div");
+
+  fallback.className =
+    "home-cover-fallback";
+
+  fallback.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  fallback.innerHTML = `
+    <svg
+      viewBox="0 0 24 24"
+      focusable="false"
+      aria-hidden="true"
+    >
+      <rect
+        x="4"
+        y="4"
+        width="16"
+        height="16"
+        rx="4"
+      ></rect>
+      <path d="M8 14.5 11 11l2.4 2.6L16 11l2 2.3"></path>
+      <circle cx="9" cy="9" r="1.2"></circle>
+    </svg>
+
+    <span>Cover indisponible</span>
+  `;
+
+  return fallback;
 }
 
 const content =
+  document.querySelector(
+    ".home-content"
+  ) ||
   document.querySelector(
     ".main-content"
   );
@@ -63,6 +196,23 @@ loadHome().catch((error) => {
     "Erreur chargement Home :",
     error
   );
+
+  if (content) {
+    content.innerHTML = `
+      <section class="home-state-card" role="status">
+        <div class="home-state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3v10"></path>
+            <path d="M12 17.5v.5"></path>
+            <path d="M5 21h14a2 2 0 0 0 1.75-2.96L13.75 5a2 2 0 0 0-3.5 0l-7 13.04A2 2 0 0 0 5 21Z"></path>
+          </svg>
+        </div>
+
+        <h2>Accueil momentanément indisponible</h2>
+        <p>Impossible de charger les packs pour le moment.</p>
+      </section>
+    `;
+  }
 });
 
 
@@ -76,40 +226,158 @@ function resetAccount() {
 }
 
 function renderCards() {
-  const container = document.querySelectorAll(".pack-row");
-  if (!container) return;
+  const rows =
+    document.querySelectorAll(
+      ".pack-row"
+    );
 
-  container.forEach(row => {
-    const cat = row.dataset.cat;
+  if (!rows.length) return;
 
-    packs.forEach(pack => {
-      if (pack.categorie.includes(cat)) {
-        const card = document.createElement("button");
-        card.className = 'card';
+  rows.forEach((row) => {
+    const category =
+      String(
+        row.dataset.cat || ""
+      );
 
-
-
-        console.log("PACK DATA :", pack);
-        const imageUrl = `${getFilePath(pack.coverPack || pack.cover)}`;
-
-        card.innerHTML = `
-  <div class="cover">
-    <img src="${imageUrl}" class="image-cover">
-  </div>
-
-  <div class="info">
-    <p class="title">${pack.title}</p>
-    <p class="artist">${pack.artist}</p>
-  </div>
-`;
-
-
-        card.addEventListener("click", () => {
-          window.location.href = pack.packLink;
-        });
-
-        row.appendChild(card);
+    packs.forEach((pack) => {
+      if (
+        !getPackCategories(pack)
+          .includes(category)
+      ) {
+        return;
       }
+
+      const destination =
+        getPackDestination(pack);
+
+      const card =
+        document.createElement("button");
+
+      card.className = "card";
+      card.type = "button";
+
+      card.setAttribute(
+        "aria-label",
+        `Ouvrir le pack ${
+          pack.title || "sans titre"
+        }`
+      );
+
+      if (!destination) {
+        card.disabled = true;
+        card.classList.add(
+          "is-unavailable"
+        );
+      }
+
+      const cover =
+        document.createElement("div");
+
+      cover.className = "cover";
+
+      const fallback =
+        createHomeCoverFallback();
+
+      cover.appendChild(fallback);
+
+      const imageUrl =
+        getFilePath(
+          getPackCoverValue(pack)
+        );
+
+      if (imageUrl) {
+        const image =
+          document.createElement("img");
+
+        image.className =
+          "image-cover";
+
+        image.alt =
+          `Cover du pack ${
+            pack.title || ""
+          }`.trim();
+
+        image.loading = "lazy";
+        image.decoding = "async";
+        image.draggable = false;
+        image.src = imageUrl;
+
+        image.addEventListener(
+          "load",
+          () => {
+            cover.classList.add(
+              "has-image"
+            );
+          },
+          {
+            once: true
+          }
+        );
+
+        image.addEventListener(
+          "error",
+          () => {
+            cover.classList.add(
+              "has-fallback"
+            );
+
+            image.remove();
+          },
+          {
+            once: true
+          }
+        );
+
+        cover.appendChild(image);
+      } else {
+        cover.classList.add(
+          "has-fallback"
+        );
+      }
+
+      const info =
+        document.createElement("div");
+
+      info.className = "info";
+
+      const title =
+        document.createElement("p");
+
+      title.className = "title";
+      title.textContent =
+        pack.title ||
+        "Pack sans titre";
+
+      const artist =
+        document.createElement("p");
+
+      artist.className = "artist";
+      artist.textContent =
+        pack.artist ||
+        pack.pseudo ||
+        "Artiste Sonara";
+
+      info.append(
+        title,
+        artist
+      );
+
+      card.append(
+        cover,
+        info
+      );
+
+      card.addEventListener(
+        "click",
+        () => {
+          if (!destination) return;
+
+          window.location.href =
+            destination;
+        }
+      );
+
+      row.appendChild(card);
     });
   });
 }
@@ -118,67 +386,120 @@ function renderCards() {
 function renderHome() {
   destroyHomeScrollControls();
 
-  const allCategories = [...new Set(
-    packs.flatMap(pack => pack.categorie || [])
-  )];
+  const allCategories = [
+    ...new Set(
+      packs.flatMap(
+        (pack) =>
+          getPackCategories(pack)
+      )
+    )
+  ];
 
-  content.innerHTML = allCategories.map(cat => {
-    const categoryName = formatCategoryName(cat);
+  const categorySections =
+    allCategories.length
+      ? allCategories.map((cat) => {
+          const categoryName =
+            formatCategoryName(cat);
 
-    return `
-      <section class="pack-categorie">
-        <div class="categorie-header">
-          <h2>${categoryName}</h2>
+          const safeCategory =
+            escapeHomeHtml(cat);
 
-          <div
-            class="scroll-controls"
-            aria-label="Navigation horizontale ${categoryName}"
-          >
-            <button
-              class="scroll-btn left"
-              type="button"
-              aria-label="Voir les packs précédents"
-              title="Packs précédents"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M15 18 9 12l6-6"></path>
-              </svg>
-            </button>
+          const safeCategoryName =
+            escapeHomeHtml(
+              categoryName
+            );
 
-            <button
-              class="scroll-btn right"
-              type="button"
-              aria-label="Voir les packs suivants"
-              title="Packs suivants"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="m9 18 6-6-6-6"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
+          const categoryPackCount =
+            packs.filter(
+              (pack) =>
+                getPackCategories(pack)
+                  .includes(cat)
+            ).length;
 
-        <div
-          class="pack-row"
-          data-cat="${cat}"
-          tabindex="0"
-          role="region"
-          aria-label="Packs ${categoryName}"
-        ></div>
-      </section>
-    `;
-  }).join("");
+          return `
+            <section class="pack-categorie">
+              <div class="categorie-header">
+                <div class="category-heading-copy">
+                  <h2>${safeCategoryName}</h2>
+
+                  <span class="category-count">
+                    ${categoryPackCount}
+                    ${categoryPackCount > 1 ? "packs" : "pack"}
+                  </span>
+                </div>
+
+                <div
+                  class="scroll-controls"
+                  aria-label="Navigation horizontale ${safeCategoryName}"
+                >
+                  <button
+                    class="scroll-btn left"
+                    type="button"
+                    aria-label="Voir les packs précédents"
+                    title="Packs précédents"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M15 18 9 12l6-6"></path>
+                    </svg>
+                  </button>
+
+                  <button
+                    class="scroll-btn right"
+                    type="button"
+                    aria-label="Voir les packs suivants"
+                    title="Packs suivants"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div
+                class="pack-row"
+                data-cat="${safeCategory}"
+                tabindex="0"
+                role="region"
+                aria-label="Packs ${safeCategoryName}"
+              ></div>
+            </section>
+          `;
+        }).join("")
+      : `
+        <section class="home-empty-catalogue">
+          <span class="home-empty-icon" aria-hidden="true">
+            <i data-lucide="package-open"></i>
+          </span>
+
+          <h2>Le catalogue arrive</h2>
+
+          <p>
+            Les prochains univers Sonara apparaîtront ici.
+          </p>
+        </section>
+      `;
+
+  content.innerHTML = `
+    <div class="home-category-list">
+      ${categorySections}
+    </div>
+  `;
 
   renderCards();
   initializeHomeScrollControls();
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 }
 
 let homeScrollControlCleanups = [];
@@ -490,6 +811,15 @@ function initializeHomeScrollControls() {
     });
 }
 
+function escapeHomeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function formatCategoryName(cat) {
   const names = {
     piano: "Piano",
@@ -523,41 +853,108 @@ if (btnAccueil) {
 
 
 
-const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
+let profile = null;
 
-const mobileCreateBtn = document.querySelector(".nav-mobile-create");
+try {
+  profile = JSON.parse(
+    localStorage.getItem(
+      "sonaraProfile"
+    ) || "null"
+  );
+} catch (error) {
+  console.warn(
+    "Profil Home invalide :",
+    error
+  );
+}
+
+const homeNavigationButtons =
+  document.querySelectorAll(
+    "[data-home-nav]"
+  );
+
+const homeCreateButtons =
+  document.querySelectorAll(
+    '[data-home-nav="create"]'
+  );
 
 if (profile?.role !== "both") {
-  mobileCreateBtn.style.display = "none";
+  homeCreateButtons.forEach(
+    (button) => {
+      button.style.display = "none";
+    }
+  );
 }
 
-function setActiveNav(activeBtn) {
-  document.querySelectorAll(".nav-mobile-btn").forEach(btn => {
-    btn.classList.remove("active");
-  });
-
-  activeBtn.classList.add("active");
+function setActiveHomeNavigation(
+  navigationName
+) {
+  homeNavigationButtons.forEach(
+    (button) => {
+      button.classList.toggle(
+        "active",
+        button.dataset.homeNav ===
+          navigationName
+      );
+    }
+  );
 }
-
-document.querySelector(".nav-mobile-home").addEventListener("click", () => {
-  window.location.href = "/home.html";
-});
 
 document
-  .querySelector(".nav-mobile-create")
-  ?.addEventListener("click", () => {
-    window.location.href = "/app/pages/creator.html";
+  .querySelectorAll(
+    '[data-home-nav="home"]'
+  )
+  .forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        setActiveHomeNavigation(
+          "home"
+        );
+
+        window.location.href =
+          "/home.html";
+      }
+    );
   });
 
-document.querySelector(".nav-mobile-library").addEventListener("click", () => {
-  setActiveNav(document.querySelector(".nav-mobile-library"))
+homeCreateButtons.forEach(
+  (button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        setActiveHomeNavigation(
+          "create"
+        );
 
-  window.location.href = "app/pages/library.html" 
-});
+        window.location.href =
+          "/app/pages/creator.html";
+      }
+    );
+  }
+);
 
+document
+  .querySelectorAll(
+    '[data-home-nav="library"]'
+  )
+  .forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        setActiveHomeNavigation(
+          "library"
+        );
 
+        window.location.href =
+          "/app/pages/library.html";
+      }
+    );
+  });
 
-document.querySelector(".nav-mobile-home").classList.add("active");
+setActiveHomeNavigation("home");
 
-lucide.createIcons();
+if (window.lucide) {
+  lucide.createIcons();
+}
 

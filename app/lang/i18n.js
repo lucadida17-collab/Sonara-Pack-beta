@@ -26,15 +26,6 @@
   const attributeStates = new WeakMap();
   const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "CODE", "PRE"]);
   const translatedAttributes = ["placeholder", "title", "aria-label", "alt"];
-  const protectedContentSelector = [
-    "[data-i18n-ignore]",
-    "[translate='no']",
-    ".card .title",
-    ".pack-info > .title",
-    ".library-preview-pack-info > strong",
-    ".pack-card > h3",
-    ".my-pack-title-row > h2"
-  ].join(", ");
 
   let exactIndex = new Map();
   let caseInsensitiveIndex = new Map();
@@ -132,12 +123,8 @@
   function shouldIgnoreElement(element) {
     if (!(element instanceof Element)) return true;
     if (element.id === "sonara-language-switcher" || element.closest("#sonara-language-switcher")) return true;
-    if (element.closest(protectedContentSelector)) return true;
+    if (element.closest("[data-i18n-ignore], [translate='no']")) return true;
     if (element.isContentEditable || ignoredTags.has(element.tagName)) return true;
-
-    const literal = canonicalize(element.textContent);
-    if (/^sonara pack(?:\s+v[\d.]+)?$/i.test(literal)) return true;
-
     return false;
   }
 

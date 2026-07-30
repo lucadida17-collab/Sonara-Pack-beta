@@ -1,0 +1,391 @@
+/* ==========================================================
+   SONARA CATALOG SHELL — V5.3.8.67
+   Structure visuelle commune à Home, Library, Pack et aux
+   futures vues affichées dans le workspace du side panel.
+========================================================== */
+
+:root {
+  --sonara-shell-panel-width: 252px;
+  --sonara-shell-panel-width-compact: 214px;
+  --sonara-shell-workspace-max: 1480px;
+  --sonara-shell-radius: 29px;
+  --sonara-shell-border: rgba(255, 255, 255, 0.07);
+  --sonara-shell-cyan: #63e8ff;
+}
+
+.desktop-side-panel {
+  display: none;
+}
+
+.desktop-shell,
+.desktop-workspace,
+.app-layout,
+.main-content,
+.scroll-zone,
+.shell-content {
+  min-width: 0;
+}
+
+@media (max-width: 899px) {
+  .sonara-shell-page .desktop-shell,
+  .sonara-shell-page .desktop-workspace,
+  .sonara-shell-page .app-layout,
+  .sonara-shell-page .main-content,
+  .sonara-shell-page .scroll-zone,
+  .sonara-shell-page .shell-content {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .sonara-shell-page .desktop-workspace {
+    min-height: 100dvh;
+  }
+
+  .sonara-shell-page .shell-content {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 900px) {
+  html,
+  body.sonara-shell-page {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body.sonara-shell-page {
+    position: relative !important;
+    min-height: 100dvh;
+    margin: 0 !important;
+    background:
+      radial-gradient(
+        circle at 72% 0%,
+        rgba(0, 158, 255, 0.11),
+        transparent 31%
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        rgba(91, 69, 255, 0.08),
+        transparent 34%
+      ),
+      #07090e !important;
+    color: #fff;
+  }
+
+  .sonara-shell-page .desktop-shell {
+    display: grid;
+    grid-template-columns:
+      var(--sonara-shell-panel-width) minmax(0, 1fr);
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .sonara-shell-page .desktop-side-panel {
+    position: relative;
+    z-index: 3000;
+    display: flex;
+    min-width: 0;
+    height: 100dvh;
+    padding: 22px 16px;
+    box-sizing: border-box;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.075);
+    background:
+      radial-gradient(
+        circle at 50% 0%,
+        rgba(0, 188, 255, 0.12),
+        transparent 28%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(10, 15, 26, 0.98),
+        rgba(5, 8, 15, 0.99)
+      );
+    box-shadow: 20px 0 54px rgba(0, 0, 0, 0.26);
+  }
+
+  .sonara-shell-page .desktop-side-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 8px 10px 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+  }
+
+  .sonara-shell-page .desktop-brand-logo {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(79, 220, 255, 0.22);
+    border-radius: 15px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(38, 184, 255, 0.15),
+        rgba(69, 85, 255, 0.07)
+      );
+    box-shadow:
+      0 10px 24px rgba(0, 92, 195, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .sonara-shell-page .desktop-brand-logo img {
+    width: 31px;
+    height: 31px;
+    object-fit: contain;
+  }
+
+  .sonara-shell-page .desktop-brand-copy {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .sonara-shell-page .desktop-brand-copy strong {
+    overflow: hidden;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sonara-shell-page .desktop-brand-copy small {
+    color: rgba(255, 255, 255, 0.44);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .sonara-shell-page .desktop-side-nav {
+    display: grid;
+    gap: 9px;
+    margin-top: 24px;
+  }
+
+  .sonara-shell-page .desktop-nav-btn {
+    width: 100%;
+    min-height: 66px;
+    padding: 11px 12px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    border: 1px solid transparent;
+    border-radius: 17px;
+    color: rgba(255, 255, 255, 0.62);
+    text-align: left;
+    background: transparent;
+    cursor: pointer;
+    transition:
+      color 180ms ease,
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .sonara-shell-page .desktop-nav-btn > svg {
+    width: 21px;
+    height: 21px;
+    margin: auto;
+    stroke-width: 1.9;
+  }
+
+  .sonara-shell-page .desktop-nav-btn > span {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .sonara-shell-page .desktop-nav-btn strong {
+    overflow: hidden;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 780;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sonara-shell-page .desktop-nav-btn small {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.34);
+    font-size: 10px;
+    font-weight: 550;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sonara-shell-page .desktop-nav-btn:hover {
+    color: #fff;
+    border-color: rgba(91, 219, 255, 0.18);
+    background: rgba(255, 255, 255, 0.045);
+    transform: translateX(2px);
+  }
+
+  .sonara-shell-page .desktop-nav-btn.active {
+    color: var(--sonara-shell-cyan);
+    border-color: rgba(77, 218, 255, 0.23);
+    background:
+      linear-gradient(
+        135deg,
+        rgba(23, 179, 255, 0.14),
+        rgba(74, 91, 255, 0.075)
+      );
+    box-shadow:
+      0 15px 34px rgba(0, 76, 158, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .sonara-shell-page .desktop-nav-btn.active small {
+    color: rgba(210, 247, 255, 0.52);
+  }
+
+  .sonara-shell-page .desktop-side-footer {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 15px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .sonara-shell-page .desktop-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3fe3c0;
+    box-shadow: 0 0 16px rgba(63, 227, 192, 0.72);
+  }
+
+  .sonara-shell-page .desktop-side-footer > span:last-child {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .sonara-shell-page .desktop-side-footer strong {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 11px;
+    font-weight: 720;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sonara-shell-page .desktop-side-footer small {
+    color: rgba(255, 255, 255, 0.34);
+    font-size: 9px;
+    font-weight: 560;
+  }
+
+  .sonara-shell-page .desktop-workspace {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    height: 100dvh;
+    min-height: 0;
+    padding: 18px 22px 22px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .sonara-shell-page .desktop-workspace .app-layout,
+  .sonara-shell-page .desktop-workspace .main-content {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .sonara-shell-page .mobile-bottom-bar {
+    display: none !important;
+  }
+
+  .sonara-shell-page .desktop-workspace .scroll-zone {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 24px 28px 70px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--sonara-shell-border);
+    border-radius: var(--sonara-shell-radius);
+    background:
+      radial-gradient(
+        circle at 94% 0%,
+        rgba(0, 159, 255, 0.08),
+        transparent 27%
+      ),
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.027),
+        rgba(255, 255, 255, 0.012)
+      );
+    box-shadow:
+      0 26px 70px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  }
+
+  .sonara-shell-page .desktop-workspace .scroll-zone::-webkit-scrollbar {
+    display: block;
+    width: 7px;
+  }
+
+  .sonara-shell-page .desktop-workspace .scroll-zone::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sonara-shell-page .desktop-workspace .scroll-zone::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(60, 225, 255, 0.75),
+        rgba(56, 102, 255, 0.68)
+      );
+  }
+
+  .sonara-shell-page .shell-content {
+    width: min(100%, var(--sonara-shell-workspace-max));
+    min-width: 0;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1120px) {
+  .sonara-shell-page .desktop-shell {
+    grid-template-columns:
+      var(--sonara-shell-panel-width-compact) minmax(0, 1fr);
+  }
+
+  .sonara-shell-page .desktop-side-panel {
+    padding-inline: 12px;
+  }
+
+  .sonara-shell-page .desktop-brand-copy small,
+  .sonara-shell-page .desktop-nav-btn small,
+  .sonara-shell-page .desktop-side-footer small {
+    display: none;
+  }
+
+  .sonara-shell-page .desktop-workspace {
+    padding-inline: 16px;
+  }
+}

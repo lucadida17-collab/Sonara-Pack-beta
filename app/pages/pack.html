@@ -1,131 +1,181 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fr" translate="yes">
 
 <head>
- <meta Charset="UTF-8">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <meta charset="UTF-8">
 
-  gtag('config', 'G-NEBG1Z3EE0');
-</script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NEBG1Z3EE0');
+  </script>
 
- <link rel="stylesheet" href="../css/pack.css?v=5.3.8.36-pack-loader">
-  <link
-  rel="stylesheet"
-  href="../components/header/header.css"
->
-
+  <link rel="stylesheet" href="../css/pack.css?v=5.3.8.68-shell-contenu-original">
+  <link rel="stylesheet" href="../components/header/header.css">
+  <link rel="stylesheet" href="../css/catalog-shell.css?v=5.3.8.67">
 
   <link rel="icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="preconnect" href="https://fonts.googleapis.com">
- <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
- <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
- <meta name="viewport" content="width=device-width, Initial-scale=1.0">
- <title>Sonara Pack - Catalogue de Pack</title>
+  <link rel="shortcut icon" href="../../assets/image/logo-sonara-pack.PNG" type="image/png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sonara Pack - Catalogue de Pack</title>
   <link rel="stylesheet" href="../css/i18n.css">
 </head>
 
+<body class="pack-page sonara-shell-page">
+  <div class="desktop-shell">
+    <aside class="desktop-side-panel" aria-label="Navigation principale">
+      <div class="desktop-side-brand">
+        <span class="desktop-brand-logo">
+          <img src="../../assets/image/logo-sonara-pack.PNG" alt="">
+        </span>
 
+        <span class="desktop-brand-copy">
+          <strong>Sonara Pack</strong>
+          <small class="desktop-brand-version">Version V5.3.8.68</small>
+        </span>
+      </div>
 
+      <nav class="desktop-side-nav">
+        <button
+          class="desktop-nav-btn active"
+          type="button"
+          onclick="window.location.href='/home.html'"
+        >
+          <i data-lucide="home"></i>
+          <span>
+            <strong>Accueil</strong>
+            <small>Explorer les packs</small>
+          </span>
+        </button>
 
+        <button
+          class="desktop-nav-btn desktop-nav-create"
+          type="button"
+          onclick="window.location.href='/app/pages/creator.html'"
+        >
+          <i data-lucide="plus-circle"></i>
+          <span>
+            <strong>Créer</strong>
+            <small>Espace artiste</small>
+          </span>
+        </button>
 
-<body class="main-content">
-<main class="app-layout">
+        <button
+          class="desktop-nav-btn"
+          type="button"
+          onclick="window.location.href='/app/pages/library.html'"
+        >
+          <i data-lucide="library"></i>
+          <span>
+            <strong>Bibliothèque</strong>
+            <small>Vos téléchargements</small>
+          </span>
+        </button>
+      </nav>
 
+      <div class="desktop-side-footer">
+        <span class="desktop-status-dot" aria-hidden="true"></span>
+        <span>
+          <strong>Sonara catalogue</strong>
+          <small>Environnement actif</small>
+        </span>
+      </div>
+    </aside>
+
+    <div class="desktop-workspace">
+      <header class="header"></header>
+
+      <main class="app-layout">
         <nav class="mobile-bottom-bar">
+          <button class="nav-mobile-btn nav-mobile-home active" type="button">
+            <i data-lucide="home"></i>
+            <span>Accueil</span>
+          </button>
 
-            <button class="nav-mobile-btn nav-mobile-home active">
-                <i data-lucide="home"></i>
-                <span>Accueil</span>
-            </button>
+          <button class="nav-mobile-btn nav-mobile-create" type="button">
+            <i data-lucide="plus-circle"></i>
+            <span>Crée</span>
+          </button>
 
-            <button class="nav-mobile-btn nav-mobile-create">
-                <i data-lucide="plus-circle"></i>
-                <span>Crée</span>
-            </button>
-
-            <button class="nav-mobile-btn nav-mobile-library ">
-                <i data-lucide="library"></i>
-                <span>Bibliothèque</span>
-            </button>
-
-
+          <button class="nav-mobile-btn nav-mobile-library" type="button">
+            <i data-lucide="library"></i>
+            <span>Bibliothèque</span>
+          </button>
         </nav>
 
+        <section class="main-content">
+          <section class="scroll-zone">
+            <section class="pack-content shell-content">
+              <div class="finger"></div>
 
-  
+              <section
+                class="my-pack-page-loader"
+                role="progressbar"
+                aria-label="Ouverture du pack"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="5"
+              >
+                <div class="my-pack-loader-scene" aria-hidden="true">
+                  <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
+                  <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
+                  <span class="my-pack-loader-core">
+                    <span></span><span></span><span></span>
+                  </span>
+                </div>
+                <p class="my-pack-loader-label">SONARA PACK</p>
+                <h1>Ouverture du pack</h1>
+                <p class="my-pack-loader-message">Préparation du pack…</p>
+                <div class="my-pack-loader-progress" aria-hidden="true">
+                  <span class="my-pack-loader-progress-fill"></span>
+                </div>
+              </section>
 
-
-
-<header class="header">
- 
-</header>
-
-<div class="finger">
-</div>
-
-<section
-  class="my-pack-page-loader"
-  role="progressbar"
-  aria-label="Ouverture du pack"
-  aria-valuemin="0"
-  aria-valuemax="100"
-  aria-valuenow="5"
->
-  <div class="my-pack-loader-scene" aria-hidden="true">
-    <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
-    <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
-    <span class="my-pack-loader-core">
-      <span></span><span></span><span></span>
-    </span>
+              <section class="pack-list my-pack-loaded-content">
+                <!-- Le pack sera généré ici par JavaScript -->
+              </section>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
   </div>
-  <p class="my-pack-loader-label">SONARA PACK</p>
-  <h1>Ouverture du pack</h1>
-  <p class="my-pack-loader-message">Préparation du pack…</p>
-  <div class="my-pack-loader-progress" aria-hidden="true">
-    <span class="my-pack-loader-progress-fill"></span>
-  </div>
-</section>
 
-
-<section class="pack-list my-pack-loaded-content">
-  <!-- Les packs seront générés ici par JavaScript -->
-</section>
-
-
-</main>
-
-    <div class="notice-overlay">
-      <div class="notice-box">
-      <button class="notice-close">&times;</button>
+  <div class="notice-overlay">
+    <div class="notice-box">
+      <button class="notice-close" type="button">&times;</button>
       <h2>Droit d'utilisation</h2>
 
       <p>🎧 Utilisation du pack :
-    ✔️ Vidéos (Tiktok, Youtube, films, etc.)
-    ✔️ Usage illimité (projets perso & pro.)
-    ✔️ Utiliser des daw (rajouter des effet sur les sons.)
-    
-    🚫 Interdit:
-    ❌ revente des sons
-    ❌ partage du pack
-    ❌ upload sur une plateforme musicale.
-    </p>
-    <div class="notice-actions">
-    <button class="notice-refuse">Refuser</button>
-    <button class="notice-accept">Accepter</button>
-    </div>
+✔️ Vidéos (Tiktok, Youtube, films, etc.)
+✔️ Usage illimité (projets perso &amp; pro.)
+✔️ Utiliser des daw (rajouter des effet sur les sons.)
+
+🚫 Interdit:
+❌ revente des sons
+❌ partage du pack
+❌ upload sur une plateforme musicale.</p>
+
+      <div class="notice-actions">
+        <button class="notice-refuse" type="button">Refuser</button>
+        <button class="notice-accept" type="button">Accepter</button>
       </div>
+    </div>
+  </div>
 
-<script src="../../config.js" defer></script>
-<script src="../js/Memoire/memoire.js"></script>
-
-<script src="../js/pack.js?v=5.3.8.37-pack-profile-fix" defer></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../../config.js" defer></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../components/header/header.js?v=5.3.8.63-session-stable"></script>
+  <script src="../js/Memoire/memoire.js"></script>
+  <script src="../js/pack.js?v=5.3.8.67-pack-shell" defer></script>
   <script src="../js/i18n.js" defer></script>
 </body>
 

@@ -492,18 +492,18 @@ button, input, textarea { font: inherit; }
 }
 
 .my-pack-loader-core span:nth-child(1) {
-  height: 20px;
-  animation: myPackEqualizerOne .34s ease-in-out infinite;
+  height: 36px;
+  animation: myPackEqualizerOne .64s ease-in-out infinite;
 }
 
 .my-pack-loader-core span:nth-child(2) {
   height: 35px;
-  animation: myPackEqualizerTwo .29s ease-in-out .06s infinite;
+  animation: myPackEqualizerTwo .69s ease-in-out .06s infinite;
 }
 
 .my-pack-loader-core span:nth-child(3) {
-  height: 27px;
-  animation: myPackEqualizerThree .37s ease-in-out .11s infinite;
+  height: 37px;
+  animation: myPackEqualizerThree .67s ease-in-out .11s infinite;
 }
 
 .my-pack-loader-orbit {

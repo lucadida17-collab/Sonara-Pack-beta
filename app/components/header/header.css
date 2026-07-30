@@ -140,4 +140,54 @@ margin-left: -20px;
 
 }
 
+@media (min-width: 900px) {
+  .desktop-workspace > .header {
+    width: min(100%, 1540px);
+    margin: 0 auto 16px;
+  }
+
+  .desktop-workspace .dynamic-header {
+    min-height: 72px;
+    padding: 8px 18px;
+    border:
+      1px solid rgba(255, 255, 255, 0.085);
+    border-radius: 21px;
+    background:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.055),
+        rgba(255, 255, 255, 0.018)
+      );
+    box-shadow:
+      0 18px 48px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.065);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .desktop-workspace
+  .dynamic-header-profile {
+    gap: 12px;
+    margin-left: 0;
+  }
+
+  .desktop-workspace
+  .dynamic-header-avatar {
+    width: 48px;
+    height: 48px;
+    margin-left: 0;
+    border:
+      1px solid rgba(104, 225, 255, 0.23);
+    box-shadow:
+      0 9px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .desktop-workspace
+  .dynamic-header-title {
+    font-size: 25px;
+    transform: none;
+    letter-spacing: -0.035em;
+  }
+}
+
 }

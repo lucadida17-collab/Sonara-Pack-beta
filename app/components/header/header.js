@@ -1,4 +1,33 @@
+async function waitForPageSession() {
+  const sessionReady =
+    window.sonaraPageSessionReady;
+
+  if (!sessionReady) {
+    return true;
+  }
+
+  try {
+    return Boolean(
+      await sessionReady
+    );
+  } catch (error) {
+    console.error(
+      "Header : session de page indisponible.",
+      error
+    );
+
+    return false;
+  }
+}
+
 async function loadDynamicHeader() {
+  const sessionIsReady =
+    await waitForPageSession();
+
+  if (!sessionIsReady) {
+    return;
+  }
+
   const container = document.querySelector(".header");
 
   if (!container) {
@@ -74,13 +103,30 @@ function initDynamicHeader() {
     showDefaultIcon();
   }
 
-  profileButton.addEventListener("click", () => {
-    window.location.href = "app/pages/profile.html";
-  });
+  profileButton.addEventListener(
+    "click",
+    redirectToProfilePage
+  );
 
   if (window.lucide) {
     lucide.createIcons();
   }
+}
+
+function getProfilePageUrl() {
+  return new URL(
+    "/app/pages/profile.html",
+    window.location.origin
+  );
+}
+
+function redirectToProfilePage() {
+  const profileUrl =
+    getProfilePageUrl();
+
+  window.location.assign(
+    profileUrl.href
+  );
 }
 
 function getStoredProfile() {

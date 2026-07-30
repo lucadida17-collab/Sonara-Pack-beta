@@ -14,11 +14,12 @@
   gtag('config', 'G-NEBG1Z3EE0');
 </script>
 
- <link rel="stylesheet" href="app/css/home.css?v=5.3.8.49-clickable-cards">
+ <link rel="stylesheet" href="app/css/home.css?v=5.3.8.58-desktop-pack-title-23">
      <link
   rel="stylesheet"
   href="app/components/header/header.css"
 >
+ <link rel="stylesheet" href="app/css/catalog-shell.css?v=5.3.8.67">
 
  <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
  <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -37,51 +38,128 @@
 
 
 
-<body class="home">
-  
-<header class="header"></header>
+<body class="home sonara-shell-page">
 
+  <div class="desktop-shell">
+    <aside
+      class="desktop-side-panel"
+      aria-label="Navigation principale"
+    >
+      <div class="desktop-side-brand">
+        <span class="desktop-brand-logo">
+          <img
+            src="assets/image/logo-sonara-pack.PNG"
+            alt=""
+          >
+        </span>
 
-    <main class="app-layout">
-  <nav class="mobile-bottom-bar">
+        <span class="desktop-brand-copy">
+          <strong>Sonara Pack</strong>
+          <small class="desktop-brand-version">
+            Version V5.3.8.56
+          </small>
+        </span>
+      </div>
 
-            <button class="nav-mobile-btn nav-mobile-home active">
-                <i data-lucide="home"></i>
-                <span>Accueil</span>
-            </button>
+      <nav class="desktop-side-nav">
+        <button
+          class="desktop-nav-btn active"
+          type="button"
+          data-home-nav="home"
+        >
+          <i data-lucide="home"></i>
 
-            <button class="nav-mobile-btn nav-mobile-create">
-                <i data-lucide="plus-circle"></i>
-                <span>Crée</span>
-            </button>
+          <span>
+            <strong>Accueil</strong>
+            <small>Explorer les packs</small>
+          </span>
+        </button>
 
-            <button class="nav-mobile-btn nav-mobile-library">
-                <i data-lucide="library"></i>
-                <span>Bibliothèque</span>
-            </button>
+        <button
+          class="desktop-nav-btn desktop-nav-create"
+          type="button"
+          data-home-nav="create"
+        >
+          <i data-lucide="plus-circle"></i>
 
+          <span>
+            <strong>Créer</strong>
+            <small>Espace artiste</small>
+          </span>
+        </button>
+
+        <button
+          class="desktop-nav-btn"
+          type="button"
+          data-home-nav="library"
+        >
+          <i data-lucide="library"></i>
+
+          <span>
+            <strong>Bibliothèque</strong>
+            <small>Vos téléchargements</small>
+          </span>
+        </button>
+      </nav>
+
+      <div class="desktop-side-footer">
+        <span class="desktop-status-dot" aria-hidden="true"></span>
+
+        <span>
+          <strong>Sonara catalogue</strong>
+          <small>Environnement actif</small>
+        </span>
+      </div>
+    </aside>
+
+    <div class="desktop-workspace">
+      <header class="header"></header>
+
+      <main class="app-layout">
+        <nav class="mobile-bottom-bar">
+
+          <button
+            class="nav-mobile-btn nav-mobile-home active"
+            type="button"
+            data-home-nav="home"
+          >
+            <i data-lucide="home"></i>
+            <span>Accueil</span>
+          </button>
+
+          <button
+            class="nav-mobile-btn nav-mobile-create"
+            type="button"
+            data-home-nav="create"
+          >
+            <i data-lucide="plus-circle"></i>
+            <span>Crée</span>
+          </button>
+
+          <button
+            class="nav-mobile-btn nav-mobile-library"
+            type="button"
+            data-home-nav="library"
+          >
+            <i data-lucide="library"></i>
+            <span>Bibliothèque</span>
+          </button>
 
         </nav>
 
-      
         <section class="main-content">
+          <section class="scroll-zone">
 
+            <!-- TOUT LE CONTENU JS SERA INJECTÉ ICI -->
+            <section class="home-content shell-content"></section>
 
-            <section class="scroll-zone">
-
-                <!-- TOUT LE CONTENU JS SERA INJECTÉ ICI -->
-                <section class="home-content">
-
-                </section>
-
-            </section>
-
+          </section>
         </section>
+      </main>
+    </div>
+  </div>
 
-    </main>
-
-    
-    <script src="config.js"></script>
+    <script src="config.js?v=5.3.8.56-app-version"></script>
 
   <!-- Lucide doit exister avant le header -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -92,9 +170,9 @@
     verifySonaraSession();
   </script>
 
-  <script src="app/components/header/header.js"></script>
+  <script src="app/components/header/header.js?v=5.3.8.63-session-stable"></script>
 
-  <script src="app/js/home.js?v=5.3.8.50-no-home-creator-loaders"></script>
+  <script src="app/js/home.js?v=5.3.8.56-app-version"></script>
 
   <script>
     fetch("https://api.counterapi.dev/v1/sonara/visit/up");

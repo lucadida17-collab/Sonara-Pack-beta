@@ -17,6 +17,94 @@ function getFilePath(file) {
 
 let packs = [];
 
+const LIBRARY_REQUEST_TIMEOUT = 20000;
+
+let libraryViewSequence = 0;
+
+function beginLibraryView() {
+    libraryViewSequence += 1;
+    return libraryViewSequence;
+}
+
+function isCurrentLibraryView(viewSequence) {
+    return (
+        viewSequence ===
+        libraryViewSequence
+    );
+}
+
+async function readLibraryResponse(response) {
+    const text = await response.text();
+
+    if (!text.trim()) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(
+            `Réponse serveur invalide (${response.status}).`
+        );
+    }
+}
+
+async function fetchLibraryJson(
+    url,
+    options = {}
+) {
+    const controller =
+        new AbortController();
+
+    const timeoutId =
+        window.setTimeout(
+            () => controller.abort(),
+            LIBRARY_REQUEST_TIMEOUT
+        );
+
+    try {
+        const response = await fetch(
+            url,
+            {
+                cache: "no-store",
+                ...options,
+                signal: controller.signal
+            }
+        );
+
+        const data =
+            await readLibraryResponse(
+                response
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                data?.message ||
+                `Erreur serveur (${response.status}).`
+            );
+        }
+
+        return data;
+    } finally {
+        window.clearTimeout(
+            timeoutId
+        );
+    }
+}
+
+const desktopBrandVersion =
+  document.querySelector(
+    ".desktop-brand-version"
+  );
+
+if (desktopBrandVersion) {
+  desktopBrandVersion.textContent =
+    `Version ${
+      window.SONARA_VERSION ||
+      "Bêta"
+    }`;
+}
+
 const content = document.querySelector(".library-content");
 
 
@@ -29,118 +117,901 @@ const content = document.querySelector(".library-content");
         return `${minutes}:${secs}`;
     }
 
-async function loadLibrary() {
+function escapeLibraryHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function getCurrentLibraryProfile() {
     try {
-
-        const response = await fetch(`${API_URL}/api/packs`);
-
-        packs = await response.json();
-
-        console.log("PACKS :", packs);
-
-        renderLibrary();
-
+        return JSON.parse(
+            localStorage.getItem(
+                "sonaraProfile"
+            ) || "null"
+        );
     } catch (error) {
+        console.warn(
+            "Profil Library illisible :",
+            error
+        );
 
-        console.error(error);
-
+        return null;
     }
 }
 
-loadLibrary();
+function getLibraryAccountIdentifier(profile) {
+    return (
+        profile?.accountId ||
+        profile?.id ||
+        null
+    );
+}
 
+async function getLibraryAccountDownloads() {
+    const profile =
+        getCurrentLibraryProfile();
 
-function renderLibrary() {
-    content.innerHTML =
-        `
+    const accountIdentifier =
+        getLibraryAccountIdentifier(
+            profile
+        );
 
-<section class="library-accueil">
-  <section class="library-page">
-  <h1 class="library-title">Bibliothèque</h1>
+    if (!accountIdentifier) {
+        throw new Error(
+            "Compte Sonara introuvable."
+        );
+    }
 
-  <button class="library-downloads-btn">
-  Mes téléchargements
-  </button>
-  </section>
-  </section>
-  `;
+    const data =
+        await fetchLibraryJson(
+            `${API_URL}/api/users/${
+                encodeURIComponent(
+                    accountIdentifier
+                )
+            }`,
+            {
+                method: "GET",
+                headers: {
+                    Accept: "application/json"
+                }
+            }
+        );
 
-    const libraryChoiceDownload = document.querySelector(".library-downloads-btn")
+    if (!data?.account) {
+        throw new Error(
+            "Compte Sonara introuvable."
+        );
+    }
 
-    libraryChoiceDownload.addEventListener("click", () => {
-        renderChoiceTelechargement();
+    return data.account;
+}
+
+function getLibraryDownloadedPacks(account) {
+    const downloadedPackIds =
+        Array.isArray(
+            account?.downloadedPacks
+        )
+            ? account.downloadedPacks.map(
+                (id) => String(id)
+            )
+            : [];
+
+    return (
+        Array.isArray(packs)
+            ? packs
+            : []
+    ).filter((pack) =>
+        downloadedPackIds.includes(
+            String(pack.id)
+        )
+    );
+}
+
+function getLibraryDownloadedTracks(account) {
+    const downloadedTrackIds =
+        Array.isArray(
+            account?.downloadedTracks
+        )
+            ? account.downloadedTracks.map(
+                (id) => String(id)
+            )
+            : [];
+
+    const downloadedTracks = [];
+
+    (
+        Array.isArray(packs)
+            ? packs
+            : []
+    ).forEach((pack) => {
+        const packTracks =
+            Array.isArray(pack.tracks)
+                ? pack.tracks
+                : [];
+
+        packTracks.forEach((track) => {
+            if (
+                downloadedTrackIds.includes(
+                    String(track.id)
+                )
+            ) {
+                downloadedTracks.push({
+                    ...track,
+                    packId: pack.id,
+                    artist:
+                        track.artist ||
+                        pack.artist ||
+                        "",
+                    coverPack:
+                        track.coverPack ||
+                        pack.coverPack ||
+                        ""
+                });
+            }
+        });
     });
 
+    return downloadedTracks;
+}
 
+function createLibraryPackPreview(pack) {
+    const packId =
+        escapeLibraryHtml(pack.id);
+
+    const title =
+        escapeLibraryHtml(
+            pack.title ||
+            "Pack sans titre"
+        );
+
+    const artist =
+        escapeLibraryHtml(
+            pack.artist ||
+            "Artiste Sonara"
+        );
+
+    const cover =
+        escapeLibraryHtml(
+            getFilePath(
+                pack.coverPack
+            )
+        );
+
+    return `
+        <button
+            class="library-preview-pack"
+            type="button"
+            data-pack-id="${packId}"
+            aria-label="Ouvrir le pack ${title}"
+        >
+            <span class="library-preview-pack-cover">
+                ${
+                    cover
+                        ? `
+                            <img
+                                src="${cover}"
+                                alt="Cover du pack ${title}"
+                                loading="lazy"
+                                decoding="async"
+                                onerror="this.remove(); this.parentElement.classList.add('is-fallback');"
+                            >
+                        `
+                        : ""
+                }
+
+                <span class="library-preview-cover-fallback">
+                    <span>SP</span>
+                </span>
+            </span>
+
+            <span class="library-preview-pack-info">
+                <strong>${title}</strong>
+                <small>${artist}</small>
+            </span>
+        </button>
+    `;
+}
+
+function createLibraryTrackPreview(track, index) {
+    const title =
+        escapeLibraryHtml(
+            track.title ||
+            "Track sans titre"
+        );
+
+    const artist =
+        escapeLibraryHtml(
+            track.artist ||
+            "Artiste Sonara"
+        );
+
+    const cover =
+        escapeLibraryHtml(
+            getFilePath(
+                track.coverPack
+            )
+        );
+
+    return `
+        <button
+            class="library-preview-track"
+            type="button"
+            data-track-id="${
+                escapeLibraryHtml(
+                    track.id
+                )
+            }"
+            aria-label="Voir les tracks téléchargées"
+        >
+            <span class="library-preview-track-index">
+                ${String(index + 1).padStart(2, "0")}
+            </span>
+
+            <span class="library-preview-track-cover">
+                ${
+                    cover
+                        ? `
+                            <img
+                                src="${cover}"
+                                alt="Cover de la track ${title}"
+                                loading="lazy"
+                                decoding="async"
+                                onerror="this.remove(); this.parentElement.classList.add('is-fallback');"
+                            >
+                        `
+                        : ""
+                }
+
+                <span class="library-preview-cover-fallback">
+                    <span>SP</span>
+                </span>
+            </span>
+
+            <span class="library-preview-track-info">
+                <strong>${title}</strong>
+                <small>${artist}</small>
+            </span>
+
+            <span class="library-preview-track-duration">
+                ${escapeLibraryHtml(
+                    formatDuration(
+                        track.duration
+                    )
+                )}
+            </span>
+
+            <span class="library-preview-arrow" aria-hidden="true">›</span>
+        </button>
+    `;
+}
+
+function renderLibraryOverviewLoading() {
+    content.innerHTML = `
+        <section class="library-overview" aria-busy="true">
+            <div class="library-overview-heading">
+                <div>
+                    <span class="library-overview-kicker">VOTRE BIBLIOTHÈQUE</span>
+                    <h1>Mes téléchargements</h1>
+                </div>
+            </div>
+
+            <div class="library-overview-loading">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </section>
+    `;
+}
+
+function renderLibraryOverviewError(message) {
+    content.innerHTML = `
+        <section class="library-overview">
+            <div class="library-overview-heading">
+                <div>
+                    <span class="library-overview-kicker">VOTRE BIBLIOTHÈQUE</span>
+                    <h1>Mes téléchargements</h1>
+                </div>
+            </div>
+
+            <div class="library-overview-state" role="status">
+                <strong>Chargement impossible</strong>
+                <p>${escapeLibraryHtml(message)}</p>
+                <button class="library-overview-retry" type="button">Réessayer</button>
+            </div>
+        </section>
+    `;
+
+    document
+        .querySelector(".library-overview-retry")
+        ?.addEventListener("click", () => {
+            renderLibrary();
+        });
+}
+
+async function loadLibrary() {
+    try {
+        const loadedPacks =
+            await fetchLibraryJson(
+                `${API_URL}/api/packs`,
+                {
+                    method: "GET",
+                    headers: {
+                        Accept: "application/json"
+                    }
+                }
+            );
+
+        if (!Array.isArray(loadedPacks)) {
+            throw new Error(
+                "Le catalogue reçu est invalide."
+            );
+        }
+
+        packs = loadedPacks;
+
+        await renderLibrary();
+    } catch (error) {
+        console.error(
+            "Erreur chargement Library :",
+            error
+        );
+
+        renderLibraryOverviewError(
+            error?.name === "AbortError"
+                ? "Le serveur met trop de temps à répondre."
+                : (
+                    error?.message ||
+                    "Impossible de charger la Librairie."
+                )
+        );
+    }
+}
+
+async function startLibraryPage() {
+    if (!content) {
+        console.error(
+            "Library : conteneur .library-content introuvable."
+        );
+        return;
+    }
+
+    const sessionReady =
+        window.sonaraPageSessionReady;
+
+    if (sessionReady) {
+        const sessionIsValid =
+            await sessionReady;
+
+        if (!sessionIsValid) {
+            return;
+        }
+    }
+
+    initializeLibraryNavigation();
+
+    await loadLibrary();
+}
+
+startLibraryPage();
+
+
+
+async function renderLibrary() {
+    const viewSequence =
+        beginLibraryView();
+
+    renderLibraryOverviewLoading();
+
+    try {
+        const account =
+            await getLibraryAccountDownloads();
+
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
+
+        const downloadedPacks =
+            getLibraryDownloadedPacks(
+                account
+            );
+
+        const previewPacks =
+            downloadedPacks.slice(0, 8);
+
+        const packPreviewContent =
+            previewPacks.length
+                ? previewPacks
+                    .map(
+                        createLibraryPackPreview
+                    )
+                    .join("")
+                : `
+                    <div class="library-overview-empty">
+                        <strong>Aucun pack téléchargé</strong>
+
+                        <p>
+                            Vos packs achetés apparaîtront ici.
+                        </p>
+                    </div>
+                `;
+
+        content.innerHTML = `
+            <section
+                class="
+                    library-overview
+                    library-overview-home
+                "
+            >
+                <header class="library-overview-heading">
+                    <button
+                        class="library-overview-title-action"
+                        type="button"
+                    >
+                        <span class="library-overview-main-title">
+                            Mes téléchargements
+                        </span>
+                    </button>
+
+                    <button
+                        class="library-overview-all"
+                        type="button"
+                    >
+                        <span>Tout voir</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                </header>
+
+                <div
+                    class="
+                        library-preview-pack-grid
+                        library-home-pack-grid
+                    "
+                >
+                    ${packPreviewContent}
+                </div>
+            </section>
+        `;
+
+        const openDownloadsOverview = () => {
+            renderChoiceTelechargement();
+        };
+
+        document
+            .querySelector(
+                ".library-overview-title-action"
+            )
+            ?.addEventListener(
+                "click",
+                openDownloadsOverview
+            );
+
+        document
+            .querySelector(
+                ".library-overview-all"
+            )
+            ?.addEventListener(
+                "click",
+                openDownloadsOverview
+            );
+
+        document
+            .querySelectorAll(
+                ".library-preview-pack"
+            )
+            .forEach((card) => {
+                card.addEventListener(
+                    "click",
+                    () => {
+                        const packId =
+                            card.dataset.packId;
+
+                        if (!packId) return;
+
+                        renderDownloadedPack(
+                            packId
+                        );
+                    }
+                );
+            });
+    } catch (error) {
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
+
+        console.error(
+            "Erreur accueil Librairie :",
+            error
+        );
+
+        renderLibraryOverviewError(
+            error?.message ||
+            "Impossible de charger vos téléchargements."
+        );
+    }
 }
 
 
+async function renderChoiceTelechargement() {
+    const viewSequence =
+        beginLibraryView();
 
-
-function renderChoiceTelechargement() {
     content.innerHTML = `
+        <section
+            class="
+                library-overview
+                library-downloads-overview
+            "
+            aria-busy="true"
+        >
+            <button
+                class="choice-back-button"
+                type="button"
+            >
+                Retour
+            </button>
 
+            <div class="library-overview-loading">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </section>
+    `;
 
- <button class="choice-back-button">
-  Retour
-  </button>
+    document
+        .querySelector(
+            ".choice-back-button"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                renderLibrary();
+            }
+        );
 
-  <section class="choice-accueil">
-  <section class="choice-page">
- 
-  <button class="choice-btn pack-telecharger">
-  Pack Télécharger
-  </button>
+    try {
+        const account =
+            await getLibraryAccountDownloads();
 
-  <button class="choice-btn track-telecharger">
-  Track Télécharger
-  </button>
-  `
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
 
-    const choiceBackBtn = document.querySelector(".choice-back-button");
-    const packTelecharger = document.querySelector(".pack-telecharger");
-    const trackTelecharger = document.querySelector(".track-telecharger");
+        const downloadedPacks =
+            getLibraryDownloadedPacks(
+                account
+            );
 
+        const downloadedTracks =
+            getLibraryDownloadedTracks(
+                account
+            );
 
-    choiceBackBtn.addEventListener("click", () => {
-        renderLibrary();
-    });
+        const previewPacks =
+            downloadedPacks.slice(0, 4);
 
-    packTelecharger.addEventListener("click", () => {
-        renderPack();
-    });
+        const previewTracks =
+            downloadedTracks.slice(0, 3);
 
-    trackTelecharger.addEventListener("click", () => {
-        renderTrack();
-    });
-};
+        const packPreviewContent =
+            previewPacks.length
+                ? previewPacks
+                    .map(
+                        createLibraryPackPreview
+                    )
+                    .join("")
+                : `
+                    <div class="library-overview-empty">
+                        <strong>Aucun pack téléchargé</strong>
 
+                        <p>
+                            Vos packs achetés apparaîtront ici.
+                        </p>
+                    </div>
+                `;
+
+        const trackPreviewContent =
+            previewTracks.length
+                ? previewTracks
+                    .map(
+                        createLibraryTrackPreview
+                    )
+                    .join("")
+                : `
+                    <div class="library-overview-empty">
+                        <strong>Aucune track téléchargée</strong>
+
+                        <p>
+                            Vos tracks achetées apparaîtront ici.
+                        </p>
+                    </div>
+                `;
+
+        content.innerHTML = `
+            <section
+                class="
+                    library-overview
+                    library-downloads-overview
+                "
+            >
+                <button
+                    class="choice-back-button"
+                    type="button"
+                >
+                    Retour
+                </button>
+
+                
+
+                <section class="library-overview-section">
+                    <header class="library-overview-section-heading">
+                        <div>
+                            <h2>Packs téléchargés</h2>
+
+                            <span>
+                                ${downloadedPacks.length}
+                                ${
+                                    downloadedPacks.length > 1
+                                        ? "packs"
+                                        : "pack"
+                                }
+                            </span>
+                        </div>
+
+                        <button
+                            class="library-overview-pack-all"
+                            type="button"
+                        >
+                            <span>Tout voir</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
+                    </header>
+
+                    <div
+                        class="
+                            library-preview-pack-grid
+                            library-choice-pack-grid
+                        "
+                    >
+                        ${packPreviewContent}
+                    </div>
+                </section>
+
+                <section class="library-overview-section">
+                    <header class="library-overview-section-heading">
+                        <div>
+                            <h2>Tracks téléchargées</h2>
+
+                            <span>
+                                ${downloadedTracks.length}
+                                ${
+                                    downloadedTracks.length > 1
+                                        ? "tracks"
+                                        : "track"
+                                }
+                            </span>
+                        </div>
+
+                        <button
+                            class="library-overview-track-all"
+                            type="button"
+                        >
+                            <span>Tout voir</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
+                    </header>
+
+                    <div class="library-preview-track-list">
+                        ${trackPreviewContent}
+                    </div>
+                </section>
+            </section>
+        `;
+
+        document
+            .querySelector(
+                ".choice-back-button"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    renderLibrary();
+                }
+            );
+
+        document
+            .querySelector(
+                ".library-overview-pack-all"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    renderPack();
+                }
+            );
+
+        document
+            .querySelector(
+                ".library-overview-track-all"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    renderTrack();
+                }
+            );
+
+        document
+            .querySelectorAll(
+                ".library-preview-pack"
+            )
+            .forEach((card) => {
+                card.addEventListener(
+                    "click",
+                    () => {
+                        const packId =
+                            card.dataset.packId;
+
+                        if (!packId) return;
+
+                        renderDownloadedPack(
+                            packId
+                        );
+                    }
+                );
+            });
+
+        document
+            .querySelectorAll(
+                ".library-preview-track"
+            )
+            .forEach((row) => {
+                row.addEventListener(
+                    "click",
+                    () => {
+                        renderTrack();
+                    }
+                );
+            });
+    } catch (error) {
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
+
+        console.error(
+            "Erreur vue Mes téléchargements :",
+            error
+        );
+
+        content.innerHTML = `
+            <section
+                class="
+                    library-overview
+                    library-downloads-overview
+                "
+            >
+                <button
+                    class="choice-back-button"
+                    type="button"
+                >
+                    Retour
+                </button>
+
+                <div
+                    class="library-overview-state"
+                    role="status"
+                >
+                    <strong>Chargement impossible</strong>
+
+                    <p>
+                        ${
+                            escapeLibraryHtml(
+                                error?.message ||
+                                "Impossible de charger vos téléchargements."
+                            )
+                        }
+                    </p>
+
+                    <button
+                        class="library-downloads-retry"
+                        type="button"
+                    >
+                        Réessayer
+                    </button>
+                </div>
+            </section>
+        `;
+
+        document
+            .querySelector(
+                ".choice-back-button"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    renderLibrary();
+                }
+            );
+
+        document
+            .querySelector(
+                ".library-downloads-retry"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    renderChoiceTelechargement();
+                }
+            );
+    }
+}
 
 
 
 async function renderPack() {
+    const viewSequence =
+        beginLibraryView();
 
-    const currentUser = JSON.parse(
-        localStorage.getItem("sonaraProfile")
-    );
+    let packsTelecharges = [];
 
-    const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
-    const freshAccountData = await userResponse.json();
-    const freshAccount = freshAccountData.account;
+    try {
+        const account =
+            await getLibraryAccountDownloads();
 
-    const downloadedIds = freshAccount?.downloadedPacks || [];
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
 
-    const response = await fetch(`${API_URL}/api/packs`);
-    const allPacks = await response.json();
+        packsTelecharges =
+            getLibraryDownloadedPacks(
+                account
+            );
+    } catch (error) {
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
 
-    const packsTelecharges = allPacks.filter(pack =>
-        downloadedIds.includes(pack.id)
-    );
+        console.error(
+            "Erreur packs téléchargés :",
+            error
+        );
 
-    console.log("USER =", currentUser);
-    console.log("DOWNLOADED IDS =", downloadedIds);
-    console.log("ALL PACKS =", allPacks);
-    console.log("PACKS TELECHARGES =", packsTelecharges);
+        renderLibraryOverviewError(
+            error?.message ||
+            "Impossible de charger les packs téléchargés."
+        );
+
+        return;
+    }
 
 
     content.innerHTML = `
@@ -195,10 +1066,29 @@ async function renderPack() {
 };
 
 function renderDownloadedPack(packId) {
+    beginLibraryView();
 
+    const normalizedPackId =
+        String(packId || "");
 
-    const packData = packs.find(pack => pack.id === packId);
+    const packData =
+        packs.find(
+            (pack) =>
+                String(pack.id) ===
+                normalizedPackId
+        );
 
+    if (!packData) {
+        renderLibraryOverviewError(
+            "Ce pack téléchargé est introuvable."
+        );
+        return;
+    }
+
+    const packTracks =
+        Array.isArray(packData.tracks)
+            ? packData.tracks
+            : [];
 
     content.innerHTML = `
   
@@ -258,7 +1148,7 @@ function renderDownloadedPack(packId) {
       </div>
     </div> 
 
-    ${packData.tracks.map((track, index) => `
+    ${packTracks.map((track, index) => `
     
  
 
@@ -905,34 +1795,49 @@ trackDownloadBtns.forEach((btn) => {
 
 
 async function renderTrack() {
-    const currentUser = JSON.parse(
-        localStorage.getItem("sonaraProfile")
-    );
+    const viewSequence =
+        beginLibraryView();
 
-    const userResponse = await fetch(`${API_URL}/api/users/${currentUser.id}`);
-    const freshAccountData = await userResponse.json();
-    const freshAccount = freshAccountData.account;
+    let downloadedTracks = [];
 
-    const downloadedTrackIds = freshAccount?.downloadedTracks || [];
+    try {
+        const account =
+            await getLibraryAccountDownloads();
 
-    const response = await fetch(`${API_URL}/api/packs`);
-    const allPacks = await response.json();
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
 
-    const downloadedTracks = [];
+        downloadedTracks =
+            getLibraryDownloadedTracks(
+                account
+            );
+    } catch (error) {
+        if (
+            !isCurrentLibraryView(
+                viewSequence
+            )
+        ) {
+            return;
+        }
 
-    allPacks.forEach(pack => {
-        pack.tracks.forEach(track => {
-            if (downloadedTrackIds.includes(track.id)) {
-                downloadedTracks.push({
-                    ...track,
-                    packId: pack.id
-                });
-            }
-        });
-    });
+        console.error(
+            "Erreur tracks téléchargées :",
+            error
+        );
 
-console.log("TRACK IDS =", downloadedTrackIds);
-console.log("TRACKS TELECHARGEES =", downloadedTracks);
+        renderLibraryOverviewError(
+            error?.message ||
+            "Impossible de charger les tracks téléchargées."
+        );
+
+        return;
+    }
+
 
     content.innerHTML = `
 
@@ -1566,39 +2471,122 @@ trackDownloadBtns.forEach((btn) => {
 
 
 
-lucide.createIcons();
+function initializeLibraryNavigation() {
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 
-const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
+  let profile = null;
 
-const mobileCreateBtn = document.querySelector(".nav-mobile-create");
+  try {
+    profile = JSON.parse(
+      localStorage.getItem(
+        "sonaraProfile"
+      ) || "null"
+    );
+  } catch (error) {
+    console.warn(
+      "Profil Library invalide :",
+      error
+    );
+  }
 
-if (profile?.role !== "both") {
-    mobileCreateBtn.style.display = "none";
-}
+  const libraryNavigationButtons =
+    document.querySelectorAll(
+      "[data-library-nav]"
+    );
 
-function setActiveNav(activeBtn) {
-    document.querySelectorAll(".nav-mobile-btn").forEach(btn => {
-        btn.classList.remove("active");
+  const libraryCreateButtons =
+    document.querySelectorAll(
+      '[data-library-nav="create"]'
+    );
+
+  if (profile?.role !== "both") {
+    libraryCreateButtons.forEach(
+      (button) => {
+        button.style.display = "none";
+      }
+    );
+  }
+
+  function setActiveLibraryNavigation(
+    navigationName
+  ) {
+    libraryNavigationButtons.forEach(
+      (button) => {
+        button.classList.toggle(
+          "active",
+          button.dataset.libraryNav ===
+            navigationName
+        );
+      }
+    );
+  }
+
+  document
+    .querySelectorAll(
+      '[data-library-nav="home"]'
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          setActiveLibraryNavigation(
+            "home"
+          );
+
+          window.location.assign(
+            new URL(
+              "/home.html",
+              window.location.origin
+            ).href
+          );
+        }
+      );
     });
 
-    activeBtn.classList.add("active");
+  libraryCreateButtons.forEach(
+    (button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          setActiveLibraryNavigation(
+            "create"
+          );
+
+          window.location.assign(
+            new URL(
+              "/app/pages/creator.html",
+              window.location.origin
+            ).href
+          );
+        }
+      );
+    }
+  );
+
+  document
+    .querySelectorAll(
+      '[data-library-nav="library"]'
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          setActiveLibraryNavigation(
+            "library"
+          );
+
+          renderLibrary();
+        }
+      );
+    });
+
+  setActiveLibraryNavigation(
+    "library"
+  );
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 }
-
-
-document.querySelector(".nav-mobile-home").addEventListener("click", () => {
-    window.location.href = "/home.html";
-});
-
-document.querySelector(".nav-mobile-create").addEventListener("click", () => {
-    window.location.href = "creator.html";
-});
-
-document.querySelector(".nav-mobile-library").addEventListener("click", () => {
-    setActiveNav(document.querySelector(".nav-mobile-library"))
-
-    renderLibrary();
-});
-
-
-
-
