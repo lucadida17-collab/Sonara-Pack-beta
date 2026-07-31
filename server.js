@@ -182,16 +182,10 @@ const packsCollection = db.collection("packs");
 
 
 async function connectDB() {
-  try {
-    await client.connect()
-    console.log("MongoDB connecté 🔥")
-  } catch (error) {
-    console.error(error)
-  }
+  await client.connect();
+  await db.command({ ping: 1 });
+  console.log("MongoDB connecté 🔥");
 }
-
-connectDB()
-
 
 const app = express();
 
@@ -5859,9 +5853,17 @@ app.delete("/api/founder/feedback/:id", requireFounderKey, async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
+async function startServer() {
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error("Démarrage MAIN impossible : connexion MongoDB indisponible.", error);
+    process.exitCode = 1;
+    return;
+  }
 
-  console.log(`
+  app.listen(PORT, () => {
+    console.log(`
 ━━━━━━━━━━━━━━━━━━
 🔥 SONARA MAIN READY
 🌐 Serveur distant lancé sur le port ${PORT}
@@ -5869,5 +5871,7 @@ app.listen(PORT, () => {
 ☁️ Fichiers persistants : Cloudflare R2
 ━━━━━━━━━━━━━━━━━━
 `);
+  });
+}
 
-});
+startServer();
