@@ -1,58 +1,331 @@
-
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fr" translate="yes">
-
 <head>
- <meta Charset="UTF-8">
- <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <meta charset="UTF-8">
 
-  gtag('config', 'G-NEBG1Z3EE0');
-</script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NEBG1Z3EE0');
+  </script>
 
- <link rel="stylesheet" href="app/css/index.css">
- <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
- <link rel="preconnect" href="https://fonts.googleapis.com">
- <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
- <link href="https://fonts.googleapis.com/css2?family=inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
- <meta name="viewport" content="width=device-width, Initial-scale=1.0">
- <title>Sonara Pack</title>
+  <link rel="stylesheet" href="app/css/index.css?v=pre-v1-sonara-loader-restored">
+  <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sonara Pack</title>
   <link rel="stylesheet" href="app/css/i18n.css">
 </head>
 
 <body class="Load">
+  <main
+    class="sonara-entry-loader"
+    id="sonaraEntryLoader"
+    role="progressbar"
+    aria-label="Chargement de Sonara Pack"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="0"
+  >
+    <div class="sonara-loader-glow sonara-loader-glow-one" aria-hidden="true"></div>
+    <div class="sonara-loader-glow sonara-loader-glow-two" aria-hidden="true"></div>
 
-    <main>
+    <section class="sonara-loader-content">
+      <div class="sonara-loader-scene" aria-hidden="true">
+        <span class="sonara-loader-orbit sonara-loader-orbit-one"></span>
+        <span class="sonara-loader-orbit sonara-loader-orbit-two"></span>
+        <div class="sonara-loader-logo">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
 
-          
-    <div class="intro-screen">
-        <div class="version"></div>
-  
-    <video 
-    src="assets/video/logo-Sonara-Animation.mp4" 
-    class="intro-animation"
-    autoplay
-    muted
-    playsinline
-    onended="this.pause(); this.currentTime = this.duration;"></video>
-  </video>
-  <h2 class="intro-title">Sonara Pack</h2>
-  <div class="info">
-  <div class="spinner"></div>
-   <p class="intro-chargement">Chargement...</p>
+      <p class="sonara-loader-kicker">SONARA PACK</p>
+      <h1>Connexion à votre espace</h1>
 
-</div>
-</div>
+      <p
+        class="intro-chargement sonara-loader-message"
+        id="sonaraLoadingStatus"
+        aria-live="polite"
+        aria-atomic="true"
+      >Initialisation de Sonara Pack…</p>
 
-    </main>
-    <script src="config.js"></script>
- <script src="app/js/index.js"></script>
+      <div class="sonara-loader-progress" aria-hidden="true">
+        <span class="sonara-loader-progress-fill" id="sonaraProgressFill"></span>
+      </div>
+
+      <div class="sonara-loader-meta" aria-hidden="true">
+        <span id="sonaraLoadingStep">Initialisation</span>
+        <span id="sonaraLoadingPercent">0%</span>
+      </div>
+
+      <button class="sonara-loader-retry" id="sonaraRetryButton" type="button" hidden>
+        Réessayer
+      </button>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const SERVER_TIMEOUT = 5000;
+      const MIN_STEP_TIME = 360;
+      const TYPE_SPEED = 18;
+
+      const loader = document.getElementById("sonaraEntryLoader");
+      const statusElement = document.getElementById("sonaraLoadingStatus");
+      const progressFill = document.getElementById("sonaraProgressFill");
+      const progressPercent = document.getElementById("sonaraLoadingPercent");
+      const progressStep = document.getElementById("sonaraLoadingStep");
+      const retryButton = document.getElementById("sonaraRetryButton");
+
+      let typingRun = 0;
+      let currentProgress = 0;
+
+      function wait(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
+      }
+
+      function setProgress(value, stepLabel) {
+        const safeValue = Math.min(100, Math.max(currentProgress, Number(value) || 0));
+        currentProgress = safeValue;
+
+        if (progressFill) progressFill.style.width = `${safeValue}%`;
+        if (progressPercent) progressPercent.textContent = `${Math.round(safeValue)}%`;
+        if (progressStep && stepLabel) progressStep.textContent = stepLabel;
+        loader?.setAttribute("aria-valuenow", String(Math.round(safeValue)));
+      }
+
+      async function writeStatus(message, instant = false) {
+        if (!statusElement) return;
+
+        const runId = ++typingRun;
+        const text = String(message || "");
+        statusElement.classList.add("is-writing");
+        statusElement.textContent = "";
+
+        if (instant) {
+          statusElement.textContent = text;
+          statusElement.classList.remove("is-writing");
+          return;
+        }
+
+        for (let index = 0; index < text.length; index += 1) {
+          if (runId !== typingRun) return;
+          statusElement.textContent += text[index];
+          await wait(TYPE_SPEED);
+        }
+
+        if (runId === typingRun) {
+          statusElement.classList.remove("is-writing");
+        }
+      }
+
+      async function showStep(message, progress, stepLabel, minimumTime = MIN_STEP_TIME) {
+        setProgress(progress, stepLabel);
+        await Promise.all([
+          writeStatus(message),
+          wait(minimumTime)
+        ]);
+      }
+
+      function clearSession() {
+        if (window.SonaraSession?.clear) {
+          window.SonaraSession.clear();
+          return;
+        }
+
+        localStorage.removeItem("sonaraProfile");
+        localStorage.removeItem("sonaraProfileCreated");
+        localStorage.removeItem("sonaraKnownAccounts");
+        localStorage.removeItem("sonaraSessionToken");
+        sessionStorage.removeItem("sonaraSessionToken");
+      }
+
+      function goToInscription() {
+        window.location.replace("/app/pages/inscription.html");
+      }
+
+      function redirectByRole(profile) {
+        const role = String(profile?.role || "").toLowerCase();
+        const status = String(profile?.status || "").toLowerCase();
+
+        if (["artist", "both"].includes(role)) {
+          window.location.replace(
+            status === "pending"
+              ? "/app/pages/pending.html"
+              : "/app/pages/creator.html"
+          );
+          return;
+        }
+
+        if (role === "user") {
+          window.location.replace("/home.html");
+          return;
+        }
+
+        clearSession();
+        goToInscription();
+      }
+
+      async function fetchWithTimeout(url, options = {}) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), SERVER_TIMEOUT);
+
+        try {
+          return await fetch(url, {
+            ...options,
+            cache: "no-store",
+            headers: {
+              Accept: "application/json",
+              ...(options.headers || {})
+            },
+            signal: controller.signal
+          });
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      }
+
+      async function checkServer() {
+        const response = await fetchWithTimeout(`${API_URL}/api/health`, {
+          method: "GET"
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.ok !== true) {
+          throw new Error("Le serveur Sonara ne répond pas correctement.");
+        }
+      }
+
+      function readStoredProfile() {
+        try {
+          return JSON.parse(localStorage.getItem("sonaraProfile") || "null");
+        } catch {
+          return null;
+        }
+      }
+
+      async function loadModerationGuard() {
+        if (window.SonaraModeration) return;
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "/app/js/auth-guard.js?v=pre-v1-loader-restored";
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Auth Guard indisponible."));
+          document.body.appendChild(script);
+        });
+      }
+
+      async function showServerError() {
+        loader?.classList.add("has-error");
+        setProgress(Math.max(currentProgress, 12), "Serveur indisponible");
+        await writeStatus("Connexion au serveur impossible.", true);
+        if (retryButton) retryButton.hidden = false;
+      }
+
+      async function startSonara() {
+        try {
+          await Promise.all([
+            checkServer(),
+            showStep("Recherche du serveur Sonara Pack…", 18, "Serveur · 1/4")
+          ]);
+
+          await showStep("Serveur trouvé. Chargement des données…", 42, "Données · 2/4");
+
+          const storedProfile = readStoredProfile();
+          const profileId = String(storedProfile?.accountId || storedProfile?.id || "");
+
+          await showStep("Recherche de l’ID du compte connecté…", 68, "Compte · 3/4");
+
+          if (!profileId) {
+            clearSession();
+            await showStep("Aucun ID connecté. Ouverture de l’inscription…", 92, "Inscription · 4/4", 520);
+            setProgress(100, "Inscription");
+            await wait(180);
+            goToInscription();
+            return;
+          }
+
+          const profileResponse = await fetchWithTimeout(
+            `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
+            { method: "GET" }
+          );
+
+          if ([401, 403, 404].includes(profileResponse.status)) {
+            clearSession();
+            await showStep("ID introuvable. Retour à l’inscription…", 92, "Inscription · 4/4", 520);
+            setProgress(100, "Inscription");
+            await wait(180);
+            goToInscription();
+            return;
+          }
+
+          if (!profileResponse.ok) {
+            throw new Error(`Vérification du profil impossible : ${profileResponse.status}`);
+          }
+
+          const freshProfile = await profileResponse.json().catch(() => null);
+          if (!(freshProfile?.accountId || freshProfile?.id) || !freshProfile?.role) {
+            clearSession();
+            await showStep("ID invalide. Retour à l’inscription…", 92, "Inscription · 4/4", 520);
+            setProgress(100, "Inscription");
+            await wait(180);
+            goToInscription();
+            return;
+          }
+
+          localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
+          localStorage.setItem("sonaraProfileCreated", "true");
+
+          await loadModerationGuard();
+          if (window.SonaraModeration?.showNext) {
+            await window.SonaraModeration.showNext(freshProfile);
+          }
+
+          const status = String(freshProfile.status || "").toLowerCase();
+          const artistStatus = String(freshProfile.artistStatus || "").toLowerCase();
+          const role = String(freshProfile.role || "").toLowerCase();
+          const artistAccessRemoved = role === "both" && [
+            "banned",
+            "rejected",
+            "suspended"
+          ].includes(artistStatus || status);
+
+          if (!artistAccessRemoved && ["banned", "rejected", "suspended"].includes(status)) {
+            clearSession();
+            goToInscription();
+            return;
+          }
+
+          await showStep("ID retrouvé. Préparation de votre dashboard…", 88, "Accès · 4/4", 460);
+          await showStep("Entrée dans Sonara Pack…", 100, "Sonara Pack", 420);
+          redirectByRole(freshProfile);
+        } catch (error) {
+          console.error("Chargement Sonara impossible :", error);
+          await showServerError();
+        }
+      }
+
+      retryButton?.addEventListener("click", () => window.location.reload());
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startSonara, { once: true });
+      } else {
+        startSonara();
+      }
+    })();
+  </script>
   <script src="app/js/i18n.js" defer></script>
 </body>
-
 </html>

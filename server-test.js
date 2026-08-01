@@ -286,6 +286,19 @@ app.post(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+/* =========================
+   HEALTH CHECK SONARA
+   Utilisé par index.html avant toute vérification de compte.
+========================= */
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    environment: "test",
+    timestamp: new Date().toISOString()
+  });
+});
 
 /* =========================
    R2 FILE PROXY
@@ -2023,146 +2036,115 @@ app.post("/api/accounts/login", async (req, res) => {
    STRIPE CONNECT
 ========================= */
 
-app.post(
-  "/api/stripe/connect-account",
-  async (req, res) => {
-    try {
-      const { artistId, email } = req.body;
+app.post("/api/stripe/connect-account", async (req, res) => {
+  try {
+    const artistId = String(req.body?.artistId || "").trim();
+    const email = String(req.body?.email || "").trim();
+    const requestedOrigin = String(req.body?.frontOrigin || "")
+      .trim()
+      .replace(/\/+$/, "");
+    const configuredFrontUrl = String(frontUrl || "").replace(/\/+$/, "");
+    const bankFrontUrl = requestedOrigin === configuredFrontUrl
+      ? requestedOrigin
+      : configuredFrontUrl;
 
-      const result =
-        await findRootAndAccountById(artistId);
-
-      if (!result?.account) {
-        return res.status(404).json({
-          error: "Utilisateur introuvable."
-        });
-      }
-
-      const artist = result.account;
-
-      if (
-        artist.role !== "artist" &&
-        artist.role !== "both"
-      ) {
-        return res.status(403).json({
-          error:
-            "Seuls les artistes peuvent créer un compte Stripe."
-        });
-      }
-
-      if (artist.stripeAccountId) {
-        const existingStripeAccount =
-          await stripe.accounts.retrieve(
-            artist.stripeAccountId
-          );
-
-        const existingStatus =
-          existingStripeAccount.charges_enabled &&
-          existingStripeAccount.payouts_enabled
-            ? "verified"
-            : "onboarding_started";
-
-        artist.stripeStatus = existingStatus;
-
-        await saveAccountState(
-          result.rootUser,
-          artist
-        );
-
-        if (existingStatus === "verified") {
-          const loginLink =
-            await stripe.accounts.createLoginLink(
-              artist.stripeAccountId
-            );
-
-          return res.status(200).json({
-            success: true,
-            reused: true,
-            accountId: artist.stripeAccountId,
-            stripeStatus: existingStatus,
-            url: loginLink.url
-          });
-        }
-
-        const existingAccountLink =
-          await stripe.accountLinks.create({
-            account: artist.stripeAccountId,
-            refresh_url:
-              `${frontUrl}/app/pages/page-management/bank.html`,
-            return_url:
-              `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
-            type: "account_onboarding"
-          });
-
-        return res.status(200).json({
-          success: true,
-          reused: true,
-          accountId: artist.stripeAccountId,
-          stripeStatus: existingStatus,
-          url: existingAccountLink.url
-        });
-      }
-
-      const stripeAccount =
-        await stripe.accounts.create({
-          type: "express",
-          country: "FR",
-          email: email || artist.mail,
-
-          capabilities: {
-            card_payments: {
-              requested: true
-            },
-
-            transfers: {
-              requested: true
-            }
-          }
-        });
-
-      artist.stripeAccountId =
-        stripeAccount.id;
-
-      artist.stripeStatus =
-        "onboarding_started";
-
-      await saveAccountState(
-        result.rootUser,
-        artist
-      );
-
-      const accountLink =
-        await stripe.accountLinks.create({
-          account: stripeAccount.id,
-
-          refresh_url:
-            `${frontUrl}/app/pages/page-management/bank.html`,
-
-          return_url:
-            `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
-
-          type: "account_onboarding"
-        });
-
-      return res.status(200).json({
-        success: true,
-        accountId: stripeAccount.id,
-        stripeStatus: artist.stripeStatus,
-        url: accountLink.url
-      });
-
-    } catch (error) {
-      console.error(
-        "STRIPE CONNECT ERROR :",
-        error
-      );
-
-      return res.status(500).json({
-        error: error.message
+    if (!artistId) {
+      return res.status(400).json({
+        success: false,
+        error: "Identifiant artiste introuvable."
       });
     }
+
+    const result = await findRootAndAccountById(artistId);
+    const artist = result?.account;
+
+    if (!artist || !result?.rootUser) {
+      return res.status(404).json({
+        success: false,
+        error: "Utilisateur introuvable."
+      });
+    }
+
+    if (!["artist", "both"].includes(String(artist.role || "").toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        error: "Seuls les artistes peuvent utiliser Stripe Connect."
+      });
+    }
+
+    let stripeAccount = null;
+    let recreated = false;
+
+    if (artist.stripeAccountId) {
+      try {
+        stripeAccount = await stripe.accounts.retrieve(artist.stripeAccountId);
+      } catch (error) {
+        const missing =
+          error?.code === "resource_missing" ||
+          error?.statusCode === 404 ||
+          /no such account|resource_missing/i.test(String(error?.message || ""));
+
+        if (!missing) throw error;
+        recreated = true;
+      }
+    }
+
+    if (!stripeAccount) {
+      stripeAccount = await stripe.accounts.create({
+        type: "express",
+        country: "FR",
+        email: email || artist.mail || artist.email || undefined,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true }
+        }
+      });
+    }
+
+    const verified = Boolean(
+      stripeAccount.charges_enabled && stripeAccount.payouts_enabled
+    );
+
+    let stripeUrl = "";
+
+    if (verified) {
+      const loginLink = await stripe.accounts.createLoginLink(stripeAccount.id);
+      stripeUrl = loginLink.url;
+    } else {
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccount.id,
+        refresh_url: `${bankFrontUrl}/app/pages/page-management/bank.html`,
+        return_url: `${bankFrontUrl}/app/pages/page-management/bank.html?stripe=success`,
+        type: "account_onboarding"
+      });
+      stripeUrl = accountLink.url;
+    }
+
+    if (!/^https:\/\/([a-z0-9-]+\.)*stripe\.com(?:\/|$)/i.test(stripeUrl)) {
+      throw new Error("Stripe n’a pas renvoyé une URL Connect valide.");
+    }
+
+    const now = new Date().toISOString();
+    artist.stripeAccountId = stripeAccount.id;
+    artist.stripeStatus = verified ? "verified" : "onboarding_started";
+    artist.updatedAt = now;
+    await saveAccountState(result.rootUser, artist);
+
+    return res.status(200).json({
+      success: true,
+      recreated,
+      accountId: stripeAccount.id,
+      stripeStatus: artist.stripeStatus,
+      url: stripeUrl
+    });
+  } catch (error) {
+    console.error("STRIPE CONNECT ERROR :", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Impossible d’ouvrir Stripe."
+    });
   }
-);
+});
 
 app.post(
   "/api/stripe/continue-onboarding",

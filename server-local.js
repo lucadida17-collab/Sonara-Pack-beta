@@ -86,9 +86,13 @@ function permanentlyRejectLocalPack(packId) {
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
-const frontUrl = String(process.env.FRONT_URL || "http://localhost:5502")
+const configuredFrontUrl = String(process.env.FRONT_URL || "http://localhost:5500")
   .trim()
   .replace(/\/+$/, "");
+
+const frontUrl = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(configuredFrontUrl)
+  ? "http://localhost:5500"
+  : configuredFrontUrl;
 
 if (!stripeWebhookSecret) {
   console.warn("Stripe webhook désactivé : STRIPE_WEBHOOK_SECRET absente.");
@@ -171,6 +175,19 @@ app.post(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+/* =========================
+   HEALTH CHECK SONARA
+   Utilisé par index.html avant toute vérification de compte.
+========================= */
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    environment: "local",
+    timestamp: new Date().toISOString()
+  });
+});
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
@@ -1741,164 +1758,128 @@ app.post("/api/accounts/login", (req, res) => {
   }
 });
 
- app.post("/api/stripe/connect-account", async (req, res) => {
+app.post("/api/stripe/connect-account", async (req, res) => {
   try {
-    const { artistId, email } = req.body;
+    const artistId = String(req.body?.artistId || "").trim();
+    const email = String(req.body?.email || "").trim();
+    const requestedOrigin = String(req.body?.frontOrigin || "")
+      .trim()
+      .replace(/\/+$/, "");
+    const localFrontPattern = /^http:\/\/(?:127\.0\.0\.1|localhost):5500$/i;
+    const bankFrontUrl = localFrontPattern.test(requestedOrigin)
+      ? requestedOrigin
+      : frontUrl;
 
-    const users = JSON.parse(
-      fs.readFileSync(usersPath, "utf8")
-    );
+    if (!artistId) {
+      return res.status(400).json({
+        success: false,
+        error: "Identifiant artiste introuvable."
+      });
+    }
 
+    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
     let rootUser = null;
     let accountProfile = null;
 
     for (const currentRootUser of users) {
       const foundAccount = currentRootUser.accounts?.find(
         (currentAccount) =>
-          String(currentAccount.id) === String(artistId) ||
-          String(currentAccount.accountId) === String(artistId)
+          String(currentAccount.id) === artistId ||
+          String(currentAccount.accountId) === artistId
       );
 
       if (foundAccount) {
         rootUser = currentRootUser;
         accountProfile = foundAccount;
-
         break;
       }
     }
 
-    if (!accountProfile) {
+    if (!accountProfile || !rootUser) {
       return res.status(404).json({
+        success: false,
         error: "Utilisateur introuvable."
       });
     }
 
-    if (
-      accountProfile.role !== "artist" &&
-      accountProfile.role !== "both"
-    ) {
+    if (!["artist", "both"].includes(String(accountProfile.role || "").toLowerCase())) {
       return res.status(403).json({
-        error:
-          "Seuls les artistes peuvent créer un compte Stripe."
+        success: false,
+        error: "Seuls les artistes peuvent utiliser Stripe Connect."
       });
     }
+
+    let stripeAccount = null;
+    let recreated = false;
 
     if (accountProfile.stripeAccountId) {
-      const existingStripeAccount =
-        await stripe.accounts.retrieve(
-          accountProfile.stripeAccountId
-        );
+      try {
+        stripeAccount = await stripe.accounts.retrieve(accountProfile.stripeAccountId);
+      } catch (error) {
+        const missing =
+          error?.code === "resource_missing" ||
+          error?.statusCode === 404 ||
+          /no such account|resource_missing/i.test(String(error?.message || ""));
 
-      const existingStatus =
-        existingStripeAccount.charges_enabled &&
-        existingStripeAccount.payouts_enabled
-          ? "verified"
-          : "onboarding_started";
-
-      accountProfile.stripeStatus = existingStatus;
-      accountProfile.updatedAt = new Date().toISOString();
-      rootUser.updatedAt = new Date().toISOString();
-
-      fs.writeFileSync(
-        usersPath,
-        JSON.stringify(users, null, 2)
-      );
-
-      if (existingStatus === "verified") {
-        const loginLink =
-          await stripe.accounts.createLoginLink(
-            accountProfile.stripeAccountId
-          );
-
-        return res.status(200).json({
-          success: true,
-          reused: true,
-          accountId: accountProfile.stripeAccountId,
-          stripeStatus: existingStatus,
-          url: loginLink.url
-        });
+        if (!missing) throw error;
+        recreated = true;
       }
+    }
 
-      const existingAccountLink =
-        await stripe.accountLinks.create({
-          account: accountProfile.stripeAccountId,
-          refresh_url:
-            `${frontUrl}/app/pages/page-management/bank.html`,
-          return_url:
-            `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
-          type: "account_onboarding"
-        });
-
-      return res.status(200).json({
-        success: true,
-        reused: true,
-        accountId: accountProfile.stripeAccountId,
-        stripeStatus: existingStatus,
-        url: existingAccountLink.url
+    if (!stripeAccount) {
+      stripeAccount = await stripe.accounts.create({
+        type: "express",
+        country: "FR",
+        email: email || accountProfile.mail || accountProfile.email || undefined,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true }
+        }
       });
     }
 
-    const stripeAccount = await stripe.accounts.create({
-      type: "express",
-      country: "FR",
-      email: email || accountProfile.mail,
-
-      capabilities: {
-        card_payments: {
-          requested: true
-        },
-
-        transfers: {
-          requested: true
-        }
-      }
-    });
-
-    accountProfile.stripeAccountId =
-      stripeAccount.id;
-
-    accountProfile.stripeStatus =
-      "onboarding_started";
-
-    accountProfile.updatedAt =
-      new Date().toISOString();
-
-    rootUser.updatedAt =
-      new Date().toISOString();
-
-    fs.writeFileSync(
-      usersPath,
-      JSON.stringify(users, null, 2)
+    const verified = Boolean(
+      stripeAccount.charges_enabled && stripeAccount.payouts_enabled
     );
 
-    const accountLink =
-      await stripe.accountLinks.create({
+    let stripeUrl = "";
+
+    if (verified) {
+      const loginLink = await stripe.accounts.createLoginLink(stripeAccount.id);
+      stripeUrl = loginLink.url;
+    } else {
+      const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.id,
-
-        refresh_url:
-          `${frontUrl}/app/pages/page-management/bank.html`,
-
-        return_url:
-          `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
-
+        refresh_url: `${bankFrontUrl}/app/pages/page-management/bank.html`,
+        return_url: `${bankFrontUrl}/app/pages/page-management/bank.html?stripe=success`,
         type: "account_onboarding"
       });
+      stripeUrl = accountLink.url;
+    }
+
+    if (!/^https:\/\/([a-z0-9-]+\.)*stripe\.com(?:\/|$)/i.test(stripeUrl)) {
+      throw new Error("Stripe n’a pas renvoyé une URL Connect valide.");
+    }
+
+    const now = new Date().toISOString();
+    accountProfile.stripeAccountId = stripeAccount.id;
+    accountProfile.stripeStatus = verified ? "verified" : "onboarding_started";
+    accountProfile.updatedAt = now;
+    rootUser.updatedAt = now;
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 
     return res.status(200).json({
       success: true,
+      recreated,
       accountId: stripeAccount.id,
       stripeStatus: accountProfile.stripeStatus,
-      url: accountLink.url
+      url: stripeUrl
     });
-
   } catch (error) {
-    console.error(
-      "STRIPE CONNECT ERROR :",
-      error
-    );
-
+    console.error("STRIPE CONNECT ERROR :", error);
     return res.status(500).json({
-      error: error.message
+      success: false,
+      error: error.message || "Impossible d’ouvrir Stripe."
     });
   }
 });
