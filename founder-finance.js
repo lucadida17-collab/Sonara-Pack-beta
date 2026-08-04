@@ -208,6 +208,16 @@ function registerFounderFinance({ app, stripe, environment, db = null, dataDir, 
     writeArray(eventsPath, items);
   }
 
+  function mongoUpsertDocument(record = {}) {
+    const { createdAt, ...mutableFields } = record || {};
+    return {
+      $set: mutableFields,
+      $setOnInsert: {
+        createdAt: createdAt || new Date().toISOString()
+      }
+    };
+  }
+
   async function ensureMongoIndexesSafely() {
     if (!isMongo) return { enabled: false, reason: "json_storage" };
 
@@ -216,7 +226,7 @@ function registerFounderFinance({ app, stripe, environment, db = null, dataDir, 
       if (!movement?.externalKey) continue;
       await movementsCollection.updateOne(
         { externalKey: movement.externalKey },
-        { $set: movement, $setOnInsert: { createdAt: movement.createdAt || new Date().toISOString() } },
+        mongoUpsertDocument(movement),
         { upsert: true }
       );
     }
@@ -224,7 +234,7 @@ function registerFounderFinance({ app, stripe, environment, db = null, dataDir, 
       if (!event?.stripeEventId) continue;
       await eventsCollection.updateOne(
         { stripeEventId: event.stripeEventId },
-        { $set: event, $setOnInsert: { createdAt: event.createdAt || new Date().toISOString() } },
+        mongoUpsertDocument(event),
         { upsert: true }
       );
     }
@@ -414,7 +424,7 @@ function registerFounderFinance({ app, stripe, environment, db = null, dataDir, 
       try {
         await movementsCollection.updateOne(
           { externalKey: movement.externalKey },
-          { $set: movement, $setOnInsert: { createdAt: movement.createdAt } },
+          mongoUpsertDocument(movement),
           { upsert: true }
         );
       } catch (error) {
@@ -469,7 +479,7 @@ function registerFounderFinance({ app, stripe, environment, db = null, dataDir, 
       try {
         await eventsCollection.updateOne(
           { stripeEventId: eventId },
-          { $set: record, $setOnInsert: { createdAt: record.createdAt } },
+          mongoUpsertDocument(record),
           { upsert: true }
         );
       } catch (error) {
