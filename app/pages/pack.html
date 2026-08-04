@@ -13,7 +13,7 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="../css/pack.css?v=5.3.8.68-shell-contenu-original">
+  <link rel="stylesheet" href="../css/pack.css?v=5.3.8.69-license">
   <link rel="stylesheet" href="../components/header/header.css">
   <link rel="stylesheet" href="../css/catalog-shell.css?v=5.3.8.67">
 
@@ -149,33 +149,67 @@
     </div>
   </div>
 
-  <div class="notice-overlay">
-    <div class="notice-box">
-      <button class="notice-close" type="button">&times;</button>
-      <h2>Droit d'utilisation</h2>
+  <div class="notice-overlay" role="dialog" aria-modal="true" aria-labelledby="licenseNoticeTitle">
+    <section class="notice-box">
+      <button class="notice-close" type="button" aria-label="Fermer">
+        <i data-lucide="x"></i>
+      </button>
 
-      <p>🎧 Utilisation du pack :
-✔️ Vidéos (Tiktok, Youtube, films, etc.)
-✔️ Usage illimité (projets perso &amp; pro.)
-✔️ Utiliser des daw (rajouter des effet sur les sons.)
+      <header class="notice-license-header">
+        <span class="notice-license-icon"><i data-lucide="shield-check"></i></span>
+        <div>
+          <p class="notice-license-eyebrow">LICENCE SONARA PACK</p>
+          <h2 id="licenseNoticeTitle">Licence d’utilisation</h2>
+          <p class="notice-license-pack" data-user-content></p>
+        </div>
+        <span class="notice-license-version">Version 1</span>
+      </header>
 
-🚫 Interdit:
-❌ revente des sons
-❌ partage du pack
-❌ upload sur une plateforme musicale.</p>
+      <div class="notice-license-scope" aria-label="Portée de la licence">
+        <span><i data-lucide="globe-2"></i>Monde entier</span>
+        <span><i data-lucide="infinity"></i>Durée permanente</span>
+        <span><i data-lucide="user-round"></i>Liée à votre compte</span>
+      </div>
+
+      <div class="notice-license-grid">
+        <section class="notice-license-column notice-license-allowed">
+          <h3><i data-lucide="circle-check-big"></i>Vous pouvez</h3>
+          <ul class="notice-license-permissions"></ul>
+        </section>
+
+        <section class="notice-license-column notice-license-forbidden">
+          <h3><i data-lucide="circle-slash-2"></i>Interdit</h3>
+          <ul class="notice-license-restrictions"></ul>
+        </section>
+      </div>
+
+      <section class="notice-license-details" hidden>
+        <h3>Conditions complémentaires</h3>
+        <p class="notice-license-custom" data-user-content></p>
+      </section>
+
+      <p class="notice-license-credit" hidden>
+        <i data-lucide="at-sign"></i>
+        Le crédit de l’artiste est obligatoire pour toute publication.
+      </p>
+
+      <p class="notice-license-confirmation">
+        En acceptant, vous confirmez avoir lu cette licence. La version acceptée sera associée à votre achat.
+      </p>
 
       <div class="notice-actions">
         <button class="notice-refuse" type="button">Refuser</button>
-        <button class="notice-accept" type="button">Accepter</button>
+        <button class="notice-accept" type="button">Accepter et continuer</button>
       </div>
-    </div>
+    </section>
   </div>
 
   <script src="../../config.js" defer></script>
+<script src="/app/js/auth-guard.js?v=5.3.8.73-auth-all-pages" data-sonara-auth="required"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../components/header/header.js?v=5.3.8.63-session-stable"></script>
   <script src="../js/Memoire/memoire.js"></script>
-  <script src="../js/pack.js?v=5.3.8.67-pack-shell" defer></script>
+  <script src="../js/pack.js?v=5.3.8.69-license" defer></script>
   <script src="../js/i18n.js" defer></script>
 </body>
 

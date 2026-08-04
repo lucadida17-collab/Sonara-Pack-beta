@@ -56,20 +56,6 @@ async function readJsonResponse(response) {
   }
 }
 
-function readStripeRedirectUrl(value) {
-  const url = new URL(String(value || ""));
-  const hostname = url.hostname.toLowerCase();
-
-  if (
-    url.protocol !== "https:" ||
-    !(hostname === "stripe.com" || hostname.endsWith(".stripe.com"))
-  ) {
-    throw new Error("Le serveur n’a pas renvoyé un lien Stripe valide.");
-  }
-
-  return url.href;
-}
-
 async function fetchFreshArtistProfile() {
   const localProfile = readSonaraProfile();
   const artistId = getArtistId(localProfile);
@@ -266,8 +252,7 @@ async function connectStripe(account) {
       },
       body: JSON.stringify({
         artistId,
-        email: account.mail || account.email || "",
-        frontOrigin: window.location.origin
+        email: account.mail || account.email || ""
       })
     });
 
@@ -281,9 +266,16 @@ async function connectStripe(account) {
       );
     }
 
-    // Le serveur sauvegarde stripeAccountId / stripeStatus.
-    // Bank ne réaffiche rien avant de quitter réellement vers Stripe.
-    window.location.replace(readStripeRedirectUrl(data.url));
+    localStorage.setItem(
+      "sonaraProfile",
+      JSON.stringify({
+        ...account,
+        stripeAccountId: data.accountId || account.stripeAccountId,
+        stripeStatus: data.stripeStatus || "onboarding_started"
+      })
+    );
+
+    window.location.href = data.url;
   } catch (error) {
     showBankToast(error.message, "error");
     restore();
@@ -295,23 +287,18 @@ async function continueStripeOnboarding(account) {
   const restore = setButtonLoading(button, "Ouverture…");
 
   try {
-    const artistId = getArtistId(account);
-
-    if (!artistId) {
-      throw new Error("Identifiant artiste introuvable.");
-    }
-
-    const response = await fetch(`${API_URL}/api/stripe/connect-account`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        artistId,
-        email: account.mail || account.email || "",
-        frontOrigin: window.location.origin
-      })
-    });
+    const response = await fetch(
+      `${API_URL}/api/stripe/continue-onboarding`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          artistId: getArtistId(account)
+        })
+      }
+    );
 
     const data = await readJsonResponse(response);
 
@@ -323,7 +310,7 @@ async function continueStripeOnboarding(account) {
       );
     }
 
-    window.location.replace(readStripeRedirectUrl(data.url));
+    window.location.href = data.url;
   } catch (error) {
     showBankToast(error.message, "error");
     restore();

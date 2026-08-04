@@ -40,6 +40,73 @@ const moods = [
   ["classical", "Classique"]
 ];
 
+const CREATE_PACK_LICENSE_PERMISSIONS = [
+  ["personalProjects", "Projets personnels", "Utilisation dans ses propres créations personnelles."],
+  ["commercialProjects", "Projets commerciaux", "Utilisation professionnelle ou commerciale."],
+  ["monetization", "Monétisation", "Les projets intégrant les sons peuvent générer des revenus."],
+  ["socialMedia", "Réseaux sociaux", "TikTok, Instagram, YouTube et plateformes similaires."],
+  ["videoFilm", "Vidéos et films", "Films, courts métrages, documentaires et contenus vidéo."],
+  ["advertising", "Publicités", "Campagnes publicitaires et contenus de marque."],
+  ["gamesApps", "Jeux et applications", "Jeux vidéo, applications et expériences interactives."],
+  ["podcasts", "Podcasts", "Podcasts, émissions et contenus audio parlés."],
+  ["liveStreaming", "Live et streaming", "Diffusion en direct et rediffusions."],
+  ["clientWork", "Travail client", "Créations réalisées pour le compte d’un client."],
+  ["soundEditing", "Modification dans un DAW", "Découpe, effets, mixage et transformation créative."],
+  ["unlimitedProjects", "Projets illimités", "La licence n’impose pas de limite de projets."]
+];
+
+const CREATE_PACK_LICENSE_RESTRICTIONS = [
+  ["standaloneResale", "Revente isolée", "Interdiction de revendre les sons seuls ou presque inchangés."],
+  ["redistribution", "Partage ou redistribution", "Interdiction de partager le pack ou ses fichiers sources."],
+  ["musicPlatformUpload", "Upload musical autonome", "Interdiction de publier les sons seuls comme morceau sur une plateforme musicale."],
+  ["contentIdRegistration", "Enregistrement Content ID", "Interdiction d’enregistrer les sons seuls dans un système de revendication automatique."],
+  ["sublicensing", "Sous-licence", "Interdiction de revendre ou transférer la licence à une autre personne."],
+  ["misleadingOwnership", "Fausse propriété", "Interdiction de prétendre être l’auteur original des sons."]
+];
+
+function createDefaultPackLicense() {
+  return {
+    template: "sonara-standard",
+    version: 1,
+    name: "Licence standard Sonara",
+    creditRequired: false,
+    permissions: Object.fromEntries(
+      CREATE_PACK_LICENSE_PERMISSIONS.map(([key]) => [key, true])
+    ),
+    restrictions: Object.fromEntries(
+      CREATE_PACK_LICENSE_RESTRICTIONS.map(([key]) => [key, true])
+    ),
+    customPermissions: [],
+    customRestrictions: [],
+    customTerms: ""
+  };
+}
+
+function cloneCreatePackLicense(value) {
+  const fallback = createDefaultPackLicense();
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    ...fallback,
+    ...source,
+    version: 1,
+    permissions: {
+      ...fallback.permissions,
+      ...(source.permissions || {})
+    },
+    restrictions: {
+      ...fallback.restrictions,
+      ...(source.restrictions || {})
+    },
+    customPermissions: Array.isArray(source.customPermissions)
+      ? source.customPermissions.map((item) => String(item || "").trim()).filter(Boolean)
+      : [],
+    customRestrictions: Array.isArray(source.customRestrictions)
+      ? source.customRestrictions.map((item) => String(item || "").trim()).filter(Boolean)
+      : [],
+    customTerms: String(source.customTerms || "")
+  };
+}
+
 let currentStep = 0;
 let saveTimer = null;
 let isSubmitting = false;
@@ -55,10 +122,7 @@ const packData = {
   globalPrice: "",
   globalIsFree: false,
   globalPriceCustomized: false,
-  rights: {
-    accepted: false,
-    acceptedAt: null
-  },
+  license: createDefaultPackLicense(),
   updatedAt: null
 };
 
@@ -75,7 +139,7 @@ CreatePack.innerHTML = `
     <button type="button" class="step active" data-step="0">Pack</button>
     <button type="button" class="step" data-step="1">Tracks</button>
     <button type="button" class="step" data-step="2">Prix global</button>
-    <button type="button" class="step" data-step="3">Droits</button>
+    <button type="button" class="step" data-step="3">Licence</button>
   </section>
 
   <section class="draft-state" aria-live="polite">
@@ -195,10 +259,7 @@ function hydratePackData(saved) {
   packData.globalPrice = saved.globalPrice || "";
   packData.globalIsFree = Boolean(saved.globalIsFree);
   packData.globalPriceCustomized = Boolean(saved.globalPriceCustomized);
-  packData.rights = {
-    accepted: Boolean(saved.rights?.accepted),
-    acceptedAt: saved.rights?.acceptedAt || null
-  };
+  packData.license = cloneCreatePackLicense(saved.license);
   packData.updatedAt = saved.updatedAt || null;
 }
 
@@ -212,12 +273,13 @@ function updateSteps() {
 function render() {
   releaseObjectUrls();
   updateSteps();
+  missionCard.classList.toggle("is-license-step", currentStep === 3);
 
   const screens = [
     renderIdentity,
     renderTracks,
     renderPrice,
-    renderLegal
+    renderLicense
   ];
 
   screens[currentStep]();
@@ -798,57 +860,226 @@ function renderPrice() {
   });
 }
 
-function renderLegal() {
+function createPackLicenseCheckboxGroup(items, values, type) {
+  return items.map(([key, title, description]) => `
+    <label class="create-license-choice ${values[key] ? "is-active" : ""}">
+      <input type="checkbox" name="${type}_${key}" ${values[key] ? "checked" : ""}>
+      <span class="create-license-choice-mark" aria-hidden="true">${type === "permission" ? "✓" : "−"}</span>
+      <span>
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(description)}</small>
+      </span>
+    </label>
+  `).join("");
+}
+
+function createPackLicenseLineList(value) {
+  return (Array.isArray(value) ? value : [])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function readCreatePackLicenseForm(form) {
+  if (!form) return cloneCreatePackLicense(packData.license);
+  const data = new FormData(form);
+  return cloneCreatePackLicense({
+    template: "sonara-standard",
+    version: 1,
+    name: String(data.get("licenseName") || "Licence standard Sonara").trim(),
+    creditRequired: data.get("creditRequired") === "on",
+    permissions: Object.fromEntries(
+      CREATE_PACK_LICENSE_PERMISSIONS.map(([key]) => [key, data.get(`permission_${key}`) === "on"])
+    ),
+    restrictions: Object.fromEntries(
+      CREATE_PACK_LICENSE_RESTRICTIONS.map(([key]) => [key, data.get(`restriction_${key}`) === "on"])
+    ),
+    customPermissions: String(data.get("customPermissions") || "")
+      .split("\n").map((item) => item.trim()).filter(Boolean),
+    customRestrictions: String(data.get("customRestrictions") || "")
+      .split("\n").map((item) => item.trim()).filter(Boolean),
+    customTerms: String(data.get("customTerms") || "").trim()
+  });
+}
+
+function createPackLicensePreviewItems(items, values, customItems) {
+  return [
+    ...items.filter(([key]) => values[key]).map(([, title]) => title),
+    ...(Array.isArray(customItems) ? customItems : [])
+  ];
+}
+
+function updateCreatePackLicensePreview(form) {
+  const license = readCreatePackLicenseForm(form);
+  const preview = document.querySelector(".create-license-preview");
+  if (!preview) return;
+
+  const permissions = createPackLicensePreviewItems(
+    CREATE_PACK_LICENSE_PERMISSIONS,
+    license.permissions,
+    license.customPermissions
+  );
+  const restrictions = createPackLicensePreviewItems(
+    CREATE_PACK_LICENSE_RESTRICTIONS,
+    license.restrictions,
+    license.customRestrictions
+  );
+
+  preview.innerHTML = `
+    <header class="create-license-preview-head">
+      <span>LICENCE V1</span>
+      <strong>${escapeHtml(license.name || "Licence Sonara")}</strong>
+    </header>
+    <div class="create-license-preview-columns">
+      <section>
+        <h3>Vous pouvez</h3>
+        <ul>${permissions.length
+          ? permissions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+          : "<li>Aucune permission sélectionnée.</li>"}</ul>
+      </section>
+      <section class="is-restricted">
+        <h3>Interdit</h3>
+        <ul>${restrictions.length
+          ? restrictions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+          : "<li>Aucune restriction supplémentaire.</li>"}</ul>
+      </section>
+    </div>
+    ${license.creditRequired ? '<p class="create-license-preview-credit">Crédit de l’artiste obligatoire.</p>' : ""}
+    ${license.customTerms ? `<p class="create-license-preview-terms">${escapeHtml(license.customTerms)}</p>` : ""}
+  `;
+}
+
+function syncCreatePackLicenseForm(form) {
+  packData.license = readCreatePackLicenseForm(form);
+  clearFieldError("license");
+  updateCreatePackLicensePreview(form);
+}
+
+function bindCreatePackLicenseForm(form) {
+  form.querySelectorAll(".create-license-choice input").forEach((input) => {
+    input.addEventListener("change", () => {
+      input.closest(".create-license-choice")?.classList.toggle("is-active", input.checked);
+      syncCreatePackLicenseForm(form);
+    });
+  });
+
+  form.querySelectorAll("input, textarea").forEach((field) => {
+    field.addEventListener("input", () => syncCreatePackLicenseForm(form));
+    field.addEventListener("change", () => syncCreatePackLicenseForm(form));
+  });
+}
+
+function renderLicense() {
+  const license = cloneCreatePackLicense(packData.license);
+
   missionCard.innerHTML = `
-    <section class="step-panel">
+    <section class="step-panel create-license-step">
       <header class="step-header">
         <p class="step-number">ÉTAPE 4 SUR 4</p>
-        <h2>Validation finale</h2>
-        <p>Vérifie que le pack est complet avant son envoi à la modération.</p>
+        <h2>Licence d’utilisation</h2>
+        <p>Choisis les droits accordés avec le pack. La licence sera envoyée avec le pack en modération et affichée à l’acheteur avant son achat.</p>
       </header>
 
-      <section class="final-summary">
+      <div class="create-license-layout">
+        <form class="create-license-editor">
+          <div class="create-license-intro">
+            <div>
+              <strong>Licence du pack complet</strong>
+              <small>Elle s’applique au pack et à toutes ses tracks vendues séparément.</small>
+            </div>
+            <button class="create-license-reset" type="button">Licence Sonara par défaut</button>
+          </div>
+
+          <label class="create-license-name">
+            <span>Nom de la licence</span>
+            <input name="licenseName" maxlength="90" value="${escapeHtml(license.name)}" required>
+            <small>Ce nom sera visible par l’acheteur.</small>
+          </label>
+
+          <fieldset class="create-license-fieldset">
+            <legend>Utilisations autorisées</legend>
+            <p>Active uniquement les usages réellement accordés à l’acheteur.</p>
+            <div class="create-license-choice-grid">
+              ${createPackLicenseCheckboxGroup(CREATE_PACK_LICENSE_PERMISSIONS, license.permissions, "permission")}
+            </div>
+          </fieldset>
+
+          <fieldset class="create-license-fieldset is-danger">
+            <legend>Utilisations interdites</legend>
+            <p>Ces règles protègent le pack contre la redistribution et l’appropriation.</p>
+            <div class="create-license-choice-grid">
+              ${createPackLicenseCheckboxGroup(CREATE_PACK_LICENSE_RESTRICTIONS, license.restrictions, "restriction")}
+            </div>
+          </fieldset>
+
+          <label class="create-license-credit">
+            <input type="checkbox" name="creditRequired" ${license.creditRequired ? "checked" : ""}>
+            <span>
+              <strong>Crédit de l’artiste obligatoire</strong>
+              <small>L’acheteur devra mentionner l’artiste dans son projet publié.</small>
+            </span>
+          </label>
+
+          <div class="create-license-custom-grid">
+            <label>
+              <span>Autorisations personnalisées</span>
+              <textarea name="customPermissions" maxlength="2200" placeholder="Une autorisation par ligne">${escapeHtml(createPackLicenseLineList(license.customPermissions))}</textarea>
+            </label>
+            <label>
+              <span>Interdictions personnalisées</span>
+              <textarea name="customRestrictions" maxlength="2200" placeholder="Une interdiction par ligne">${escapeHtml(createPackLicenseLineList(license.customRestrictions))}</textarea>
+            </label>
+          </div>
+
+          <label>
+            <span>Conditions complémentaires</span>
+            <textarea name="customTerms" maxlength="1600" placeholder="Précisions particulières visibles par l’acheteur">${escapeHtml(license.customTerms || "")}</textarea>
+          </label>
+        </form>
+
+        <aside class="create-license-preview-panel">
+          <p class="step-number">APERÇU ACHETEUR</p>
+          <h3>Licence affichée avant l’achat</h3>
+          <div class="create-license-preview"></div>
+        </aside>
+      </div>
+
+      <section class="final-summary create-license-final-summary">
         ${renderSummaryRow("Titre", packData.identity.title)}
-        ${renderSummaryRow("Ambiance", moodLabel(packData.identity.categorie))}
-        ${renderSummaryRow("Cover du pack", packData.identity.coverFile?.name)}
-        ${renderSummaryRow("Tracks complètes", String(packData.tracks.length))}
+        ${renderSummaryRow("Tracks", String(packData.tracks.length))}
         ${renderSummaryRow("Prix global", packData.globalIsFree ? "Gratuit" : `${normalizePrice(packData.globalPrice).toFixed(2)} €`)}
+        ${renderSummaryRow("Licence", license.name)}
       </section>
 
-      <label class="legal-check-row">
-        <input class="legal-check" type="checkbox" ${packData.rights.accepted ? "checked" : ""}>
-        <span>
-          <strong>Je confirme posséder les droits nécessaires.</strong>
-          <small>
-            Je comprends que tout contenu volé, trompeur ou non autorisé peut être refusé et entraîner une sanction.
-          </small>
-        </span>
-      </label>
-
-      <small class="field-error" data-error="rights"></small>
+      <small class="field-error" data-error="license"></small>
       <section class="submit-error" hidden></section>
 
       <div class="actions">
         <button type="button" class="prev-btn">Retour</button>
-        <button type="button" class="submit-btn">Publier</button>
+        <button type="button" class="submit-btn">Envoyer en modération</button>
       </div>
     </section>
   `;
 
-  const checkbox = document.querySelector(".legal-check");
+  const form = document.querySelector(".create-license-editor");
+  bindCreatePackLicenseForm(form);
+  updateCreatePackLicensePreview(form);
 
-  checkbox.addEventListener("change", () => {
-    packData.rights.accepted = checkbox.checked;
-    packData.rights.acceptedAt = checkbox.checked ? new Date().toISOString() : null;
-    clearFieldError("rights");
+  document.querySelector(".create-license-reset").addEventListener("click", () => {
+    packData.license = createDefaultPackLicense();
+    renderLicense();
   });
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
+    syncCreatePackLicenseForm(form);
     currentStep = 2;
     render();
   });
 
-  document.querySelector(".submit-btn").addEventListener("click", submitPack);
+  document.querySelector(".submit-btn").addEventListener("click", () => {
+    syncCreatePackLicenseForm(form);
+    submitPack();
+  });
 }
 
 function renderSummaryRow(label, value) {
@@ -1028,9 +1259,11 @@ function buildFinalPack() {
       previewDuration: 30,
       duration: track.duration || 0
     })),
-    rights: {
-      accepted: true,
-      acceptedAt: packData.rights.acceptedAt
+    license: {
+      ...cloneCreatePackLicense(packData.license),
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      updatedByAccountId: artistProfile.accountId || artistProfile.id || null
     },
     status: "pending",
     createdAt: new Date().toISOString()
@@ -1139,11 +1372,11 @@ function validateEverything() {
     };
   }
 
-  if (!packData.rights.accepted) {
+  if (!String(packData.license?.name || "").trim()) {
     return {
       valid: false,
       step: 3,
-      show: () => showFieldError("rights", "Tu dois confirmer les droits avant l’envoi.")
+      show: () => showFieldError("license", "Donne un nom à la licence avant l’envoi.")
     };
   }
 
@@ -1378,12 +1611,9 @@ async function persistCurrentScreen() {
   }
 
   if (currentStep === 3) {
-    const checkbox = document.querySelector(".legal-check");
-    if (checkbox) {
-      packData.rights.accepted = checkbox.checked;
-      packData.rights.acceptedAt = checkbox.checked
-        ? packData.rights.acceptedAt || new Date().toISOString()
-        : null;
+    const licenseForm = document.querySelector(".create-license-editor");
+    if (licenseForm) {
+      packData.license = readCreatePackLicenseForm(licenseForm);
     }
   }
 }

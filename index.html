@@ -12,7 +12,7 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="app/css/index.css?v=pre-v1-sonara-loader-restored">
+  <link rel="stylesheet" href="app/css/index.css?v=pre-v1-sonara-loader">
   <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,12 +72,20 @@
     </section>
   </main>
 
+  <script src="app/js/i18n.js?v=pre-v1-global-official"></script>
   <script src="config.js"></script>
   <script>
     (() => {
       "use strict";
 
-      const SERVER_TIMEOUT = 5000;
+      // Contrat stable Sonara Pack :
+      // - 6 secondes visibles minimum, même si Local/Test/Main répond immédiatement ;
+      // - 14 secondes maximum pour obtenir une réponse serveur ;
+      // - après l'erreur, l'écran reste affiché jusqu'au clic manuel sur « Réessayer ».
+      const MIN_LOADING_DURATION = 6000;
+      const SERVER_MAX_WAIT = 14000;
+      const SERVER_ATTEMPT_TIMEOUT = 3500;
+      const SERVER_RETRY_DELAY = 650;
       const MIN_STEP_TIME = 360;
       const TYPE_SPEED = 18;
 
@@ -90,26 +98,43 @@
 
       let typingRun = 0;
       let currentProgress = 0;
+      let currentStatusSource = "Initialisation de Sonara Pack…";
+      let currentStepSource = "Initialisation";
+      let loadingStartedAt = 0;
 
       function wait(ms) {
         return new Promise((resolve) => window.setTimeout(resolve, ms));
       }
 
+      async function waitForTranslations() {
+        try {
+          await window.SonaraI18n?.ready;
+        } catch (error) {
+          console.warn("Traduction du chargement indisponible :", error);
+        }
+      }
+
+      function t(value) {
+        return window.SonaraI18n?.t?.(value) || String(value || "");
+      }
+
       function setProgress(value, stepLabel) {
         const safeValue = Math.min(100, Math.max(currentProgress, Number(value) || 0));
         currentProgress = safeValue;
+        if (stepLabel) currentStepSource = stepLabel;
 
         if (progressFill) progressFill.style.width = `${safeValue}%`;
         if (progressPercent) progressPercent.textContent = `${Math.round(safeValue)}%`;
-        if (progressStep && stepLabel) progressStep.textContent = stepLabel;
+        if (progressStep && currentStepSource) progressStep.textContent = t(currentStepSource);
         loader?.setAttribute("aria-valuenow", String(Math.round(safeValue)));
       }
 
       async function writeStatus(message, instant = false) {
         if (!statusElement) return;
 
+        currentStatusSource = String(message || "");
         const runId = ++typingRun;
-        const text = String(message || "");
+        const text = t(currentStatusSource);
         statusElement.classList.add("is-writing");
         statusElement.textContent = "";
 
@@ -125,30 +150,73 @@
           await wait(TYPE_SPEED);
         }
 
-        if (runId === typingRun) {
-          statusElement.classList.remove("is-writing");
-        }
+        if (runId === typingRun) statusElement.classList.remove("is-writing");
       }
 
       async function showStep(message, progress, stepLabel, minimumTime = MIN_STEP_TIME) {
         setProgress(progress, stepLabel);
-        await Promise.all([
-          writeStatus(message),
-          wait(minimumTime)
-        ]);
+        await Promise.all([writeStatus(message), wait(minimumTime)]);
+      }
+
+      async function fetchWithTimeout(url, options = {}, timeoutMs = SERVER_ATTEMPT_TIMEOUT) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          return await fetch(url, {
+            ...options,
+            cache: "no-store",
+            headers: { Accept: "application/json", ...(options.headers || {}) },
+            signal: controller.signal
+          });
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      }
+
+      async function checkServerUntilReady() {
+        const serverSearchStartedAt = performance.now();
+        const deadline = serverSearchStartedAt + SERVER_MAX_WAIT;
+        let attempt = 0;
+        let lastError = new Error("Le serveur Sonara ne répond pas.");
+
+        while (performance.now() < deadline) {
+          attempt += 1;
+          const elapsed = performance.now() - serverSearchStartedAt;
+          const remaining = Math.max(0, deadline - performance.now());
+          const progress = 12 + Math.min(22, (elapsed / SERVER_MAX_WAIT) * 22);
+          setProgress(progress, `Serveur · tentative ${attempt}`);
+
+          try {
+            const attemptTimeout = Math.max(500, Math.min(SERVER_ATTEMPT_TIMEOUT, remaining));
+            const response = await fetchWithTimeout(
+              `${API_URL}/api/health`,
+              { method: "GET" },
+              attemptTimeout
+            );
+            const payload = await response.json().catch(() => null);
+
+            if (response.ok && payload?.ok === true) return payload;
+            lastError = new Error(`Réponse serveur invalide : ${response.status}`);
+          } catch (error) {
+            lastError = error;
+          }
+
+          const waitRemaining = deadline - performance.now();
+          if (waitRemaining <= 0) break;
+          await wait(Math.min(SERVER_RETRY_DELAY, waitRemaining));
+        }
+
+        throw lastError;
+      }
+
+      async function waitForMinimumLoadingDuration() {
+        const remaining = MIN_LOADING_DURATION - (performance.now() - loadingStartedAt);
+        if (remaining > 0) await wait(remaining);
       }
 
       function clearSession() {
-        if (window.SonaraSession?.clear) {
-          window.SonaraSession.clear();
-          return;
-        }
-
-        localStorage.removeItem("sonaraProfile");
-        localStorage.removeItem("sonaraProfileCreated");
-        localStorage.removeItem("sonaraKnownAccounts");
-        localStorage.removeItem("sonaraSessionToken");
-        sessionStorage.removeItem("sonaraSessionToken");
+        window.SonaraAuth?.clear?.();
       }
 
       function goToInscription() {
@@ -177,50 +245,23 @@
         goToInscription();
       }
 
-      async function fetchWithTimeout(url, options = {}) {
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), SERVER_TIMEOUT);
+      function loadAuthGuard() {
+        return new Promise((resolve, reject) => {
+          if (window.SonaraAuth?.ready) {
+            resolve();
+            return;
+          }
 
-        try {
-          return await fetch(url, {
-            ...options,
-            cache: "no-store",
-            headers: {
-              Accept: "application/json",
-              ...(options.headers || {})
-            },
-            signal: controller.signal
-          });
-        } finally {
-          window.clearTimeout(timeout);
-        }
-      }
+          const existing = document.querySelector('script[data-sonara-auth="entry"]');
+          if (existing) {
+            existing.addEventListener("load", resolve, { once: true });
+            existing.addEventListener("error", reject, { once: true });
+            return;
+          }
 
-      async function checkServer() {
-        const response = await fetchWithTimeout(`${API_URL}/api/health`, {
-          method: "GET"
-        });
-
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || payload?.ok !== true) {
-          throw new Error("Le serveur Sonara ne répond pas correctement.");
-        }
-      }
-
-      function readStoredProfile() {
-        try {
-          return JSON.parse(localStorage.getItem("sonaraProfile") || "null");
-        } catch {
-          return null;
-        }
-      }
-
-      async function loadModerationGuard() {
-        if (window.SonaraModeration) return;
-
-        await new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src = "/app/js/auth-guard.js?v=pre-v1-loader-restored";
+          script.src = "/app/js/auth-guard.js?v=pre-v1-stable";
+          script.dataset.sonaraAuth = "entry";
           script.onload = resolve;
           script.onerror = () => reject(new Error("Auth Guard indisponible."));
           document.body.appendChild(script);
@@ -232,85 +273,63 @@
         setProgress(Math.max(currentProgress, 12), "Serveur indisponible");
         await writeStatus("Connexion au serveur impossible.", true);
         if (retryButton) retryButton.hidden = false;
+        // Aucun autre minuteur : l'utilisateur peut laisser cet écran ouvert
+        // aussi longtemps qu'il le souhaite, puis choisir lui-même « Réessayer ».
       }
 
       async function startSonara() {
+        loadingStartedAt = performance.now();
+        loader?.classList.remove("has-error");
+        if (retryButton) retryButton.hidden = true;
+
         try {
+          await waitForTranslations();
+          await showStep("Recherche du serveur Sonara Pack…", 12, "Serveur · 1/4");
+          await checkServerUntilReady();
+
           await Promise.all([
-            checkServer(),
-            showStep("Recherche du serveur Sonara Pack…", 18, "Serveur · 1/4")
+            loadAuthGuard(),
+            showStep("Serveur trouvé. Chargement des données…", 42, "Données · 2/4")
           ]);
 
-          await showStep("Serveur trouvé. Chargement des données…", 42, "Données · 2/4");
+          const [, authResult] = await Promise.all([
+            showStep("Recherche de l’ID du compte connecté…", 68, "Compte · 3/4"),
+            window.SonaraAuth.ready
+          ]);
 
-          const storedProfile = readStoredProfile();
-          const profileId = String(storedProfile?.accountId || storedProfile?.id || "");
+          if (!authResult?.ok) {
+            if (authResult?.reason === "server_unavailable") {
+              await showServerError();
+              return;
+            }
 
-          await showStep("Recherche de l’ID du compte connecté…", 68, "Compte · 3/4");
+            if ([
+              "missing_profile",
+              "profile_not_found",
+              "invalid_profile",
+              "blocked",
+              "permanently_deleted"
+            ].includes(authResult?.reason)) {
+              const message = authResult.reason === "missing_profile"
+                ? "Aucun ID connecté. Ouverture de l’inscription…"
+                : "ID introuvable. Retour à l’inscription…";
 
-          if (!profileId) {
-            clearSession();
-            await showStep("Aucun ID connecté. Ouverture de l’inscription…", 92, "Inscription · 4/4", 520);
-            setProgress(100, "Inscription");
-            await wait(180);
-            goToInscription();
-            return;
-          }
+              await showStep(message, 92, "Inscription · 4/4", 520);
+              await waitForMinimumLoadingDuration();
+              setProgress(100, "Inscription");
+              await wait(180);
+              goToInscription();
+              return;
+            }
 
-          const profileResponse = await fetchWithTimeout(
-            `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
-            { method: "GET" }
-          );
-
-          if ([401, 403, 404].includes(profileResponse.status)) {
-            clearSession();
-            await showStep("ID introuvable. Retour à l’inscription…", 92, "Inscription · 4/4", 520);
-            setProgress(100, "Inscription");
-            await wait(180);
-            goToInscription();
-            return;
-          }
-
-          if (!profileResponse.ok) {
-            throw new Error(`Vérification du profil impossible : ${profileResponse.status}`);
-          }
-
-          const freshProfile = await profileResponse.json().catch(() => null);
-          if (!(freshProfile?.accountId || freshProfile?.id) || !freshProfile?.role) {
-            clearSession();
-            await showStep("ID invalide. Retour à l’inscription…", 92, "Inscription · 4/4", 520);
-            setProgress(100, "Inscription");
-            await wait(180);
-            goToInscription();
-            return;
-          }
-
-          localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
-          localStorage.setItem("sonaraProfileCreated", "true");
-
-          await loadModerationGuard();
-          if (window.SonaraModeration?.showNext) {
-            await window.SonaraModeration.showNext(freshProfile);
-          }
-
-          const status = String(freshProfile.status || "").toLowerCase();
-          const artistStatus = String(freshProfile.artistStatus || "").toLowerCase();
-          const role = String(freshProfile.role || "").toLowerCase();
-          const artistAccessRemoved = role === "both" && [
-            "banned",
-            "rejected",
-            "suspended"
-          ].includes(artistStatus || status);
-
-          if (!artistAccessRemoved && ["banned", "rejected", "suspended"].includes(status)) {
-            clearSession();
-            goToInscription();
+            await showServerError();
             return;
           }
 
           await showStep("ID retrouvé. Préparation de votre dashboard…", 88, "Accès · 4/4", 460);
+          await waitForMinimumLoadingDuration();
           await showStep("Entrée dans Sonara Pack…", 100, "Sonara Pack", 420);
-          redirectByRole(freshProfile);
+          redirectByRole(authResult.profile);
         } catch (error) {
           console.error("Chargement Sonara impossible :", error);
           await showServerError();
@@ -318,6 +337,10 @@
       }
 
       retryButton?.addEventListener("click", () => window.location.reload());
+      window.addEventListener("sonara:languagechange", () => {
+        writeStatus(currentStatusSource, true);
+        setProgress(currentProgress, currentStepSource);
+      });
 
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", startSonara, { once: true });
@@ -326,6 +349,5 @@
       }
     })();
   </script>
-  <script src="app/js/i18n.js" defer></script>
 </body>
 </html>

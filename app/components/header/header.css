@@ -191,3 +191,34 @@ margin-left: -20px;
 }
 
 }
+
+
+/* V5.3.8.76 — traduction intégrée au header */
+.dynamic-header {
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dynamic-header-actions {
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dynamic-header-language-slot {
+  max-width: min(44vw, 210px);
+}
+
+@media (max-width: 560px) {
+  .dynamic-header {
+    padding-inline: 14px;
+  }
+
+  .dynamic-header-title {
+    overflow: hidden;
+    max-width: 48vw;
+    text-overflow: ellipsis;
+  }
+}

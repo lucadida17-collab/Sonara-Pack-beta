@@ -24,6 +24,148 @@ let selectedPackId = null;
 let selectedTrackId = null;
 let selectedPurchaseType = null;
 
+const PACK_LICENSE_PERMISSION_LABELS = {
+  personalProjects: "Projets personnels",
+  commercialProjects: "Projets professionnels et commerciaux",
+  monetization: "Monétisation des projets",
+  socialMedia: "Réseaux sociaux",
+  videoFilm: "Vidéos, films et courts métrages",
+  advertising: "Publicités et contenus de marque",
+  gamesApps: "Jeux vidéo et applications",
+  podcasts: "Podcasts et émissions",
+  liveStreaming: "Lives et streaming",
+  clientWork: "Travail réalisé pour des clients",
+  soundEditing: "Découpe, effets et modification dans un DAW",
+  unlimitedProjects: "Nombre de projets illimité"
+};
+
+const PACK_LICENSE_RESTRICTION_LABELS = {
+  standaloneResale: "Revente des sons seuls ou presque inchangés",
+  redistribution: "Partage ou redistribution du pack et des fichiers sources",
+  musicPlatformUpload: "Upload des sons seuls sur une plateforme musicale",
+  contentIdRegistration: "Enregistrement des sons seuls dans Content ID",
+  sublicensing: "Sous-licence, transfert ou revente de la licence",
+  misleadingOwnership: "Revendication mensongère de la propriété des sons"
+};
+
+const PACK_DEFAULT_LICENSE = {
+  version: 1,
+  name: "Licence standard Sonara",
+  creditRequired: false,
+  permissions: Object.fromEntries(
+    Object.keys(PACK_LICENSE_PERMISSION_LABELS).map((key) => [key, true])
+  ),
+  restrictions: Object.fromEntries(
+    Object.keys(PACK_LICENSE_RESTRICTION_LABELS).map((key) => [key, true])
+  ),
+  customPermissions: [],
+  customRestrictions: [],
+  customTerms: ""
+};
+
+function escapePackLicenseHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function normalizePackLicense(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    ...PACK_DEFAULT_LICENSE,
+    ...source,
+    permissions: {
+      ...PACK_DEFAULT_LICENSE.permissions,
+      ...(source.permissions || {})
+    },
+    restrictions: {
+      ...PACK_DEFAULT_LICENSE.restrictions,
+      ...(source.restrictions || {})
+    },
+    customPermissions: Array.isArray(source.customPermissions)
+      ? source.customPermissions.filter(Boolean)
+      : [],
+    customRestrictions: Array.isArray(source.customRestrictions)
+      ? source.customRestrictions.filter(Boolean)
+      : []
+  };
+}
+
+function packLicenseList(labels, states, customItems) {
+  return [
+    ...Object.entries(labels)
+      .filter(([key]) => Boolean(states?.[key]))
+      .map(([, label]) => label),
+    ...(Array.isArray(customItems) ? customItems : [])
+  ];
+}
+
+function renderPackLicenseNotice(pack, selectedItem = null) {
+  const license = normalizePackLicense(pack?.license);
+  const permissions = packLicenseList(
+    PACK_LICENSE_PERMISSION_LABELS,
+    license.permissions,
+    license.customPermissions
+  );
+  const restrictions = packLicenseList(
+    PACK_LICENSE_RESTRICTION_LABELS,
+    license.restrictions,
+    license.customRestrictions
+  );
+  const itemTitle = selectedItem && selectedItem !== pack
+    ? `${selectedItem.title || "Track"} — ${pack?.title || pack?.name || "Pack Sonara"}`
+    : (pack?.title || pack?.name || "Pack Sonara");
+
+  const packLabel = document.querySelector(".notice-license-pack");
+  const version = document.querySelector(".notice-license-version");
+  const title = document.getElementById("licenseNoticeTitle");
+  const permissionList = document.querySelector(".notice-license-permissions");
+  const restrictionList = document.querySelector(".notice-license-restrictions");
+  const details = document.querySelector(".notice-license-details");
+  const customTerms = document.querySelector(".notice-license-custom");
+  const credit = document.querySelector(".notice-license-credit");
+
+  if (title) title.textContent = license.name || "Licence d’utilisation";
+  if (packLabel) packLabel.textContent = itemTitle;
+  if (version) version.textContent = `Version ${Number(license.version || 1)}`;
+  if (permissionList) {
+    permissionList.innerHTML = permissions.length
+      ? permissions.map((item) => `<li>${escapePackLicenseHtml(item)}</li>`).join("")
+      : "<li>Aucune utilisation supplémentaire n’est accordée.</li>";
+  }
+  if (restrictionList) {
+    restrictionList.innerHTML = restrictions.length
+      ? restrictions.map((item) => `<li>${escapePackLicenseHtml(item)}</li>`).join("")
+      : "<li>Aucune restriction personnalisée supplémentaire.</li>";
+  }
+  if (details && customTerms) {
+    const hasTerms = Boolean(String(license.customTerms || "").trim());
+    details.hidden = !hasTerms;
+    customTerms.textContent = hasTerms ? license.customTerms : "";
+  }
+  if (credit) credit.hidden = !license.creditRequired;
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openPackLicenseNotice(selectedItem = null) {
+  renderPackLicenseNotice(packData, selectedItem);
+  const overlay = document.querySelector(".notice-overlay");
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  document.body.classList.add("license-modal-open");
+  overlay.querySelector(".notice-close")?.focus();
+}
+
+function closePackLicenseNotice() {
+  const overlay = document.querySelector(".notice-overlay");
+  if (overlay) overlay.style.display = "none";
+  document.body.classList.remove("license-modal-open");
+}
+
 function getStoredPackProfile() {
   const rawProfile = localStorage.getItem("sonaraProfile");
 
@@ -164,7 +306,12 @@ async function startStripePayment() {
         body: JSON.stringify({
           userId,
           packId: selectedPackId,
-          trackId: selectedTrackId || null
+          trackId: selectedTrackId || null,
+          licenseVersion: Number(packData?.license?.version || 1),
+          licenseId: String(
+            packData?.license?.id ||
+            `${selectedPackId}:license:v${Number(packData?.license?.version || 1)}`
+          )
         })
       });
 
@@ -197,6 +344,8 @@ async function startStripePayment() {
       JSON.stringify({
         ...payload,
         returnUrl: window.location.href,
+        licenseVersion: Number(packData?.license?.version || 1),
+        licenseId: String(packData?.license?.id || `${selectedPackId}:license:v${Number(packData?.license?.version || 1)}`),
         createdAt: Date.now()
       })
     );
@@ -204,7 +353,7 @@ async function startStripePayment() {
     const noticeOverlay = document.querySelector(".notice-overlay");
     const acceptButton = document.querySelector(".notice-accept");
 
-    if (noticeOverlay) noticeOverlay.style.display = "none";
+    if (noticeOverlay) closePackLicenseNotice();
     if (acceptButton) {
       acceptButton.disabled = true;
       acceptButton.textContent = "Chargement...";
@@ -730,7 +879,9 @@ src="${getFilePath(track.audioName || track.audio)}"
           return;
         }
 
-        noticeOverlay.style.display = "flex";
+        openPackLicenseNotice(
+          packData.tracks?.find((track) => String(track.id) === String(selectedTrackId)) || null
+        );
       });
     });
 
@@ -742,17 +893,23 @@ src="${getFilePath(track.audioName || track.audio)}"
         selectedTrackId = null;
         selectedPurchaseType = "pack";
 
-        noticeOverlay.style.display = "flex";
+        openPackLicenseNotice(packData);
       });
     });
 
 
-    noticeClose.addEventListener("click", () => {
-      noticeOverlay.style.display = "none";
+    noticeClose.addEventListener("click", closePackLicenseNotice);
+
+    noticeRefuse.addEventListener("click", closePackLicenseNotice);
+
+    noticeOverlay.addEventListener("click", (event) => {
+      if (event.target === noticeOverlay) closePackLicenseNotice();
     });
 
-    noticeRefuse.addEventListener("click", () => {
-      noticeOverlay.style.display = "none";
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && noticeOverlay.style.display === "flex") {
+        closePackLicenseNotice();
+      }
     });
 
     noticeAccept.addEventListener("click", () => {

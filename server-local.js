@@ -4,6 +4,16 @@ const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const crypto = require("crypto");
+const { registerFounderFinance } = require("./founder-finance");
+const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./platform-growth");
+const {
+  defaultPackLicense,
+  normalizePackLicense,
+  buildUpdatedPackLicense,
+  appendPackLicenseHistory,
+  licenseMetadata,
+  licenseModerationSummary
+} = require("./pack-license");
 const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
 require("dotenv").config({
@@ -84,15 +94,15 @@ function permanentlyRejectLocalPack(packId) {
 }
 
 const Stripe = require("stripe");
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = String(process.env.STRIPE_SECRET_KEY || "").trim();
+if (!/^sk_test_/i.test(stripeSecretKey)) {
+  throw new Error("Sonara LOCAL exige une clé Stripe TEST (sk_test_...).");
+}
+const stripe = Stripe(stripeSecretKey);
 const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
-const configuredFrontUrl = String(process.env.FRONT_URL || "http://localhost:5500")
+const frontUrl = String(process.env.FRONT_URL || "http://localhost:5500")
   .trim()
   .replace(/\/+$/, "");
-
-const frontUrl = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(configuredFrontUrl)
-  ? "http://localhost:5500"
-  : configuredFrontUrl;
 
 if (!stripeWebhookSecret) {
   console.warn("Stripe webhook désactivé : STRIPE_WEBHOOK_SECRET absente.");
@@ -112,6 +122,15 @@ const transporter = nodemailer.createTransport({
 
 const app = express();
 
+const founderFinance = registerFounderFinance({
+  app,
+  stripe,
+  environment: "local",
+  db: null,
+  dataDir: path.join(__dirname, "data"),
+  enabled: true
+});
+
 
 
 
@@ -121,6 +140,39 @@ const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+function resolveFrontUrl(req) {
+  const candidates = [req?.headers?.origin, req?.headers?.referer];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    try {
+      const parsed = new URL(String(candidate));
+      const origin = parsed.origin.replace(/\/+$/, "");
+      const isConfiguredOrigin = origin === frontUrl;
+      const isAllowedOrigin = allowedOrigins.includes(origin);
+      const isLocalFront =
+        ["localhost", "127.0.0.1"].includes(parsed.hostname) ||
+        parsed.hostname.startsWith("192.168.") ||
+        parsed.hostname.startsWith("10.");
+
+      if (
+        isConfiguredOrigin ||
+        isAllowedOrigin ||
+        ((frontUrl.includes("localhost") || frontUrl.includes("127.0.0.1")) &&
+          isLocalFront &&
+          parsed.port === "5500")
+      ) {
+        return origin;
+      }
+    } catch {
+      // Origine invalide : on conserve l'URL configurée pour l'environnement.
+    }
+  }
+
+  return frontUrl;
+}
 
 app.use(cors({
   origin(origin, callback) {
@@ -160,10 +212,12 @@ app.post(
         event.type === "checkout.session.completed" ||
         event.type === "checkout.session.async_payment_succeeded"
       ) {
+        await founderFinance.assertCheckoutEnvironment(event.data.object);
         await fulfillPaidStripeCheckout(event.data.object);
       }
 
-      return res.json({ received: true });
+      const financeResult = await founderFinance.handleStripeEvent(event);
+      return res.json({ received: true, finance: financeResult });
     } catch (error) {
       console.error("Traitement webhook Stripe impossible :", error);
       return res.status(500).json({
@@ -175,19 +229,15 @@ app.post(
 );
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-/* =========================
-   HEALTH CHECK SONARA
-   Utilisé par index.html avant toute vérification de compte.
-========================= */
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     ok: true,
+    service: "sonara-api",
     environment: "local",
     timestamp: new Date().toISOString()
   });
 });
+
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
@@ -394,13 +444,15 @@ function validatePendingPackRequest(req) {
   pack.isFree = packIsFree;
   pack.price = packIsFree ? "Gratuit" : `${packPrice.toFixed(2)}€`;
 
-  if (!pack.rights?.accepted || !pack.rights?.acceptedAt) {
+  if (!pack.license || typeof pack.license !== "object") {
     return {
       valid: false,
       status: 400,
-      message: "La confirmation des droits est obligatoire."
+      message: "La licence d’utilisation du pack est obligatoire."
     };
   }
+
+  pack.license = normalizePackLicense(pack.license);
 
   const files = Array.isArray(req.files) ? req.files : [];
   const fileByField = new Map(files.map((file) => [file.fieldname, file]));
@@ -1758,128 +1810,164 @@ app.post("/api/accounts/login", (req, res) => {
   }
 });
 
-app.post("/api/stripe/connect-account", async (req, res) => {
+ app.post("/api/stripe/connect-account", async (req, res) => {
   try {
-    const artistId = String(req.body?.artistId || "").trim();
-    const email = String(req.body?.email || "").trim();
-    const requestedOrigin = String(req.body?.frontOrigin || "")
-      .trim()
-      .replace(/\/+$/, "");
-    const localFrontPattern = /^http:\/\/(?:127\.0\.0\.1|localhost):5500$/i;
-    const bankFrontUrl = localFrontPattern.test(requestedOrigin)
-      ? requestedOrigin
-      : frontUrl;
+    const { artistId, email } = req.body;
 
-    if (!artistId) {
-      return res.status(400).json({
-        success: false,
-        error: "Identifiant artiste introuvable."
-      });
-    }
+    const users = JSON.parse(
+      fs.readFileSync(usersPath, "utf8")
+    );
 
-    const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
     let rootUser = null;
     let accountProfile = null;
 
     for (const currentRootUser of users) {
       const foundAccount = currentRootUser.accounts?.find(
         (currentAccount) =>
-          String(currentAccount.id) === artistId ||
-          String(currentAccount.accountId) === artistId
+          String(currentAccount.id) === String(artistId) ||
+          String(currentAccount.accountId) === String(artistId)
       );
 
       if (foundAccount) {
         rootUser = currentRootUser;
         accountProfile = foundAccount;
+
         break;
       }
     }
 
-    if (!accountProfile || !rootUser) {
+    if (!accountProfile) {
       return res.status(404).json({
-        success: false,
         error: "Utilisateur introuvable."
       });
     }
 
-    if (!["artist", "both"].includes(String(accountProfile.role || "").toLowerCase())) {
+    if (
+      accountProfile.role !== "artist" &&
+      accountProfile.role !== "both"
+    ) {
       return res.status(403).json({
-        success: false,
-        error: "Seuls les artistes peuvent utiliser Stripe Connect."
+        error:
+          "Seuls les artistes peuvent créer un compte Stripe."
       });
     }
-
-    let stripeAccount = null;
-    let recreated = false;
 
     if (accountProfile.stripeAccountId) {
-      try {
-        stripeAccount = await stripe.accounts.retrieve(accountProfile.stripeAccountId);
-      } catch (error) {
-        const missing =
-          error?.code === "resource_missing" ||
-          error?.statusCode === 404 ||
-          /no such account|resource_missing/i.test(String(error?.message || ""));
+      const existingStripeAccount =
+        await stripe.accounts.retrieve(
+          accountProfile.stripeAccountId
+        );
 
-        if (!missing) throw error;
-        recreated = true;
+      const existingStatus =
+        existingStripeAccount.charges_enabled &&
+        existingStripeAccount.payouts_enabled
+          ? "verified"
+          : "onboarding_started";
+
+      accountProfile.stripeStatus = existingStatus;
+      accountProfile.updatedAt = new Date().toISOString();
+      rootUser.updatedAt = new Date().toISOString();
+
+      fs.writeFileSync(
+        usersPath,
+        JSON.stringify(users, null, 2)
+      );
+
+      if (existingStatus === "verified") {
+        const loginLink =
+          await stripe.accounts.createLoginLink(
+            accountProfile.stripeAccountId
+          );
+
+        return res.status(200).json({
+          success: true,
+          reused: true,
+          accountId: accountProfile.stripeAccountId,
+          stripeStatus: existingStatus,
+          url: loginLink.url
+        });
       }
-    }
 
-    if (!stripeAccount) {
-      stripeAccount = await stripe.accounts.create({
-        type: "express",
-        country: "FR",
-        email: email || accountProfile.mail || accountProfile.email || undefined,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true }
-        }
+      const existingAccountLink =
+        await stripe.accountLinks.create({
+          account: accountProfile.stripeAccountId,
+          refresh_url:
+            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
+          return_url:
+            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
+          type: "account_onboarding"
+        });
+
+      return res.status(200).json({
+        success: true,
+        reused: true,
+        accountId: accountProfile.stripeAccountId,
+        stripeStatus: existingStatus,
+        url: existingAccountLink.url
       });
     }
 
-    const verified = Boolean(
-      stripeAccount.charges_enabled && stripeAccount.payouts_enabled
+    const stripeAccount = await stripe.accounts.create({
+      type: "express",
+      country: "FR",
+      email: email || accountProfile.mail,
+
+      capabilities: {
+        card_payments: {
+          requested: true
+        },
+
+        transfers: {
+          requested: true
+        }
+      }
+    });
+
+    accountProfile.stripeAccountId =
+      stripeAccount.id;
+
+    accountProfile.stripeStatus =
+      "onboarding_started";
+
+    accountProfile.updatedAt =
+      new Date().toISOString();
+
+    rootUser.updatedAt =
+      new Date().toISOString();
+
+    fs.writeFileSync(
+      usersPath,
+      JSON.stringify(users, null, 2)
     );
 
-    let stripeUrl = "";
-
-    if (verified) {
-      const loginLink = await stripe.accounts.createLoginLink(stripeAccount.id);
-      stripeUrl = loginLink.url;
-    } else {
-      const accountLink = await stripe.accountLinks.create({
+    const accountLink =
+      await stripe.accountLinks.create({
         account: stripeAccount.id,
-        refresh_url: `${bankFrontUrl}/app/pages/page-management/bank.html`,
-        return_url: `${bankFrontUrl}/app/pages/page-management/bank.html?stripe=success`,
+
+        refresh_url:
+          `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
+
+        return_url:
+          `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
+
         type: "account_onboarding"
       });
-      stripeUrl = accountLink.url;
-    }
-
-    if (!/^https:\/\/([a-z0-9-]+\.)*stripe\.com(?:\/|$)/i.test(stripeUrl)) {
-      throw new Error("Stripe n’a pas renvoyé une URL Connect valide.");
-    }
-
-    const now = new Date().toISOString();
-    accountProfile.stripeAccountId = stripeAccount.id;
-    accountProfile.stripeStatus = verified ? "verified" : "onboarding_started";
-    accountProfile.updatedAt = now;
-    rootUser.updatedAt = now;
-    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 
     return res.status(200).json({
       success: true,
-      recreated,
       accountId: stripeAccount.id,
       stripeStatus: accountProfile.stripeStatus,
-      url: stripeUrl
+      url: accountLink.url
     });
+
   } catch (error) {
-    console.error("STRIPE CONNECT ERROR :", error);
+    console.error(
+      "STRIPE CONNECT ERROR :",
+      error
+    );
+
     return res.status(500).json({
-      success: false,
-      error: error.message || "Impossible d’ouvrir Stripe."
+      error: error.message
     });
   }
 });
@@ -1921,10 +2009,10 @@ app.post("/api/stripe/continue-onboarding", async (req, res) => {
         account: artist.stripeAccountId,
 
         refresh_url:
-          `${frontUrl}/app/pages/page-management/bank.html`,
+          `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
 
         return_url:
-          `${frontUrl}/app/pages/page-management/bank.html?stripe=success`,
+          `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
 
         type: "account_onboarding"
       });
@@ -2625,9 +2713,167 @@ app.patch(
   }
 );
 
+
+/* =========================
+   FOUNDER — ACCOUNT SYNC QUEUE
+========================= */
+
+const SONARA_FOUNDER_SYNC_ENVIRONMENT = "local";
+
+function createFounderAccountSyncSnapshot(
+  account = {},
+  rootUser = {}
+) {
+  return {
+    id: String(
+      account.id ||
+      account.accountId ||
+      ""
+    ),
+    accountId: String(
+      account.accountId ||
+      account.id ||
+      ""
+    ),
+    userId: String(
+      rootUser.id ||
+      rootUser.userId ||
+      account.userId ||
+      ""
+    ),
+    firstname: String(account.firstname || ""),
+    lastname: String(account.lastname || ""),
+    date: String(account.date || ""),
+    phone: String(account.phone || ""),
+    mail: String(
+      account.mail ||
+      account.email ||
+      ""
+    ),
+    pseudo: String(account.pseudo || ""),
+    artistname: String(account.artistname || ""),
+    role: String(account.role || ""),
+    status: String(account.status || ""),
+    artistStatus:
+      account.artistStatus || null,
+    imageArtist:
+      account.imageArtist || null,
+    updatedAt:
+      account.updatedAt ||
+      new Date().toISOString()
+  };
+}
+
+function getChangedFounderAccountFields(
+  previousValues = {},
+  nextValues = {}
+) {
+  return Object.keys(nextValues).filter(
+    (field) =>
+      String(previousValues[field] ?? "") !==
+      String(nextValues[field] ?? "")
+  );
+}
+
+function queueFounderAccountSync({
+  rootUser,
+  account,
+  changeType,
+  changedFields = [],
+  previousValues = {}
+}) {
+  const normalizedFields = [
+    ...new Set(
+      changedFields
+        .map((field) => String(field || "").trim())
+        .filter(Boolean)
+    )
+  ];
+
+  if (!normalizedFields.length) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const previousSync =
+    account.founderSync &&
+    account.founderSync.pending === true
+      ? account.founderSync
+      : null;
+
+  const previousChangeTypes =
+    Array.isArray(previousSync?.changeTypes)
+      ? previousSync.changeTypes
+      : [];
+
+  const previousChangedFields =
+    Array.isArray(previousSync?.changedFields)
+      ? previousSync.changedFields
+      : [];
+
+  const preservedPreviousValues = {
+    ...previousValues,
+    ...(previousSync?.previousValues || {})
+  };
+
+  account.updatedAt = now;
+  rootUser.updatedAt = now;
+
+  account.founderSync = {
+    pending: true,
+    eventId:
+      `account_change_${Date.now()}_${crypto
+        .randomBytes(4)
+        .toString("hex")}`,
+    revision:
+      Number(previousSync?.revision || 0) + 1,
+    environment:
+      SONARA_FOUNDER_SYNC_ENVIRONMENT,
+    source: "sonara-pack",
+    changeTypes: [
+      ...new Set([
+        ...previousChangeTypes,
+        String(changeType || "account")
+      ])
+    ],
+    changedFields: [
+      ...new Set([
+        ...previousChangedFields,
+        ...normalizedFields
+      ])
+    ],
+    previousValues:
+      preservedPreviousValues,
+    account:
+      createFounderAccountSyncSnapshot(
+        account,
+        rootUser
+      ),
+    queuedAt:
+      previousSync?.queuedAt || now,
+    updatedAt: now,
+    containsPassword: false
+  };
+
+  return account.founderSync;
+}
+
+function createFounderSyncResponse(sync) {
+  return sync
+    ? {
+        queued: true,
+        eventId: sync.eventId,
+        revision: sync.revision
+      }
+    : {
+        queued: false,
+        reason: "no_change"
+      };
+}
+
 app.patch(
   "/api/account/password",
-  (req, res) => {
+  async (req, res) => {
     try {
       const id = String(req.body.id || "");
 
@@ -2697,11 +2943,13 @@ app.patch(
 
       account.password = newPassword;
 
-      account.updatedAt =
-        new Date().toISOString();
-
-      rootUser.updatedAt =
-        new Date().toISOString();
+      const founderSync =
+        queueFounderAccountSync({
+          rootUser,
+          account,
+          changeType: "password",
+          changedFields: ["password"]
+        });
 
       fs.writeFileSync(
         usersPath,
@@ -2711,7 +2959,11 @@ app.patch(
 
       return res.status(200).json({
         success: true,
-        message: "Mot de passe modifié."
+        message: "Mot de passe modifié.",
+        founderSync:
+          createFounderSyncResponse(
+            founderSync
+          )
       });
 
     } catch (error) {
@@ -2792,16 +3044,39 @@ app.patch(
         });
       }
 
+      const previousValues = {
+        firstname: account.firstname || "",
+        lastname: account.lastname || "",
+        date: account.date || "",
+        phone: account.phone || ""
+      };
+
+      const nextValues = {
+        firstname,
+        lastname,
+        date,
+        phone
+      };
+
+      const changedFields =
+        getChangedFounderAccountFields(
+          previousValues,
+          nextValues
+        );
+
       account.firstname = firstname;
       account.lastname = lastname;
       account.date = date;
       account.phone = phone;
 
-      account.updatedAt =
-        new Date().toISOString();
-
-      rootUser.updatedAt =
-        new Date().toISOString();
+      const founderSync =
+        queueFounderAccountSync({
+          rootUser,
+          account,
+          changeType: "informations",
+          changedFields,
+          previousValues
+        });
 
       fs.writeFileSync(
         usersPath,
@@ -2816,11 +3091,17 @@ app.patch(
 
       delete updatedAccount.password;
 
+      delete updatedAccount.founderSync;
+
       return res.status(200).json({
         success: true,
         message:
           "Informations du compte modifiées.",
-        account: updatedAccount
+        account: updatedAccount,
+        founderSync:
+          createFounderSyncResponse(
+            founderSync
+          )
       });
 
     } catch (error) {
@@ -2926,13 +3207,26 @@ app.patch(
         });
       }
 
+      const previousValues = {
+        mail: account.mail || ""
+      };
+
+      const changedFields =
+        getChangedFounderAccountFields(
+          previousValues,
+          { mail: newMail }
+        );
+
       account.mail = newMail;
 
-      account.updatedAt =
-        new Date().toISOString();
-
-      rootUser.updatedAt =
-        new Date().toISOString();
+      const founderSync =
+        queueFounderAccountSync({
+          rootUser: rootUser,
+          account,
+          changeType: "email",
+          changedFields,
+          previousValues
+        });
 
       fs.writeFileSync(
         usersPath,
@@ -2947,10 +3241,16 @@ app.patch(
 
       delete updatedAccount.password;
 
+      delete updatedAccount.founderSync;
+
       return res.status(200).json({
         success: true,
         message: "Adresse e-mail modifiée.",
-        account: updatedAccount
+        account: updatedAccount,
+        founderSync:
+          createFounderSyncResponse(
+            founderSync
+          )
       });
 
     } catch (error) {
@@ -2983,6 +3283,25 @@ function creatorPackBelongsTo(pack, accountId) {
   return [pack?.artistId, pack?.accountId, pack?.artistAccountId]
     .filter(Boolean)
     .some((value) => String(value) === String(accountId));
+}
+
+function isPackHiddenByModeration(pack) {
+  return Boolean(
+    pack?.moderationHidden === true ||
+    String(pack?.status || "").toLowerCase() === "moderation_hidden"
+  );
+}
+
+function isCreatorAccountActive(account) {
+  const role = String(account?.role || "").toLowerCase();
+  const status = String(account?.status || "").toLowerCase();
+  const artistStatus = String(account?.artistStatus || "").toLowerCase();
+
+  return (
+    ["artist", "both"].includes(role) &&
+    status === "approved" &&
+    !["banned", "suspended", "rejected"].includes(artistStatus)
+  );
 }
 
 function creatorPackWasPublished(pack) {
@@ -3062,7 +3381,9 @@ async function fetchCreatorStripeSales(artistIds) {
 
 async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId]) {
   const packs = readJsonArray(packsPath);
-  const creatorPacks = packs.filter((pack) => creatorPackBelongsTo(pack, accountId));
+  const creatorPacks = packs.filter((pack) =>
+    creatorPackBelongsTo(pack, accountId) && !isPackHiddenByModeration(pack)
+  );
   let stripeSales = [];
   let stripeStatsAvailable = true;
 
@@ -3085,6 +3406,8 @@ async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId])
 
     return {
       ...pack,
+      license: normalizePackLicense(pack.license),
+      licenseSummary: licenseModerationSummary(pack),
       trackCount: Array.isArray(pack.tracks) ? pack.tracks.length : 0,
       salesCount: packSales.length,
       buyerCount: buyers.size,
@@ -3127,12 +3450,108 @@ app.get("/api/creator/packs/:accountId", async (req, res) => {
         break;
       }
     }
-    if (!account || !["artist", "both"].includes(String(account.role || "").toLowerCase())) return res.status(403).json({ success: false, message: "Compte artiste invalide." });
+    if (!account || !isCreatorAccountActive(account)) return res.status(403).json({ success: false, message: "Compte artiste indisponible ou sanctionné." });
     const artistIds = [account.accountId, account.id, rootUser?.id].filter(Boolean);
     return res.json({ success: true, ...(await buildCreatorPackOverviewLocal(accountId, artistIds)) });
   } catch (error) {
     console.error("Erreur GET /api/creator/packs/:accountId :", error);
     return res.status(500).json({ success: false, message: "Impossible de récupérer les packs de l’artiste." });
+  }
+});
+
+
+app.patch("/api/creator/packs/:id/license", (req, res) => {
+  try {
+    const packId = String(req.params.id || "").trim();
+    const accountId = String(req.body?.accountId || "").trim();
+    const submittedLicense = req.body?.license;
+
+    if (!packId || !accountId || !submittedLicense || typeof submittedLicense !== "object") {
+      return res.status(400).json({
+        success: false,
+        message: "Pack, compte artiste ou licence manquant."
+      });
+    }
+
+    const packs = readJsonArray(packsPath);
+    const index = packs.findIndex((pack) => String(pack.id) === packId);
+
+    if (index < 0) {
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const pack = packs[index];
+    if (isPackHiddenByModeration(pack)) {
+      return res.status(403).json({
+        success: false,
+        message: "Ce pack est masqué par une décision de modération."
+      });
+    }
+
+    if (!creatorPackBelongsTo(pack, accountId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Ce pack ne vous appartient pas."
+      });
+    }
+
+    const now = new Date().toISOString();
+    const hadStoredLicense = Boolean(pack.license && typeof pack.license === "object");
+    const update = buildUpdatedPackLicense(pack.license, submittedLicense, {
+      hasCurrent: hadStoredLicense,
+      packId,
+      accountId,
+      now
+    });
+
+    if (!update.changed) {
+      return res.json({
+        success: true,
+        changed: false,
+        moderationRequired: false,
+        message: "La licence est déjà à jour.",
+        pack: {
+          ...pack,
+          license: normalizePackLicense(pack.license)
+        }
+      });
+    }
+
+    if (hadStoredLicense) {
+      pack.licenseHistory = appendPackLicenseHistory(
+        pack.licenseHistory,
+        pack.license,
+        { archivedAt: now, reason: "creator_license_update" }
+      );
+    } else if (!Array.isArray(pack.licenseHistory)) {
+      pack.licenseHistory = [];
+    }
+
+    pack.license = update.license;
+    pack.licenseUpdatedAt = now;
+    pack.updatedAt = now;
+
+    // Un pack déjà publié reste publié : seule sa licence courante change.
+    // Un pack encore en modération reste dans sa modération initiale.
+    writeJsonArray(packsPath, packs);
+
+    return res.json({
+      success: true,
+      changed: true,
+      moderationRequired: false,
+      message: "Licence enregistrée et mise à jour côté acheteur.",
+      pack: {
+        ...pack,
+        license: normalizePackLicense(pack.license),
+        licenseSummary: licenseModerationSummary(pack)
+      }
+    });
+  } catch (error) {
+    console.error("Erreur PATCH /api/creator/packs/:id/license :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d’enregistrer la licence du pack."
+    });
   }
 });
 
@@ -3152,6 +3571,10 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, (req, res) => {
 
     if (index < 0) {
       return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    if (isPackHiddenByModeration(packs[index])) {
+      return res.status(403).json({ success: false, message: "Ce pack est masqué par une décision de modération." });
     }
 
     if (!creatorPackBelongsTo(packs[index], accountId)) {
@@ -3371,6 +3794,10 @@ app.post("/api/creator/packs/bulk", (req, res) => {
     const packs = readJsonArray(packsPath);
     const targets = packs.filter((pack) => packIds.includes(String(pack.id)));
 
+    if (targets.some(isPackHiddenByModeration)) {
+      return res.status(403).json({ success: false, message: "Un ou plusieurs packs sont masqués par la modération." });
+    }
+
     if (
       targets.length !== packIds.length ||
       targets.some((pack) => !creatorPackBelongsTo(pack, accountId))
@@ -3462,12 +3889,20 @@ app.post("/api/creator/packs/bulk", (req, res) => {
 });
 
 app.get("/api/packs/pending", (req, res) => {
-  res.json(readJsonArray(packsPath));
+  const packs = readJsonArray(packsPath)
+    .filter((pack) => !isPackHiddenByModeration(pack))
+    .map((pack) => ({ ...pack, license: normalizePackLicense(pack.license) }));
+  res.json(packs);
 });
 
 app.get("/api/packs", (req, res) => {
   const packs = readJsonArray(packsPath);
-  const approvedPacks = packs.filter(pack => pack.status === "approved");
+  const approvedPacks = packs
+    .filter((pack) => pack.status === "approved")
+    .map((pack) => ({
+      ...pack,
+      license: normalizePackLicense(pack.license)
+    }));
 
   res.json(approvedPacks);
 });
@@ -3531,6 +3966,14 @@ app.post(
         if (packArtist) break;
       }
 
+      if (!packArtist || !isCreatorAccountActive(packArtist)) {
+        return res.status(403).json({
+          success: false,
+          code: "ARTIST_ACCOUNT_BLOCKED",
+          message: "Votre accès artiste est indisponible ou sanctionné."
+        });
+      }
+
       if (!packArtist?.stripeAccountId) {
         return res.status(403).json({
           success: false,
@@ -3581,6 +4024,17 @@ app.post(
 
       const newPack = {
         ...receivedPack,
+        license: buildUpdatedPackLicense(
+          null,
+          receivedPack.license || defaultPackLicense(),
+          {
+            hasCurrent: false,
+            packId: receivedPack.id,
+            accountId: receivedPack.artistId,
+            now: new Date().toISOString()
+          }
+        ).license,
+        licenseHistory: Array.isArray(receivedPack.licenseHistory) ? receivedPack.licenseHistory : [],
         status: "pending",
         submissionType: "publish",
         submittedAt: new Date().toISOString(),
@@ -3661,7 +4115,7 @@ app.post(
 
 app.post("/api/free-download-access", (req, res) => {
   try {
-    const { userId, packId, trackId } = req.body || {};
+    const { userId, packId, trackId, licenseVersion, licenseId } = req.body || {};
 
     if (!userId || !packId) {
       return res.status(400).json({
@@ -3682,6 +4136,21 @@ app.post("/api/free-download-access", (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Pack introuvable."
+      });
+    }
+
+    const currentLicenseMetadata = licenseMetadata(pack);
+    const acceptedLicenseVersion = String(licenseVersion || "").trim();
+    const acceptedLicenseId = String(licenseId || "").trim();
+
+    if (
+      (acceptedLicenseVersion && acceptedLicenseVersion !== currentLicenseMetadata.licenseVersion) ||
+      (acceptedLicenseId && acceptedLicenseId !== currentLicenseMetadata.licenseId)
+    ) {
+      return res.status(409).json({
+        success: false,
+        code: "PACK_LICENSE_CHANGED",
+        message: "La licence du pack a changé. Relisez et acceptez la nouvelle version."
       });
     }
 
@@ -3760,7 +4229,7 @@ app.post("/api/free-download-access", (req, res) => {
     return res.json({
       success: true,
       free: true,
-      redirectUrl: `${frontUrl}/${pathPart}`
+      redirectUrl: `${resolveFrontUrl(req)}/${pathPart}`
     });
   } catch (error) {
     console.error("Erreur accès gratuit :", error);
@@ -3840,7 +4309,9 @@ app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
       });
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["payment_intent"]
+    });
 
     if (String(session.metadata?.userId || "") !== userId) {
       return res.status(403).json({
@@ -3849,7 +4320,16 @@ app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
       });
     }
 
+    await founderFinance.assertCheckoutEnvironment(session);
     const fulfilled = await fulfillPaidStripeCheckout(session);
+
+    await founderFinance.recordCheckout(
+      session,
+      {
+        eventId: `confirm:${session.id}`,
+        source: "checkout_confirmation"
+      }
+    );
 
     return res.json({
       success: true,
@@ -3873,7 +4353,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
   console.log("Body reçu :", req.body);
 
   try {
-    const { packId, trackId, userId } = req.body;
+    const { packId, trackId, userId, licenseVersion, licenseId } = req.body;
 
     console.log("🟢 [2] Données reçues");
     console.log("packId :", packId);
@@ -3913,6 +4393,21 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     if (String(pack.status || "").toLowerCase() !== "approved") {
       return res.status(409).json({
         error: "Ce pack n’est pas disponible à l’achat."
+      });
+    }
+
+    const currentLicenseMetadata = licenseMetadata(pack);
+    const acceptedLicenseVersion = String(licenseVersion || "").trim();
+    const acceptedLicenseId = String(licenseId || "").trim();
+
+    if (
+      (acceptedLicenseVersion && acceptedLicenseVersion !== currentLicenseMetadata.licenseVersion) ||
+      (acceptedLicenseId && acceptedLicenseId !== currentLicenseMetadata.licenseId)
+    ) {
+      return res.status(409).json({
+        error: "La licence du pack a changé. Revenez sur le pack pour lire et accepter la nouvelle version.",
+        code: "PACK_LICENSE_CHANGED",
+        currentLicenseVersion: currentLicenseMetadata.licenseVersion
       });
     }
 
@@ -4049,7 +4544,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       item = track;
       finalPurchaseType = "track";
 
-      successUrl = `${frontUrl}/${track.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
+      successUrl = `${resolveFrontUrl(req)}/${track.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
     } 
     
     // Achat pack complet
@@ -4059,7 +4554,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       item = pack;
       finalPurchaseType = "pack";
 
-      successUrl = `${frontUrl}/${pack.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
+      successUrl = `${resolveFrontUrl(req)}/${pack.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
     }
 
     console.log("🟢 [8] Item choisi");
@@ -4116,6 +4611,9 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
     console.log("🟢 [10] Création session Stripe");
 
+    const commissionCents = Math.round(amount * 0.20);
+    const sonaraOrderId = `order_${crypto.randomUUID()}`;
+
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -4130,13 +4628,15 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
                 name:
                   finalPurchaseType === "track"
                     ? `${item.title} - ${pack.title || pack.name}`
-                    : pack.title || pack.name || "Pack Sonara",
+                    : pack.title || pack.name || "Pack Sonara"
               },
-              unit_amount: amount,
+              unit_amount: amount
             },
-            quantity: 1,
-          },
+            quantity: 1
+          }
         ],
+
+        client_reference_id: String(userId),
 
         metadata: {
           packId: String(pack.id),
@@ -4144,17 +4644,42 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
           userId: String(userId),
           artistId: String(artist.accountId || artist.id),
           purchaseType: finalPurchaseType,
+          sonaraCommissionRate: "0.20",
+          sonaraCommissionCents: String(commissionCents),
+          sonaraEnvironment: "LOCAL",
+          sonaraSource: "SONARA_PACK",
+          orderId: sonaraOrderId,
+          packTitleSnapshot: String(pack.title || pack.name || "Pack Sonara").slice(0, 450),
+          trackTitleSnapshot: finalPurchaseType === "track" ? String(item.title || "Track").slice(0, 450) : "",
+          artistNameSnapshot: String(artist.username || artist.pseudo || artist.name || artist.firstname || "Artiste").slice(0, 450),
+          ...licenseMetadata(pack)
         },
 
         payment_intent_data: {
-          application_fee_amount: Math.round(amount * 0.1),
-          transfer_data: {
-            destination: artist.stripeAccountId,
+          application_fee_amount: commissionCents,
+          metadata: {
+            packId: String(pack.id),
+            trackId: trackId ? String(trackId) : "",
+            userId: String(userId),
+            artistId: String(artist.accountId || artist.id),
+            purchaseType: finalPurchaseType,
+            sonaraCommissionRate: "0.20",
+            sonaraCommissionCents: String(commissionCents),
+            sonaraEnvironment: "LOCAL",
+            sonaraSource: "SONARA_PACK",
+            orderId: sonaraOrderId,
+            packTitleSnapshot: String(pack.title || pack.name || "Pack Sonara").slice(0, 450),
+            trackTitleSnapshot: finalPurchaseType === "track" ? String(item.title || "Track").slice(0, 450) : "",
+            artistNameSnapshot: String(artist.username || artist.pseudo || artist.name || artist.firstname || "Artiste").slice(0, 450),
+            ...licenseMetadata(pack)
           },
+          transfer_data: {
+            destination: artist.stripeAccountId
+          }
         },
 
         success_url: successUrl,
-        cancel_url: `${frontUrl}/app/pages/pack.html?id=${pack.id}&cancel=true`,
+        cancel_url: `${resolveFrontUrl(req)}/app/pages/pack.html?id=${pack.id}&cancel=true`,
       }
     );
 
@@ -4706,6 +5231,42 @@ function getLocalFounderState() {
   return { rootUsers, accounts, packs, tickets, notifications };
 }
 
+
+function recordLocalPlatformActivity(requestedAccountId, occurredAt) {
+  const rootUsers = readJsonArray(usersPath);
+  let foundAccount = null;
+
+  for (const rootUser of rootUsers) {
+    foundAccount = Array.isArray(rootUser.accounts)
+      ? rootUser.accounts.find((account) =>
+          String(account.accountId || account.id || "") === String(requestedAccountId)
+        )
+      : null;
+    if (foundAccount) break;
+  }
+
+  if (!foundAccount) return { found: false, recorded: false };
+
+  const recorded = applyPlatformActivity(foundAccount, occurredAt);
+  if (recorded) writeJsonArray(usersPath, rootUsers);
+
+  return {
+    found: true,
+    recorded,
+    day: platformGrowthDayKey(occurredAt)
+  };
+}
+
+registerPlatformGrowth({
+  app,
+  environment: "local",
+  requireFounder: requireFounderKey,
+  getAccounts: async () => getLocalFounderState().accounts,
+  recordActivity: async (accountId, occurredAt) =>
+    recordLocalPlatformActivity(accountId, occurredAt),
+  financeApi: founderFinance
+});
+
 app.get("/api/founder/health", requireFounderKey, (_req, res) => {
   try {
     const state = getLocalFounderState();
@@ -4823,6 +5384,8 @@ function createModerationDecisionNotice({
     resourceId: resourceId ? String(resourceId) : null,
     initialDecision: String(initialDecision || "rejected"),
     initialReason: safeReason,
+    hiddenContentCount: Number(target.account.hiddenPackCount || 0),
+    hiddenPackIds: Array.isArray(target.account.hiddenPackIds) ? target.account.hiddenPackIds : [],
     message: "",
     environment,
     status: "decision_sent",
@@ -4954,6 +5517,41 @@ app.post("/api/appeals", (req, res) => {
   return res.status(201).json({ success: true, appeal: publicAppealRecord(appeal), item: publicAppealRecord(appeal) });
 });
 
+app.post("/api/appeals/:id/forfeit", (req, res) => {
+  try {
+    const accountId = String(req.body?.accountId || "").trim();
+    if (!accountId) {
+      return res.status(400).json({ success: false, message: "Compte obligatoire." });
+    }
+    const appeals = readJsonArray(moderationAppealsPath);
+    const item = getLocalAppealById(appeals, req.params.id);
+
+    if (!item || (accountId && String(item.accountId || "") !== accountId)) {
+      return res.status(404).json({ success: false, message: "Décision introuvable." });
+    }
+    if (String(item.decisionType || "").toLowerCase() !== "ban") {
+      return res.status(400).json({ success: false, message: "Seul un bannissement peut être abandonné définitivement." });
+    }
+    if (item.appealSubmitted === true) {
+      return res.status(409).json({ success: false, message: "La contestation a déjà été envoyée : les données restent en quarantaine." });
+    }
+
+    const deletion = permanentlyDeleteLocalBannedArtist(item.accountId, {
+      reason: "Opportunité de contestation abandonnée par l’artiste"
+    });
+
+    return res.json({
+      success: true,
+      permanentlyDeleted: true,
+      message: "Le compte artiste et tout son contenu ont été supprimés définitivement.",
+      deletion
+    });
+  } catch (error) {
+    console.error("Erreur abandon bannissement local :", error);
+    return res.status(500).json({ success: false, message: error.message || "Suppression définitive impossible." });
+  }
+});
+
 app.patch("/api/appeals/:id/read", (req, res) => {
   const accountId = String(req.body?.accountId || "").trim();
   const stage = String(req.body?.stage || "initial").toLowerCase();
@@ -5052,6 +5650,26 @@ app.patch("/api/founder/appeals/:id/decision", requireFounderKey, async (req, re
       return res.status(409).json({ success: false, message: "La cible a changé. Recharge la contestation avant de décider." });
     }
 
+    if (decision === "rejected" && String(appeal.decisionType || "").toLowerCase() === "ban") {
+      const deletion = permanentlyDeleteLocalBannedArtist(appeal.accountId, {
+        reason: finalResponse,
+        appealId: appeal.appealId || appeal.id
+      });
+      const emailSent = await sendLocalAppealEmail(
+        appeal.email || appeal.mail,
+        "Votre contestation Sonara a été rejetée",
+        finalResponse
+      );
+
+      return res.json({
+        success: true,
+        permanentlyDeleted: true,
+        message: "Contestation rejetée : compte artiste, contenus et données de modération supprimés définitivement.",
+        deletion,
+        emailSent
+      });
+    }
+
     const now = new Date().toISOString();
     const applied = [];
 
@@ -5097,6 +5715,19 @@ app.patch("/api/founder/appeals/:id/decision", requireFounderKey, async (req, re
         writeJsonArray(packsPath, packs);
         applied.push("pack_restored");
       }
+    }
+
+    if (decision === "accepted" && String(appeal.decisionType || "").toLowerCase() === "ban") {
+      if (!["reactivate", "lift_suspension"].includes(action)) {
+        applyAccountControl(target.account, "reactivate", { reason: finalResponse });
+        applied.push("account_reactivated");
+      }
+
+      const restoredContent = restoreArtistContentAfterBan(
+        target.account.accountId || target.account.id
+      );
+      markAccountContentRestored(target.account, restoredContent);
+      applied.push(`artist_content_restored:${restoredContent.count}`);
     }
 
     appendModerationHistory(target.account, {
@@ -5217,7 +5848,13 @@ app.get("/api/founder/moderation/artists", requireFounderKey, (_req, res) => {
 
 app.get("/api/founder/moderation/packs", requireFounderKey, (_req, res) => {
   const { packs } = getLocalFounderState();
-  const items = packs.filter((pack) => pack.status === "pending");
+  const items = packs
+    .filter((pack) => pack.status === "pending")
+    .map((pack) => ({
+      ...pack,
+      license: normalizePackLicense(pack.license),
+      licenseSummary: licenseModerationSummary(pack)
+    }));
 
   res.json({ success: true, items, packs: items });
 });
@@ -5336,6 +5973,286 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, r
 });
 
 
+
+function normalizeLocalModerationOwnerIds(values) {
+  return [...new Set(
+    (Array.isArray(values) ? values : [values])
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+  )];
+}
+
+function localPackOwnerMatches(pack, ownerIds) {
+  const values = new Set(normalizeLocalModerationOwnerIds(ownerIds));
+  return [pack?.accountId, pack?.artistAccountId, pack?.artistId]
+    .filter(Boolean)
+    .some((value) => values.has(String(value)));
+}
+
+function hideArtistContentForBan(ownerIds, primaryAccountId, reason = "") {
+  const values = normalizeLocalModerationOwnerIds(ownerIds);
+  const ownerId = String(primaryAccountId || values[0] || "").trim();
+  if (!ownerId || values.length === 0) return { count: 0, packIds: [] };
+
+  const now = new Date().toISOString();
+  const packs = readJsonArray(packsPath);
+  const packIds = [];
+
+  for (const pack of packs) {
+    if (!localPackOwnerMatches(pack, values)) continue;
+
+    if (
+      isPackHiddenByModeration(pack) &&
+      String(pack.moderationHiddenByAccountId || "") === ownerId
+    ) {
+      packIds.push(String(pack.id || ""));
+      continue;
+    }
+
+    pack.moderationPreviousStatus = String(pack.status || "draft");
+    pack.status = "moderation_hidden";
+    pack.moderationHidden = true;
+    pack.moderationHiddenAt = now;
+    pack.moderationHiddenByAccountId = ownerId;
+    pack.moderationHiddenReason = String(reason || "Bannissement artiste");
+    pack.updatedAt = now;
+    packIds.push(String(pack.id || ""));
+  }
+
+  writeJsonArray(packsPath, packs);
+  return { count: packIds.length, packIds: packIds.filter(Boolean), hiddenAt: now };
+}
+
+function restoreArtistContentAfterBan(accountId) {
+  const ownerId = String(accountId || "").trim();
+  if (!ownerId) return { count: 0, packIds: [] };
+
+  const now = new Date().toISOString();
+  const packs = readJsonArray(packsPath);
+  const packIds = [];
+
+  for (const pack of packs) {
+    if (
+      pack.moderationHidden !== true ||
+      String(pack.moderationHiddenByAccountId || "") !== ownerId
+    ) continue;
+
+    pack.status = String(pack.moderationPreviousStatus || "draft");
+    pack.moderationRestoredAt = now;
+    pack.updatedAt = now;
+    delete pack.moderationHidden;
+    delete pack.moderationHiddenAt;
+    delete pack.moderationHiddenByAccountId;
+    delete pack.moderationHiddenReason;
+    delete pack.moderationPreviousStatus;
+    packIds.push(String(pack.id || ""));
+  }
+
+  writeJsonArray(packsPath, packs);
+  return { count: packIds.length, packIds: packIds.filter(Boolean), restoredAt: now };
+}
+
+
+function collectLocalArtistProfileFiles(account) {
+  return [...new Set([
+    account?.imageProfile,
+    account?.imageArtist,
+    account?.artistImage,
+    account?.profileImage,
+    account?.avatar
+  ]
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => path.join(__dirname, "uploads", path.basename(value.trim())))
+  )];
+}
+
+function localRecordBelongsToDeletedArtist(item, context) {
+  if (!item || typeof item !== "object") return false;
+
+  const ids = new Set([
+    context.accountId,
+    context.rootUserId,
+    ...context.packIds,
+    ...context.trackIds,
+    ...context.appealIds,
+    ...context.relatedRecordIds
+  ].filter(Boolean).map(String));
+  const emails = new Set([context.email].filter(Boolean).map((value) => String(value).toLowerCase()));
+
+  const recordIds = [
+    item.accountId,
+    item.userId,
+    item.rootUserId,
+    item.entityId,
+    item.packId,
+    item.trackId,
+    item.appealId,
+    item.id,
+    item?.metadata?.entityId,
+    item?.metadata?.accountId,
+    item?.metadata?.userId
+  ].filter(Boolean).map(String);
+
+  if (recordIds.some((value) => ids.has(value))) return true;
+
+  const recordEmails = [item.email, item.mail]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+
+  return recordEmails.some((value) => emails.has(value));
+}
+
+function permanentlyDeleteLocalBannedArtist(accountId, options = {}) {
+  const requestedAccountId = String(accountId || "").trim();
+  if (!requestedAccountId) throw new Error("Compte artiste obligatoire pour la suppression définitive.");
+
+  const target = findLocalAppealAccount(requestedAccountId);
+  const account = target.account;
+  const rootUser = target.rootUser;
+
+  if (!account || !rootUser) {
+    return {
+      alreadyDeleted: true,
+      accountId: requestedAccountId,
+      deletedPackCount: 0,
+      deletedR2KeyCount: 0
+    };
+  }
+
+  const status = String(account.status || "").toLowerCase();
+  const artistStatus = String(account.artistStatus || "").toLowerCase();
+  if (status !== "banned" && artistStatus !== "banned") {
+    throw new Error("La suppression définitive est réservée à un compte artiste banni.");
+  }
+
+  const ownerIds = normalizeLocalModerationOwnerIds([
+    requestedAccountId,
+    account.accountId,
+    account.id
+  ]);
+  const packs = readJsonArray(packsPath);
+  const deletedPacks = packs.filter((pack) => localPackOwnerMatches(pack, ownerIds));
+  const packIds = deletedPacks.map((pack) => String(pack.id || "")).filter(Boolean);
+  const trackIds = deletedPacks.flatMap((pack) =>
+    (Array.isArray(pack.tracks) ? pack.tracks : [])
+      .map((track) => String(track?.id || ""))
+      .filter(Boolean)
+  );
+
+  const deletedFiles = [];
+  for (const pack of deletedPacks) {
+    deletedFiles.push(...deleteRejectedLocalPackFiles(pack));
+    deleteLocalPackNotifications(pack.id);
+  }
+  for (const filePath of collectLocalArtistProfileFiles(account)) {
+    if (safeDeleteFile(filePath)) deletedFiles.push(filePath);
+  }
+
+  writeJsonArray(
+    packsPath,
+    packs.filter((pack) => !localPackOwnerMatches(pack, ownerIds))
+  );
+
+  const packIdSet = new Set(packIds);
+  const trackIdSet = new Set(trackIds);
+  for (const currentRoot of target.rootUsers) {
+    for (const currentAccount of Array.isArray(currentRoot.accounts) ? currentRoot.accounts : []) {
+      if (Array.isArray(currentAccount.downloadedPacks)) {
+        currentAccount.downloadedPacks = currentAccount.downloadedPacks.filter(
+          (id) => !packIdSet.has(String(id))
+        );
+      }
+      if (Array.isArray(currentAccount.downloadedTracks)) {
+        currentAccount.downloadedTracks = currentAccount.downloadedTracks.filter(
+          (id) => !trackIdSet.has(String(id))
+        );
+      }
+    }
+  }
+
+  rootUser.accounts = (Array.isArray(rootUser.accounts) ? rootUser.accounts : []).filter(
+    (currentAccount) => !ownerIds.includes(String(currentAccount.accountId || currentAccount.id || ""))
+  );
+  const deleteWholeRootUser = rootUser.accounts.length === 0;
+
+  const remainingRootUsers = target.rootUsers.filter((currentRoot) =>
+    currentRoot !== rootUser || !deleteWholeRootUser
+  );
+  writeJsonArray(usersPath, remainingRootUsers);
+
+  const appeals = readJsonArray(moderationAppealsPath);
+  const deletedAppeals = appeals.filter((item) => String(item.accountId || "") === requestedAccountId);
+  const appealIds = deletedAppeals.flatMap((item) => [item.id, item.appealId]).filter(Boolean).map(String);
+  writeJsonArray(
+    moderationAppealsPath,
+    appeals.filter((item) => String(item.accountId || "") !== requestedAccountId)
+  );
+
+  const baseContext = {
+    accountId: requestedAccountId,
+    // Le userId général n’est purgé que si cet account était le dernier.
+    rootUserId: deleteWholeRootUser ? String(rootUser.id || "") : "",
+    email: String(account.mail || account.email || "").trim().toLowerCase(),
+    packIds,
+    trackIds,
+    appealIds,
+    relatedRecordIds: []
+  };
+
+  const tickets = readJsonArray(supportTicketsPath);
+  const deletedTickets = tickets.filter((item) => localRecordBelongsToDeletedArtist(item, baseContext));
+  const feedbackItems = readJsonArray(feedbackPath);
+  const deletedFeedback = feedbackItems.filter((item) => localRecordBelongsToDeletedArtist(item, baseContext));
+  const context = {
+    ...baseContext,
+    relatedRecordIds: [...deletedTickets, ...deletedFeedback]
+      .flatMap((item) => [item.id, item.ticketId, item.reference])
+      .filter(Boolean)
+      .map(String)
+  };
+
+  writeJsonArray(
+    supportTicketsPath,
+    tickets.filter((item) => !localRecordBelongsToDeletedArtist(item, context))
+  );
+  writeJsonArray(
+    feedbackPath,
+    feedbackItems.filter((item) => !localRecordBelongsToDeletedArtist(item, context))
+  );
+  writeJsonArray(
+    founderNotificationsPath,
+    readJsonArray(founderNotificationsPath).filter((item) => !localRecordBelongsToDeletedArtist(item, context))
+  );
+
+  return {
+    alreadyDeleted: false,
+    accountId: requestedAccountId,
+    rootUserDeleted: deleteWholeRootUser,
+    deletedPackCount: packIds.length,
+    deletedPackIds: packIds,
+    deletedTrackCount: trackIds.length,
+    deletedFileCount: deletedFiles.length,
+    deletedAppealCount: deletedAppeals.length,
+    reason: String(options.reason || "Bannissement confirmé sans recours").trim()
+  };
+}
+
+function markAccountContentHidden(account, result, reason = "") {
+  account.contentHiddenByModeration = true;
+  account.contentHiddenAt = result.hiddenAt || new Date().toISOString();
+  account.contentHiddenReason = String(reason || "Bannissement artiste");
+  account.hiddenPackCount = Number(result.count || 0);
+  account.hiddenPackIds = Array.isArray(result.packIds) ? result.packIds : [];
+  account.contentRestoredAt = null;
+}
+
+function markAccountContentRestored(account, result) {
+  account.contentHiddenByModeration = false;
+  account.contentRestoredAt = result.restoredAt || new Date().toISOString();
+  account.restoredPackCount = Number(result.count || 0);
+  account.hiddenPackCount = 0;
+  account.hiddenPackIds = [];
+}
 
 function getControlAccountRole(account) {
   const role = String(account.originalRole || account.role || "user").toLowerCase();
@@ -5479,6 +6396,182 @@ function applyAccountControl(account, action, options = {}) {
   return account;
 }
 
+
+app.get(
+  "/api/founder/account-changes",
+  requireFounderKey,
+  (req, res) => {
+    const requestedLimit = Number(
+      req.query?.limit || 100
+    );
+
+    const limit = Math.min(
+      Math.max(
+        Number.isFinite(requestedLimit)
+          ? requestedLimit
+          : 100,
+        1
+      ),
+      500
+    );
+
+    const items = [];
+
+    for (
+      const rootUser
+      of readJsonArray(usersPath)
+    ) {
+      for (
+        const account
+        of Array.isArray(rootUser.accounts)
+          ? rootUser.accounts
+          : []
+      ) {
+        const sync = account.founderSync;
+
+        if (sync?.pending !== true) {
+          continue;
+        }
+
+        const snapshot =
+          sync.account ||
+          createFounderAccountSyncSnapshot(
+            account,
+            rootUser
+          );
+
+        items.push({
+          eventId: sync.eventId,
+          revision: sync.revision,
+          environment: sync.environment,
+          source: sync.source,
+          accountId: String(
+            snapshot.accountId ||
+            account.accountId ||
+            account.id ||
+            ""
+          ),
+          userId: String(
+            snapshot.userId ||
+            rootUser.id ||
+            rootUser.userId ||
+            ""
+          ),
+          changeTypes: sync.changeTypes || [],
+          changedFields: sync.changedFields || [],
+          previousValues: sync.previousValues || {},
+          queuedAt: sync.queuedAt,
+          updatedAt: sync.updatedAt,
+          containsPassword: false,
+          account: snapshot
+        });
+      }
+    }
+
+    items.sort(
+      (left, right) =>
+        new Date(left.queuedAt || 0) -
+        new Date(right.queuedAt || 0)
+    );
+
+    return res.json({
+      success: true,
+      items: items.slice(0, limit),
+      pending: items.length
+    });
+  }
+);
+
+app.patch(
+  "/api/founder/account-changes/:id/ack",
+  requireFounderKey,
+  async (req, res) => {
+    try {
+      const result =
+        await findRootAndAccountById(
+          req.params.id
+        );
+
+      if (!result?.account) {
+        return res.status(404).json({
+          success: false,
+          message: "Compte introuvable."
+        });
+      }
+
+      const currentSync =
+        result.account.founderSync;
+
+      if (!currentSync?.pending) {
+        return res.json({
+          success: true,
+          alreadySynced: true
+        });
+      }
+
+      const expectedEventId = String(
+        req.body?.eventId || ""
+      ).trim();
+
+      if (
+        expectedEventId &&
+        expectedEventId !==
+          String(currentSync.eventId || "")
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Une modification plus récente attend encore Founder."
+        });
+      }
+
+      const now = new Date().toISOString();
+
+      result.account.founderSync = {
+        ...currentSync,
+        pending: false,
+        syncedAt: now,
+        founderRecordId:
+          String(
+            req.body?.founderRecordId || ""
+          ).trim() || null,
+        lastEventId:
+          currentSync.eventId,
+        updatedAt: now
+      };
+
+      await saveAccountState(
+        result.rootUser,
+        result.account
+      );
+
+      return res.json({
+        success: true,
+        accountId:
+          result.account.accountId ||
+          result.account.id,
+        eventId: currentSync.eventId,
+        revision: currentSync.revision,
+        founderRecordId:
+          result.account.founderSync
+            .founderRecordId,
+        syncedAt: now
+      });
+    } catch (error) {
+      console.error(
+        "Erreur ACK changement compte Founder :",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Impossible de confirmer la sauvegarde Founder."
+      });
+    }
+  }
+);
+
 app.get("/api/founder/accounts", requireFounderKey, (_req, res) => {
   const rootUsers = readJsonArray(usersPath);
   const accounts = [];
@@ -5578,6 +6671,19 @@ app.patch(
       }
 
       applyAccountControl(account, action, req.body || {});
+
+      if (action === "ban") {
+        const hidden = hideArtistContentForBan(
+          [account.accountId, account.id],
+          account.accountId || account.id,
+          req.body?.reason
+        );
+        markAccountContentHidden(account, hidden, req.body?.reason);
+      } else if (["reactivate", "restore_creator"].includes(action)) {
+        const restored = restoreArtistContentAfterBan(account.accountId || account.id);
+        markAccountContentRestored(account, restored);
+      }
+
       rootUser.updatedAt = account.updatedAt;
       writeJsonArray(usersPath, rootUsers);
 

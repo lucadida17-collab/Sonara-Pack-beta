@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
 
-    <link rel="stylesheet" href="../css/library.css?v=5.3.8.61-library-order">
+    <link rel="stylesheet" href="../css/library.css?v=5.3.8.76-header-language-player-align">
 
     <link
   rel="stylesheet"
-  href="../components/header/header.css"
+  href="../components/header/header.css?v=5.3.8.76-header-language"
 >
     <link rel="stylesheet" href="../css/catalog-shell.css?v=5.3.8.67">
 
@@ -23,7 +23,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Sonara Pack - Library</title>
-  <link rel="stylesheet" href="../css/i18n.css">
+  <link rel="stylesheet" href="../css/i18n.css?v=5.3.8.76-header-language">
 </head>
 
 <body class="library sonara-shell-page">
@@ -154,34 +154,16 @@
   </div>
 
 <script src="../../config.js?v=5.3.8.59-library-side-panel"></script>
+<script src="/app/js/auth-guard.js?v=5.3.8.73-auth-all-pages" data-sonara-auth="required"></script>
 
 <script src="https://unpkg.com/lucide@latest"></script>
-
-<script src="../js/auth-guard.js"></script>
-
-<script>
-  window.sonaraPageSessionReady =
-    Promise
-      .resolve(
-        verifySonaraSession()
-      )
-      .catch((error) => {
-        console.error(
-          "Vérification de session Library impossible :",
-          error
-        );
-
-        return false;
-      });
-</script>
-
-<script src="../components/header/header.js?v=5.3.8.63-session-stable"></script>
+<script src="../components/header/header.js?v=5.3.8.76-header-language"></script>
 
 <script src="../js/Memoire/memoire.js"></script>
 
-<script src="../js/library.js?v=5.3.8.63-library-stable"></script>
+<script src="../js/library.js?v=5.3.8.76-header-language-player-align"></script>
 
-<script src="../js/i18n.js" defer></script>
+<script src="../js/i18n.js?v=5.3.8.76-header-language" defer></script>
 </body>
 
 </html>

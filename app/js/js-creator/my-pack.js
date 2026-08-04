@@ -125,6 +125,10 @@ function myPackPublicUrl(packId) {
   );
 }
 
+function myPackManagementUrl(packId) {
+  return `manage-pack.html?id=${encodeURIComponent(packId)}`;
+}
+
 function showMyPackMessage(message, type = "success") {
   const toast = document.createElement("div");
   toast.className = `my-pack-toast my-pack-toast-${type}`;
@@ -602,7 +606,13 @@ async function initializeMyPacks() {
       const safePackId = escapeMyPackHtml(pack.id);
 
       return `
-        <article class="my-pack-card" data-pack-id="${safePackId}">
+        <article
+          class="my-pack-card"
+          data-pack-id="${safePackId}"
+          role="button"
+          tabindex="0"
+          aria-label="Gérer le pack ${safeTitle}"
+        >
           <label class="my-pack-select" ${selectionMode ? "" : "hidden"}>
             <input class="my-pack-check" type="checkbox" aria-label="Sélectionner ${safeTitle}">
           </label>
@@ -627,6 +637,16 @@ async function initializeMyPacks() {
             ${pack.rejectionReason
               ? `<p class="my-pack-rejection"><strong>Motif :</strong> ${escapeMyPackHtml(pack.rejectionReason)}</p>`
               : ""}
+            <div class="my-pack-card-footer">
+              <span class="my-pack-license-status">
+                <i data-lucide="shield-check"></i>
+                Licence 
+              </span>
+              <button class="my-pack-manage-button" type="button" data-manage-pack>
+                Gérer le pack
+                <i data-lucide="arrow-up-right"></i>
+              </button>
+            </div>
           </div>
 
         </article>`;
@@ -649,10 +669,22 @@ async function initializeMyPacks() {
       });
 
       card.addEventListener("click", (event) => {
-        if (!selectionMode || event.target.closest("button, input, label")) return;
-        if (selected.has(card.dataset.packId)) selected.delete(card.dataset.packId);
-        else selected.add(card.dataset.packId);
-        updateSelectionUi();
+        if (selectionMode) {
+          if (event.target.closest("button, input, label")) return;
+          if (selected.has(card.dataset.packId)) selected.delete(card.dataset.packId);
+          else selected.add(card.dataset.packId);
+          updateSelectionUi();
+          return;
+        }
+
+        if (event.target.closest("input, label")) return;
+        window.location.href = myPackManagementUrl(card.dataset.packId);
+      });
+
+      card.addEventListener("keydown", (event) => {
+        if (selectionMode || !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        window.location.href = myPackManagementUrl(card.dataset.packId);
       });
 
     });

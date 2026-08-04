@@ -1,7 +1,7 @@
 const countdown = document.querySelector("#countdown");
 
 
-const endTime = new Date("2026-07-14T16:05:00+02:00").getTime();
+const endTime = new Date("2026-08-10T22:37:00+02:00").getTime();
 
 function updateCountdown() {
     const remaining = endTime - Date.now();

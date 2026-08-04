@@ -3041,3 +3041,232 @@ background: #061f5f; /* bleu royal profond */
       repeat(4, minmax(0, 1fr));
   }
 }
+
+
+/* ==========================================================
+   LIBRARY MOBILE — CARTES / RETOUR / DOWNLOAD V5.3.8.74
+========================================================== */
+
+.library-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.choice-back-button {
+  all: unset;
+  width: 42px;
+  height: 42px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  margin: 0 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.88);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.075),
+      rgba(255, 255, 255, 0.025)
+    );
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.choice-back-button svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.choice-back-button:hover {
+  color: #66e6ff;
+  border-color: rgba(88, 223, 255, 0.28);
+  background: rgba(52, 198, 255, 0.09);
+  transform: translateX(-2px);
+}
+
+.choice-back-button:focus-visible {
+  outline: 2px solid #55dfff;
+  outline-offset: 3px;
+}
+
+.library-downloads-overview
+.choice-back-button {
+  margin-top: 0;
+  margin-left: 0;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 899px) {
+  /*
+    Deux cards par ligne :
+    plus grandes que les anciennes 4 miniatures,
+    mais sans occuper tout l'écran.
+  */
+  .library-home-pack-grid,
+  .library-choice-pack-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 22px 14px;
+  }
+
+  .library-home-pack-grid
+  .library-preview-pack-cover,
+  .library-choice-pack-grid
+  .library-preview-pack-cover {
+    border-radius: 15px;
+  }
+
+  .library-home-pack-grid
+  .library-preview-pack-info,
+  .library-choice-pack-grid
+  .library-preview-pack-info {
+    gap: 4px;
+    margin: 9px 2px 0;
+  }
+
+  .library-home-pack-grid
+  .library-preview-pack-info strong,
+  .library-choice-pack-grid
+  .library-preview-pack-info strong {
+    font-size: 14px;
+    font-weight: 690;
+    line-height: 1.25;
+  }
+
+  .library-home-pack-grid
+  .library-preview-pack-info small,
+  .library-choice-pack-grid
+  .library-preview-pack-info small {
+    display: block;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 12px;
+    font-weight: 540;
+    line-height: 1.25;
+  }
+
+  /*
+    Vue complète Packs téléchargés.
+  */
+  .pack-accueil {
+    width: 100%;
+    display: block;
+    text-align: left;
+  }
+
+  .pack-page {
+    width: 100%;
+    padding:
+      0 18px
+      calc(
+        112px +
+        env(safe-area-inset-bottom)
+      );
+    box-sizing: border-box;
+    display: block;
+  }
+
+  .pack-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 22px 14px;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .pack-card {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    display: block;
+    text-align: left;
+  }
+
+  .pack-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    display: block;
+    border-radius: 15px;
+    object-fit: cover;
+  }
+
+  .pack-card h3 {
+    overflow: hidden;
+    margin: 9px 2px 3px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 690;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pack-card p {
+    overflow: hidden;
+    margin: 0 2px;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 12px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pack-card:hover,
+  .pack-cover:hover {
+    width: auto;
+    height: auto;
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /*
+    Flèche remontée au début réel de chaque vue.
+  */
+  .library-content >
+  .choice-back-button,
+  .library-overview >
+  .choice-back-button {
+    margin:
+      -6px 0
+      18px;
+  }
+}
+
+
+/* V5.3.8.76 — mini-player aligné au contenu Library */
+@media (min-width: 900px) {
+  body.library .mini-player-mobile {
+    right: auto;
+    bottom: 34px;
+    box-sizing: border-box;
+    height: 70px;
+    border-radius: 18px;
+    justify-content: flex-start;
+    text-align: left;
+    z-index: 2600;
+  }
+}

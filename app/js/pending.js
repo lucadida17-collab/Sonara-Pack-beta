@@ -1,6 +1,6 @@
 const homeAccessBtn = document.querySelector(".home-access-btn");
 let profile = JSON.parse(localStorage.getItem("sonaraProfile") || "null");
-let decisionInProgress = false;
+let statusCheckInProgress = false;
 
 if (profile?.role === "artist" && homeAccessBtn) {
   homeAccessBtn.style.display = "none";
@@ -11,12 +11,23 @@ homeAccessBtn?.addEventListener("click", () => {
 });
 
 async function checkStatus() {
-  if (!profile || !(profile.id || profile.accountId) || decisionInProgress) return;
+  if (statusCheckInProgress) return;
+  statusCheckInProgress = true;
 
   try {
+    const authResult = await window.SonaraAuth?.ready;
+
+    if (!authResult?.ok || !authResult.profile) {
+      return;
+    }
+
+    profile = authResult.profile;
     const requestedId = profile.accountId || profile.id;
+
+    if (!requestedId) return;
+
     const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(requestedId)}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     const account = data.account;
 
     if (!res.ok || !account) return;
@@ -30,9 +41,6 @@ async function checkStatus() {
     }
 
     if (account.status === "rejected" || account.artistStatus === "rejected") {
-      decisionInProgress = true;
-      await window.SonaraModeration?.showNext(account);
-
       if (String(account.role || "").toLowerCase() === "both" || account.status === "approved") {
         window.location.href = "/home.html";
       } else {
@@ -41,6 +49,8 @@ async function checkStatus() {
     }
   } catch (error) {
     console.warn("Vérification du statut artiste impossible :", error);
+  } finally {
+    statusCheckInProgress = false;
   }
 }
 

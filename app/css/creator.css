@@ -574,3 +574,37 @@ html {
   font-weight: 850;
   cursor: pointer;
 }
+
+
+/* V5.3.8.76 — zone responsive traduction + réglages Creator */
+.creator-toolbar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 28px);
+}
+
+.creator-toolbar .creator-settings-btn,
+.creator-toolbar .creator-settings-btn-desktop {
+  position: static;
+  top: auto;
+  right: auto;
+  flex: 0 0 auto;
+}
+
+.creator-language-slot {
+  flex: 0 1 auto;
+}
+
+@media (min-width: 900px) {
+  .creator-toolbar {
+    top: 16px;
+    right: 50px;
+    gap: 12px;
+  }
+}

@@ -107,6 +107,58 @@ if (desktopBrandVersion) {
 
 const content = document.querySelector(".library-content");
 
+function alignLibraryMiniPlayerToContent() {
+    const miniPlayer =
+        document.querySelector(
+            ".mini-player-mobile"
+        );
+
+    if (!miniPlayer) return;
+
+    if (
+        !window.matchMedia(
+            "(min-width: 900px)"
+        ).matches
+    ) {
+        miniPlayer.style.removeProperty(
+            "left"
+        );
+        miniPlayer.style.removeProperty(
+            "right"
+        );
+        miniPlayer.style.removeProperty(
+            "width"
+        );
+        return;
+    }
+
+    const libraryContent =
+        document.querySelector(
+            ".library-content"
+        );
+
+    if (!libraryContent) return;
+
+    const rect =
+        libraryContent.getBoundingClientRect();
+
+    miniPlayer.style.left =
+        `${Math.round(rect.left)}px`;
+    miniPlayer.style.right = "auto";
+    miniPlayer.style.width =
+        `${Math.round(rect.width)}px`;
+}
+
+if (!window.__sonaraLibraryPlayerAlignBound) {
+    window.__sonaraLibraryPlayerAlignBound = true;
+
+    window.addEventListener(
+        "resize",
+        alignLibraryMiniPlayerToContent,
+        { passive: true }
+    );
+}
+
 
 
     function formatDuration(seconds) {
@@ -124,6 +176,101 @@ function escapeLibraryHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+function createLibraryBackButton() {
+    return `
+        <button
+            class="choice-back-button"
+            type="button"
+            aria-label="Retour"
+            title="Retour"
+        >
+            <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path
+                    d="M15 18l-6-6 6-6"
+                ></path>
+            </svg>
+
+            <span class="library-visually-hidden">
+                Retour
+            </span>
+        </button>
+    `;
+}
+
+function createLibraryDownloadUrl({
+    downloadPage = "",
+    packId = "",
+    trackId = ""
+} = {}) {
+    /*
+      L'ancienne URL sert uniquement à récupérer ses paramètres.
+      Le chemin final est toujours reconstruit depuis la racine.
+    */
+    let sourceUrl = null;
+
+    try {
+        sourceUrl = new URL(
+            String(downloadPage || ""),
+            window.location.href
+        );
+    } catch {
+        sourceUrl = null;
+    }
+
+    const resolvedPackId =
+        String(
+            packId ||
+            sourceUrl?.searchParams.get("id") ||
+            ""
+        ).trim();
+
+    const resolvedTrackId =
+        String(
+            trackId ||
+            sourceUrl?.searchParams.get("trackId") ||
+            ""
+        ).trim();
+
+    const targetUrl =
+        new URL(
+            "/app/pages/download.html",
+            window.location.origin
+        );
+
+    if (resolvedPackId) {
+        targetUrl.searchParams.set(
+            "id",
+            resolvedPackId
+        );
+    }
+
+    if (resolvedTrackId) {
+        targetUrl.searchParams.set(
+            "trackId",
+            resolvedTrackId
+        );
+    }
+
+    return targetUrl.href;
+}
+
+function navigateToLibraryDownload(
+    downloadPage
+) {
+    const targetUrl =
+        createLibraryDownloadUrl({
+            downloadPage
+        });
+
+    window.location.assign(
+        targetUrl
+    );
 }
 
 function getCurrentLibraryProfile() {
@@ -656,12 +803,7 @@ async function renderChoiceTelechargement() {
             "
             aria-busy="true"
         >
-            <button
-                class="choice-back-button"
-                type="button"
-            >
-                Retour
-            </button>
+            ${createLibraryBackButton()}
 
             <div class="library-overview-loading">
                 <span></span>
@@ -751,12 +893,7 @@ async function renderChoiceTelechargement() {
                     library-downloads-overview
                 "
             >
-                <button
-                    class="choice-back-button"
-                    type="button"
-                >
-                    Retour
-                </button>
+                ${createLibraryBackButton()}
 
                 
 
@@ -911,12 +1048,7 @@ async function renderChoiceTelechargement() {
                     library-downloads-overview
                 "
             >
-                <button
-                    class="choice-back-button"
-                    type="button"
-                >
-                    Retour
-                </button>
+                ${createLibraryBackButton()}
 
                 <div
                     class="library-overview-state"
@@ -1016,9 +1148,7 @@ async function renderPack() {
 
     content.innerHTML = `
 
-     <button class="choice-back-button">
-  Retour
-  </button>
+     ${createLibraryBackButton()}
 
 
     <section class="pack-accueil">
@@ -1092,9 +1222,7 @@ function renderDownloadedPack(packId) {
 
     content.innerHTML = `
   
-   <button class="choice-back-button">
-  Retour
-  </button>
+   ${createLibraryBackButton()}
 
   <section class="download-pack-accueil"> 
 
@@ -1129,10 +1257,24 @@ function renderDownloadedPack(packId) {
           <p class="artist">${packData.artist}</p>
 
         <button class="js-download-pack"
-        data-download="${packData.downloadPage || `download.html?id=${packData.id}`}">Télécharger</button>
+        data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    packData.downloadPage,
+                packId:
+                    packData.id
+            })
+        )}">Télécharger</button>
         </div>
          <button class="js-download-pack-desktop"
-         data-download="${packData.downloadPage || `download.html?id=${packData.id}`}">Télécharger</button>    
+         data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    packData.downloadPage,
+                packId:
+                    packData.id
+            })
+        )}">Télécharger</button>    
       </div>
     </div>
    <div class="track-row-separator"></div>
@@ -1185,7 +1327,16 @@ function renderDownloadedPack(packId) {
 
         <button class="track-price js-download-track"
         data-telechargement-url="${track.downloadZip}"
-        data-download="${track.downloadPage}"
+        data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    track.downloadPage,
+                packId:
+                    packData.id,
+                trackId:
+                    track.id
+            })
+        )}"
         >Télécharger</button>
       </div> 
 
@@ -1225,7 +1376,16 @@ function renderDownloadedPack(packId) {
 
         <button class="track-price-mobile js-download-track"
         data-telechargement-url="${track.downloadZip}"
-        data-download="${track.downloadPage}"
+        data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    track.downloadPage,
+                packId:
+                    packData.id,
+                trackId:
+                    track.id
+            })
+        )}"
         >Télécharger</button>
       </div> 
 
@@ -1327,6 +1487,10 @@ function renderDownloadedPack(packId) {
     const miniPlayerProgressFill = document.querySelector(".mini-player-progress-fill");
     const grandPlayer = document.querySelector(".grand-player");
     const grandPlayerBack = document.querySelector(".grand-player-back");
+
+    window.requestAnimationFrame(
+        alignLibraryMiniPlayerToContent
+    );
 
 
    
@@ -1766,7 +1930,9 @@ packDownloadBtns.forEach((btn) => {
             return;
         }
 
-        window.location.href = downloadPage;
+        navigateToLibraryDownload(
+            downloadPage
+        );
     });
 });
 
@@ -1784,7 +1950,9 @@ trackDownloadBtns.forEach((btn) => {
             return;
         }
 
-        window.location.href = downloadPage;
+        navigateToLibraryDownload(
+            downloadPage
+        );
     });
 });
 
@@ -1841,9 +2009,7 @@ async function renderTrack() {
 
     content.innerHTML = `
 
- <button class="choice-back-button">
-  Retour
-  </button>
+ ${createLibraryBackButton()}
 
    <div class="track">
 
@@ -1886,7 +2052,16 @@ async function renderTrack() {
 
         <button class="track-price js-download-track"
         data-telechargement-url="${track.downloadZip}"
-        data-download="${track.downloadPage}"
+        data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    track.downloadPage,
+                packId:
+                    track.packId,
+                trackId:
+                    track.id
+            })
+        )}"
         >Télécharger</button>
       </div> 
 
@@ -1926,7 +2101,16 @@ async function renderTrack() {
 
         <button class="track-price-mobile js-download-track"
         data-telechargement-url="${track.downloadZip}"
-        data-download="${track.downloadPage}"
+        data-download="${escapeLibraryHtml(
+            createLibraryDownloadUrl({
+                downloadPage:
+                    track.downloadPage,
+                packId:
+                    track.packId,
+                trackId:
+                    track.id
+            })
+        )}"
         >Télécharger</button>
       </div> 
 
@@ -2028,6 +2212,10 @@ async function renderTrack() {
     const miniPlayerProgressFill = document.querySelector(".mini-player-progress-fill");
     const grandPlayer = document.querySelector(".grand-player");
     const grandPlayerBack = document.querySelector(".grand-player-back");
+
+    window.requestAnimationFrame(
+        alignLibraryMiniPlayerToContent
+    );
 
 
    
@@ -2445,7 +2633,9 @@ packDownloadBtns.forEach((btn) => {
             return;
         }
 
-        window.location.href = downloadPage;
+        navigateToLibraryDownload(
+            downloadPage
+        );
     });
 });
 
@@ -2463,7 +2653,9 @@ trackDownloadBtns.forEach((btn) => {
             return;
         }
 
-        window.location.href = downloadPage;
+        navigateToLibraryDownload(
+            downloadPage
+        );
     });
 });
 

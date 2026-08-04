@@ -1,3 +1,5 @@
+const SONARA_AUTH_SCRIPT = document.currentScript;
+
 const SonaraModeration = (() => {
   const decisionLabels = {
     artist_rejection: "Demande artiste refusée",
@@ -34,12 +36,50 @@ const SonaraModeration = (() => {
     document.head.appendChild(style);
   }
 
+  function getSeenDecisionKey(item, accountId, stage) {
+    return `sonaraModerationSeen:${accountId}:${item.appealId || item.id}:${stage}`;
+  }
+
+  function wasSeenLocally(item, accountId, stage) {
+    try {
+      return localStorage.getItem(getSeenDecisionKey(item, accountId, stage)) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function markSeenLocally(item, accountId, stage) {
+    try {
+      localStorage.setItem(getSeenDecisionKey(item, accountId, stage), "1");
+    } catch {
+      // La suppression serveur reste prioritaire.
+    }
+  }
+
+  async function forfeitBanDecision(item, accountId, { background = false } = {}) {
+    const url = `${API_URL}/api/appeals/${encodeURIComponent(item.appealId || item.id)}/forfeit`;
+    const payload = JSON.stringify({ accountId });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || "La suppression définitive n’a pas pu être confirmée.");
+    return data;
+  }
+
   async function markRead(item, accountId, stage) {
+    markSeenLocally(item, accountId, stage);
+
     try {
       await fetch(`${API_URL}/api/appeals/${encodeURIComponent(item.appealId || item.id)}/read`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId, stage })
+        body: JSON.stringify({ accountId, stage }),
+        keepalive: true
       });
     } catch (error) {
       console.warn("Décision de modération non confirmée :", error);
@@ -62,6 +102,24 @@ const SonaraModeration = (() => {
     return new Promise((resolve) => {
       const accountId = String(profile.accountId || profile.id || "");
       const isFinal = item.appealSubmitted === true && item.active === false && Boolean(item.finalResponse);
+      const readStage = isFinal ? "final" : "initial";
+
+      const isForfeitableBan =
+        !isFinal &&
+        item.appealSubmitted !== true &&
+        String(item.decisionType || "").toLowerCase() === "ban";
+      let appealSubmitted = false;
+      let appealSubmissionInProgress = false;
+      let forfeitureStarted = false;
+
+      // Un bannissement est une opportunité unique : fermer, actualiser ou quitter
+      // sans avoir envoyé la contestation déclenche la destruction définitive.
+      if (isForfeitableBan) {
+        markSeenLocally(item, accountId, readStage);
+      } else {
+        void markRead(item, accountId, readStage);
+      }
+
       const overlay = document.createElement("section");
       overlay.className = "sonara-decision-overlay";
       overlay.setAttribute("role", "dialog");
@@ -112,13 +170,59 @@ const SonaraModeration = (() => {
       reason.className = isFinal ? "sonara-decision-final" : "sonara-decision-reason";
       reason.textContent = isFinal ? item.finalResponse : (item.initialReason || "Aucun motif communiqué.");
 
+      const clearForfeitureListener = () => {
+        window.removeEventListener("pagehide", forfeitOnPageExit);
+      };
+
+      const destroyLocalSession = () => {
+        localStorage.removeItem("sonaraProfile");
+        localStorage.removeItem("sonaraProfileCreated");
+      };
+
+      const forfeitOnPageExit = () => {
+        if (
+          !isForfeitableBan ||
+          appealSubmitted ||
+          appealSubmissionInProgress ||
+          forfeitureStarted
+        ) return;
+        forfeitureStarted = true;
+        void forfeitBanDecision(item, accountId, { background: true }).catch((error) => {
+          console.warn("Suppression définitive à relancer :", error);
+        });
+      };
+
+      if (isForfeitableBan) {
+        window.addEventListener("pagehide", forfeitOnPageExit, { once: true });
+      }
+
       const closePopup = async () => {
-        close.disabled = true;
-        if (isFinal) {
-          await markRead(item, accountId, "final");
+        if (appealSubmissionInProgress) {
+          explanation.textContent = "Envoi de la contestation en cours…";
+          return;
         }
+
+        close.disabled = true;
+
+        if (isForfeitableBan && !appealSubmitted) {
+          forfeitureStarted = true;
+          clearForfeitureListener();
+          try {
+            await forfeitBanDecision(item, accountId);
+            destroyLocalSession();
+            overlay.remove();
+            window.location.replace("/app/pages/inscription.html");
+            resolve({ closed: true, contested: false, permanentlyDeleted: true });
+          } catch (error) {
+            close.disabled = false;
+            explanation.textContent = error.message;
+          }
+          return;
+        }
+
+        clearForfeitureListener();
         overlay.remove();
-        resolve({ closed: true, contested: false });
+        resolve({ closed: true, contested: appealSubmitted });
       };
       close.addEventListener("click", closePopup);
 
@@ -127,7 +231,9 @@ const SonaraModeration = (() => {
       if (!isFinal && item.appealSubmitted !== true) {
         const note = document.createElement("p");
         note.className = "sonara-decision-note";
-        note.textContent = "Vous pouvez fermer cette information ou envoyer une contestation au staff.";
+        note.textContent = isForfeitableBan
+          ? "Attention : fermer, actualiser ou quitter sans envoyer la contestation supprimera définitivement votre compte artiste et tout son contenu."
+          : "Vous pouvez fermer cette information ou envoyer une contestation au staff.";
 
         const contest = document.createElement("button");
         contest.type = "button";
@@ -162,6 +268,8 @@ const SonaraModeration = (() => {
             return;
           }
           send.disabled = true;
+          close.disabled = true;
+          appealSubmissionInProgress = true;
           send.textContent = "Envoi…";
           error.textContent = "";
           try {
@@ -176,6 +284,9 @@ const SonaraModeration = (() => {
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.message || "La contestation n’a pas pu être envoyée.");
+            appealSubmitted = true;
+            appealSubmissionInProgress = false;
+            clearForfeitureListener();
             title.textContent = "Contestation envoyée";
             explanation.textContent = "Votre message est maintenant visible dans la section Contestations du dashboard Founder.";
             reason.textContent = message;
@@ -192,8 +303,10 @@ const SonaraModeration = (() => {
             });
             card.appendChild(done);
           } catch (requestError) {
+            appealSubmissionInProgress = false;
             error.textContent = requestError.message;
             send.disabled = false;
+            close.disabled = false;
             send.textContent = "Envoyer la contestation";
           }
         });
@@ -216,7 +329,30 @@ const SonaraModeration = (() => {
       if (!response.ok) throw new Error(data.message || "Impossible de récupérer les décisions.");
       const items = Array.isArray(data.items) ? data.items : Array.isArray(data.decisions) ? data.decisions : [];
       if (!items.length) return null;
-      return await showPopup(items[0], profile);
+
+      const alreadyConsumedBan = items.find((item) => {
+        const isInitialBan =
+          item.appealSubmitted !== true &&
+          String(item.decisionType || "").toLowerCase() === "ban";
+        return isInitialBan && wasSeenLocally(item, accountId, "initial");
+      });
+
+      if (alreadyConsumedBan) {
+        await forfeitBanDecision(alreadyConsumedBan, accountId, { background: true });
+        localStorage.removeItem("sonaraProfile");
+        localStorage.removeItem("sonaraProfileCreated");
+        window.location.replace("/app/pages/inscription.html");
+        return { permanentlyDeleted: true };
+      }
+
+      const nextItem = items.find((item) => {
+        const isFinal = item.appealSubmitted === true && item.active === false && Boolean(item.finalResponse);
+        const stage = isFinal ? "final" : "initial";
+        return !wasSeenLocally(item, accountId, stage);
+      });
+
+      if (!nextItem) return null;
+      return await showPopup(nextItem, profile);
     } catch (error) {
       console.warn("Décisions de modération indisponibles :", error);
       return null;
@@ -228,80 +364,269 @@ const SonaraModeration = (() => {
 
 window.SonaraModeration = SonaraModeration;
 
-async function verifySonaraSession() {
-  const storedProfile = localStorage.getItem("sonaraProfile");
+async function waitForSonaraApiUrl(timeoutMs = 10000) {
+  const startedAt = Date.now();
 
-  if (!storedProfile) {
-    redirectToInscription();
-    return false;
+  while (typeof API_URL === "undefined") {
+    if (Date.now() - startedAt >= timeoutMs) {
+      throw new Error("La configuration Sonara n'est pas disponible.");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
   }
 
-  let profile;
+  return API_URL;
+}
+
+function getSonaraAuthMode() {
+  return String(
+    SONARA_AUTH_SCRIPT?.dataset?.sonaraAuth ||
+    document.documentElement?.dataset?.sonaraAuth ||
+    "required"
+  ).toLowerCase();
+}
+
+function clearSonaraLocalSession() {
+  if (window.SonaraSession?.clear) {
+    window.SonaraSession.clear();
+    return;
+  }
+
+  localStorage.removeItem("sonaraProfile");
+  localStorage.removeItem("sonaraProfileCreated");
+  localStorage.removeItem("sonaraSessionToken");
+  localStorage.removeItem("sonaraKnownAccounts");
+  sessionStorage.removeItem("sonaraSessionToken");
+  sessionStorage.removeItem("sonaraKnownAccounts");
+}
+
+function getStoredSonaraProfile() {
+  const rawProfile = localStorage.getItem("sonaraProfile");
+
+  if (!rawProfile) return null;
 
   try {
-    profile = JSON.parse(storedProfile);
-  } catch (error) {
-    redirectToInscription();
-    return false;
+    return JSON.parse(rawProfile);
+  } catch {
+    clearSonaraLocalSession();
+    return null;
+  }
+}
+
+function showSonaraAuthServerError() {
+  if (document.getElementById("sonaraAuthServerError")) return;
+
+  const render = () => {
+    if (!document.body || document.getElementById("sonaraAuthServerError")) return;
+
+    const overlay = document.createElement("section");
+    overlay.id = "sonaraAuthServerError";
+    Object.assign(overlay.style, {
+      position: "fixed",
+      inset: "0",
+      zIndex: "2147483647",
+      display: "grid",
+      placeItems: "center",
+      padding: "24px",
+      background: "rgba(2, 5, 12, .94)",
+      color: "#fff",
+      fontFamily: "Inter, Arial, sans-serif",
+      textAlign: "center"
+    });
+
+    const card = document.createElement("div");
+    Object.assign(card.style, {
+      width: "min(520px, 100%)",
+      padding: "26px",
+      border: "1px solid rgba(255,255,255,.12)",
+      borderRadius: "22px",
+      background: "#0d1420",
+      boxShadow: "0 30px 90px rgba(0,0,0,.55)"
+    });
+
+    const title = document.createElement("h2");
+    title.textContent = "Connexion au serveur impossible";
+    title.style.margin = "0 0 10px";
+
+    const message = document.createElement("p");
+    message.textContent = "Sonara ne peut pas vérifier votre compte. Aucun accès local n'est autorisé sans confirmation du serveur.";
+    Object.assign(message.style, {
+      margin: "0 0 18px",
+      color: "#b9c4d3",
+      lineHeight: "1.6"
+    });
+
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Réessayer";
+    Object.assign(retry.style, {
+      width: "100%",
+      border: "0",
+      borderRadius: "14px",
+      padding: "14px 18px",
+      background: "#7ee7ff",
+      color: "#071019",
+      fontWeight: "900",
+      cursor: "pointer"
+    });
+    retry.addEventListener("click", () => window.location.reload());
+
+    card.append(title, message, retry);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  };
+
+  if (document.body) render();
+  else window.addEventListener("DOMContentLoaded", render, { once: true });
+}
+
+function normalizeProfilePayload(payload) {
+  return payload?.profile || payload;
+}
+
+
+function platformActivityDayKey() {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Paris",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+async function reportSonaraPlatformActivity(apiUrl, profile) {
+  const accountId = String(profile?.accountId || profile?.id || "").trim();
+  if (!accountId) return;
+
+  const day = platformActivityDayKey();
+  const storageKey = `sonaraPlatformActivity:${accountId}:${day}`;
+
+  try {
+    if (localStorage.getItem(storageKey) === "1") return;
+  } catch {
+    // Le serveur déduplique aussi l’activité quotidienne.
   }
 
-  const profileId = profile?.accountId || profile?.id;
+  try {
+    const response = await fetch(`${apiUrl}/api/platform/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId }),
+      keepalive: true
+    });
+
+    if (!response.ok) return;
+
+    try {
+      localStorage.setItem(storageKey, "1");
+    } catch {
+      // L’enregistrement serveur reste la source de vérité.
+    }
+  } catch (error) {
+    console.warn("Activité Sonara non enregistrée :", error);
+  }
+}
+
+function isFullAccountBlocked(profile) {
+  const status = String(profile?.status || "").toLowerCase();
+  return ["banned", "rejected", "suspended", "deleted", "disabled"].includes(status);
+}
+
+function isArtistAccessRemoved(profile) {
+  const role = String(profile?.role || "").toLowerCase();
+  const status = String(profile?.status || "").toLowerCase();
+  const artistStatus = String(profile?.artistStatus || "").toLowerCase();
+
+  return role === "user" && ["banned", "rejected", "suspended"].includes(artistStatus) ||
+    role === "both" && ["banned", "rejected", "suspended"].includes(status);
+}
+
+async function verifySonaraSession(options = {}) {
+  const mode = String(options.mode || getSonaraAuthMode()).toLowerCase();
+  const redirectOnFailure = options.redirectOnFailure ?? (mode === "required");
+
+  const storedProfile = getStoredSonaraProfile();
+  const profileId = String(storedProfile?.accountId || storedProfile?.id || "");
 
   if (!profileId) {
-    redirectToInscription();
-    return false;
+    clearSonaraLocalSession();
+
+    if (mode === "optional") {
+      return { ok: true, mode, optional: true, profile: null };
+    }
+
+    if (redirectOnFailure) {
+      redirectToInscription();
+    }
+
+    return { ok: false, mode, reason: "missing_profile", profile: null };
   }
 
   try {
+    const apiUrl = await waitForSonaraApiUrl();
     const response = await fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(profileId)}`
+      `${apiUrl}/api/profile/${encodeURIComponent(profileId)}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: { Accept: "application/json" }
+      }
     );
 
-    if (
-      response.status === 404 ||
-      response.status === 401 ||
-      response.status === 403
-    ) {
-      console.warn(
-        "Profil distant temporairement non vérifiable : session locale conservée."
-      );
-      return true;
+    if ([401, 403, 404].includes(response.status)) {
+      clearSonaraLocalSession();
+
+      if (redirectOnFailure) {
+        redirectToInscription();
+      }
+
+      return { ok: false, mode, reason: "profile_not_found", profile: null };
     }
 
     if (!response.ok) {
       throw new Error(`Erreur de vérification : ${response.status}`);
     }
 
-    const freshProfile = await response.json();
-    const freshRole = String(freshProfile.role || "").toLowerCase();
-    const freshStatus = String(freshProfile.status || "").toLowerCase();
+    const freshProfile = normalizeProfilePayload(
+      await response.json().catch(() => null)
+    );
 
-    const artistAccessRemoved =
-      freshRole === "both" &&
-      (
-        freshStatus === "banned" ||
-        freshStatus === "rejected" ||
-        freshProfile.artistStatus === "banned" ||
-        freshProfile.artistStatus === "rejected" ||
-        freshProfile.artistStatus === "suspended"
-      );
+    if (!(freshProfile?.accountId || freshProfile?.id) || !freshProfile?.role) {
+      clearSonaraLocalSession();
 
-    if (artistAccessRemoved) {
-      freshProfile.role = "user";
-      freshProfile.status = "approved";
-      freshProfile.artistStatus = freshProfile.artistStatus || freshStatus;
+      if (redirectOnFailure) {
+        redirectToInscription();
+      }
+
+      return { ok: false, mode, reason: "invalid_profile", profile: null };
     }
 
     localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
+    localStorage.setItem("sonaraProfileCreated", "true");
 
-    await SonaraModeration.showNext(freshProfile);
+    void reportSonaraPlatformActivity(apiUrl, freshProfile);
 
-    if (
-      !artistAccessRemoved &&
-      ["banned", "rejected", "suspended"].includes(freshStatus)
-    ) {
-      redirectToInscription();
-      return false;
+    const moderationResult = await SonaraModeration.showNext(freshProfile);
+
+    if (moderationResult?.permanentlyDeleted) {
+      clearSonaraLocalSession();
+      return { ok: false, mode, reason: "permanently_deleted", profile: null };
+    }
+
+    const artistAccessRemoved = isArtistAccessRemoved(freshProfile);
+
+    if (!artistAccessRemoved && isFullAccountBlocked(freshProfile)) {
+      clearSonaraLocalSession();
+
+      if (redirectOnFailure) {
+        redirectToInscription();
+      }
+
+      return { ok: false, mode, reason: "blocked", profile: null };
     }
 
     const moderationNotice = freshProfile.moderationNotice;
@@ -336,7 +661,7 @@ async function verifySonaraSession() {
       if (document.body) displayNotice();
       else window.addEventListener("DOMContentLoaded", displayNotice, { once: true });
 
-      fetch(`${API_URL}/api/profile/${encodeURIComponent(freshProfile.accountId)}/moderation-notice/read`, {
+      fetch(`${apiUrl}/api/profile/${encodeURIComponent(freshProfile.accountId)}/moderation-notice/read`, {
         method: "PATCH"
       }).catch((error) => console.warn("Notice de modération non confirmée :", error));
 
@@ -348,23 +673,59 @@ async function verifySonaraSession() {
       localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
     }
 
-    return true;
+    return {
+      ok: true,
+      mode,
+      profile: freshProfile,
+      artistAccessRemoved
+    };
   } catch (error) {
     console.error("Impossible de vérifier la session :", error);
 
-    /*
-      Une panne réseau ou Render endormi ne doit jamais
-      déconnecter automatiquement le compte déjà enregistré.
-    */
-    return Boolean(profile);
+    if (mode === "required") {
+      showSonaraAuthServerError();
+    }
+
+    return {
+      ok: false,
+      mode,
+      reason: "server_unavailable",
+      profile: null,
+      error
+    };
   }
 }
 
 function redirectToInscription() {
-  /*
-    Cette redirection ne supprime jamais le compte.
-    La suppression est réservée au bouton Se déconnecter
-    dans les paramètres du compte.
-  */
-  window.location.replace("/app/pages/inscription.html");
+  const inscriptionPath = "/app/pages/inscription.html";
+
+  if (window.location.pathname.endsWith(inscriptionPath)) {
+    return;
+  }
+
+  window.location.replace(inscriptionPath);
+}
+
+const SonaraAuth = {
+  ready: null,
+  verify: verifySonaraSession,
+  clear: clearSonaraLocalSession,
+  getStoredProfile: getStoredSonaraProfile,
+  mode: getSonaraAuthMode()
+};
+
+window.SonaraAuth = SonaraAuth;
+
+function bootstrapSonaraAuth() {
+  if (SonaraAuth.ready) return SonaraAuth.ready;
+
+  SonaraAuth.ready = verifySonaraSession({ mode: SonaraAuth.mode });
+  window.sonaraPageSessionReady = SonaraAuth.ready;
+  return SonaraAuth.ready;
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", bootstrapSonaraAuth, { once: true });
+} else {
+  bootstrapSonaraAuth();
 }

@@ -804,3 +804,77 @@ button, input, textarea { font: inherit; }
     animation-iteration-count: 1;
   }
 }
+
+/* Accès direct à la gestion d'un pack et de sa licence. */
+.my-pack-card:not(.is-selected) {
+  cursor: pointer;
+}
+
+.my-pack-card:not(.is-selected):hover,
+.my-pack-card:not(.is-selected):focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(93, 234, 255, .45);
+  box-shadow: 0 22px 54px rgba(0, 39, 96, .28);
+  outline: none;
+}
+
+.my-pack-card-footer {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, .09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.my-pack-license-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(203, 246, 255, .76);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.my-pack-license-status svg {
+  width: 16px;
+  height: 16px;
+  color: #5deaff;
+}
+
+.my-pack-manage-button {
+  min-height: 40px;
+  border: 1px solid rgba(92, 229, 255, .22);
+  border-radius: 12px;
+  padding: 9px 13px;
+  background: rgba(9, 48, 102, .82);
+  color: #f5fbff;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.my-pack-manage-button:hover {
+  border-color: rgba(92, 229, 255, .52);
+  background: rgba(13, 69, 139, .92);
+}
+
+.my-pack-manage-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 620px) {
+  .my-pack-card-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .my-pack-manage-button {
+    width: 100%;
+  }
+}

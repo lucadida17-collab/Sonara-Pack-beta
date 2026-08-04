@@ -123,7 +123,9 @@ async function createCheckoutSession() {
           userId: purchase.userId,
           packId: purchase.packId,
           trackId: purchase.trackId,
-          purchaseType: purchase.purchaseType
+          purchaseType: purchase.purchaseType,
+          licenseVersion: purchase.licenseVersion,
+          licenseId: purchase.licenseId
         }),
         signal: controller.signal
       });

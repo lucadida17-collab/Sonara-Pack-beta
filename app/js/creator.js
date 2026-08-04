@@ -4,14 +4,21 @@ const creatorPage = document.querySelector(".creator-page")
 creatorPage.innerHTML = `
 
 
-<button class="creator-settings-btn">
-    <i data-lucide="settings"></i>
-</button>
- 
+<div class="creator-toolbar">
+  <div
+    class="creator-language-slot"
+    data-sonara-language-slot
+    aria-label="Traduction"
+  ></div>
 
- <button class="creator-settings-btn-desktop">
-    <i data-lucide="settings"></i>
-</button>
+  <button class="creator-settings-btn">
+      <i data-lucide="settings"></i>
+  </button>
+
+  <button class="creator-settings-btn-desktop">
+      <i data-lucide="settings"></i>
+  </button>
+</div>
 
        <section class="creator-header">
        
