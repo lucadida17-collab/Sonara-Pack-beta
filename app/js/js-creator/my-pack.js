@@ -640,7 +640,7 @@ async function initializeMyPacks() {
             <div class="my-pack-card-footer">
               <span class="my-pack-license-status">
                 <i data-lucide="shield-check"></i>
-                Licence 
+                Licence
               </span>
               <button class="my-pack-manage-button" type="button" data-manage-pack>
                 Gérer le pack

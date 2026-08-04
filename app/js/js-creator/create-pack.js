@@ -283,6 +283,7 @@ function render() {
   ];
 
   screens[currentStep]();
+  requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -947,6 +948,7 @@ function updateCreatePackLicensePreview(form) {
     ${license.creditRequired ? '<p class="create-license-preview-credit">Crédit de l’artiste obligatoire.</p>' : ""}
     ${license.customTerms ? `<p class="create-license-preview-terms">${escapeHtml(license.customTerms)}</p>` : ""}
   `;
+  requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
 }
 
 function syncCreatePackLicenseForm(form) {

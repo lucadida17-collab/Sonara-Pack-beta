@@ -3134,3 +3134,10 @@ html {
     padding: 15px 11px;
   }
 }
+
+/* Les descriptions longues restent complètes en français et en anglais.
+   Pour les autres langues, les intitulés traduits suffisent et évitent
+   tout mélange de langues tant que la traduction détaillée n'existe pas. */
+html:not([lang="fr"]):not([lang="en"]) .create-license-choice small {
+  display: none;
+}

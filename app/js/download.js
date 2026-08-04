@@ -172,8 +172,13 @@ async function refreshCurrentUser() {
     throw new Error("Reconnecte-toi pour accéder à ce téléchargement.");
   }
 
-  const response = await fetch(`${API_URL}/api/profile/${encodeURIComponent(userId)}`);
-  const profile = await readJsonResponse(response);
+  const response = await fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { Accept: "application/json" }
+  });
+  const data = await readJsonResponse(response);
+  const profile = data?.account || data;
 
   currentUser = {
     ...currentUser,
@@ -184,16 +189,26 @@ async function refreshCurrentUser() {
   return currentUser;
 }
 
-function hasDownloadAccess(profile) {
-  const ownedIds = trackId
-    ? profile.downloadedTracks
-    : profile.downloadedPacks;
-  const expectedId = trackId || packId;
-
+function hasOwnedId(values, expectedId) {
   return (
-    Array.isArray(ownedIds) &&
-    ownedIds.some((id) => String(id) === String(expectedId))
+    Array.isArray(values) &&
+    values.some((id) => String(id) === String(expectedId))
   );
+}
+
+function hasDownloadAccess(profile) {
+  const ownsWholePack = hasOwnedId(profile?.downloadedPacks, packId);
+
+  // L'achat du pack complet donne accès au ZIP du pack et à chacune de ses tracks.
+  // Une track achetée séparément reste également retéléchargeable seule.
+  if (trackId) {
+    return (
+      ownsWholePack ||
+      hasOwnedId(profile?.downloadedTracks, trackId)
+    );
+  }
+
+  return ownsWholePack;
 }
 
 async function confirmStripePurchase() {

@@ -2385,3 +2385,109 @@ body.license-modal-open {
   .notice-refuse { order: 2; }
   .notice-accept { order: 1; }
 }
+
+/* =========================================================
+   V5.3.8.77 — contenu Pack contenu dans sa vraie largeur
+   et prix visibles pour le pack / les tracks séparées
+========================================================= */
+.notice-license-meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.notice-license-price {
+  min-width: 92px;
+  border: 1px solid rgba(96, 239, 199, .24);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(55, 224, 180, .10);
+  color: #84f3d1;
+  font-size: .82rem;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  body.pack-page .pack-content,
+  body.pack-page .pack-list,
+  body.pack-page .body-pack,
+  body.pack-page .track,
+  body.pack-page .track-list-center {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  body.pack-page .pack-content,
+  body.pack-page .pack-list {
+    overflow-x: hidden;
+  }
+
+  body.pack-page .body-pack {
+    margin-inline: 0;
+    padding-inline: clamp(18px, 3vw, 38px);
+  }
+
+  body.pack-page .track-list,
+  body.pack-page .track-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    padding-inline: 12px;
+    box-sizing: border-box;
+    grid-template-columns:
+      42px
+      minmax(190px, 1.7fr)
+      minmax(130px, 1fr)
+      minmax(76px, .55fr)
+      minmax(104px, .7fr);
+    column-gap: clamp(10px, 1.4vw, 20px);
+  }
+
+  body.pack-page .track-title-column,
+  body.pack-page .track-title,
+  body.pack-page .track-artist,
+  body.pack-page .track-duration,
+  body.pack-page .track-price {
+    min-width: 0;
+  }
+
+  body.pack-page .track-title,
+  body.pack-page .track-artist {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pack-page .track-price,
+  body.pack-page .track-price-placement {
+    display: flex;
+    justify-self: end;
+  }
+
+  body.pack-page .track-price {
+    width: auto;
+    min-width: 96px;
+    max-width: 128px;
+  }
+}
+
+@media (max-width: 680px) {
+  .notice-license-meta {
+    grid-column: 2;
+    justify-items: start;
+    grid-template-columns: auto auto;
+  }
+
+  .notice-license-version {
+    grid-column: auto;
+  }
+
+  .notice-license-price {
+    min-width: 0;
+  }
+}

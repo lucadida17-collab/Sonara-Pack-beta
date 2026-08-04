@@ -21,7 +21,10 @@
     entre les pages et les rechargements du navigateur.
   */
   const DICTIONARY_CACHE_NAME =
-    "sonara-i18n-dictionaries-v1";
+    "sonara-i18n-dictionaries-v4";
+
+  const DICTIONARY_CONTENT_VERSION =
+    "2026-08-04-loading-brand-v4";
 
   const NETWORK_RETRY_DELAY_MS =
     450;
@@ -312,10 +315,12 @@
   }
 
   function getDictionaryUrl(language) {
-    return new URL(
+    const url = new URL(
       `lang/${language}.json`,
       APP_URL
     );
+    url.searchParams.set("v", DICTIONARY_CONTENT_VERSION);
+    return url;
   }
 
   function validateDictionary(

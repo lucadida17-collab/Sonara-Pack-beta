@@ -14,6 +14,7 @@ function showPopup({ type = "info", title = "", message = "" }) {
   `;
 
   document.body.appendChild(popup);
+  window.SonaraI18n?.refresh?.();
 
   popup.querySelector(".sonara-popup-btn").addEventListener("click", () => {
     popup.remove();
@@ -26,26 +27,26 @@ let selectedPurchaseType = null;
 
 const PACK_LICENSE_PERMISSION_LABELS = {
   personalProjects: "Projets personnels",
-  commercialProjects: "Projets professionnels et commerciaux",
-  monetization: "Monétisation des projets",
+  commercialProjects: "Projets commerciaux",
+  monetization: "Monétisation",
   socialMedia: "Réseaux sociaux",
-  videoFilm: "Vidéos, films et courts métrages",
-  advertising: "Publicités et contenus de marque",
-  gamesApps: "Jeux vidéo et applications",
-  podcasts: "Podcasts et émissions",
-  liveStreaming: "Lives et streaming",
-  clientWork: "Travail réalisé pour des clients",
-  soundEditing: "Découpe, effets et modification dans un DAW",
-  unlimitedProjects: "Nombre de projets illimité"
+  videoFilm: "Vidéos et films",
+  advertising: "Publicités",
+  gamesApps: "Jeux et applications",
+  podcasts: "Podcasts",
+  liveStreaming: "Live et streaming",
+  clientWork: "Travail client",
+  soundEditing: "Modification dans un DAW",
+  unlimitedProjects: "Projets illimités"
 };
 
 const PACK_LICENSE_RESTRICTION_LABELS = {
-  standaloneResale: "Revente des sons seuls ou presque inchangés",
-  redistribution: "Partage ou redistribution du pack et des fichiers sources",
-  musicPlatformUpload: "Upload des sons seuls sur une plateforme musicale",
-  contentIdRegistration: "Enregistrement des sons seuls dans Content ID",
-  sublicensing: "Sous-licence, transfert ou revente de la licence",
-  misleadingOwnership: "Revendication mensongère de la propriété des sons"
+  standaloneResale: "Revente isolée",
+  redistribution: "Partage ou redistribution",
+  musicPlatformUpload: "Upload musical autonome",
+  contentIdRegistration: "Enregistrement Content ID",
+  sublicensing: "Sous-licence",
+  misleadingOwnership: "Fausse propriété"
 };
 
 const PACK_DEFAULT_LICENSE = {
@@ -127,10 +128,21 @@ function renderPackLicenseNotice(pack, selectedItem = null) {
   const details = document.querySelector(".notice-license-details");
   const customTerms = document.querySelector(".notice-license-custom");
   const credit = document.querySelector(".notice-license-credit");
+  const price = document.querySelector(".notice-license-price");
 
   if (title) title.textContent = license.name || "Licence d’utilisation";
   if (packLabel) packLabel.textContent = itemTitle;
   if (version) version.textContent = `Version ${Number(license.version || 1)}`;
+  if (price) {
+    price.textContent = displayPriceWithEuro(
+      selectedItem?.price ??
+      selectedItem?.trackPrice ??
+      selectedItem?.unitPrice ??
+      pack?.price ??
+      pack?.packPrice ??
+      pack?.totalPrice
+    ) || "Prix indisponible";
+  }
   if (permissionList) {
     permissionList.innerHTML = permissions.length
       ? permissions.map((item) => `<li>${escapePackLicenseHtml(item)}</li>`).join("")
@@ -149,6 +161,7 @@ function renderPackLicenseNotice(pack, selectedItem = null) {
   if (credit) credit.hidden = !license.creditRequired;
 
   if (window.lucide) lucide.createIcons();
+  window.SonaraI18n?.refresh?.();
 }
 
 function openPackLicenseNotice(selectedItem = null) {
@@ -182,7 +195,7 @@ function getStoredPackProfile() {
 }
 
 
-const PACK_MIN_LOADING_TIME = 6000;
+const PACK_MIN_LOADING_TIME = 700;
 
 function updatePackLoading(progress, message) {
   const loader = document.querySelector(".my-pack-page-loader");
@@ -438,8 +451,6 @@ async function loadPack() {
 
   console.log("PACK :", packData);
 
-  console.log("PACK :", packData);
-
   if (!packData) {
     throw new Error("Pack introuvable.");
   }
@@ -491,9 +502,9 @@ function renderPack() {
           <img src="${getFilePath(packData.imageProfile)}" class="artist-image">
           <p class="artist">${packData.artist}</p>
 
-        <button class="btn-acheter">${displayPriceWithEuro(packData.price)}</button>
+        <button class="btn-acheter">${displayPriceWithEuro(packData.price || packData.packPrice || packData.totalPrice)}</button>
         </div>
-         <button class="btn-acheter-desktop">${displayPriceWithEuro(packData.price)}</button>
+         <button class="btn-acheter-desktop">${displayPriceWithEuro(packData.price || packData.packPrice || packData.totalPrice)}</button>
       </div>
     </div>
 
@@ -548,7 +559,7 @@ src="${getFilePath(track.audioName || track.audio)}"
         <button class="track-price"
         data-telechargement-url="${track.downloadZip}"
         data-download="${track.downloadPage}"
-        >${displayPriceWithEuro(track.price)}</button>
+        >${displayPriceWithEuro(track.price || track.trackPrice || track.unitPrice)}</button>
       </div> 
 
   <div class="track-row-mobile" data-track-id="${track.id}">
@@ -579,7 +590,7 @@ src="${getFilePath(track.audioName || track.audio)}"
         <button class="track-price-mobile"
         data-telechargement-url="${track.downloadZip}"
         data-download="${track.downloadPage}"
-        >${displayPriceWithEuro(track.price)}</button>
+        >${displayPriceWithEuro(track.price || track.trackPrice || track.unitPrice)}</button>
       </div> 
 
   
