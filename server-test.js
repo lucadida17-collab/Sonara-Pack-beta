@@ -11,8 +11,8 @@ const multer = require("multer");
 const AdmZip = require("adm-zip");
 const path = require("path");
 const crypto = require("crypto");
-const { registerFounderFinance } = require("./founder-finance");
-const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./platform-growth");
+const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
+const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
 const {
   defaultPackLicense,
   normalizePackLicense,
@@ -20,10 +20,21 @@ const {
   appendPackLicenseHistory,
   licenseMetadata,
   licenseModerationSummary
-} = require("./pack-license");
+} = require("./backend/features/licenses/pack-license");
 require("dotenv").config({
   path: path.resolve(__dirname, ".env.test")
 });
+const { createCommercialPolicy } = require("./backend/config/commercial-mode");
+const {
+  PRE_V1_ACTIVITY_CONFIG,
+  buildPreV1ActivityReport,
+  backfillLocalPublishedAt,
+  backfillMongoPublishedAt
+} = require("./backend/features/pre-v1/pre-v1-activity");
+const { buildMissionPayload, resolveMissionMode } = require("./backend/features/missions/mission-system");
+const { grantMissionRewardOnce, attachRewardState, getActiveVisibilityBoost } = require("./backend/features/missions/mission-rewards");
+const { ARTIST_REWARD_IDS, maybeGrantPreV1SeniorityReward, hasArtistReward, getPublicArtistRewards } = require("./backend/features/pre-v1/artist-rewards");
+const commercialPolicy = createCommercialPolicy({ environment: "test" });
 
 /*
   Environnement TEST
@@ -39,10 +50,10 @@ const mongoDatabaseName =
 
 const Stripe = require("stripe");
 const stripeSecretKey = String(process.env.STRIPE_SECRET_KEY || "").trim();
-if (!/^sk_test_/i.test(stripeSecretKey)) {
-  throw new Error("Sonara TEST exige une clé Stripe TEST (sk_test_...).");
+if (commercialPolicy.stripeEnabled && !/^sk_test_/i.test(stripeSecretKey)) {
+  throw new Error("Sonara TEST commercial exige une clé Stripe TEST (sk_test_...).");
 }
-const stripe = Stripe(stripeSecretKey);
+const stripe = Stripe(stripeSecretKey || "sk_test_pre_v1_disabled");
 const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
 const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Resend } = require("resend");
@@ -230,7 +241,7 @@ const founderFinance = registerFounderFinance({
   environment: "test",
   db: db,
   dataDir: path.join(__dirname, "data"),
-  enabled: true
+  enabled: commercialPolicy.paymentsActive
 });
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -292,6 +303,12 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-founder-key", "x-founder-environment"]
 }));
+app.get("/api/commercial-mode", (_req, res) => {
+  res.status(200).json(commercialPolicy.publicState());
+});
+
+app.use("/api/stripe", commercialPolicy.blockStripeApi);
+
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
@@ -1362,7 +1379,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
     const redirectTo =
       account.role === "artist" ||
       account.role === "both"
-        ? "/app/pages/creator.html"
+        ? "/app/pages/creator/dashboard.html"
         : "/home.html";
 
     return res.status(201).json({
@@ -1696,6 +1713,86 @@ app.get("/api/profile/:id", async (req, res) => {
 });
 
 
+
+app.get("/api/profile/:id/announcements", async (req, res) => {
+  try {
+    const result =
+      await findRootAndAccountById(req.params.id);
+
+    if (!result?.account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte introuvable."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      announcements: {
+        lastSeenHomeAnnouncement:
+          result.account.lastSeenHomeAnnouncement || null,
+        lastSeenCreatorAnnouncement:
+          result.account.lastSeenCreatorAnnouncement || null
+      }
+    });
+  } catch (error) {
+    console.error("Lecture des annonces impossible :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de lire les annonces du compte."
+    });
+  }
+});
+
+app.patch("/api/profile/:id/announcements", async (req, res) => {
+  try {
+    const seenFields = {
+      user: "lastSeenHomeAnnouncement",
+      artist: "lastSeenCreatorAnnouncement"
+    };
+    const audience = String(req.body?.audience || "").trim();
+    const version = String(req.body?.version || "").trim();
+    const seenField = seenFields[audience];
+
+    if (!seenField || !/^PRE_V1_\d+$/.test(version)) {
+      return res.status(400).json({
+        success: false,
+        message: "Annonce Pre-V1 invalide."
+      });
+    }
+
+    const result =
+      await findRootAndAccountById(req.params.id);
+
+    if (!result?.account) {
+      return res.status(404).json({
+        success: false,
+        message: "Compte introuvable."
+      });
+    }
+
+    result.account[seenField] = version;
+    await saveAccountState(result.rootUser, result.account);
+
+    return res.status(200).json({
+      success: true,
+      announcements: {
+        lastSeenHomeAnnouncement:
+          result.account.lastSeenHomeAnnouncement || null,
+        lastSeenCreatorAnnouncement:
+          result.account.lastSeenCreatorAnnouncement || null
+      }
+    });
+  } catch (error) {
+    console.error("Enregistrement de l'annonce impossible :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible d'enregistrer l'annonce du compte."
+    });
+  }
+});
+
+
 /* =========================
    LOGIN
 ========================= */
@@ -1886,7 +1983,7 @@ app.post("/api/login", async (req, res) => {
       account.role === "artist" ||
       account.role === "both"
     ) {
-      redirectTo = "/app/pages/creator.html";
+      redirectTo = "/app/pages/creator/dashboard.html";
     }
 
     const returnedAccount = sanitizeAccount(
@@ -1952,8 +2049,8 @@ app.post("/api/accounts/switch", async (req, res) => {
 
     const profile = sanitizeAccount(targetAccount, rootUser.id);
     let redirectTo = "/home.html";
-    if (targetAccount.status === "pending") redirectTo = "/app/pages/pending.html";
-    else if (targetAccount.role === "artist" || targetAccount.role === "both") redirectTo = "/app/pages/creator.html";
+    if (targetAccount.status === "pending") redirectTo = "/app/pages/auth/pending.html";
+    else if (targetAccount.role === "artist" || targetAccount.role === "both") redirectTo = "/app/pages/creator/dashboard.html";
 
     return res.json({ success: true, profile, account: profile, redirectTo });
   } catch (error) {
@@ -2065,9 +2162,9 @@ app.post("/api/accounts/login", async (req, res) => {
     const returnedAccount = sanitizeAccount(account, rootUser.id);
 
     let redirectTo = "/home.html";
-    if (account.status === "pending") redirectTo = "/app/pages/pending.html";
+    if (account.status === "pending") redirectTo = "/app/pages/auth/pending.html";
     else if (account.role === "artist" || account.role === "both") {
-      redirectTo = "/app/pages/creator.html";
+      redirectTo = "/app/pages/creator/dashboard.html";
     }
 
     return res.status(200).json({
@@ -2151,9 +2248,9 @@ app.post(
           await stripe.accountLinks.create({
             account: artist.stripeAccountId,
             refresh_url:
-              `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
+              `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html`,
             return_url:
-              `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
+              `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html?stripe=success`,
             type: "account_onboarding"
           });
 
@@ -2199,10 +2296,10 @@ app.post(
           account: stripeAccount.id,
 
           refresh_url:
-            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
+            `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html`,
 
           return_url:
-            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
+            `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html?stripe=success`,
 
           type: "account_onboarding"
         });
@@ -2249,10 +2346,10 @@ app.post(
           account: artist.stripeAccountId,
 
           refresh_url:
-            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html`,
+            `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html`,
 
           return_url:
-            `${resolveFrontUrl(req)}/app/pages/page-management/bank.html?stripe=success`,
+            `${resolveFrontUrl(req)}/app/pages/creator/management/bank.html?stripe=success`,
 
           type: "account_onboarding"
         });
@@ -2423,7 +2520,7 @@ app.post(
         });
       }
 
-      if (!packIsFree) {
+      if (!packIsFree && !commercialPolicy.freeAcquisitionEnabled) {
         return res.status(409).json({
           success: false,
           message: "Un achat Stripe vérifié est requis pour ce pack."
@@ -2512,7 +2609,7 @@ app.post(
         });
       }
 
-      if (!trackIsFree) {
+      if (!trackIsFree && !commercialPolicy.freeAcquisitionEnabled) {
         return res.status(409).json({
           success: false,
           message: "Un achat Stripe vérifié est requis pour cette track."
@@ -3353,6 +3450,7 @@ function creatorPackWasPublished(pack) {
 }
 
 async function fetchCreatorStripeSales(artistIds) {
+  if (!commercialPolicy.stripeEnabled) return [];
   const acceptedArtistIds = new Set(
     (Array.isArray(artistIds) ? artistIds : [artistIds])
       .filter(Boolean)
@@ -3976,6 +4074,113 @@ app.post("/api/creator/packs/bulk", async (req, res) => {
   }
 });
 
+
+async function buildPublicCatalogueContext() {
+  const documents = await usersCollection.find(
+    {},
+    {
+      projection: {
+        id: 1,
+        accounts: 1
+      }
+    }
+  ).toArray();
+
+  const artistsById = new Map();
+  const artistsByName = new Map();
+  const downloadCounts = new Map();
+
+  documents.forEach((rootUser) => {
+    (Array.isArray(rootUser?.accounts) ? rootUser.accounts : [])
+      .forEach((account) => {
+        const downloadedPacks = Array.isArray(account?.downloadedPacks)
+          ? account.downloadedPacks
+          : [];
+
+        downloadedPacks.forEach((packId) => {
+          const key = String(packId || "").trim();
+          if (!key) return;
+          downloadCounts.set(key, (downloadCounts.get(key) || 0) + 1);
+        });
+
+        if (!isCreatorAccountActive(account)) return;
+
+        const accountId = String(account.accountId || account.id || "").trim();
+        if (!accountId) return;
+
+        const publicProfile = {
+          accountId,
+          userId: String(rootUser?.id || "").trim(),
+          name: String(
+            account.pseudo ||
+            account.artistname ||
+            account.username ||
+            account.firstname ||
+            "Artiste Sonara"
+          ).trim(),
+          imageArtist: account.imageArtist || null,
+          imageProfile: account.imageProfile || null,
+          avatar: account.imageArtist || account.imageProfile || null,
+          biography: String(account.biography || "").trim(),
+          artistRewards: getPublicArtistRewards(account),
+          missionVisibilityBoost: (() => {
+            const boost = getActiveVisibilityBoost(account);
+            return boost ? { bonus: Number(boost.visibilityBonus || 0), expiresAt: boost.expiresAt } : null;
+          })()
+        };
+
+        [account.accountId, account.id]
+          .filter(Boolean)
+          .forEach((value) => {
+            artistsById.set(String(value), publicProfile);
+          });
+
+        if (publicProfile.name) {
+          artistsByName.set(publicProfile.name.toLowerCase(), publicProfile);
+        }
+      });
+  });
+
+  return { artistsById, artistsByName, downloadCounts };
+}
+
+function enrichPublicCataloguePack(pack, context) {
+  const identifiers = [
+    pack?.accountId,
+    pack?.artistAccountId,
+    pack?.artistId
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  let artistProfile = null;
+
+  for (const identifier of identifiers) {
+    artistProfile = context.artistsById.get(identifier) || null;
+    if (artistProfile) break;
+  }
+
+  if (!artistProfile) {
+    const legacyName = String(pack?.artist || pack?.pseudo || "")
+      .trim()
+      .toLowerCase();
+
+    if (legacyName) {
+      artistProfile = context.artistsByName.get(legacyName) || null;
+    }
+  }
+
+  return {
+    ...pack,
+    artistProfile,
+    metrics: {
+      ...(pack?.metrics && typeof pack.metrics === "object" ? pack.metrics : {}),
+      downloadCount: context.downloadCounts.get(String(pack?.id || "")) || 0
+    },
+    license: normalizePackLicense(pack.license)
+  };
+}
+
 app.get("/api/packs/pending", async (req, res) => {
   try {
     const packs = await packsCollection.find({
@@ -3994,14 +4199,17 @@ app.get("/api/packs/pending", async (req, res) => {
 
 app.get("/api/packs", async (req, res) => {
   try {
-    const approvedPacks = await packsCollection.find({
-      status: "approved"
-    }).toArray();
+    const [approvedPacks, catalogueContext] = await Promise.all([
+      packsCollection.find({
+        status: "approved",
+        moderationHidden: { $ne: true }
+      }).toArray(),
+      buildPublicCatalogueContext()
+    ]);
 
-    res.json(approvedPacks.map(({ _id, ...pack }) => ({
-      ...pack,
-      license: normalizePackLicense(pack.license)
-    })));
+    res.json(approvedPacks.map(({ _id, ...pack }) =>
+      enrichPublicCataloguePack(pack, catalogueContext)
+    ));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erreur serveur" });
@@ -4067,29 +4275,33 @@ app.post(
         });
       }
 
-      if (!packArtist?.stripeAccountId) {
-        return res.status(403).json({
-          success: false,
-          code: "STRIPE_ACCOUNT_REQUIRED",
-          message: "Vous devez ajouter et vérifier un compte bancaire avant de créer un pack."
-        });
+      if (commercialPolicy.bankRequiredForPackCreation) {
+        if (!packArtist?.stripeAccountId) {
+          return res.status(403).json({
+            success: false,
+            code: "STRIPE_ACCOUNT_REQUIRED",
+            message: "Vous devez ajouter et vérifier un compte bancaire avant de créer un pack."
+          });
+        }
+
+        const stripeArtistAccount = await stripe.accounts.retrieve(packArtist.stripeAccountId);
+        const stripeVerified =
+          stripeArtistAccount.charges_enabled &&
+          stripeArtistAccount.payouts_enabled;
+
+        packArtist.stripeStatus = stripeVerified ? "verified" : "onboarding_started";
+        await saveAccountState(artistResult.rootUser, packArtist);
+
+        if (!stripeVerified) {
+          return res.status(403).json({
+            success: false,
+            code: "STRIPE_ACCOUNT_NOT_VERIFIED",
+            message: "Votre compte bancaire Stripe doit être entièrement vérifié avant de créer un pack."
+          });
+        }
       }
 
-      const stripeArtistAccount = await stripe.accounts.retrieve(packArtist.stripeAccountId);
-      const stripeVerified =
-        stripeArtistAccount.charges_enabled &&
-        stripeArtistAccount.payouts_enabled;
-
-      packArtist.stripeStatus = stripeVerified ? "verified" : "onboarding_started";
-      await saveAccountState(artistResult.rootUser, packArtist);
-
-      if (!stripeVerified) {
-        return res.status(403).json({
-          success: false,
-          code: "STRIPE_ACCOUNT_NOT_VERIFIED",
-          message: "Votre compte bancaire Stripe doit être entièrement vérifié avant de créer un pack."
-        });
-      }
+      receivedPack.paymentReady = false;
 
       const existingPack = await packsCollection.findOne({
         id: receivedPack.id
@@ -4273,7 +4485,7 @@ app.post("/api/free-download-access", async (req, res) => {
       item?.isFree === true ||
       String(item?.price || "").trim().toLowerCase() === "gratuit";
 
-    if (!item || !isFree) {
+    if (!item || (!isFree && !commercialPolicy.freeAcquisitionEnabled)) {
       return res.status(409).json({
         success: false,
         message: "Ce contenu n’est pas gratuit."
@@ -4317,8 +4529,8 @@ app.post("/api/free-download-access", async (req, res) => {
     await saveAccountState(result.rootUser, result.account);
 
     const pathPart = trackId
-      ? `app/pages/download.html?id=${encodeURIComponent(packId)}&trackId=${encodeURIComponent(trackId)}&free=true`
-      : `app/pages/download.html?id=${encodeURIComponent(packId)}&free=true`;
+      ? `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&trackId=${encodeURIComponent(trackId)}&free=true`
+      : `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&free=true`;
 
     return res.json({
       success: true,
@@ -4504,6 +4716,30 @@ app.post(
       if (buyer.role !== "user" && buyer.role !== "both") {
         return res.status(403).json({
           error: "Ce compte ne peut pas effectuer d’achat."
+        });
+      }
+
+      const alreadyOwned = trackId
+        ? (
+            Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId))
+          ) || (
+            Array.isArray(buyer.downloadedTracks) && buyer.downloadedTracks.some((id) => String(id) === String(trackId))
+          )
+        : Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId));
+
+      if (alreadyOwned) {
+        return res.status(409).json({
+          success: false,
+          code: "ALREADY_OWNED",
+          error: "Ce contenu est déjà dans votre bibliothèque."
+        });
+      }
+
+      if (pack.paymentReady !== true) {
+        return res.status(409).json({
+          success: false,
+          code: "PACK_PAYMENT_NOT_READY",
+          error: "Ce pack n’est pas encore disponible à la vente."
         });
       }
 
@@ -4707,7 +4943,7 @@ app.post(
             success_url: successUrl,
 
             cancel_url:
-              `${resolveFrontUrl(req)}/app/pages/pack.html?id=${pack.id}&cancel=true`
+              `${resolveFrontUrl(req)}/app/pages/catalog/pack.html?id=${pack.id}&cancel=true`
           }
         );
 
@@ -4878,6 +5114,104 @@ function requireFounderKey(req, res, next) {
 
   next();
 }
+
+/* =========================
+   MISSIONS CREATOR — SOURCE RÉELLE
+========================= */
+app.get("/api/creator/missions/:artistId", async (req, res) => {
+  try {
+    const requestedArtistId = String(req.params?.artistId || "").trim();
+    if (!requestedArtistId) {
+      return res.status(400).json({ success: false, message: "Artiste requis." });
+    }
+    await backfillMongoPublishedAt(packsCollection);
+    const packs = await packsCollection.find({
+      status: "approved",
+      moderationHidden: { $ne: true }
+    }).toArray();
+    const report = buildPreV1ActivityReport(packs);
+    const activity = report.artists.find((artist) =>
+      artist.artistId === requestedArtistId || artist.accountId === requestedArtistId
+    ) || {
+      artistId: requestedArtistId,
+      accountId: requestedArtistId,
+      preV1PublishedPacks: 0,
+      activeMonths: [],
+      activeMonthsCount: 0,
+      requiredMonths: PRE_V1_ACTIVITY_CONFIG.requiredActiveMonths,
+      lastPublishedAt: null,
+      preV1BadgeEligible: false
+    };
+
+    const missionMode = resolveMissionMode();
+    let payload = buildMissionPayload({ activity, mode: missionMode });
+    const artistResult = await findRootAndAccountById(requestedArtistId);
+    if (artistResult?.account) {
+      let rewardChanged = false;
+      const seniorityGrant = maybeGrantPreV1SeniorityReward(artistResult.account, activity);
+      rewardChanged = rewardChanged || seniorityGrant.changed;
+      payload.missions.forEach((mission) => {
+        const granted = grantMissionRewardOnce(artistResult.account, mission);
+        rewardChanged = rewardChanged || granted.changed;
+      });
+      if (rewardChanged) await saveAccountState(artistResult.rootUser, artistResult.account);
+      payload = { ...payload, missions: payload.missions.map((mission) => {
+        const attached = attachRewardState(mission, artistResult.account);
+        if (mission.id === "pre_v1_seniority" && hasArtistReward(artistResult.account, ARTIST_REWARD_IDS.PRE_V1_SENIORITY)) {
+          return { ...attached, rewardGranted: true, state: "REWARDED" };
+        }
+        return attached;
+      }) };
+    }
+
+    return res.json({
+      success: true,
+      environment: "test",
+      artistId: requestedArtistId,
+      activity,
+      ...payload
+    });
+  } catch (error) {
+    console.error("Erreur missions Creator test :", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger les missions." });
+  }
+});
+
+/* =========================
+   ACTIVITÉ ARTISTE PRE-V1 — INTERNE
+========================= */
+app.get("/api/founder/pre-v1-artist-activity", requireFounderKey, async (req, res) => {
+  try {
+    const backfill = await backfillMongoPublishedAt(packsCollection);
+    const packs = await packsCollection.find({
+      status: "approved",
+      moderationHidden: { $ne: true }
+    }).toArray();
+
+    const report = buildPreV1ActivityReport(packs);
+    const requestedArtistId = String(req.query?.artistId || "").trim();
+
+    return res.json({
+      success: true,
+      environment: "test",
+      config: PRE_V1_ACTIVITY_CONFIG,
+      backfilledPublishedAt: backfill.updatedCount,
+      ...report,
+      artists: requestedArtistId
+        ? report.artists.filter((artist) =>
+            artist.artistId === requestedArtistId || artist.accountId === requestedArtistId
+          )
+        : report.artists
+    });
+  } catch (error) {
+    console.error("Erreur activité artiste Pre-V1 test :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Impossible de calculer l’activité artiste Pre-V1."
+    });
+  }
+});
+
 
 async function createFounderNotification({
   type,

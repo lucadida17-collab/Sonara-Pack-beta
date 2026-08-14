@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr" translate="yes">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artiste — Sonara Pack</title>
+
+  <link rel="stylesheet" href="/app/css/catalog/artist.css?v=pre-v1-artist-public-v1.1-responsive">
+  <link rel="stylesheet" href="/app/css/components/header/header.css">
+  <link rel="stylesheet" href="/app/css/core/catalog-shell.css?v=5.3.8.67">
+  <link rel="stylesheet" href="/app/css/core/i18n.css">
+
+  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+
+<body class="artist-public-page sonara-shell-page">
+  <div class="desktop-shell">
+    <aside class="desktop-side-panel" aria-label="Navigation principale">
+      <div class="desktop-side-brand">
+        <span class="desktop-brand-logo">
+          <img src="/assets/image/logo-sonara-pack.PNG" alt="">
+        </span>
+
+        <span class="desktop-brand-copy">
+          <strong>Sonara Pack</strong>
+          <small class="desktop-brand-version">Version</small>
+        </span>
+      </div>
+
+      <nav class="desktop-side-nav">
+        <button class="desktop-nav-btn active" type="button" data-artist-nav="home">
+          <i data-lucide="home"></i>
+          <span>
+            <strong>Accueil</strong>
+            <small>Explorer les packs</small>
+          </span>
+        </button>
+
+        <button class="desktop-nav-btn desktop-nav-create" type="button" data-artist-nav="create">
+          <i data-lucide="plus-circle"></i>
+          <span>
+            <strong>Créer</strong>
+            <small>Espace artiste</small>
+          </span>
+        </button>
+
+        <button class="desktop-nav-btn" type="button" data-artist-nav="library">
+          <i data-lucide="library"></i>
+          <span>
+            <strong>Bibliothèque</strong>
+            <small>Vos téléchargements</small>
+          </span>
+        </button>
+      </nav>
+
+      <div class="desktop-side-footer">
+        <span class="desktop-status-dot" aria-hidden="true"></span>
+        <span>
+          <strong>Sonara catalogue</strong>
+          <small>Environnement actif</small>
+        </span>
+      </div>
+    </aside>
+
+    <div class="desktop-workspace">
+      <header class="header"></header>
+
+      <main class="app-layout">
+        <nav class="mobile-bottom-bar">
+          <button class="nav-mobile-btn nav-mobile-home active" type="button" data-artist-nav="home">
+            <i data-lucide="home"></i>
+            <span>Accueil</span>
+          </button>
+
+          <button class="nav-mobile-btn nav-mobile-create" type="button" data-artist-nav="create">
+            <i data-lucide="plus-circle"></i>
+            <span>Crée</span>
+          </button>
+
+          <button class="nav-mobile-btn nav-mobile-library" type="button" data-artist-nav="library">
+            <i data-lucide="library"></i>
+            <span>Bibliothèque</span>
+          </button>
+        </nav>
+
+        <section class="main-content">
+          <section class="scroll-zone">
+            <section class="artist-public-content shell-content" aria-live="polite">
+              <section class="artist-public-loading" role="status">
+                <span class="artist-public-loading-dot"></span>
+                <p>Chargement du profil artiste…</p>
+              </section>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/app/js/core/config.js?v=pre-v1-commercial-1"></script>
+  <script src="/app/js/core/auth-guard.js?v=5.3.8.73-auth-all-pages" data-sonara-auth="required"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/app/js/components/header/header.js?v=5.3.8.63-session-stable"></script>
+  <script src="/app/js/catalog/distribution.js?v=pre-v1-distribution-v1.2-artists-categories"></script>
+  <script src="/app/js/catalog/artist.js?v=pre-v1-commercial-1"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-i18n-v1.2.5" defer></script>
+</body>
+</html>

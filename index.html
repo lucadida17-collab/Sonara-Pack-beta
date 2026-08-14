@@ -13,26 +13,97 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="app/css/index.css?v=pre-v1-sonara-loader">
-  <link rel="icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
-  <link rel="shortcut icon" href="assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-sonara-loader">
+  <link rel="stylesheet" href="/app/css/system/pre-v1-cinematic.css?v=pre-v1-cinematic-1">
+  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sonara Pack</title>
-  <link rel="stylesheet" href="app/css/i18n.css">
+  <link rel="stylesheet" href="/app/css/core/i18n.css">
 </head>
 
 <body class="Load">
+  <section
+    class="sonara-cinematic"
+    id="sonaraPreV1Cinematic"
+    aria-label="Cinématique de lancement Sonara Pack Pre-V1"
+  >
+    <canvas id="sonaraCinematicCanvas" aria-hidden="true"></canvas>
+
+    <div class="sonara-cinematic-aurora" aria-hidden="true"></div>
+    <div class="sonara-cinematic-grid" aria-hidden="true"></div>
+    <div class="sonara-cinematic-vignette" aria-hidden="true"></div>
+    <div class="sonara-cinematic-grain" aria-hidden="true"></div>
+    <div class="sonara-cinematic-flash" aria-hidden="true"></div>
+
+    <div class="sonara-cinematic-countdown" data-cinematic-suction>
+      <p class="sonara-cinematic-kicker" translate="no" data-i18n-ignore="true">SONARA PACK</p>
+      <p class="sonara-cinematic-countdown-label">FIN DU COMPTE À REBOURS</p>
+      <p class="sonara-cinematic-time" aria-label="zéro heure, zéro minute, zéro seconde">00:00:00</p>
+      <span class="sonara-cinematic-signal" aria-hidden="true"></span>
+    </div>
+
+    <div class="sonara-black-hole" aria-hidden="true">
+      <span class="sonara-black-hole-halo"></span>
+      <span class="sonara-black-hole-disc sonara-black-hole-disc-one"></span>
+      <span class="sonara-black-hole-disc sonara-black-hole-disc-two"></span>
+      <span class="sonara-black-hole-disc sonara-black-hole-disc-three"></span>
+      <span class="sonara-black-hole-core"></span>
+    </div>
+
+    <div class="sonara-music-world" aria-hidden="true">
+      <div class="sonara-music-orbit sonara-music-orbit-one">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="sonara-music-orbit sonara-music-orbit-two">
+        <span></span><span></span><span></span>
+      </div>
+
+      <svg class="sonara-wave sonara-wave-one" viewBox="0 0 1200 240" preserveAspectRatio="none">
+        <path d="M0 120 C75 120 75 56 150 56 S225 184 300 184 375 86 450 86 525 164 600 164 675 30 750 30 825 205 900 205 975 92 1050 92 1125 120 1200 120" />
+      </svg>
+      <svg class="sonara-wave sonara-wave-two" viewBox="0 0 1200 240" preserveAspectRatio="none">
+        <path d="M0 132 C90 132 90 96 180 96 S270 168 360 168 450 45 540 45 630 196 720 196 810 76 900 76 990 151 1080 151 1140 116 1200 116" />
+      </svg>
+
+      <div class="sonara-track sonara-track-one"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="sonara-track sonara-track-two"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="sonara-track sonara-track-three"><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="sonara-cinematic-identity" aria-hidden="true">
+      <div class="sonara-cinematic-mark">
+        <span></span><span></span><span></span>
+      </div>
+      <h1 aria-label="Sonara Pack" translate="no" data-i18n-ignore="true">
+        <span>S</span><span>O</span><span>N</span><span>A</span><span>R</span><span>A</span>
+        <i></i>
+        <span>P</span><span>A</span><span>C</span><span>K</span>
+      </h1>
+      <p translate="no" data-i18n-ignore="true">PRE-V1</p>
+    </div>
+
+    <div class="sonara-cinematic-dev-hud" id="sonaraCinematicDevHud" aria-hidden="true">
+      <span id="sonaraCinematicScene">COMPTE À REBOURS</span>
+      <time id="sonaraCinematicClock">00:00.000</time>
+      <span>R · RESET &nbsp; SPACE · PAUSE &nbsp; ←/→ · ±2 S</span>
+    </div>
+
+    <p class="sonara-cinematic-status" id="sonaraCinematicStatus" aria-live="polite"></p>
+  </section>
+
   <main
-    class="sonara-entry-loader"
+    class="sonara-entry-loader is-cinematic-waiting"
     id="sonaraEntryLoader"
     role="progressbar"
     aria-label="Chargement de Sonara Pack"
     aria-valuemin="0"
     aria-valuemax="100"
     aria-valuenow="0"
+    aria-hidden="true"
   >
     <div class="sonara-loader-glow sonara-loader-glow-one" aria-hidden="true"></div>
     <div class="sonara-loader-glow sonara-loader-glow-two" aria-hidden="true"></div>
@@ -73,8 +144,9 @@
     </section>
   </main>
 
-  <script src="app/js/i18n.js?v=pre-v1-global-official-loading-v4"></script>
-  <script src="config.js"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-global-official-loading-v4"></script>
+  <script src="/app/js/core/config.js"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-1"></script>
   <script>
     (() => {
       "use strict";
@@ -221,7 +293,7 @@
       }
 
       function goToInscription() {
-        window.location.replace("/app/pages/inscription.html");
+        window.location.replace("/app/pages/auth/inscription.html");
       }
 
       function redirectByRole(profile) {
@@ -231,8 +303,8 @@
         if (["artist", "both"].includes(role)) {
           window.location.replace(
             status === "pending"
-              ? "/app/pages/pending.html"
-              : "/app/pages/creator.html"
+              ? "/app/pages/auth/pending.html"
+              : "/app/pages/creator/dashboard.html"
           );
           return;
         }
@@ -261,7 +333,7 @@
           }
 
           const script = document.createElement("script");
-          script.src = "/app/js/auth-guard.js?v=pre-v1-stable";
+          script.src = "/app/js/core/auth-guard.js?v=pre-v1-stable";
           script.dataset.sonaraAuth = "entry";
           script.onload = resolve;
           script.onerror = () => reject(new Error("Auth Guard indisponible."));
@@ -343,10 +415,23 @@
         setProgress(currentProgress, currentStepSource);
       });
 
+      async function startEntryFlow() {
+        try {
+          await window.SonaraPreV1Cinematic?.start?.();
+        } catch (error) {
+          console.warn("Cinématique Pre-V1 indisponible :", error);
+          window.SonaraPreV1Cinematic?.skip?.();
+        }
+
+        loader?.classList.remove("is-cinematic-waiting", "is-cinematic-arriving");
+        loader?.removeAttribute("aria-hidden");
+        await startSonara();
+      }
+
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", startSonara, { once: true });
+        document.addEventListener("DOMContentLoaded", startEntryFlow, { once: true });
       } else {
-        startSonara();
+        startEntryFlow();
       }
     })();
   </script>

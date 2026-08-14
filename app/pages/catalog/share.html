@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr" translate="yes">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Sonara Pack — Ouverture du pack partagé</title>
+
+  <link
+    rel="icon"
+    href="/assets/image/logo-sonara-pack.PNG"
+    type="image/png"
+  >
+
+  <link
+    rel="shortcut icon"
+    href="/assets/image/logo-sonara-pack.PNG"
+    type="image/png"
+  >
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Même chargeur visuel que la page pack et Mes packs. -->
+  <link
+    rel="stylesheet"
+    href="/app/css/catalog/pack.css?v=5.3.8.51-share-stable"
+  >
+  <link rel="stylesheet" href="/app/css/core/i18n.css">
+</head>
+
+<body>
+  <main>
+    <section
+      class="my-pack-page-loader"
+      role="progressbar"
+      aria-label="Ouverture du pack partagé"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="5"
+    >
+      <div class="my-pack-loader-scene" aria-hidden="true">
+        <span
+          class="my-pack-loader-orbit my-pack-loader-orbit-one"
+        ></span>
+
+        <span
+          class="my-pack-loader-orbit my-pack-loader-orbit-two"
+        ></span>
+
+        <span class="my-pack-loader-core">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+
+      <p class="my-pack-loader-label">SONARA PACK</p>
+
+      <h1>Ouverture du pack partagé</h1>
+
+      <p class="my-pack-loader-message">
+        Vérification du lien partagé…
+      </p>
+
+      <div class="my-pack-loader-progress" aria-hidden="true">
+        <span class="my-pack-loader-progress-fill"></span>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app/js/core/config.js?v=5.3.8.51-share-stable"></script>
+<script src="/app/js/core/auth-guard.js?v=5.3.8.73-auth-all-pages" data-sonara-auth="optional"></script>
+  <script src="/app/js/catalog/share.js?v=5.3.8.51-share-stable"></script>
+  <script src="/app/js/core/i18n.js" defer></script>
+</body>
+
+</html>
