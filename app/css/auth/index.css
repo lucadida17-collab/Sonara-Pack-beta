@@ -1,3 +1,173 @@
+
+/* =========================================================
+   FIRST ENTRY — LANGUAGE CHOICE
+   This is the only language selector outside Settings.
+========================================================= */
+.sonara-language-choice {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+  color: #f5fbff;
+  font-family: "Inter", Arial, sans-serif;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(38, 142, 255, .30), transparent 30%),
+    radial-gradient(circle at 82% 78%, rgba(0, 235, 218, .12), transparent 30%),
+    linear-gradient(150deg, #020713 0%, #04142a 58%, #020914 100%);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .38s ease, visibility .38s ease, transform .38s ease;
+}
+
+html[data-sonara-language-chosen="true"] .sonara-language-choice,
+.sonara-language-choice[aria-hidden="true"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sonara-language-choice.is-leaving {
+  opacity: 0;
+  transform: scale(1.015);
+  pointer-events: none;
+}
+
+.sonara-language-choice-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(95, 235, 255, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 235, 255, .025) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 72%);
+}
+
+.sonara-language-choice-card {
+  position: relative;
+  width: min(760px, 100%);
+  padding: 38px;
+  border: 1px solid rgba(100, 226, 255, .16);
+  border-radius: 34px;
+  background: linear-gradient(145deg, rgba(8, 22, 45, .92), rgba(3, 10, 24, .88));
+  box-shadow: 0 34px 100px rgba(0, 0, 0, .48), inset 0 1px rgba(255, 255, 255, .05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.sonara-language-choice-mark {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 7px;
+  padding: 17px;
+  border: 1px solid rgba(114, 239, 255, .54);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(20, 89, 169, .86), rgba(2, 17, 42, .96));
+  box-shadow: 0 18px 48px rgba(0, 109, 255, .26), inset 0 0 24px rgba(78, 225, 255, .12);
+}
+
+.sonara-language-choice-mark span {
+  width: 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #d8feff, #5befff 45%, #1089ff);
+  box-shadow: 0 0 15px rgba(91, 239, 255, .75);
+}
+.sonara-language-choice-mark span:nth-child(1) { height: 21px; }
+.sonara-language-choice-mark span:nth-child(2) { height: 34px; }
+.sonara-language-choice-mark span:nth-child(3) { height: 26px; }
+
+.sonara-language-choice-brand {
+  margin: 0 0 10px;
+  text-align: center;
+  color: #63efff;
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .30em;
+}
+
+.sonara-language-choice h1 {
+  margin: 0 0 30px;
+  text-align: center;
+  font-size: clamp(1.8rem, 5vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.sonara-language-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sonara-language-choice-grid button {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 17px;
+  color: #f6fbff;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.sonara-language-choice-grid button:hover,
+.sonara-language-choice-grid button:focus-visible {
+  outline: none;
+  border-color: rgba(94, 232, 255, .40);
+  background: rgba(48, 150, 214, .12);
+  box-shadow: 0 12px 28px rgba(0, 48, 100, .22);
+  transform: translateY(-1px);
+}
+
+.sonara-language-choice-grid button.is-selecting {
+  border-color: rgba(99, 239, 255, .72);
+  background: rgba(40, 167, 216, .18);
+  box-shadow: 0 0 0 3px rgba(99, 239, 255, .08), 0 14px 34px rgba(0, 85, 160, .26);
+}
+
+.sonara-language-choice-grid strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .96rem;
+  font-weight: 750;
+}
+
+.sonara-language-choice-grid span {
+  flex: 0 0 auto;
+  color: rgba(218, 240, 255, .42);
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+@media (max-width: 600px) {
+  .sonara-language-choice { padding-inline: 14px; }
+  .sonara-language-choice-card { padding: 28px 16px 20px; border-radius: 28px; }
+  .sonara-language-choice-mark { width: 62px; height: 62px; margin-bottom: 20px; padding: 15px; border-radius: 20px; }
+  .sonara-language-choice h1 { margin-bottom: 24px; font-size: clamp(1.65rem, 8vw, 2.35rem); }
+  .sonara-language-choice-grid { gap: 8px; }
+  .sonara-language-choice-grid button { min-height: 58px; padding: 0 14px; border-radius: 15px; }
+  .sonara-language-choice-grid strong { font-size: .87rem; }
+}
+
+@media (max-width: 360px) {
+  .sonara-language-choice-grid { grid-template-columns: 1fr; }
+}
 :root {
   color-scheme: dark;
   --sonara-loader-cyan: #61efff;

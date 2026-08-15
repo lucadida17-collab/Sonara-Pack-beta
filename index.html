@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="google" content="notranslate">
+  <script>
+    try {
+      document.documentElement.dataset.sonaraLanguageChosen =
+        localStorage.getItem("sonaraLanguageChoiceV1") === "1" ? "true" : "false";
+    } catch {
+      document.documentElement.dataset.sonaraLanguageChosen = "false";
+    }
+  </script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
@@ -13,7 +21,7 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-sonara-loader-mobile-pc-match-v2">
+  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-language-gate-v1">
   <link rel="stylesheet" href="/app/css/system/pre-v1-cinematic.css?v=pre-v1-cinematic-final-audio-v10">
   <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -26,6 +34,39 @@
 </head>
 
 <body class="Load">
+  <section
+    class="sonara-language-choice"
+    id="sonaraLanguageChoice"
+    aria-labelledby="sonaraLanguageChoiceTitle"
+    data-i18n-ignore="true"
+  >
+    <div class="sonara-language-choice-ambient" aria-hidden="true"></div>
+    <div class="sonara-language-choice-card">
+      <div class="sonara-language-choice-mark" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="sonara-language-choice-brand">SONARA PACK</p>
+      <h1 id="sonaraLanguageChoiceTitle">Choose your language</h1>
+      <div class="sonara-language-choice-grid" id="sonaraLanguageChoiceGrid">
+        <button type="button" data-language="fr"><strong>Français</strong><span>FR</span></button>
+        <button type="button" data-language="en"><strong>English</strong><span>EN</span></button>
+        <button type="button" data-language="es"><strong>Español</strong><span>ES</span></button>
+        <button type="button" data-language="de"><strong>Deutsch</strong><span>DE</span></button>
+        <button type="button" data-language="it"><strong>Italiano</strong><span>IT</span></button>
+        <button type="button" data-language="pt"><strong>Português</strong><span>PT</span></button>
+        <button type="button" data-language="nl"><strong>Nederlands</strong><span>NL</span></button>
+        <button type="button" data-language="pl"><strong>Polski</strong><span>PL</span></button>
+        <button type="button" data-language="ro"><strong>Română</strong><span>RO</span></button>
+        <button type="button" data-language="ru"><strong>Русский</strong><span>RU</span></button>
+        <button type="button" data-language="tr"><strong>Türkçe</strong><span>TR</span></button>
+        <button type="button" data-language="sq"><strong>Shqip</strong><span>SQ</span></button>
+        <button type="button" data-language="id"><strong>Bahasa Indonesia</strong><span>ID</span></button>
+        <button type="button" data-language="sw"><strong>Kiswahili</strong><span>SW</span></button>
+        <button type="button" data-language="ar"><strong>العربية</strong><span>AR</span></button>
+        <button type="button" data-language="zh"><strong>中文</strong><span>ZH</span></button>
+      </div>
+    </div>
+  </section>
   <section
     class="sonara-cinematic"
     id="sonaraPreV1Cinematic"
@@ -158,9 +199,9 @@
     </section>
   </main>
 
-  <script src="/app/js/core/i18n.js?v=pre-v1-global-official-loading-v4"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5"></script>
   <script src="/app/js/core/config.js"></script>
-  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-final-audio-v10"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-replay-language-v12"></script>
   <script>
     (() => {
       "use strict";
@@ -182,6 +223,10 @@
       const progressPercent = document.getElementById("sonaraLoadingPercent");
       const progressStep = document.getElementById("sonaraLoadingStep");
       const retryButton = document.getElementById("sonaraRetryButton");
+      const languageChoice = document.getElementById("sonaraLanguageChoice");
+      const languageChoiceButtons = Array.from(
+        document.querySelectorAll("#sonaraLanguageChoiceGrid [data-language]")
+      );
 
       let typingRun = 0;
       let currentProgress = 0;
@@ -347,7 +392,7 @@
           }
 
           const script = document.createElement("script");
-          script.src = "/app/js/core/auth-guard.js?v=pre-v1-stable";
+          script.src = "/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v1";
           script.dataset.sonaraAuth = "entry";
           script.onload = resolve;
           script.onerror = () => reject(new Error("Auth Guard indisponible."));
@@ -429,7 +474,72 @@
         setProgress(currentProgress, currentStepSource);
       });
 
+      async function ensureLanguageChoice() {
+        try {
+          await window.SonaraI18n?.ready;
+        } catch (error) {
+          console.warn("Initialisation de la langue indisponible :", error);
+        }
+
+        if (window.SonaraI18n?.hasChosenLanguage?.()) {
+          document.documentElement.dataset.sonaraLanguageChosen = "true";
+          languageChoice?.setAttribute("aria-hidden", "true");
+          return;
+        }
+
+        document.documentElement.dataset.sonaraLanguageChosen = "false";
+        languageChoice?.removeAttribute("aria-hidden");
+
+        await new Promise((resolve) => {
+          let choosing = false;
+
+          languageChoiceButtons.forEach((button) => {
+            button.addEventListener("click", async () => {
+              if (choosing) return;
+              choosing = true;
+              languageChoiceButtons.forEach((item) => { item.disabled = true; });
+              button.classList.add("is-selecting");
+
+              try {
+                await window.SonaraI18n?.setLanguage?.(button.dataset.language);
+                document.documentElement.dataset.sonaraLanguageChosen = "true";
+                languageChoice?.classList.add("is-leaving");
+                await wait(420);
+                languageChoice?.setAttribute("aria-hidden", "true");
+                resolve();
+              } catch (error) {
+                console.error("Choix de langue impossible :", error);
+                choosing = false;
+                button.classList.remove("is-selecting");
+                languageChoiceButtons.forEach((item) => { item.disabled = false; });
+              }
+            });
+          });
+        });
+      }
+
+      function getCinematicReplayReturnTarget() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("cinematic") !== "replay") return "";
+
+        const rawTarget = params.get("returnTo");
+        if (!rawTarget || !rawTarget.startsWith("/") || rawTarget.startsWith("//")) return "";
+
+        try {
+          const targetUrl = new URL(rawTarget, window.location.origin);
+          if (targetUrl.origin !== window.location.origin) return "";
+          if (/\/index\.html$/i.test(targetUrl.pathname)) return "";
+          return `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`;
+        } catch {
+          return "";
+        }
+      }
+
       async function startEntryFlow() {
+        const replayReturnTarget = getCinematicReplayReturnTarget();
+
+        await ensureLanguageChoice();
+
         try {
           await window.SonaraPreV1Cinematic?.start?.();
         } catch (error) {
@@ -439,6 +549,13 @@
 
         loader?.classList.remove("is-cinematic-waiting", "is-cinematic-arriving");
         loader?.removeAttribute("aria-hidden");
+
+        if (replayReturnTarget) {
+          await wait(220);
+          window.location.replace(replayReturnTarget);
+          return;
+        }
+
         await startSonara();
       }
 

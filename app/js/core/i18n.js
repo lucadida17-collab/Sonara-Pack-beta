@@ -13,6 +13,7 @@
   const SCRIPT_URL = new URL(scriptElement.src, window.location.href);
   const APP_URL = new URL("../../", SCRIPT_URL);
   const STORAGE_KEY = "sonaraLanguage";
+  const CHOICE_KEY = "sonaraLanguageChoiceV1";
 
   /*
     Cache persistant des dictionnaires.
@@ -24,7 +25,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-12-pre-v1-announcements-v1";
+    "2026-08-15-language-choice-cinematic-v2";
 
   const NETWORK_RETRY_DELAY_MS =
     450;
@@ -204,7 +205,6 @@
 
   function shouldIgnoreElement(element) {
     if (!(element instanceof Element)) return true;
-    if (element.id === "sonara-language-switcher" || element.closest("#sonara-language-switcher")) return true;
     if (element.closest(protectedContentSelector)) return true;
     if (element.isContentEditable || ignoredTags.has(element.tagName)) return true;
 
@@ -684,9 +684,18 @@
     };
   }
 
-  async function setLanguage(language) {
+  function hasChosenLanguage() {
+    try {
+      return localStorage.getItem(CHOICE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  async function setLanguage(language, options = {}) {
     const requestId = ++languageRequestId;
     const requestedLanguage = normalizeLanguage(language);
+    const confirmChoice = options.confirmChoice !== false;
 
     let dictionary;
     let appliedLanguage = requestedLanguage;
@@ -703,79 +712,28 @@
 
     currentLanguage = appliedLanguage;
     buildIndexes(dictionary || {});
-    localStorage.setItem(STORAGE_KEY, currentLanguage);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, currentLanguage);
+      if (confirmChoice) localStorage.setItem(CHOICE_KEY, "1");
+    } catch (error) {
+      console.warn("Préférence de langue non enregistrée :", error);
+    }
+
     document.documentElement.lang = currentLanguage;
     document.documentElement.removeAttribute("dir");
-
-    installSelector();
-    const select = document.querySelector("#sonara-language-select");
-    if (select) select.value = currentLanguage;
 
     translateTree(document.body);
     window.dispatchEvent(new CustomEvent("sonara:languagechange", {
       detail: { language: currentLanguage }
     }));
-  }
 
-  function getLanguageMount() {
-    return (
-      document.querySelector("[data-sonara-language-slot]") ||
-      document.body
-    );
-  }
-
-  function placeLanguageSelector(container) {
-    const mount = getLanguageMount();
-
-    if (!mount || !container) return;
-
-    if (container.parentElement !== mount) {
-      mount.appendChild(container);
-    }
-
-    container.classList.toggle(
-      "sonara-language-floating",
-      mount === document.body
-    );
-  }
-
-  function installSelector() {
-    if (!document.body) return;
-
-    let container = document.querySelector(
-      "#sonara-language-switcher"
-    );
-
-    if (!container) {
-      container = document.createElement("aside");
-      container.id = "sonara-language-switcher";
-      container.setAttribute("aria-label", "Langue");
-      container.setAttribute("data-i18n-ignore", "true");
-      container.innerHTML = `
-        <label for="sonara-language-select">🌐</label>
-        <select id="sonara-language-select" aria-label="Choisir la langue">
-          ${SUPPORTED.map(([code, label]) => `<option value="${code}">${label}</option>`).join("")}
-        </select>
-      `;
-
-      const select = container.querySelector("select");
-      select.value = currentLanguage;
-      select.addEventListener(
-        "change",
-        () => setLanguage(select.value)
-      );
-    }
-
-    placeLanguageSelector(container);
+    return { ok: true, language: currentLanguage };
   }
 
   function startObserver() {
     observer = new MutationObserver((mutations) => {
       if (translatingDepth > 0) return;
-
-      // Certaines pages reconstruisent leur contenu avec body.innerHTML.
-      // Le sélecteur doit alors être recréé automatiquement, sans recharger.
-      installSelector();
 
       mutations.forEach((mutation) => {
         if (mutation.type === "characterData") {
@@ -790,7 +748,7 @@
 
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.TEXT_NODE) translateTextNode(node);
-          if (node instanceof Element && node.id !== "sonara-language-switcher") translateTree(node);
+          if (node instanceof Element) translateTree(node);
         });
       });
     });
@@ -807,24 +765,23 @@
   async function init() {
     try {
       currentLanguage = detectLanguage();
-      installSelector();
-      await setLanguage(currentLanguage);
+      await setLanguage(currentLanguage, { confirmChoice: false });
       startObserver();
-      resolveReady?.({ ok: true, language: currentLanguage });
+      resolveReady?.({ ok: true, language: currentLanguage, chosen: hasChosenLanguage() });
     } catch (error) {
       console.warn("Initialisation de la traduction Sonara impossible :", error);
-      installSelector();
       startObserver();
-      resolveReady?.({ ok: false, language: currentLanguage, error });
+      resolveReady?.({ ok: false, language: currentLanguage, chosen: hasChosenLanguage(), error });
     }
   }
 
   window.SonaraI18n = Object.freeze({
     ready: readyPromise,
     getLanguage: () => currentLanguage,
+    hasChosenLanguage,
+    getSupportedLanguages: () => SUPPORTED.map(([code, label]) => ({ code, label })),
     setLanguage,
     refresh: () => {
-      installSelector();
       translateTree(document.body);
     },
     t: (value) => translateValue(value),

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr" translate="yes">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Langue — Sonara Pack</title>
+  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="stylesheet" href="/app/css/account/settings/language.css?v=pre-v1-language-settings-v1">
+  <link rel="stylesheet" href="/app/css/core/i18n.css?v=pre-v1-language-global-v5">
+</head>
+<body class="language-settings">
+  <main class="language-settings-page">
+    <header class="language-settings-header">
+      <button type="button" class="language-settings-back" aria-label="Retour">
+        <i data-lucide="arrow-left"></i>
+      </button>
+      <h1>Langue</h1>
+      <div></div>
+    </header>
+
+    <section class="language-settings-content">
+      <div class="language-settings-heading">
+        <span class="language-settings-icon" aria-hidden="true"><i data-lucide="languages"></i></span>
+        <div>
+          <h2>Choisir la langue</h2>
+          <p>Cette langue sera utilisée dans tout Sonara Pack.</p>
+        </div>
+      </div>
+
+      <div class="language-settings-list" id="sonaraSettingsLanguageList" data-i18n-ignore="true"></div>
+    </section>
+  </main>
+
+  <script src="/app/js/core/config.js"></script>
+  <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v1" data-sonara-auth="required"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5"></script>
+  <script src="/app/js/account/settings/language.js?v=pre-v1-language-settings-v1"></script>
+</body>
+</html>

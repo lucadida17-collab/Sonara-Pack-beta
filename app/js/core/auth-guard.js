@@ -1,3 +1,19 @@
+const SONARA_LANGUAGE_CHOICE_KEY = "sonaraLanguageChoiceV1";
+
+(() => {
+  try {
+    const hasLanguageChoice = localStorage.getItem(SONARA_LANGUAGE_CHOICE_KEY) === "1";
+    const entryPath = window.location.pathname.replace(/\/+$/, "") || "/";
+    const isEntryPage = entryPath === "/" || /\/index\.html$/i.test(entryPath);
+
+    if (!hasLanguageChoice && !isEntryPage) {
+      window.location.replace("/index.html?language=choose");
+    }
+  } catch {
+    // Si le stockage local est indisponible, le reste de l'authentification continue.
+  }
+})();
+
 const SONARA_AUTH_SCRIPT = document.currentScript;
 
 const SonaraModeration = (() => {

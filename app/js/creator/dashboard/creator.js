@@ -6,11 +6,15 @@ creatorPage.innerHTML = `
 
 
 <div class="creator-toolbar">
-  <div
-    class="creator-language-slot"
-    data-sonara-language-slot
-    aria-label="Traduction"
-  ></div>
+
+  <button
+    class="creator-cinematic-btn"
+    type="button"
+    aria-label="Revoir la cinématique"
+    title="Revoir la cinématique"
+  >
+    <i data-lucide="clapperboard" aria-hidden="true"></i>
+  </button>
 
   <button class="creator-settings-btn">
       <i data-lucide="settings"></i>
@@ -81,6 +85,22 @@ creatorPage.innerHTML = `
     `;
 
 lucide.createIcons();
+
+function openCreatorCinematicReplay() {
+  const replayUrl = new URL("/index.html", window.location.origin);
+  replayUrl.searchParams.set("cinematic", "replay");
+  replayUrl.searchParams.set(
+    "returnTo",
+    `${window.location.pathname}${window.location.search}${window.location.hash}`
+  );
+
+  window.location.assign(replayUrl.href);
+}
+
+document.querySelector(".creator-cinematic-btn")?.addEventListener(
+  "click",
+  openCreatorCinematicReplay
+);
 
     document.querySelector(".creator-settings-btn").addEventListener("click", () => {
   renderCreatorManagement();
