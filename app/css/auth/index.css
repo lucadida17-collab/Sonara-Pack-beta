@@ -375,24 +375,42 @@ body.Load {
 }
 
 @media (max-width: 600px) {
+  /* Mobile garde exactement la composition desktop.
+     Seule la typographie se resserre pour éviter tout retour à la ligne. */
   .sonara-entry-loader {
-    padding: 22px 18px;
+    padding: 28px 18px;
+  }
+
+  .sonara-loader-content {
+    width: min(560px, 100%);
   }
 
   .sonara-loader-scene {
-    width: 154px;
-    height: 154px;
-    margin-bottom: 24px;
-    transform: scale(.92);
+    width: 178px;
+    height: 178px;
+    margin-bottom: 28px;
+    transform: none;
   }
 
   .sonara-loader-content h1 {
-    max-width: 330px;
+    width: 100%;
+    max-width: none;
+    white-space: nowrap;
+    font-size: clamp(1.62rem, 7vw, 2rem);
   }
 
   .sonara-loader-message {
-    max-width: 340px;
-    margin-bottom: 21px;
+    width: 100%;
+    max-width: none;
+    min-height: 25px;
+    margin: 18px 0 24px;
+    white-space: nowrap;
+    font-size: clamp(.72rem, 2.8vw, .88rem);
+  }
+
+  .sonara-loader-progress,
+  .sonara-loader-meta {
+    width: min(480px, 86vw);
   }
 }
 

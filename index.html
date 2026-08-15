@@ -13,8 +13,8 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-sonara-loader">
-  <link rel="stylesheet" href="/app/css/system/pre-v1-cinematic.css?v=pre-v1-cinematic-1">
+  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-sonara-loader-mobile-pc-match-v2">
+  <link rel="stylesheet" href="/app/css/system/pre-v1-cinematic.css?v=pre-v1-cinematic-final-audio-v10">
   <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,8 +41,8 @@
 
     <div class="sonara-cinematic-countdown" data-cinematic-suction>
       <p class="sonara-cinematic-kicker" translate="no" data-i18n-ignore="true">SONARA PACK</p>
-      <p class="sonara-cinematic-countdown-label">FIN DU COMPTE À REBOURS</p>
-      <p class="sonara-cinematic-time" aria-label="zéro heure, zéro minute, zéro seconde">00:00:00</p>
+      <p class="sonara-cinematic-countdown-label">COMPTE À REBOURS</p>
+      <p class="sonara-cinematic-time" id="sonaraCinematicCountdown" aria-label="5 secondes">00:00:05</p>
       <span class="sonara-cinematic-signal" aria-hidden="true"></span>
     </div>
 
@@ -78,18 +78,32 @@
       <div class="sonara-cinematic-mark">
         <span></span><span></span><span></span>
       </div>
+      <p class="sonara-cinematic-era" translate="no" data-i18n-ignore="true">NEW UNIVERSE</p>
       <h1 aria-label="Sonara Pack" translate="no" data-i18n-ignore="true">
         <span>S</span><span>O</span><span>N</span><span>A</span><span>R</span><span>A</span>
         <i></i>
         <span>P</span><span>A</span><span>C</span><span>K</span>
       </h1>
-      <p translate="no" data-i18n-ignore="true">PRE-V1</p>
+      <p class="sonara-cinematic-pre-v1" translate="no" data-i18n-ignore="true">PRE-V1</p>
     </div>
 
     <div class="sonara-cinematic-dev-hud" id="sonaraCinematicDevHud" aria-hidden="true">
       <span id="sonaraCinematicScene">COMPTE À REBOURS</span>
       <time id="sonaraCinematicClock">00:00.000</time>
       <span>R · RESET &nbsp; SPACE · PAUSE &nbsp; ←/→ · ±2 S</span>
+    </div>
+
+    <div class="sonara-cinematic-recorder" id="sonaraCinematicRecorder">
+      <p class="sonara-cinematic-recorder-hint" id="sonaraCinematicRecorderHint" hidden></p>
+      <button
+        class="sonara-cinematic-record-button"
+        id="sonaraCinematicRecordButton"
+        type="button"
+        aria-label="Enregistrer toute la cinématique"
+      >
+        <span aria-hidden="true"></span>
+        <strong id="sonaraCinematicRecordLabel">ENREGISTRER</strong>
+      </button>
     </div>
 
     <p class="sonara-cinematic-status" id="sonaraCinematicStatus" aria-live="polite"></p>
@@ -146,7 +160,7 @@
 
   <script src="/app/js/core/i18n.js?v=pre-v1-global-official-loading-v4"></script>
   <script src="/app/js/core/config.js"></script>
-  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-1"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-final-audio-v10"></script>
   <script>
     (() => {
       "use strict";

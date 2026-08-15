@@ -3,16 +3,21 @@
 
   /*
    * Configuration centrale de la mini-cinématique Pre-V1.
-   * Livraison finale Pre-V1 : lecture unique + bande-son officielle.
-   * Le son suit exactement le runtime de la cinématique (pause/reprise/fin).
+   * Pour la livraison avec le son final :
+   * 1. passer CINEMATIC_DEV_LOOP à false ;
+   * 2. passer CINEMATIC_AUDIO_ENABLED à true ;
+   * 3. déposer le fichier dans CINEMATIC_AUDIO_SOURCE ;
+   * 4. ajuster uniquement CINEMATIC_TIMELINE si la musique l'exige.
    */
-  const CINEMATIC_DEV_LOOP = false;
-  const CINEMATIC_DEV_CONTROLS = false;
-  const CINEMATIC_RECORDING_CONTROLS = false;
+  const CINEMATIC_DEV_LOOP = true;
+  const CINEMATIC_DEV_CONTROLS = true;
+  // Outil temporaire pour la phase de composition. Il suffira de passer cette
+  // valeur à false avec CINEMATIC_DEV_LOOP lors de la livraison finale.
+  const CINEMATIC_RECORDING_CONTROLS = true;
   const CINEMATIC_RECORDING_CAPTURE_AUDIO = false;
-  const CINEMATIC_AUDIO_ENABLED = true;
-  const CINEMATIC_AUDIO_SOURCE = "/assets/son/NEW%20UNIVERSE.wav";
-  const PRE_V1_CINEMATIC_VERSION = "PRE_V1_CINEMATIC_3";
+  const CINEMATIC_AUDIO_ENABLED = false;
+  const CINEMATIC_AUDIO_SOURCE = "/assets/audio/cinematic-audio.mp3";
+  const PRE_V1_CINEMATIC_VERSION = "PRE_V1_CINEMATIC_2";
   const CINEMATIC_BODY_CLASS = "sonara-cinematic-running";
   const MOBILE_CINEMA_BODY_CLASS = "sonara-cinematic-mobile-frame";
   const MOBILE_CINEMA_ROOT_CLASS = "is-mobile-cinema-frame";
@@ -97,13 +102,8 @@
 
   function getDeviceProfile(reducedMotion, mobile) {
     const cores = Number(navigator.hardwareConcurrency || 4);
-    const reportedMemory = Number(navigator.deviceMemory || 0);
-    const memory = reportedMemory > 0 ? reportedMemory : null;
-    const devicePixelRatio = Math.max(1, Number(window.devicePixelRatio || 1));
-    const viewportPixels = Math.max(1, window.innerWidth || 1) * Math.max(1, window.innerHeight || 1);
-    const lowPower = mobile || cores <= 4 || (memory !== null && memory <= 4);
-    const veryLowPower = !mobile && (cores <= 2 || (memory !== null && memory <= 2));
-    const largeDesktopSurface = !mobile && viewportPixels * devicePixelRatio * devicePixelRatio > 5200000;
+    const memory = Number(navigator.deviceMemory || 4);
+    const lowPower = mobile || cores <= 4 || memory <= 4;
 
     if (reducedMotion) {
       return Object.freeze({
@@ -111,37 +111,27 @@
         lowPower: true,
         particleCount: mobile ? 18 : 24,
         pixelRatio: 1,
-        frameInterval: mobile ? 1000 / 30 : 0,
-        initialPerformanceTier: mobile ? "mobile" : "low"
+        frameInterval: mobile ? 1000 / 30 : 0
       });
     }
 
     return Object.freeze({
       mobile,
       lowPower,
-      particleCount: mobile ? 42 : lowPower ? 76 : 132,
-      pixelRatio: mobile ? 1 : Math.min(devicePixelRatio, lowPower ? 1.15 : 1.5),
-      // Sur ordinateur, on démarre à la meilleure qualité raisonnable puis le
-      // moteur peut descendre d'un cran en temps réel si les FPS décrochent.
-      frameInterval: 0,
-      initialPerformanceTier: mobile
-        ? "mobile"
-        : veryLowPower || largeDesktopSurface
-          ? "low"
-          : lowPower
-            ? "balanced"
-            : "high"
+      particleCount: mobile ? 42 : lowPower ? 76 : 148,
+      pixelRatio: mobile ? 1 : Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.75),
+      // Une cible de 45 FPS se cale mal sur les écrans 60 Hz et produit en
+      // pratique une alternance de frames perceptible. On suit donc la cadence
+      // native de l'écran, puis on l'abaisse seulement si l'appareil décroche.
+      frameInterval: 0
     });
   }
 
   class SonaraCinematicRenderer {
-    constructor(canvas, reducedMotion, mobile, onPerformanceTierChange = null) {
+    constructor(canvas, reducedMotion, mobile) {
       this.canvas = canvas;
       this.reducedMotion = reducedMotion;
       this.profile = getDeviceProfile(reducedMotion, mobile);
-      this.onPerformanceTierChange = typeof onPerformanceTierChange === "function"
-        ? onPerformanceTierChange
-        : null;
       this.context = canvas?.getContext?.(
         "2d",
         this.profile.mobile ? { alpha: true } : { alpha: true, desynchronized: true }
@@ -153,11 +143,10 @@
       this.landscape = false;
       this.resizeFrameId = 0;
       this.adaptiveFrameInterval = this.profile.frameInterval;
-      this.performanceTier = this.profile.initialPerformanceTier;
       this.qualityScale = 1;
       this.slowFrameScore = 0;
       this.performanceSamples = 0;
-      this.lastTierChangeAt = 0;
+      this.performanceAdapted = false;
       this.particles = Array.from({ length: this.profile.particleCount }, () => ({}));
       const galaxyStarCount = this.reducedMotion
         ? (this.profile.mobile ? 28 : 40)
@@ -169,7 +158,6 @@
       this.deepSpaceStars = Array.from({ length: deepSpaceStarCount }, () => ({}));
       this.resize = this.resize.bind(this);
       this.scheduleResize = this.scheduleResize.bind(this);
-      this.applyPerformanceTier(this.performanceTier, true);
       this.resize(true);
       this.reset();
     }
@@ -178,100 +166,35 @@
       return this.adaptiveFrameInterval;
     }
 
-    getPerformanceTier() {
-      return this.performanceTier;
-    }
-
     getRenderCount(collection) {
       return Math.max(1, Math.ceil(collection.length * this.qualityScale));
     }
 
-    getCompositeOperation() {
-      return this.profile.mobile || this.performanceTier !== "high" ? "source-over" : "lighter";
-    }
-
-    getCanvasPixelRatio() {
-      if (this.profile.mobile) return this.profile.pixelRatio;
-
-      const tierScale = this.performanceTier === "low"
-        ? 0.72
-        : this.performanceTier === "balanced"
-          ? 0.88
-          : 1;
-      const maximumPixels = this.performanceTier === "low"
-        ? 950000
-        : this.performanceTier === "balanced"
-          ? 1450000
-          : 2300000;
-      const cssPixels = Math.max(1, this.width * this.height);
-      const budgetRatio = Math.sqrt(maximumPixels / cssPixels);
-
-      return Math.max(0.35, Math.min(this.profile.pixelRatio * tierScale, budgetRatio));
-    }
-
-    applyPerformanceTier(tier, initial = false) {
-      if (this.profile.mobile) {
-        this.performanceTier = "mobile";
-        this.qualityScale = 1;
-        this.adaptiveFrameInterval = this.profile.frameInterval;
-        return;
-      }
-
-      const safeTier = tier === "low" || tier === "balanced" ? tier : "high";
-      const changed = this.performanceTier !== safeTier;
-      this.performanceTier = safeTier;
-
-      if (safeTier === "low") {
-        this.qualityScale = 0.50;
-        this.adaptiveFrameInterval = 1000 / 30;
-      } else if (safeTier === "balanced") {
-        this.qualityScale = 0.76;
-        this.adaptiveFrameInterval = 0;
-      } else {
-        this.qualityScale = 1;
-        this.adaptiveFrameInterval = 0;
-      }
-
-      this.slowFrameScore = 0;
-      this.performanceSamples = 0;
-      this.lastTierChangeAt = performance.now();
-      this.onPerformanceTierChange?.(safeTier);
-
-      if (!initial && changed) this.resize(true);
-    }
-
     reportPerformance(frameGap, drawCost) {
-      // Le profil mobile est déjà stabilisé séparément. Ce contrôleur ne touche
-      // qu'aux ordinateurs afin de ne pas modifier le rendu mobile validé.
       if (
-        this.profile.mobile ||
+        this.performanceAdapted ||
         this.reducedMotion ||
-        this.performanceTier === "low" ||
+        !this.profile.mobile ||
         !Number.isFinite(frameGap) ||
-        !Number.isFinite(drawCost) ||
-        frameGap <= 0 ||
-        frameGap > 180
+        frameGap <= 0
       ) return;
 
       this.performanceSamples += 1;
-      if (this.performanceSamples < 28) return;
+      if (this.performanceSamples < 45) return;
 
-      const severeFrame = frameGap > 36 || drawCost > 15;
-      const slowFrame = frameGap > 23 || drawCost > 9.5;
-
-      if (severeFrame) {
-        this.slowFrameScore += 2.4;
-      } else if (slowFrame) {
-        this.slowFrameScore += 1;
+      const slowFrame = frameGap > 29 || drawCost > 11;
+      if (slowFrame) {
+        this.slowFrameScore += frameGap > 42 || drawCost > 16 ? 2 : 1;
       } else {
-        this.slowFrameScore = Math.max(0, this.slowFrameScore - 0.42);
+        this.slowFrameScore = Math.max(0, this.slowFrameScore - 0.35);
       }
 
-      // On ne réagit pas à un petit pic isolé : il faut une vraie série de
-      // frames lentes. High -> Balanced garde 60 FPS avec moins de GPU ; si le
-      // PC décroche encore, Low verrouille un 30 FPS stable et allège le rendu.
-      if (this.slowFrameScore >= 12) {
-        this.applyPerformanceTier(this.performanceTier === "high" ? "balanced" : "low");
+      // L'adaptation n'intervient qu'après un ralentissement durable. Les
+      // appareils capables conservent donc tous les effets à cadence native.
+      if (this.slowFrameScore >= 14) {
+        this.adaptiveFrameInterval = 1000 / 30;
+        this.qualityScale = 0.86;
+        this.performanceAdapted = true;
       }
     }
 
@@ -301,7 +224,7 @@
       this.centerX = this.width / 2;
       this.centerY = this.height / 2;
 
-      const ratio = this.getCanvasPixelRatio();
+      const ratio = this.profile.pixelRatio;
       this.canvas.width = Math.max(1, Math.round(this.width * ratio));
       this.canvas.height = Math.max(1, Math.round(this.height * ratio));
       this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -389,7 +312,7 @@
       if (!context) return;
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
 
       const particleCount = this.getRenderCount(this.particles);
       for (let index = 0; index < particleCount; index += 1) {
@@ -418,7 +341,7 @@
       const innerRadius = shortestSide * lerp(0.05, 0.14, blackHoleProgress);
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
 
       const particleCount = this.getRenderCount(this.particles);
       for (let index = 0; index < particleCount; index += 1) {
@@ -443,7 +366,7 @@
       }
 
       const ringRadius = shortestSide * lerp(0.035, 0.23, blackHoleProgress);
-      const ringCount = this.profile.mobile ? 2 : this.performanceTier === "high" ? 3 : 2;
+      const ringCount = this.profile.mobile ? 2 : 3;
       for (let ring = 0; ring < ringCount; ring += 1) {
         const start = time * (0.4 + ring * 0.16) * (ring === 1 ? -1 : 1) + ring;
         context.beginPath();
@@ -475,7 +398,7 @@
       const safeIntensity = clamp(intensity);
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
       context.lineCap = "round";
 
       const particleCount = this.getRenderCount(this.particles);
@@ -516,7 +439,7 @@
         }
       }
 
-      const tunnelRingCount = this.profile.mobile ? 3 : this.performanceTier === "high" ? 6 : this.performanceTier === "balanced" ? 4 : 3;
+      const tunnelRingCount = this.profile.mobile ? 3 : 6;
       for (let ring = 0; ring < tunnelRingCount; ring += 1) {
         const cycle = (travelProgress * (3.8 + ring * 0.21) + ring / tunnelRingCount) % 1;
         const ringRadius = lerp(8, Math.min(this.width, this.height) * 0.62, Math.pow(cycle, 1.75));
@@ -538,7 +461,7 @@
         context.stroke();
       }
 
-      if (!this.profile.mobile && this.performanceTier === "high") {
+      if (!this.profile.mobile) {
         const coreGradient = context.createRadialGradient(
           this.centerX,
           this.centerY,
@@ -563,7 +486,7 @@
 
       const speed = clamp(velocity, 0, 1.8);
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
       context.lineCap = "round";
 
       const starCount = this.getRenderCount(this.deepSpaceStars);
@@ -617,8 +540,8 @@
       const shortestSide = Math.min(this.width, this.height);
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
-      const ringCount = this.profile.mobile ? 2 : this.performanceTier === "high" ? 4 : this.performanceTier === "balanced" ? 3 : 2;
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
+      const ringCount = this.profile.mobile ? 2 : 4;
       for (let ring = 0; ring < ringCount; ring += 1) {
         const radius = shortestSide * lerp(0.025 + ring * 0.012, 0.66 + ring * 0.08, expansion);
         context.beginPath();
@@ -650,7 +573,7 @@
       const cameraY = this.centerY - (1 - approach) * shortestSide * 0.06;
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
 
       const starCount = this.getRenderCount(this.galaxyStars);
       for (let index = 0; index < starCount; index += 1) {
@@ -681,7 +604,7 @@
       }
 
       const coreRadius = shortestSide * lerp(0.006, 0.12, approach) * (1 + reveal * 0.16);
-      if (this.profile.mobile || this.performanceTier !== "high") {
+      if (this.profile.mobile) {
         context.beginPath();
         context.fillStyle = `rgba(232, 252, 255, ${galaxyOpacity * 0.58})`;
         context.arc(cameraX, cameraY, coreRadius * 0.42, 0, Math.PI * 2);
@@ -757,7 +680,7 @@
       if (!context) return;
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
 
       const reveal = smooth(musicProgress);
       const gather = smooth(convergence);
@@ -803,7 +726,7 @@
       const maximumRadius = Math.hypot(this.width, this.height) * 0.44;
 
       context.save();
-      context.globalCompositeOperation = this.getCompositeOperation();
+      context.globalCompositeOperation = this.profile.mobile ? "source-over" : "lighter";
 
       const particleCount = this.getRenderCount(this.particles);
       for (let index = 0; index < particleCount; index += 1) {
@@ -921,9 +844,6 @@
     completionResolve: null,
     startPromise: null,
     audio: null,
-    audioUnlockPending: false,
-    audioUnlockHandler: null,
-    playbackGeneration: 0,
     recordingMode: "",
     recordingStream: null,
     mediaRecorder: null,
@@ -1134,14 +1054,12 @@
 
   async function playCinematicAudio() {
     const audio = loadCinematicAudio();
-    if (!audio) return true;
+    if (!audio) return;
 
     try {
       await audio.play();
-      return true;
     } catch (error) {
       console.warn("Lecture audio de la cinématique bloquée :", error);
-      return false;
     }
   }
 
@@ -1153,50 +1071,6 @@
     if (!state.audio) return;
     state.audio.pause();
     state.audio.currentTime = 0;
-  }
-
-  function clearAudioUnlock() {
-    if (state.audioUnlockHandler && state.root) {
-      state.root.removeEventListener("click", state.audioUnlockHandler);
-    }
-    state.audioUnlockHandler = null;
-    state.audioUnlockPending = false;
-  }
-
-  function armAudioUnlock(visualTime = 0) {
-    if (!state.root || state.audioUnlockPending) return;
-
-    const safeTime = clamp(visualTime, 0, CINEMATIC_TIMELINE.end);
-    state.audioUnlockPending = true;
-    state.running = true;
-    state.paused = true;
-    state.pausedAt = performance.now();
-    state.root.classList.add("is-paused");
-    if (state.status) state.status.textContent = "TOUCHER POUR LANCER";
-
-    state.audioUnlockHandler = async () => {
-      if (!state.audioUnlockPending || !state.started) return;
-      const audio = loadCinematicAudio();
-      if (audio) audio.currentTime = safeTime;
-      const started = await playCinematicAudio();
-      if (!started) return;
-
-      clearAudioUnlock();
-      const now = performance.now();
-      state.startAt = now - (safeTime / state.speed) * 1000;
-      state.pausedAt = now;
-      state.lastRenderedAt = now;
-      state.lastAnimationFrameAt = 0;
-      state.paused = false;
-      state.running = true;
-      state.root?.classList.remove("is-paused");
-      if (state.status) state.status.textContent = "";
-      state.frameId = window.requestAnimationFrame(tick);
-    };
-
-    // Un clic/toucher utilisateur déverrouille l'audio sur Safari/iOS et les
-    // navigateurs qui interdisent la lecture sonore automatique.
-    state.root.addEventListener("click", state.audioUnlockHandler, { once: true });
   }
 
   function updateRecordingControl(label, hint = "", disabled = false) {
@@ -1328,11 +1202,9 @@
     state.recordingMode = "";
     state.recordingStopScheduled = false;
     state.systemRecordingFinished = true;
-
-    // Sur mobile, ne pas interrompre la boucle de la cinématique ici.
-    // Le tick doit encore atteindre completePromise() pour libérer totalement
-    // l'overlay cinématique et démarrer le vrai chargement Sonara.
-    // Sinon le loader reste visible à 0 % derrière la cinématique.
+    state.running = false;
+    state.paused = true;
+    window.cancelAnimationFrame(state.frameId);
     state.root?.classList.remove("is-recording-cinematic");
     state.root?.classList.add("is-system-recording-finished");
     updateRecordingControl(
@@ -1548,10 +1420,7 @@
     const root = state.root;
     if (!root) return;
 
-    const generation = ++state.playbackGeneration;
-    const safeTime = clamp(visualTime, 0, CINEMATIC_TIMELINE.end);
     window.cancelAnimationFrame(state.frameId);
-    clearAudioUnlock();
     resetCinematicAudio();
     prepareLoader();
     state.renderer?.reset();
@@ -1569,43 +1438,22 @@
     const now = performance.now();
     state.lastRenderedAt = now;
     state.lastAnimationFrameAt = 0;
-    state.startAt = now - (safeTime / state.speed) * 1000;
+    state.startAt = now - (clamp(visualTime, 0, CINEMATIC_TIMELINE.end) / state.speed) * 1000;
     state.pausedAt = now;
 
-    const values = getSceneValues(safeTime);
-    updateInterface(safeTime, values);
-    state.renderer?.draw(safeTime, values);
+    const values = getSceneValues(visualTime);
+    updateInterface(visualTime, values);
+    state.renderer?.draw(visualTime, values);
 
     const audio = loadCinematicAudio();
-    if (audio) audio.currentTime = safeTime;
+    if (audio) audio.currentTime = clamp(visualTime, 0, CINEMATIC_TIMELINE.end);
 
-    if (!autoplay) {
+    if (autoplay) {
+      void playCinematicAudio();
+      state.frameId = window.requestAnimationFrame(tick);
+    } else {
       root.classList.add("is-paused");
-      return;
     }
-
-    if (!audio) {
-      state.frameId = window.requestAnimationFrame(tick);
-      return;
-    }
-
-    // La première frame attend la bande-son afin de préserver la synchro exacte.
-    // Si le navigateur bloque l'autoplay, on garde 00:00:05 figé jusqu'au
-    // premier toucher/clic au lieu de lancer la cinématique en silence.
-    void playCinematicAudio().then((started) => {
-      if (generation !== state.playbackGeneration || !state.started) return;
-      if (!started) {
-        armAudioUnlock(safeTime);
-        return;
-      }
-
-      const syncedNow = performance.now();
-      state.startAt = syncedNow - (safeTime / state.speed) * 1000;
-      state.pausedAt = syncedNow;
-      state.lastRenderedAt = syncedNow;
-      state.lastAnimationFrameAt = 0;
-      state.frameId = window.requestAnimationFrame(tick);
-    });
   }
 
   function finishToLoader() {
@@ -1618,8 +1466,6 @@
   function completePromise() {
     window.cancelAnimationFrame(state.frameId);
     state.running = false;
-    clearAudioUnlock();
-    resetCinematicAudio();
     setMobileCinemaFrame(false);
     state.root?.classList.add("is-inactive");
     state.root?.setAttribute("aria-hidden", "true");
@@ -1825,20 +1671,8 @@
       : 1;
 
     const canvas = document.getElementById("sonaraCinematicCanvas");
-    const applyDesktopPerformanceClass = (tier) => {
-      if (!state.root || state.mobileOptimized) return;
-      state.root.classList.toggle("is-desktop-performance-balanced", tier === "balanced");
-      state.root.classList.toggle("is-desktop-performance-low", tier === "low");
-      state.root.dataset.performanceTier = tier;
-    };
-    state.renderer = new SonaraCinematicRenderer(
-      canvas,
-      state.reducedMotion,
-      state.mobileOptimized,
-      applyDesktopPerformanceClass
-    );
+    state.renderer = new SonaraCinematicRenderer(canvas, state.reducedMotion, state.mobileOptimized);
     state.root.classList.toggle("is-mobile-optimized", state.mobileOptimized);
-    if (!state.mobileOptimized) applyDesktopPerformanceClass(state.renderer.getPerformanceTier());
     state.root.classList.toggle("has-dev-controls", CINEMATIC_CONFIG.devControls);
     state.root.classList.toggle("has-recording-controls", CINEMATIC_CONFIG.recording.controls);
     updateRecordingControl("ENREGISTRER");
@@ -1883,8 +1717,6 @@
   function skip() {
     window.cancelAnimationFrame(state.frameId);
     state.running = false;
-    ++state.playbackGeneration;
-    clearAudioUnlock();
     abortRecording();
     resetCinematicAudio();
     setMobileCinemaFrame(false);

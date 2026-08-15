@@ -1,0 +1,184 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.Download {
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(0, 140, 255, 0.22), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(90, 0, 255, 0.18), transparent 35%),
+    linear-gradient(180deg, #020817 0%, #050b18 45%, #02040a 100%);
+  color: white;
+  overflow-x: hidden;
+}
+
+.download-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+/* MOBILE FIRST */
+
+.download-mobile,
+.download-desktop {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.download-mobile-card,
+.download-desktop-card {
+  width: 100%;
+  max-width: 430px;
+  padding: 34px 24px;
+  border: 1px solid rgba(120, 200, 255, 0.35);
+  border-radius: 28px;
+  background:
+    linear-gradient(145deg, rgba(8, 22, 45, 0.95), rgba(2, 8, 20, 0.96));
+  box-shadow:
+    0 0 35px rgba(0, 132, 255, 0.22),
+    inset 0 0 25px rgba(0, 180, 255, 0.05);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.download-mobile-card::before,
+.download-desktop-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(120deg, transparent, rgba(0, 200, 255, 0.22), transparent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.download-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  color: #61d8ff;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.download-mobile-title,
+.download-title {
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  line-height: 0.95;
+  margin-bottom: 18px;
+  text-shadow: 0 0 18px rgba(80, 190, 255, 0.45);
+}
+
+.download-mobile-text,
+.download-text {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+
+.download-button,
+.download-home-button,
+.download-confirm-button {
+  width: 100%;
+  border: 1px solid rgba(130, 220, 255, 0.55);
+  border-radius: 999px;
+  padding: 15px 18px;
+  margin-top: 12px;
+  background: rgba(5, 18, 38, 0.92);
+  color: white;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0, 150, 255, 0.18);
+}
+
+.download-button {
+  background: linear-gradient(135deg, #006dff, #00d4ff);
+  color: #00111f;
+}
+
+.download-loader {
+  width: 74px;
+  height: 74px;
+  margin: 22px auto;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #35d9ff;
+  box-shadow: 0 0 30px rgba(0, 180, 255, 0.45);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* DESKTOP */
+
+@media (min-width: 769px) {
+
+   .finger-cursor {
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    width: 34px;
+    height: 34px;
+
+    border: 2px solid rgba(43, 43, 43, 0.981);
+    border-radius: 50%;
+
+    pointer-events: none;
+    z-index: 99999;
+
+    transform: translate(-50%, -50%);
+
+    transition:
+        width .15s,
+        height .15s,
+        border .15s;
+
+    display: none;
+}
+
+  .download-mobile {
+    display: none;
+  }
+
+  .download-page {
+    padding: 60px;
+  }
+
+  .download-desktop-card {
+    max-width: 720px;
+    padding: 58px 70px;
+    border-radius: 36px;
+  }
+
+  .download-title {
+    font-size: 4.5rem;
+  }
+
+  .download-text {
+    font-size: 1.1rem;
+  }
+
+  .download-loader {
+    width: 92px;
+    height: 92px;
+  }
+}
+
+@media (max-width: 768px) {
+  .download-desktop {
+    display: none;
+  }
+}

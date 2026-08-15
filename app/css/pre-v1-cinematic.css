@@ -623,7 +623,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
   grid-template-columns: repeat(3, 1fr);
   align-items: end;
   gap: 8px;
-  margin-bottom: clamp(15px, 2.5vh, 24px);
+  margin-bottom: clamp(22px, 4vh, 38px);
   padding: 19px;
   border: 1px solid rgba(120,244,255,.58);
   border-radius: 27%;
@@ -647,27 +647,6 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic-mark span:nth-child(1) { height: 45%; }
 .sonara-cinematic-mark span:nth-child(2) { height: 100%; }
 .sonara-cinematic-mark span:nth-child(3) { height: 68%; }
-
-.sonara-cinematic-era {
-  margin: 0 0 clamp(14px, 2.4vh, 22px);
-  color: rgba(229, 249, 255, .88);
-  font-size: clamp(.68rem, 1.45vw, .96rem);
-  font-weight: 800;
-  letter-spacing: .42em;
-  text-indent: .42em;
-  opacity: 0;
-  text-shadow: 0 0 18px rgba(82,241,255,.35), 0 0 30px rgba(117,75,255,.18);
-  transform: translateY(10px);
-}
-
-.sonara-cinematic[data-scene="reveal"] .sonara-cinematic-era,
-.sonara-cinematic[data-scene="pre-v1"] .sonara-cinematic-era,
-.sonara-cinematic[data-scene="climax"] .sonara-cinematic-era,
-.sonara-cinematic[data-scene="loader"] .sonara-cinematic-era {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity .85s ease .08s, transform .85s cubic-bezier(.2,.8,.2,1) .08s;
-}
 
 .sonara-cinematic-identity h1 {
   display: flex;
@@ -712,7 +691,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic-identity h1 span:nth-child(10) { animation-delay: .57s !important; }
 .sonara-cinematic-identity h1 span:nth-child(11) { animation-delay: .63s !important; }
 
-.sonara-cinematic-pre-v1 {
+.sonara-cinematic-identity > p {
   margin: clamp(20px, 3.5vh, 34px) 0 0;
   color: var(--cinematic-cyan);
   font-size: clamp(.78rem, 1.8vw, 1.12rem);
@@ -724,9 +703,9 @@ body.sonara-cinematic-running #sonara-language-switcher {
   transform: translateY(14px);
 }
 
-.sonara-cinematic[data-scene="pre-v1"] .sonara-cinematic-pre-v1,
-.sonara-cinematic[data-scene="climax"] .sonara-cinematic-pre-v1,
-.sonara-cinematic[data-scene="loader"] .sonara-cinematic-pre-v1 {
+.sonara-cinematic[data-scene="pre-v1"] .sonara-cinematic-identity > p,
+.sonara-cinematic[data-scene="climax"] .sonara-cinematic-identity > p,
+.sonara-cinematic[data-scene="loader"] .sonara-cinematic-identity > p {
   opacity: 1;
   transform: translateY(0);
   transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
@@ -881,148 +860,6 @@ body.sonara-cinematic-running #sonara-language-switcher {
   50% { transform: translate(1%, -1%); }
   75% { transform: translate(.5%, 1%); }
   100% { transform: translate(-.5%, -.5%); }
-}
-
-/* Profils de performance ordinateur.
-   Le moteur JS les active uniquement si le PC est limité ou si une série de
-   frames lentes est détectée. Le mobile garde son profil séparé, inchangé. */
-.sonara-cinematic.is-desktop-performance-balanced .sonara-cinematic-grain {
-  display: none;
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-cinematic-aurora {
-  inset: -14%;
-  width: 128%;
-  height: 128%;
-  filter: blur(38px) saturate(calc(1.16 + var(--space-progress) * .42));
-}
-
-.sonara-cinematic.is-desktop-performance-balanced[data-scene="suction"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 4px))
-    saturate(calc(1 + var(--color-warp-progress) * .26 - var(--void-progress) * .96))
-    brightness(calc(1 - var(--void-progress) * .58))
-    contrast(calc(1 + var(--color-warp-progress) * .20));
-}
-
-.sonara-cinematic.is-desktop-performance-balanced[data-scene="travel"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 2.8px))
-    saturate(calc(1.08 + var(--space-progress) * .38))
-    contrast(calc(1.03 + var(--space-progress) * .14));
-}
-
-.sonara-cinematic.is-desktop-performance-balanced[data-scene="ejection"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--ejection-flash-progress) * 1.2px))
-    saturate(1.18)
-    brightness(calc(1 + var(--ejection-flash-progress) * .18));
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-black-hole-halo {
-  filter: blur(18px);
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-black-hole-disc-two {
-  filter: blur(1px);
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-black-hole-disc-three {
-  filter: blur(3px);
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-wave path,
-.sonara-cinematic.is-desktop-performance-balanced .sonara-wave-two path {
-  filter: none;
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-track,
-.sonara-cinematic.is-desktop-performance-balanced .sonara-cinematic-dev-hud {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.sonara-cinematic.is-desktop-performance-balanced .sonara-cinematic-identity {
-  filter: blur(calc((1 - var(--reveal-progress)) * 3px));
-}
-
-/* Dernier cran de sécurité pour les PC modestes : les éléments narratifs
-   restent présents, mais les couches plein écran les plus coûteuses sont
-   simplifiées et le Canvas est rendu à 30 FPS avec un budget de pixels réduit. */
-.sonara-cinematic.is-desktop-performance-low {
-  contain: strict;
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-grid,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-grain,
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole-disc-three,
-.sonara-cinematic.is-desktop-performance-low .sonara-music-orbit-two,
-.sonara-cinematic.is-desktop-performance-low .sonara-track-three {
-  display: none;
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-aurora {
-  inset: -8%;
-  width: 116%;
-  height: 116%;
-  filter: blur(20px) saturate(1.12);
-  transform: none;
-}
-
-.sonara-cinematic.is-desktop-performance-low[data-scene="suction"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 1.5px))
-    saturate(calc(1 + var(--color-warp-progress) * .14 - var(--void-progress) * .74))
-    brightness(calc(1 - var(--void-progress) * .48));
-  transform: scale(calc(1 + var(--color-warp-progress) * .035));
-}
-
-.sonara-cinematic.is-desktop-performance-low[data-scene="travel"] #sonaraCinematicCanvas {
-  filter: saturate(calc(1.04 + var(--space-progress) * .24));
-  transform: scale(calc(1 + var(--color-warp-progress) * .025));
-}
-
-.sonara-cinematic.is-desktop-performance-low[data-scene="ejection"] #sonaraCinematicCanvas {
-  filter: brightness(calc(1 + var(--ejection-flash-progress) * .10));
-  transform: scale(calc(1.035 - var(--ejection-progress) * .035));
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-flash {
-  mix-blend-mode: normal;
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-countdown,
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole,
-.sonara-cinematic.is-desktop-performance-low .sonara-music-world,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-identity,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-identity h1 span,
-.sonara-cinematic.is-desktop-performance-low .sonara-wave path,
-.sonara-cinematic.is-desktop-performance-low .sonara-wave-two path {
-  filter: none !important;
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole-halo {
-  opacity: .66;
-  filter: blur(10px) !important;
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole-disc,
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole-disc-two {
-  filter: none;
-  box-shadow: 0 0 15px rgba(80,235,255,.22), inset 0 0 11px rgba(255,54,211,.15);
-}
-
-.sonara-cinematic.is-desktop-performance-low .sonara-track,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-dev-hud {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.sonara-cinematic.is-desktop-performance-low #sonaraCinematicCanvas,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-countdown,
-.sonara-cinematic.is-desktop-performance-low .sonara-black-hole,
-.sonara-cinematic.is-desktop-performance-low .sonara-cinematic-identity {
-  will-change: transform, opacity;
 }
 
 /* Profil mobile anti-rechargement Safari : on conserve toute la narration,
@@ -1224,7 +1061,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
     font-size: clamp(1.8rem, 9vw, 3.4rem);
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-pre-v1 {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-identity > p {
     margin-top: 12px;
   }
 }
@@ -1283,13 +1120,6 @@ body.sonara-cinematic-running #sonara-language-switcher {
     gap: 6px;
   }
 
-  .sonara-cinematic-era {
-    margin-bottom: 11px;
-    font-size: clamp(.58rem, 2.8vw, .76rem);
-    letter-spacing: .34em;
-    text-indent: .34em;
-  }
-
   .sonara-cinematic-identity h1 {
     font-size: clamp(2.15rem, 12vw, 4rem);
     letter-spacing: -.073em;
@@ -1312,10 +1142,9 @@ body.sonara-cinematic-running #sonara-language-switcher {
   .sonara-cinematic-kicker { margin-bottom: 10px; }
   .sonara-cinematic-countdown-label { margin-bottom: 10px; }
   .sonara-cinematic-signal { margin-top: 18px; }
-  .sonara-cinematic-mark { width: 58px; margin-bottom: 10px; padding: 13px; }
-  .sonara-cinematic-era { margin-bottom: 9px; font-size: .62rem; }
+  .sonara-cinematic-mark { width: 58px; margin-bottom: 16px; padding: 13px; }
   .sonara-cinematic-identity h1 { font-size: clamp(2rem, 9vw, 4.8rem); }
-  .sonara-cinematic-pre-v1 { margin-top: 16px; }
+  .sonara-cinematic-identity > p { margin-top: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1331,8 +1160,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
   .sonara-black-hole,
   .sonara-music-world,
   .sonara-cinematic-identity,
-  .sonara-cinematic-era,
-  .sonara-cinematic-pre-v1,
+  .sonara-cinematic-identity > p,
   .sonara-entry-loader.is-cinematic-arriving {
     transition-duration: .01ms !important;
   }
