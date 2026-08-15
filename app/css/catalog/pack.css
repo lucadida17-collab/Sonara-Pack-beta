@@ -1215,16 +1215,6 @@ body.license-modal-open {
   opacity: 1 !important;
 }
 
-.notice-license-version {
-  border: 1px solid rgba(98, 234, 244, .22);
-  border-radius: 999px;
-  padding: 7px 11px;
-  background: rgba(59, 218, 229, .09);
-  color: #79eef4;
-  font-size: .72rem;
-  font-weight: 900;
-  white-space: nowrap;
-}
 
 .notice-license-scope {
   margin-top: 22px;
@@ -2661,11 +2651,6 @@ body.pack-page .track-list,
   .notice-license-price {
     min-width: 0;
   }
-
-  .notice-license-version {
-    width: fit-content;
-    grid-column: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2724,3 +2709,1148 @@ body.pack-page .pack-artist-profile-link:focus-visible {
 
 
 body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:contain;flex:0 0 auto;}
+
+
+/* ==========================================================
+   PRE-V1 — PACK MOBILE STABLE
+   Desktop (>= 900px) volontairement inchangé.
+   Objectif : une seule géométrie mobile fiable, sans marges
+   négatives ni largeur dépendante d'un modèle de téléphone.
+========================================================== */
+@media (max-width: 899px) {
+  html,
+  body.pack-page {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(12, 126, 255, .12), transparent 35%),
+      #080a10;
+  }
+
+  body.pack-page {
+    min-height: 100dvh;
+    margin: 0;
+  }
+
+  body.pack-page .desktop-shell,
+  body.pack-page .desktop-workspace,
+  body.pack-page .app-layout,
+  body.pack-page .main-content,
+  body.pack-page .scroll-zone,
+  body.pack-page .pack-content,
+  body.pack-page .pack-list,
+  body.pack-page .body-pack,
+  body.pack-page .track {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.pack-page .desktop-workspace {
+    min-height: 100dvh;
+  }
+
+  body.pack-page .app-layout,
+  body.pack-page .main-content {
+    min-height: 0;
+  }
+
+  body.pack-page .main-content {
+    padding-bottom: 0;
+  }
+
+  body.pack-page .scroll-zone {
+    overflow: visible;
+  }
+
+  body.pack-page .pack-content {
+    position: relative;
+    padding: 8px clamp(14px, 4vw, 22px)
+      calc(116px + env(safe-area-inset-bottom, 0px));
+    overflow-x: clip;
+  }
+
+  body.pack-page .pack-list {
+    display: block;
+    overflow: visible;
+  }
+
+  /* Retour : vrai touch target, intégré au flux mobile. */
+  body.pack-page .retour {
+    position: relative;
+    inset: auto;
+    width: 44px;
+    height: 44px;
+    margin: 2px 0 14px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .035);
+    color: #fff;
+    cursor: pointer;
+    transition: background .16s ease, transform .16s ease, border-color .16s ease;
+  }
+
+  body.pack-page .retour:active {
+    transform: scale(.95);
+    background: rgba(255, 255, 255, .09);
+  }
+
+  body.pack-page .retour:hover {
+    transform: none;
+  }
+
+  body.pack-page .retour svg {
+    position: static;
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+  }
+
+  /* Hero : cover carrée et centrée quelle que soit la largeur. */
+  body.pack-page .body-pack {
+    margin: 0;
+    padding: 0;
+  }
+
+  body.pack-page .pack-hero {
+    width: 100%;
+    margin: 0 0 28px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  body.pack-page .left-side,
+  body.pack-page .card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.pack-page .left-side {
+    display: grid;
+    place-items: center;
+  }
+
+  body.pack-page .card {
+    position: relative;
+    width: min(100%, 390px);
+    aspect-ratio: 1 / 1;
+    height: auto;
+    margin-inline: auto;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .075);
+    border-radius: clamp(18px, 5vw, 25px);
+    background: rgba(255, 255, 255, .035);
+    box-shadow:
+      0 22px 52px rgba(0, 0, 0, .28),
+      inset 0 1px 0 rgba(255, 255, 255, .035);
+  }
+
+  body.pack-page .cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: inherit;
+    object-fit: cover;
+    object-position: center;
+    background: #111;
+  }
+
+  /* Preview du pack : toujours exactement au centre de la cover. */
+  body.pack-page .playerBtnMob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    width: 68px;
+    height: 68px;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .32);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .30);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+
+  body.pack-page .playerBtnMob.play::before {
+    left: 27px;
+    top: 21px;
+    opacity: .96;
+    border-top-width: 13px;
+    border-bottom-width: 13px;
+    border-left-width: 21px;
+  }
+
+  body.pack-page .playerBtnMob.pause::before,
+  body.pack-page .playerBtnMob.pause::after {
+    top: 19px;
+    width: 7px;
+    height: 29px;
+    margin-top: 0;
+    opacity: .95;
+  }
+
+  body.pack-page .playerBtnMob.pause::before { left: 23px; }
+  body.pack-page .playerBtnMob.pause::after { right: 23px; }
+
+  /* Infos pack : plus aucun placement arbitraire. */
+  body.pack-page .pack-info {
+    width: min(100%, 390px);
+    min-width: 0;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  body.pack-page .title {
+    max-width: 100%;
+    margin: 0 0 14px;
+    overflow-wrap: anywhere;
+    color: #fff;
+    font-size: clamp(1.85rem, 8.4vw, 2.55rem);
+    font-weight: 850;
+    line-height: 1.04;
+    letter-spacing: -.045em;
+    text-shadow: none;
+  }
+
+  body.pack-page .artist-info {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  body.pack-page .artist-image {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 50%;
+    object-fit: cover;
+    background: #111;
+  }
+
+  body.pack-page .pack-artist-reward-badge {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+
+  body.pack-page .artist {
+    min-width: 0;
+    flex: 1 1 110px;
+    margin: 0;
+    overflow: hidden;
+    color: rgba(255, 255, 255, .78);
+    font-size: .93rem;
+    font-weight: 650;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pack-page .btn-acheter {
+    width: 100%;
+    min-height: 50px;
+    height: auto;
+    flex: 1 0 100%;
+    margin: 8px 0 0;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(104, 228, 255, .30);
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, rgba(25, 182, 255, .16), rgba(84, 82, 255, .11)),
+      rgba(255, 255, 255, .035);
+    color: #f7fdff;
+    font-size: .92rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    text-shadow: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  body.pack-page .btn-acheter:active {
+    transform: scale(.985);
+  }
+
+  body.pack-page .btn-acheter-desktop {
+    display: none !important;
+  }
+
+  body.pack-page .pre-v1-price-note {
+    margin: 9px 2px 0;
+    align-self: flex-start;
+    color: rgba(255, 255, 255, .48);
+    font-size: .78rem;
+    font-weight: 600;
+  }
+
+  /* Tracks : liste mobile souple, aucune marge négative. */
+  body.pack-page .track {
+    margin: 0;
+    padding: 0 0 6px;
+  }
+
+  body.pack-page .track-list-center,
+  body.pack-page .track-list,
+  body.pack-page .track-row {
+    display: none !important;
+  }
+
+  body.pack-page .track-row-mobile {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 76px;
+    margin: 0;
+    padding: 8px 0;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 24px 56px minmax(0, 1fr) minmax(68px, auto);
+    align-items: center;
+    column-gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, .065);
+    border-radius: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.pack-page .track-row-mobile:first-of-type {
+    border-top: 1px solid rgba(255, 255, 255, .065);
+  }
+
+  body.pack-page .track-row-mobile.mobile-playing {
+    margin-inline: -8px;
+    width: calc(100% + 16px);
+    padding-inline: 8px;
+    border-color: transparent;
+    border-radius: 14px;
+    background:
+      linear-gradient(90deg, rgba(21, 173, 255, .11), rgba(99, 84, 255, .055));
+  }
+
+  body.pack-page .track-number-mobile {
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    color: rgba(255, 255, 255, .34);
+    font-size: .72rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  body.pack-page .track-card-mobile {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    min-width: 0;
+    margin: 0;
+    display: block;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #101217;
+  }
+
+  body.pack-page .track-cover-mobile {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    background: #111;
+  }
+
+  body.pack-page .track-card-mobile::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    margin: -7px 0 0 -4px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 11px solid rgba(255, 255, 255, .92);
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .45));
+    pointer-events: none;
+    opacity: .9;
+  }
+
+  body.pack-page .track-row-mobile.mobile-playing .track-card-mobile::after {
+    opacity: 0;
+  }
+
+  body.pack-page .mobile-preview-time {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    margin: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+    background: rgba(0, 5, 16, .58);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+  }
+
+  body.pack-page .track-info {
+    min-width: 0;
+    width: 100%;
+    display: grid;
+    gap: 4px;
+  }
+
+  body.pack-page .track-title-mobile,
+  body.pack-page .track-artist-mobile {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pack-page .track-title-mobile {
+    color: rgba(255, 255, 255, .94);
+    font-size: .88rem;
+    font-weight: 750;
+    line-height: 1.18;
+  }
+
+  body.pack-page .track-artist-mobile {
+    color: rgba(255, 255, 255, .47);
+    font-size: .76rem;
+    font-weight: 560;
+    line-height: 1.15;
+  }
+
+  body.pack-page .track-price-mobile {
+    width: auto;
+    min-width: 68px;
+    max-width: 92px;
+    min-height: 38px;
+    height: auto;
+    margin: 0;
+    padding: 8px 10px;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .035);
+    color: rgba(255, 255, 255, .90);
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    text-shadow: none;
+    box-shadow: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
+  }
+
+  body.pack-page .track-price-mobile:active,
+  body.pack-page .track-price-mobile.click {
+    transform: scale(.96);
+    border-color: rgba(104, 228, 255, .38);
+    background: rgba(38, 182, 255, .12);
+    color: #fff;
+    text-shadow: none;
+    box-shadow: none;
+  }
+
+  /* Navigation basse : largeur et safe-area cohérentes sur iPhone/Android. */
+  body.pack-page .mobile-bottom-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    z-index: 9999;
+    min-height: 66px;
+    margin: 0;
+    padding: 8px 8px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    border: 1px solid rgba(120, 210, 255, .16);
+    border-radius: 23px;
+    background: rgba(6, 14, 32, .91);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .34);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  body.pack-page .nav-mobile-btn {
+    min-width: 0;
+    min-height: 50px;
+    padding: 5px 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    border: 0;
+    border-radius: 15px;
+    background: transparent;
+    color: rgba(255, 255, 255, .62);
+    font-size: .68rem;
+    font-weight: 720;
+    cursor: pointer;
+  }
+
+  body.pack-page .nav-mobile-btn svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  body.pack-page .nav-mobile-btn.active {
+    color: #5de7ff;
+    background: linear-gradient(135deg, rgba(20, 178, 255, .12), rgba(73, 90, 255, .06));
+  }
+
+  /* Loader pack : mêmes proportions sur petits écrans, sans sortir du viewport. */
+  body.pack-page .my-pack-page-loader {
+    min-height: 100dvh;
+    padding:
+      max(20px, env(safe-area-inset-top, 0px))
+      18px
+      max(20px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  body.pack-page .my-pack-loader-scene {
+    width: clamp(132px, 40vw, 166px);
+    height: clamp(132px, 40vw, 166px);
+    margin-bottom: 26px;
+  }
+
+  body.pack-page .my-pack-page-loader h1 {
+    max-width: 92vw;
+    font-size: clamp(1.85rem, 8vw, 2.7rem);
+    line-height: 1.02;
+  }
+
+  body.pack-page .my-pack-loader-progress {
+    width: min(440px, 88vw);
+  }
+
+  /* Licence mobile : bottom sheet lisible, actions toujours atteignables. */
+  body.pack-page .notice-overlay {
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
+  body.pack-page .notice-box {
+    max-height: min(92dvh, 760px);
+    padding-bottom: 20px;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 380px) {
+  body.pack-page .pack-content {
+    padding-inline: 12px;
+  }
+
+  body.pack-page .track-row-mobile {
+    grid-template-columns: 18px 50px minmax(0, 1fr) minmax(62px, auto);
+    column-gap: 8px;
+  }
+
+  body.pack-page .track-card-mobile {
+    width: 50px;
+    height: 50px;
+  }
+
+  body.pack-page .track-price-mobile {
+    min-width: 62px;
+    max-width: 78px;
+    padding-inline: 7px;
+    font-size: .66rem;
+  }
+
+  body.pack-page .title {
+    font-size: clamp(1.7rem, 8vw, 2.1rem);
+  }
+}
+
+/* ==========================================================
+   PRE-V1 — PACK DESKTOP POLISH
+   Le mobile validé reste isolé sous 900px.
+   Objectif : une page Pack desktop plus stable, lisible et
+   cohérente avec le shell Sonara, sans changer le DOM métier.
+========================================================== */
+@media (min-width: 900px) {
+  body.pack-page .pack-content {
+    position: relative;
+    padding: 0;
+  }
+
+  body.pack-page .pack-list {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.pack-page .body-pack {
+    width: 100%;
+    margin: 0;
+    padding: 34px clamp(10px, 1.2vw, 20px) 44px;
+    box-sizing: border-box;
+  }
+
+  /* Retour discret, aligné avec la carte principale. */
+  body.pack-page .retour {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 4;
+    width: 42px;
+    height: 42px;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 14px;
+    background: rgba(6, 14, 31, .62);
+    color: rgba(255, 255, 255, .82);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform .16s ease, color .16s ease, border-color .16s ease, background .16s ease;
+  }
+
+  body.pack-page .retour svg {
+    position: static;
+    width: 21px;
+    height: 21px;
+    stroke-width: 2;
+  }
+
+  body.pack-page .retour:hover {
+    transform: translateX(-2px);
+    color: #fff;
+    border-color: rgba(99, 232, 255, .26);
+    background: rgba(18, 49, 85, .72);
+  }
+
+  /* Hero : cover et informations forment une seule composition. */
+  body.pack-page .pack-hero {
+    width: 100%;
+    min-width: 0;
+    margin: 24px 0 54px;
+    display: grid;
+    grid-template-columns: clamp(250px, 23vw, 330px) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(30px, 4vw, 58px);
+    font-size: inherit;
+    letter-spacing: normal;
+  }
+
+  body.pack-page .left-side {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.pack-page .card {
+    position: relative;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .035);
+    box-shadow:
+      0 30px 70px rgba(0, 0, 0, .34),
+      0 12px 32px rgba(0, 105, 210, .11),
+      inset 0 1px 0 rgba(255, 255, 255, .055);
+  }
+
+  body.pack-page .cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    border-radius: inherit;
+    background: #0b0f16;
+  }
+
+  body.pack-page .pack-info {
+    width: min(100%, 760px);
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  body.pack-page .title {
+    width: 100%;
+    max-width: 760px;
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2.7rem, 4.8vw, 4.75rem);
+    font-weight: 850;
+    line-height: .98;
+    letter-spacing: -.055em;
+    overflow-wrap: anywhere;
+    text-shadow: 0 9px 30px rgba(0, 0, 0, .30);
+  }
+
+  body.pack-page .artist-info {
+    min-width: 0;
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  body.pack-page .artist-image {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    margin: 0;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    background: #111722;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .20);
+  }
+
+  body.pack-page .artist {
+    min-width: 0;
+    max-width: 430px;
+    margin: 0;
+    overflow: hidden;
+    color: rgba(241, 249, 255, .82);
+    font-size: .94rem;
+    font-weight: 720;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pack-page .pack-artist-reward-badge {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+  }
+
+  body.pack-page .btn-acheter-desktop {
+    width: auto;
+    min-width: 178px;
+    min-height: 48px;
+    height: auto;
+    margin: 27px 0 0;
+    padding: 12px 24px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(108, 229, 255, .28);
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, rgba(28, 180, 255, .16), rgba(83, 87, 255, .10)),
+      rgba(255, 255, 255, .025);
+    color: #f8fdff;
+    font-size: .9rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-shadow: none;
+    box-shadow:
+      0 14px 32px rgba(0, 76, 156, .12),
+      inset 0 1px 0 rgba(255, 255, 255, .055);
+    transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+  }
+
+  body.pack-page .btn-acheter-desktop:hover {
+    transform: translateY(-1px);
+    border-color: rgba(108, 229, 255, .48);
+    background:
+      linear-gradient(135deg, rgba(28, 180, 255, .23), rgba(83, 87, 255, .15)),
+      rgba(255, 255, 255, .04);
+    color: #fff;
+    text-shadow: none;
+    box-shadow:
+      0 18px 42px rgba(0, 119, 213, .18),
+      inset 0 1px 0 rgba(255, 255, 255, .075);
+  }
+
+  body.pack-page .btn-acheter-desktop:active {
+    transform: translateY(0) scale(.985);
+  }
+
+  body.pack-page .pre-v1-price-note {
+    margin: 10px 0 0;
+    color: rgba(226, 244, 255, .46);
+    font-size: .78rem;
+    font-weight: 620;
+  }
+
+  /* Liste des tracks : même grille pour l'en-tête et les lignes. */
+  body.pack-page .track {
+    width: 100%;
+    margin: 0;
+    padding: 0 clamp(10px, 1.2vw, 20px) 72px;
+    box-sizing: border-box;
+  }
+
+  body.pack-page .track-list-center {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 8px;
+  }
+
+  body.pack-page .track-list,
+  body.pack-page .track-row {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns:
+      42px
+      minmax(0, 1.75fr)
+      minmax(0, 1fr)
+      88px
+      108px;
+    column-gap: clamp(12px, 1.55vw, 22px);
+    align-items: center;
+  }
+
+  body.pack-page .track-list {
+    min-height: 44px;
+    padding: 0 14px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, .085);
+    color: rgba(220, 238, 249, .42);
+    font-size: .72rem;
+    font-weight: 720;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+  }
+
+  body.pack-page .track-row {
+    min-height: 72px;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: transparent;
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
+  }
+
+  body.pack-page .track-row + .track-row {
+    margin-top: 3px;
+  }
+
+  body.pack-page .track-row:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, .065);
+    background:
+      linear-gradient(90deg, rgba(37, 174, 255, .055), rgba(94, 79, 255, .025)),
+      rgba(255, 255, 255, .018);
+  }
+
+  body.pack-page .track-list > .track-number,
+  body.pack-page .track-row > .track-number {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(223, 241, 252, .42);
+    font-size: .78rem;
+    font-weight: 680;
+    text-align: center;
+    transform: none;
+  }
+
+  body.pack-page .track-list > .track-title,
+  body.pack-page .track-row > .track-title-column {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    justify-self: stretch;
+    transform: none;
+  }
+
+  body.pack-page .track-list > .track-title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: visible;
+    color: inherit;
+    text-align: left;
+  }
+
+  body.pack-page .track-title-column {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: center;
+    gap: 13px;
+  }
+
+  body.pack-page .track-card {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    background: #0c1119;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .18);
+  }
+
+  body.pack-page .track-cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  body.pack-page .track-btn-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: inherit;
+    background: rgba(0, 5, 14, .52);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity .15s ease, background .15s ease;
+  }
+
+  body.pack-page .track-row:hover .track-btn-play,
+  body.pack-page .track-btn-play:focus-visible,
+  body.pack-page .track-btn-play.pause {
+    opacity: 1;
+  }
+
+  body.pack-page .track-btn-play:hover {
+    background: rgba(0, 8, 22, .66);
+  }
+
+  body.pack-page .track-title-column > .track-title {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: rgba(247, 251, 255, .92);
+    font-size: .9rem;
+    font-weight: 760;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pack-page .track-list > .track-artist-placement,
+  body.pack-page .track-row > .track-artist {
+    grid-column: 3;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    justify-self: stretch;
+    overflow: hidden;
+    color: rgba(224, 239, 248, .54);
+    font-size: .82rem;
+    font-weight: 610;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: none;
+  }
+
+  body.pack-page .track-list > .track-duration-placement,
+  body.pack-page .track-row > .track-duration {
+    grid-column: 4;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: stretch;
+    color: rgba(224, 239, 248, .44);
+    font-size: .78rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    transform: none;
+  }
+
+  body.pack-page .track-list > .track-price-placement,
+  body.pack-page .track-row > .track-price {
+    grid-column: 5;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: stretch;
+    transform: none;
+  }
+
+  body.pack-page .track-list > .track-price-placement {
+    color: inherit;
+  }
+
+  body.pack-page .track-row > .track-price {
+    min-height: 38px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .025);
+    color: rgba(247, 252, 255, .84);
+    font-size: .74rem;
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    text-shadow: none;
+    box-shadow: none;
+    cursor: pointer;
+    transition: transform .15s ease, color .15s ease, border-color .15s ease, background .15s ease;
+  }
+
+  body.pack-page .track-row > .track-price:hover {
+    transform: translateY(-1px);
+    border-color: rgba(99, 232, 255, .34);
+    background: rgba(41, 180, 255, .09);
+    color: #fff;
+    text-shadow: none;
+    box-shadow: none;
+  }
+
+  /* Licence desktop : grande mais contenue, actions nettes. */
+  body.pack-page .notice-overlay {
+    padding: 28px;
+  }
+
+  body.pack-page .notice-box {
+    width: min(920px, calc(100vw - 72px));
+    max-height: min(88dvh, 880px);
+    padding: 30px;
+    border-radius: 30px;
+    overscroll-behavior: contain;
+  }
+
+  body.pack-page .notice-license-header {
+    grid-template-columns: 60px minmax(0, 1fr) auto;
+    gap: 18px;
+  }
+
+  body.pack-page .notice-license-grid {
+    gap: 16px;
+  }
+
+  body.pack-page .notice-actions {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, .075);
+  }
+
+  body.pack-page .notice-refuse,
+  body.pack-page .notice-accept {
+    min-height: 48px;
+    height: auto;
+    border-radius: 15px;
+    font-weight: 780;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1180px) {
+  body.pack-page .body-pack {
+    padding-top: 30px;
+  }
+
+  body.pack-page .pack-hero {
+    grid-template-columns: clamp(220px, 27vw, 270px) minmax(0, 1fr);
+    gap: 28px;
+    margin-bottom: 42px;
+  }
+
+  body.pack-page .title {
+    font-size: clamp(2.35rem, 5vw, 3.45rem);
+  }
+
+  body.pack-page .track-list,
+  body.pack-page .track-row {
+    grid-template-columns:
+      34px
+      minmax(0, 1.65fr)
+      minmax(0, .9fr)
+      70px
+      92px;
+    column-gap: 10px;
+    padding-inline: 9px;
+  }
+
+  body.pack-page .track-title-column {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  body.pack-page .track-card {
+    width: 48px;
+    height: 48px;
+  }
+
+  body.pack-page .track-title-column > .track-title {
+    font-size: .84rem;
+  }
+
+  body.pack-page .track-list > .track-artist-placement,
+  body.pack-page .track-row > .track-artist {
+    font-size: .76rem;
+  }
+
+  body.pack-page .track-row > .track-price {
+    padding-inline: 8px;
+    font-size: .68rem;
+  }
+}

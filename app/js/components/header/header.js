@@ -36,7 +36,9 @@ async function loadDynamicHeader() {
   }
 
   try {
-    const response = await fetch("/app/pages/components/header/header.html");
+    const response = await fetch("/app/pages/components/header/header.html", {
+      cache: "no-store"
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -66,6 +68,9 @@ function initDynamicHeader() {
 
   const pageTitle =
     document.getElementById("dynamicHeaderTitle");
+
+  const cinematicButton =
+    document.getElementById("dynamicHeaderCinematic");
 
   if (
     !profileButton ||
@@ -108,9 +113,39 @@ function initDynamicHeader() {
     redirectToProfilePage
   );
 
+  if (cinematicButton) {
+    // Le replay appartient au header partagé : Home, Bibliothèque, Pack, Artiste…
+    // Il ne dépend jamais de la règle « vue une fois » du lancement automatique.
+    cinematicButton.hidden = false;
+    cinematicButton.addEventListener("click", openCinematicReplay);
+  }
+
   if (window.lucide) {
     lucide.createIcons();
   }
+}
+
+function openCinematicReplay() {
+  const returnTo =
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  // Double verrou : query-string + sessionStorage.
+  // Ainsi un replay volontaire reste un replay même si la cinématique a déjà été vue.
+  try {
+    sessionStorage.setItem(
+      "sonara:cinematicReplayRequest",
+      JSON.stringify({ returnTo, requestedAt: Date.now() })
+    );
+  } catch (error) {
+    console.warn("Replay cinématique non mémorisé en session :", error);
+  }
+
+  const replayUrl = new URL("/index.html", window.location.origin);
+  replayUrl.searchParams.set("cinematic", "replay");
+  replayUrl.searchParams.set("returnTo", returnTo);
+  replayUrl.searchParams.set("replay", String(Date.now()));
+
+  window.location.assign(replayUrl.href);
 }
 
 function getProfilePageUrl() {

@@ -129,7 +129,6 @@ function renderPackLicenseNotice(pack, selectedItem = null) {
     : (pack?.title || pack?.name || "Pack Sonara");
 
   const packLabel = document.querySelector(".notice-license-pack");
-  const version = document.querySelector(".notice-license-version");
   const title = document.getElementById("licenseNoticeTitle");
   const permissionList = document.querySelector(".notice-license-permissions");
   const restrictionList = document.querySelector(".notice-license-restrictions");
@@ -141,7 +140,6 @@ function renderPackLicenseNotice(pack, selectedItem = null) {
 
   if (title) title.textContent = license.name || "Licence d’utilisation";
   if (packLabel) packLabel.textContent = itemTitle;
-  if (version) version.textContent = `Version ${Number(license.version || 1)}`;
   if (price) {
     const displayedPrice = displayPriceWithEuro(
       selectedItem?.price ??

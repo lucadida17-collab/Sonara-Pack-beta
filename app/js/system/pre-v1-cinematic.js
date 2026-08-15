@@ -938,7 +938,8 @@
     recordingDownloadUrl: "",
     recordingFileName: "",
     recordingDownloadConsumed: false,
-    listenersAttached: false
+    listenersAttached: false,
+    forceReplay: false
   };
 
   function getScene(time) {
@@ -1116,7 +1117,18 @@
     return window.SonaraCommercial?.getState?.().mode !== "COMMERCIAL";
   }
 
-  function shouldPlay() {
+  function isManualReplayRequested() {
+    try {
+      return new URLSearchParams(window.location.search).get("cinematic") === "replay";
+    } catch {
+      return false;
+    }
+  }
+
+  function shouldPlay(forceReplay = false) {
+    // Un replay demandé par l’utilisateur est toujours autorisé.
+    // La règle « une seule fois » ne concerne que le lancement automatique.
+    if (forceReplay || isManualReplayRequested()) return true;
     if (!isPreV1Mode()) return false;
     if (CINEMATIC_CONFIG.devLoop) return true;
     return !hasSeenCurrentVersion();
@@ -1611,7 +1623,13 @@
   function finishToLoader() {
     if (state.completionStarted) return;
     state.completionStarted = true;
-    markCurrentVersionSeen();
+
+    // Seule la lecture automatique valide la règle « vue une fois ».
+    // Un replay manuel ne modifie pas cette logique.
+    if (!state.forceReplay && !isManualReplayRequested()) {
+      markCurrentVersionSeen();
+    }
+
     state.root?.classList.add("is-finishing");
   }
 
@@ -1846,10 +1864,11 @@
     return true;
   }
 
-  function start() {
+  function start(options = {}) {
     if (state.startPromise) return state.startPromise;
     if (!initialise()) return Promise.resolve({ played: false, reason: "missing_dom" });
 
+    state.forceReplay = Boolean(options?.forceReplay);
     state.started = true;
     state.startPromise = (async () => {
       if (!CINEMATIC_CONFIG.devLoop) {
@@ -1860,7 +1879,7 @@
         }
       }
 
-      if (!shouldPlay()) {
+      if (!shouldPlay(state.forceReplay)) {
         state.root.classList.add("is-inactive");
         state.root.setAttribute("aria-hidden", "true");
         document.body?.classList.remove(CINEMATIC_BODY_CLASS);
@@ -1904,6 +1923,7 @@
     revokeRecordingDownload();
     state.renderer?.clear();
     state.audio = null;
+    state.forceReplay = false;
     state.started = false;
     state.startPromise = null;
   }
@@ -1925,6 +1945,7 @@
     pauseCinematicAudio,
     resetCinematicAudio,
     hasSeenCurrentVersion,
-    markCurrentVersionSeen
+    markCurrentVersionSeen,
+    isManualReplayRequested
   });
 })();

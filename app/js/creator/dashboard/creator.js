@@ -87,12 +87,22 @@ creatorPage.innerHTML = `
 lucide.createIcons();
 
 function openCreatorCinematicReplay() {
+  const returnTo =
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  try {
+    sessionStorage.setItem(
+      "sonara:cinematicReplayRequest",
+      JSON.stringify({ returnTo, requestedAt: Date.now() })
+    );
+  } catch (error) {
+    console.warn("Replay cinématique Creator non mémorisé en session :", error);
+  }
+
   const replayUrl = new URL("/index.html", window.location.origin);
   replayUrl.searchParams.set("cinematic", "replay");
-  replayUrl.searchParams.set(
-    "returnTo",
-    `${window.location.pathname}${window.location.search}${window.location.hash}`
-  );
+  replayUrl.searchParams.set("returnTo", returnTo);
+  replayUrl.searchParams.set("replay", String(Date.now()));
 
   window.location.assign(replayUrl.href);
 }

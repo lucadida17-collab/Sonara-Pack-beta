@@ -2377,6 +2377,356 @@ body.home .home-distribution-section .categorie-header h2 {
     padding-left: 19px !important;
   }
 }
-\n\n/* ==========================================================\n   PRE-V1 V1.2.10 — TITRES MOBILE + NAVIGATION DES RAILS\n   - typo mobile légèrement plus musicale / arcade, sans excès\n   - taille des titres réduite sur mobile\n   - mobile : bouton « Tout voir » quand le rail déborde\n   - desktop : simple chevron à côté du titre\n========================================================== */\n\nbody.home .home-distribution-section .categorie-header {\n  justify-content: flex-start;\n  gap: 10px;\n}\n\nbody.home .home-distribution-section .category-heading-copy {\n  flex: 0 1 auto;\n  min-width: 0;\n}\n\n/* Un seul contrôle suffit : le rail reste tactile / scrollable. */\nbody.home .home-distribution-section .scroll-btn.left {\n  display: none !important;\n}\n\nbody.home .home-distribution-section .scroll-controls {\n  display: none;\n  flex: 0 0 auto;\n  align-items: center;\n  margin-left: 2px;\n}\n\nbody.home .home-distribution-section.has-horizontal-overflow .scroll-controls {\n  display: flex;\n}\n\nbody.home .home-distribution-section .scroll-btn.right {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  min-width: 30px;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  border-radius: 999px;\n  background: transparent;\n  color: rgba(255, 255, 255, 0.82);\n  box-shadow: none;\n  backdrop-filter: none;\n  -webkit-backdrop-filter: none;\n}\n\nbody.home .home-distribution-section .scroll-btn.right:hover:not(:disabled) {\n  background: rgba(255, 255, 255, 0.07);\n  border: 0;\n  box-shadow: none;\n  transform: none;\n}\n\nbody.home .home-distribution-section .scroll-btn.right:disabled {\n  display: none;\n}\n\nbody.home .home-distribution-section .scroll-btn.right svg {\n  width: 20px;\n  height: 20px;\n  stroke-width: 2.4;\n}\n\nbody.home .home-distribution-section .scroll-btn-label {\n  display: none;\n}\n\n@media (max-width: 899px) {\n  body.home .home-distribution-section .categorie-header {\n    display: flex;\n    align-items: center;\n    justify-content: flex-start;\n    gap: 11px;\n    padding-right: 0;\n  }\n\n  body.home .home-distribution-section .categorie-header h2 {\n    font-family: "Trebuchet MS", "Inter", Arial, sans-serif;\n    font-size: clamp(20px, 5.2vw, 23px) !important;\n    font-weight: 650 !important;\n    line-height: 1.04;\n    letter-spacing: -0.035em;\n  }\n\n  body.home .home-distribution-section .scroll-controls {\n    margin-left: 0;\n  }\n\n  body.home .home-distribution-section .scroll-btn.right {\n    width: auto;\n    height: 30px;\n    min-width: 0;\n    gap: 3px;\n    padding: 0 2px;\n    border-radius: 8px;\n    color: rgba(255, 255, 255, 0.68);\n    font-family: "Inter", Arial, sans-serif;\n    font-size: 12px;\n    font-weight: 620;\n    letter-spacing: -0.015em;\n    white-space: nowrap;\n  }\n\n  body.home .home-distribution-section .scroll-btn-label {\n    display: inline;\n  }\n\n  body.home .home-distribution-section .scroll-btn.right svg {\n    width: 15px;\n    height: 15px;\n    stroke-width: 2.25;\n  }\n}\n
+
 
 body.home .home-artist-reward-badge{width:18px;height:18px;object-fit:contain;flex:0 0 auto;margin-left:5px;}
+
+
+/* ==========================================================
+   PRE-V1 V1.2.11 — RAILS / TOUT VOIR
+   Desktop : "Tout voir" reste près du titre, navigation à droite.
+   Mobile  : le même accès devient un chevron à droite du titre.
+========================================================== */
+
+body.home .home-distribution-section .categorie-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  min-width: 0;
+}
+
+body.home .home-distribution-section .category-heading-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+body.home .home-distribution-section .category-heading-copy {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+body.home .category-view-all {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font: 700 13px/1 "Inter", Arial, sans-serif;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+body.home .category-view-all svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.home .category-view-all:hover {
+  color: #ffffff;
+  border-color: rgba(105, 234, 255, 0.68);
+  background: rgba(255, 255, 255, 0.075);
+}
+
+body.home .category-view-all:active {
+  transform: scale(0.96);
+}
+
+body.home .category-view-all:focus-visible {
+  outline: 2px solid #69eaff;
+  outline-offset: 3px;
+}
+
+/* Les deux boutons restent réservés au déplacement du rail PC. */
+body.home .home-distribution-section .scroll-controls {
+  margin-left: auto;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+body.home .home-distribution-section .scroll-btn.left,
+body.home .home-distribution-section .scroll-btn.right {
+  display: grid;
+}
+
+body.home .home-distribution-section .scroll-btn:disabled {
+  display: grid;
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+body.home .home-distribution-section .scroll-btn:not(:disabled) {
+  opacity: 1;
+}
+
+/* Vue complète d'un rail — les cartes conservent leurs clics natifs. */
+body.home .home-view-all {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 30px 54px;
+  box-sizing: border-box;
+}
+
+body.home .home-view-all-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+body.home .home-view-all-back {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+body.home .home-view-all-back svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.home .home-view-all-title {
+  min-width: 0;
+}
+
+body.home .home-view-all-title > span {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.home .home-view-all-title h1 {
+  margin: 0;
+  font-size: clamp(28px, 3.2vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+body.home .home-view-all-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px 20px;
+  min-width: 0;
+}
+
+body.home .home-view-all-grid > .card {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+body.home .home-view-all-grid > .card .cover {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+body.home .home-view-all-grid.is-artists {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1199px) and (min-width: 900px) {
+  body.home .home-view-all-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.home .home-view-all-grid.is-artists {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 899px) {
+  body.home .home-distribution-section .categorie-header {
+    gap: 10px;
+    padding-right: 0;
+  }
+
+  body.home .home-distribution-section .category-heading-group {
+    width: 100%;
+    gap: 10px;
+  }
+
+  body.home .home-distribution-section .categorie-header h2 {
+    font-family: "Trebuchet MS", "Inter", Arial, sans-serif;
+    font-size: clamp(20px, 5.2vw, 23px) !important;
+    font-weight: 650 !important;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+  }
+
+  /* Sur mobile : la flèche à droite = Tout voir. */
+  body.home .category-view-all {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    flex: 0 0 34px;
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  body.home .category-view-all-label {
+    display: none;
+  }
+
+  body.home .category-view-all svg {
+    width: 21px;
+    height: 21px;
+    stroke-width: 2.35;
+  }
+
+  body.home .category-view-all:hover,
+  body.home .category-view-all:active {
+    border: 0;
+    background: rgba(255, 255, 255, 0.075);
+  }
+
+  /* Le rail se parcourt au doigt : pas de flèches précédent/suivant. */
+  body.home .home-distribution-section .scroll-controls {
+    display: none !important;
+  }
+
+  body.home .home-view-all {
+    padding: 6px 20px 96px;
+  }
+
+  body.home .home-view-all-header {
+    margin-bottom: 22px;
+  }
+
+  body.home .home-view-all-back {
+    width: 39px;
+    height: 39px;
+    flex-basis: 39px;
+    border-radius: 12px;
+  }
+
+  body.home .home-view-all-title h1 {
+    font-size: clamp(26px, 8vw, 36px);
+  }
+
+  body.home .home-view-all-grid,
+  body.home .home-view-all-grid.is-artists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 14px;
+  }
+}
+
+@media (max-width: 370px) {
+  body.home .home-view-all {
+    padding-inline: 16px;
+  }
+}
+
+
+/* PRE-V1 mobile empty catalogue v2 — centre réel de la zone Home */
+@media (max-width: 899px) {
+  body.home .home-content.is-empty-catalogue {
+    width: 100%;
+    min-height: calc(100dvh - 158px);
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: 18px 18px 92px;
+  }
+
+  body.home .home-content.is-empty-catalogue .home-distribution-list {
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  body.home .home-empty-catalogue {
+    width: min(100%, 390px);
+    min-height: 250px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto auto;
+    place-items: center;
+    align-content: center;
+    gap: 13px;
+    margin: 0 auto;
+    padding: 30px 24px;
+    color: #fff;
+    text-align: center;
+  }
+
+  body.home .home-empty-icon {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    color: #55e3ff;
+    background: rgba(48, 196, 255, 0.09);
+  }
+
+  body.home .home-empty-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  body.home .home-empty-catalogue h2 {
+    margin: 0;
+    font-size: clamp(24px, 7vw, 31px);
+    line-height: 1.08;
+    letter-spacing: -.035em;
+  }
+
+  body.home .home-empty-catalogue p {
+    max-width: 340px;
+    margin: 0;
+    color: rgba(255, 255, 255, .58);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}

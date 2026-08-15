@@ -3,6 +3,8 @@
 let packs = [];
 let homeSections = [];
 
+const HOME_RAIL_ITEM_LIMIT = 12;
+
 const desktopBrandVersion =
   document.querySelector(
     ".desktop-brand-version"
@@ -788,13 +790,18 @@ function createArtistSpotlightCard(artistProfile = {}) {
 
 function renderSectionCards(
   row,
-  section = {}
+  section = {},
+  { limit = HOME_RAIL_ITEM_LIMIT } = {}
 ) {
   if (!row) return;
 
-  const items = Array.isArray(section?.items)
+  const sourceItems = Array.isArray(section?.items)
     ? section.items
     : [];
+
+  const items = Number.isFinite(limit)
+    ? sourceItems.slice(0, Math.max(0, limit))
+    : sourceItems;
 
   if (section?.kind === "artists") {
     items.forEach((artistProfile) => {
@@ -859,10 +866,29 @@ function createDistributionSectionMarkup(
       data-distribution-section="${escapeHomeHtml(sectionId)}"
     >
       <div class="categorie-header">
-        <div class="category-heading-copy">
-          <div class="home-section-heading">
-            <h2>${escapeHomeHtml(title)}</h2>
+        <div class="category-heading-group">
+          <div class="category-heading-copy">
+            <div class="home-section-heading">
+              <h2>${escapeHomeHtml(title)}</h2>
+            </div>
           </div>
+
+          <button
+            class="category-view-all"
+            type="button"
+            data-view-all-section="${escapeHomeHtml(sectionId)}"
+            aria-label="Tout voir dans ${escapeHomeHtml(title)}"
+            title="Tout voir"
+          >
+            <span class="category-view-all-label">Tout voir</span>
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </button>
         </div>
 
         <div
@@ -890,7 +916,6 @@ function createDistributionSectionMarkup(
             aria-label="Voir les packs suivants"
             title="Packs suivants"
           >
-            <span class="scroll-btn-label">Tout voir</span>
             <svg
               viewBox="0 0 24 24"
               aria-hidden="true"
@@ -915,6 +940,9 @@ function createDistributionSectionMarkup(
 
 function renderHome() {
   destroyHomeScrollControls();
+
+  const isCatalogueEmpty = homeSections.length === 0;
+  content?.classList.toggle("is-empty-catalogue", isCatalogueEmpty);
 
   const distributedSections =
     homeSections.length
@@ -972,10 +1000,86 @@ function renderHome() {
   });
 
   initializeHomeScrollControls();
+  initializeHomeViewAllControls();
 
   if (window.lucide) {
     lucide.createIcons();
   }
+}
+
+
+function renderHomeSectionViewAll(sectionId) {
+  destroyHomeScrollControls();
+  content?.classList.remove("is-empty-catalogue");
+
+  const section = homeSections.find(
+    (candidate) =>
+      String(candidate?.id || "") === String(sectionId || "")
+  );
+
+  if (!section || !content) {
+    return;
+  }
+
+  const title = String(section.title || "À découvrir");
+  const isArtistSection = section.kind === "artists";
+
+  content.innerHTML = `
+    <section class="home-view-all" data-view-all-open="${escapeHomeHtml(sectionId)}">
+      <header class="home-view-all-header">
+        <button
+          class="home-view-all-back"
+          type="button"
+          aria-label="Retour à l'accueil"
+          title="Retour"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M15 18 9 12l6-6"></path>
+          </svg>
+        </button>
+
+        <div class="home-view-all-title">
+          <span>Tout voir</span>
+          <h1>${escapeHomeHtml(title)}</h1>
+        </div>
+      </header>
+
+      <div class="home-view-all-grid ${isArtistSection ? "is-artists" : ""}"></div>
+    </section>
+  `;
+
+  const grid = content.querySelector(".home-view-all-grid");
+
+  renderSectionCards(
+    grid,
+    section,
+    { limit: Infinity }
+  );
+
+  const backButton = content.querySelector(".home-view-all-back");
+  backButton?.addEventListener("click", renderHome, { once: true });
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function initializeHomeViewAllControls() {
+  document
+    .querySelectorAll(".category-view-all")
+    .forEach((button) => {
+      const onClick = () => {
+        renderHomeSectionViewAll(
+          button.dataset.viewAllSection
+        );
+      };
+
+      button.addEventListener("click", onClick);
+
+      homeScrollControlCleanups.push(() => {
+        button.removeEventListener("click", onClick);
+      });
+    });
 }
 
 

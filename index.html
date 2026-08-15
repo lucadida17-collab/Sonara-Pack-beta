@@ -201,7 +201,7 @@
 
   <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5"></script>
   <script src="/app/js/core/config.js"></script>
-  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-replay-language-v12"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-replay-force-v13"></script>
   <script>
     (() => {
       "use strict";
@@ -518,11 +518,7 @@
         });
       }
 
-      function getCinematicReplayReturnTarget() {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("cinematic") !== "replay") return "";
-
-        const rawTarget = params.get("returnTo");
+      function sanitizeReplayReturnTarget(rawTarget) {
         if (!rawTarget || !rawTarget.startsWith("/") || rawTarget.startsWith("//")) return "";
 
         try {
@@ -535,13 +531,54 @@
         }
       }
 
+      function getCinematicReplayRequest() {
+        const params = new URLSearchParams(window.location.search);
+        const queryReplay = params.get("cinematic") === "replay";
+        let sessionReplay = null;
+
+        try {
+          sessionReplay = JSON.parse(
+            sessionStorage.getItem("sonara:cinematicReplayRequest") || "null"
+          );
+        } catch {
+          sessionReplay = null;
+        }
+
+        const recentSessionReplay = Boolean(
+          sessionReplay &&
+          Number.isFinite(Number(sessionReplay.requestedAt)) &&
+          Date.now() - Number(sessionReplay.requestedAt) < 5 * 60 * 1000
+        );
+
+        const isReplay = queryReplay || recentSessionReplay;
+        if (!isReplay) return { isReplay: false, returnTo: "" };
+
+        return {
+          isReplay: true,
+          returnTo: sanitizeReplayReturnTarget(
+            params.get("returnTo") || sessionReplay?.returnTo || "/home.html"
+          ) || "/home.html"
+        };
+      }
+
+      function clearCinematicReplayRequest() {
+        try {
+          sessionStorage.removeItem("sonara:cinematicReplayRequest");
+        } catch {
+          // Aucun stockage de session disponible : la query-string suffit.
+        }
+      }
+
       async function startEntryFlow() {
-        const replayReturnTarget = getCinematicReplayReturnTarget();
+        const replayRequest = getCinematicReplayRequest();
+        let cinematicResult = null;
 
         await ensureLanguageChoice();
 
         try {
-          await window.SonaraPreV1Cinematic?.start?.();
+          cinematicResult = await window.SonaraPreV1Cinematic?.start?.({
+            forceReplay: replayRequest.isReplay
+          });
         } catch (error) {
           console.warn("Cinématique Pre-V1 indisponible :", error);
           window.SonaraPreV1Cinematic?.skip?.();
@@ -550,9 +587,16 @@
         loader?.classList.remove("is-cinematic-waiting", "is-cinematic-arriving");
         loader?.removeAttribute("aria-hidden");
 
-        if (replayReturnTarget) {
+        if (replayRequest.isReplay) {
+          // Le retour n’arrive qu’APRÈS la résolution de la lecture complète.
+          // Un replay volontaire ne passe jamais par le chargement/auth normal.
+          if (cinematicResult?.played !== true) {
+            console.warn("Replay demandé mais cinématique non jouée :", cinematicResult);
+          }
+
+          clearCinematicReplayRequest();
           await wait(220);
-          window.location.replace(replayReturnTarget);
+          window.location.replace(replayRequest.returnTo);
           return;
         }
 

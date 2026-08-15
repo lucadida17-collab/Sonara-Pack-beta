@@ -222,3 +222,175 @@ margin-left: -20px;
     text-overflow: ellipsis;
   }
 }
+
+
+/* PRE-V1 — accès manuel à la cinématique depuis Home */
+.dynamic-header-actions {
+  gap: 8px;
+}
+
+.dynamic-header-cinematic {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.dynamic-header-cinematic[hidden] {
+  display: none !important;
+}
+
+.dynamic-header-cinematic:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(104, 225, 255, 0.32);
+}
+
+.dynamic-header-cinematic:active {
+  transform: scale(0.95);
+}
+
+.dynamic-header-cinematic svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.8;
+}
+
+@media (max-width: 560px) {
+  .dynamic-header-actions {
+    gap: 6px;
+  }
+
+  .dynamic-header-cinematic {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .dynamic-header-cinematic svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .dynamic-header-language-slot {
+    max-width: min(39vw, 180px);
+  }
+}
+
+/* PRE-V1 — replay cinématique aligné visuellement avec les autres actions */
+.dynamic-header-cinematic {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: none;
+}
+
+.dynamic-header-cinematic svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.8;
+}
+
+.dynamic-header-cinematic:hover {
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  transform: none;
+}
+
+.dynamic-header-cinematic:active {
+  transform: scale(0.94);
+}
+
+.dynamic-header-cinematic:focus-visible {
+  outline: 2px solid rgba(105, 234, 255, 0.9);
+  outline-offset: 3px;
+}
+
+@media (min-width: 900px) {
+  .dynamic-header-cinematic {
+    width: 50px;
+    height: 50px;
+    flex-basis: 50px;
+  }
+
+  .dynamic-header-cinematic svg {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+
+/* PRE-V1 replay v3 — action native du header partagé */
+.dynamic-header-cinematic {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background .18s ease, transform .18s ease, color .18s ease;
+}
+
+.dynamic-header-cinematic[hidden] {
+  display: none !important;
+}
+
+.dynamic-header-cinematic svg {
+  width: 29px;
+  height: 29px;
+  stroke-width: 1.8;
+}
+
+.dynamic-header-cinematic:hover {
+  border: 0;
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+}
+
+.dynamic-header-cinematic:active {
+  transform: scale(.94);
+}
+
+.dynamic-header-cinematic:focus-visible {
+  outline: 2px solid rgba(96, 220, 255, .9);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .dynamic-header-cinematic {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
+  }
+
+  .dynamic-header-cinematic svg {
+    width: 27px;
+    height: 27px;
+  }
+}
