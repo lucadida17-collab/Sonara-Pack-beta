@@ -1,16 +1,3 @@
-// Responsive global Sonara : chargé depuis le noyau pour couvrir Home,
-// Creator, Library, Pack, Settings, Auth, etc. sans dupliquer les liens HTML.
-(() => {
-  if (typeof document === "undefined") return;
-  if (document.querySelector('link[data-sonara-global-responsive="true"]')) return;
-
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = "/app/css/core/responsive.css?v=global-responsive-v1";
-  link.dataset.sonaraGlobalResponsive = "true";
-  document.head.appendChild(link);
-})();
-
 const SONARA_VERSION = "Bêta - Pré sorti V1";
 
 window.SONARA_VERSION =
@@ -34,7 +21,7 @@ const IS_MAIN = !IS_LOCAL && !IS_TEST;
 const API_URLS = Object.freeze({
   local: `${window.location.protocol}//${window.location.hostname}:3001`,
   test: "https://sonara-pack-beta-1.onrender.com",
-  main: "https://sonara-pack.onrender.com"
+  main: "https://sonara-pack-beta.onrender.com"
 });
 
 const API_URL = IS_LOCAL

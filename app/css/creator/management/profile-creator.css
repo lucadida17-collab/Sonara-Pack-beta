@@ -1,3 +1,5 @@
+@import url("/app/css/core/responsive.css?v=global-responsive-css-only-v1");
+
 * {
     box-sizing: border-box;
     margin: 0;

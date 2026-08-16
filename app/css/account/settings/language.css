@@ -1,3 +1,5 @@
+@import url("/app/css/core/responsive.css?v=global-responsive-css-only-v1");
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; min-height: 100%; }
 body.language-settings {

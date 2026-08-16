@@ -142,7 +142,7 @@ svg {
 @media (min-width: 1200px) {
   .creator-stats {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .creator-stats .stat-card {
@@ -331,6 +331,8 @@ svg {
   }
 
   .creator-stats {
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 18px !important;
     margin-block: 42px !important;
   }
