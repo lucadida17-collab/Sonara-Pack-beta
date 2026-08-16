@@ -6,7 +6,7 @@
   <script>
     try {
       document.documentElement.dataset.sonaraLanguageChosen =
-        localStorage.getItem("sonaraLanguageChoiceV1") === "1" ? "true" : "false";
+        localStorage.getItem("sonaraLanguageChoiceV2") === "1" ? "true" : "false";
     } catch {
       document.documentElement.dataset.sonaraLanguageChosen = "false";
     }
@@ -199,9 +199,9 @@
     </section>
   </main>
 
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-language-reboot-v6"></script>
   <script src="/app/js/core/config.js"></script>
-  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-replay-force-v13"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-one-time-reboot-v14"></script>
   <script>
     (() => {
       "use strict";

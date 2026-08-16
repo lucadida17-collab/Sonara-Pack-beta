@@ -13,7 +13,7 @@
   const SCRIPT_URL = new URL(scriptElement.src, window.location.href);
   const APP_URL = new URL("../../", SCRIPT_URL);
   const STORAGE_KEY = "sonaraLanguage";
-  const CHOICE_KEY = "sonaraLanguageChoiceV1";
+  const CHOICE_KEY = "sonaraLanguageChoiceV2";
 
   /*
     Cache persistant des dictionnaires.

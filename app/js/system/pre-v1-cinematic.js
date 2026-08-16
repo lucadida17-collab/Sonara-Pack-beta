@@ -12,7 +12,7 @@
   const CINEMATIC_RECORDING_CAPTURE_AUDIO = false;
   const CINEMATIC_AUDIO_ENABLED = true;
   const CINEMATIC_AUDIO_SOURCE = "/assets/son/NEW%20UNIVERSE.wav";
-  const PRE_V1_CINEMATIC_VERSION = "PRE_V1_CINEMATIC_3";
+  const PRE_V1_CINEMATIC_VERSION = "PRE_V1_CINEMATIC_4";
   const CINEMATIC_BODY_CLASS = "sonara-cinematic-running";
   const MOBILE_CINEMA_BODY_CLASS = "sonara-cinematic-mobile-frame";
   const MOBILE_CINEMA_ROOT_CLASS = "is-mobile-cinema-frame";
@@ -101,14 +101,9 @@
     const memory = reportedMemory > 0 ? reportedMemory : null;
     const devicePixelRatio = Math.max(1, Number(window.devicePixelRatio || 1));
     const viewportPixels = Math.max(1, window.innerWidth || 1) * Math.max(1, window.innerHeight || 1);
-    // On privilégie la stabilité : un PC moyen démarre en Balanced plutôt
-    // qu'en High. Le rendu High est réservé aux machines qui ont une vraie
-    // marge CPU/RAM/GPU. Cela évite le gros freeze des premières secondes.
-    const lowPower = mobile || cores <= 6 || (memory !== null && memory <= 6);
-    const veryLowPower = !mobile && (cores <= 2 || (memory !== null && memory <= 3));
-    const renderedSurfacePixels = viewportPixels * devicePixelRatio * devicePixelRatio;
-    const largeDesktopSurface = !mobile && renderedSurfacePixels > 3200000;
-    const ultraLargeDesktopSurface = !mobile && renderedSurfacePixels > 7600000;
+    const lowPower = mobile || cores <= 4 || (memory !== null && memory <= 4);
+    const veryLowPower = !mobile && (cores <= 2 || (memory !== null && memory <= 2));
+    const largeDesktopSurface = !mobile && viewportPixels * devicePixelRatio * devicePixelRatio > 5200000;
 
     if (reducedMotion) {
       return Object.freeze({
@@ -124,16 +119,16 @@
     return Object.freeze({
       mobile,
       lowPower,
-      particleCount: mobile ? 42 : lowPower ? 64 : 96,
-      pixelRatio: mobile ? 1 : Math.min(devicePixelRatio, lowPower ? 1.08 : 1.30),
+      particleCount: mobile ? 42 : lowPower ? 76 : 132,
+      pixelRatio: mobile ? 1 : Math.min(devicePixelRatio, lowPower ? 1.15 : 1.5),
       // Sur ordinateur, on démarre à la meilleure qualité raisonnable puis le
       // moteur peut descendre d'un cran en temps réel si les FPS décrochent.
       frameInterval: 0,
       initialPerformanceTier: mobile
         ? "mobile"
-        : veryLowPower || ultraLargeDesktopSurface
+        : veryLowPower || largeDesktopSurface
           ? "low"
-          : lowPower || largeDesktopSurface
+          : lowPower
             ? "balanced"
             : "high"
     });
@@ -165,12 +160,12 @@
       this.lastTierChangeAt = 0;
       this.particles = Array.from({ length: this.profile.particleCount }, () => ({}));
       const galaxyStarCount = this.reducedMotion
-        ? (this.profile.mobile ? 28 : 36)
-        : (this.profile.mobile ? 64 : this.profile.lowPower ? 88 : 128);
+        ? (this.profile.mobile ? 28 : 40)
+        : (this.profile.mobile ? 64 : this.profile.lowPower ? 110 : 190);
       this.galaxyStars = Array.from({ length: galaxyStarCount }, () => ({}));
       const deepSpaceStarCount = this.reducedMotion
-        ? (this.profile.mobile ? 20 : 28)
-        : (this.profile.mobile ? 46 : this.profile.lowPower ? 62 : 92);
+        ? (this.profile.mobile ? 20 : 30)
+        : (this.profile.mobile ? 46 : this.profile.lowPower ? 78 : 132);
       this.deepSpaceStars = Array.from({ length: deepSpaceStarCount }, () => ({}));
       this.resize = this.resize.bind(this);
       this.scheduleResize = this.scheduleResize.bind(this);
@@ -199,17 +194,15 @@
       if (this.profile.mobile) return this.profile.pixelRatio;
 
       const tierScale = this.performanceTier === "low"
-        ? 0.66
+        ? 0.72
         : this.performanceTier === "balanced"
-          ? 0.80
-          : 0.92;
-      // Budget réel du canvas : la taille physique de l'écran ne doit plus
-      // multiplier brutalement la RAM/GPU utilisée par chaque frame.
+          ? 0.88
+          : 1;
       const maximumPixels = this.performanceTier === "low"
-        ? 720000
+        ? 950000
         : this.performanceTier === "balanced"
-          ? 1080000
-          : 1650000;
+          ? 1450000
+          : 2300000;
       const cssPixels = Math.max(1, this.width * this.height);
       const budgetRatio = Math.sqrt(maximumPixels / cssPixels);
 
@@ -229,13 +222,13 @@
       this.performanceTier = safeTier;
 
       if (safeTier === "low") {
-        this.qualityScale = 0.42;
+        this.qualityScale = 0.50;
         this.adaptiveFrameInterval = 1000 / 30;
       } else if (safeTier === "balanced") {
-        this.qualityScale = 0.64;
+        this.qualityScale = 0.76;
         this.adaptiveFrameInterval = 0;
       } else {
-        this.qualityScale = 0.86;
+        this.qualityScale = 1;
         this.adaptiveFrameInterval = 0;
       }
 
@@ -261,26 +254,23 @@
       ) return;
 
       this.performanceSamples += 1;
-      if (this.performanceSamples < 16) return;
+      if (this.performanceSamples < 28) return;
 
-      const criticalFrame = frameGap > 68 || drawCost > 22;
-      const severeFrame = frameGap > 30 || drawCost > 12;
-      const slowFrame = frameGap > 20 || drawCost > 7.2;
+      const severeFrame = frameGap > 36 || drawCost > 15;
+      const slowFrame = frameGap > 23 || drawCost > 9.5;
 
-      if (criticalFrame) {
-        this.slowFrameScore += 5;
-      } else if (severeFrame) {
-        this.slowFrameScore += 2.6;
+      if (severeFrame) {
+        this.slowFrameScore += 2.4;
       } else if (slowFrame) {
         this.slowFrameScore += 1;
       } else {
-        this.slowFrameScore = Math.max(0, this.slowFrameScore - 0.62);
+        this.slowFrameScore = Math.max(0, this.slowFrameScore - 0.42);
       }
 
       // On ne réagit pas à un petit pic isolé : il faut une vraie série de
       // frames lentes. High -> Balanced garde 60 FPS avec moins de GPU ; si le
       // PC décroche encore, Low verrouille un 30 FPS stable et allège le rendu.
-      if (this.slowFrameScore >= 8) {
+      if (this.slowFrameScore >= 12) {
         this.applyPerformanceTier(this.performanceTier === "high" ? "balanced" : "low");
       }
     }
@@ -1869,13 +1859,6 @@
     if (!state.mobileOptimized) applyDesktopPerformanceClass(state.renderer.getPerformanceTier());
     state.root.classList.toggle("has-dev-controls", CINEMATIC_CONFIG.devControls);
     state.root.classList.toggle("has-recording-controls", CINEMATIC_CONFIG.recording.controls);
-
-    // Commence à charger la bande-son pendant les vérifications PRE-V1 plutôt
-    // qu'au moment exact de la première frame. On évite ainsi qu'un gros WAV
-    // déclenche une lecture disque/réseau au même instant que le premier rendu.
-    const cinematicAudio = loadCinematicAudio();
-    try { cinematicAudio?.load?.(); } catch {}
-
     updateRecordingControl("ENREGISTRER");
     attachListeners();
     return true;
