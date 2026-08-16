@@ -216,6 +216,7 @@ const db = client.db("sonara-pack-db");
 
 const usersCollection = db.collection("users");
 const packsCollection = db.collection("packs");
+const verificationSecurityCollection = db.collection("verification_security");
 
 
 
@@ -224,8 +225,12 @@ const packsCollection = db.collection("packs");
 
 async function connectDB() {
   try {
-    await client.connect()
-    console.log("MongoDB connecté 🔥")
+    await client.connect();
+    await verificationSecurityCollection.createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0, name: "verification_security_ttl" }
+    );
+    console.log("MongoDB connecté 🔥");
   } catch (error) {
     console.error(error)
   }
@@ -1013,20 +1018,8 @@ async function findArtistAccountForPack(pack) {
   return null;
 }
 
-const verificationCodes = new Map();
-const verifiedTokens = new Map();
 const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
 const VERIFIED_TOKEN_TTL_MS = 15 * 60 * 1000;
-
-function cleanupVerificationStores() {
-  const now = Date.now();
-  for (const [key, value] of verificationCodes) {
-    if (value.expiresAt <= now) verificationCodes.delete(key);
-  }
-  for (const [key, value] of verifiedTokens) {
-    if (value.expiresAt <= now) verifiedTokens.delete(key);
-  }
-}
 
 function createVerificationKey(mail, purpose, userId = "") {
   return `${purpose}:${String(userId || "")}:${normalizeMail(mail)}`;
@@ -1038,6 +1031,50 @@ function createVerificationCode() {
 
 function createVerificationToken() {
   return crypto.randomBytes(32).toString("hex");
+}
+
+function hashVerificationValue(value) {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
+async function cleanupVerificationStores() {
+  await verificationSecurityCollection.deleteMany({
+    expiresAt: { $lte: new Date() }
+  });
+}
+
+async function storeVerificationCode(key, code) {
+  const now = new Date();
+  await verificationSecurityCollection.updateOne(
+    { _id: `code:${key}` },
+    {
+      $set: {
+        kind: "code",
+        key,
+        codeHash: hashVerificationValue(code),
+        attempts: 0,
+        createdAt: now,
+        expiresAt: new Date(now.getTime() + VERIFICATION_CODE_TTL_MS)
+      }
+    },
+    { upsert: true }
+  );
+}
+
+async function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
+  await cleanupVerificationStores();
+  const expectedKey = createVerificationKey(mail, purpose, userId);
+  const tokenId = `token:${hashVerificationValue(token)}`;
+  const now = new Date();
+
+  const result = await verificationSecurityCollection.deleteOne({
+    _id: tokenId,
+    kind: "token",
+    key: expectedKey,
+    expiresAt: { $gt: now }
+  });
+
+  return result.deletedCount === 1;
 }
 
 async function isPasswordAlreadyUsed(password) {
@@ -1079,15 +1116,6 @@ async function collectRemoteDuplicateErrors({ mail, pseudo, password, phone }) {
   return fieldErrors;
 }
 
-function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
-  cleanupVerificationStores();
-  const stored = verifiedTokens.get(String(token || ""));
-  const expectedKey = createVerificationKey(mail, purpose, userId);
-  if (!stored || stored.key !== expectedKey || stored.expiresAt <= Date.now()) return false;
-  verifiedTokens.delete(String(token));
-  return true;
-}
-
 app.post("/api/account-security/check", async (req, res) => {
   try {
     const payload = req.body || {};
@@ -1118,7 +1146,7 @@ app.post("/api/account-security/check", async (req, res) => {
 
 app.post("/api/account-security/send-code", async (req, res) => {
   try {
-    cleanupVerificationStores();
+    await cleanupVerificationStores();
     const { mail, pseudo, password, phone, purpose = "register", userId = "" } = req.body || {};
     const fieldErrors = await collectRemoteDuplicateErrors({ mail, pseudo, password, phone });
     if (Object.keys(fieldErrors).length > 0) {
@@ -1130,7 +1158,7 @@ app.post("/api/account-security/send-code", async (req, res) => {
 
     const code = createVerificationCode();
     const key = createVerificationKey(normalizedMail, purpose, userId);
-    verificationCodes.set(key, { code, expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS, attempts: 0 });
+    await storeVerificationCode(key, code);
 
     await resend.emails.send({
       from: "Sonara Pack <notifications@sonarapack.com>",
@@ -1146,25 +1174,54 @@ app.post("/api/account-security/send-code", async (req, res) => {
   }
 });
 
-app.post("/api/account-security/verify-code", (req, res) => {
-  cleanupVerificationStores();
-  const { mail, code, purpose = "register", userId = "" } = req.body || {};
-  const key = createVerificationKey(mail, purpose, userId);
-  const stored = verificationCodes.get(key);
-  if (!stored || stored.expiresAt <= Date.now()) {
-    verificationCodes.delete(key);
-    return res.status(400).json({ success: false, message: "Code expiré ou introuvable." });
+app.post("/api/account-security/verify-code", async (req, res) => {
+  try {
+    await cleanupVerificationStores();
+
+    const { mail, code, purpose = "register", userId = "" } = req.body || {};
+    const key = createVerificationKey(mail, purpose, userId);
+    const documentId = `code:${key}`;
+    const stored = await verificationSecurityCollection.findOne({ _id: documentId });
+    const now = new Date();
+
+    if (!stored || !(stored.expiresAt instanceof Date) || stored.expiresAt <= now) {
+      await verificationSecurityCollection.deleteOne({ _id: documentId });
+      return res.status(400).json({ success: false, message: "Code expiré ou introuvable." });
+    }
+
+    const codeMatches = hashVerificationValue(String(code || "").trim()) === stored.codeHash;
+
+    if (!codeMatches) {
+      const attempts = Number(stored.attempts || 0) + 1;
+
+      if (attempts >= 5) {
+        await verificationSecurityCollection.deleteOne({ _id: documentId });
+        return res.status(429).json({ success: false, message: "Trop de tentatives. Demandez un nouveau code." });
+      }
+
+      await verificationSecurityCollection.updateOne(
+        { _id: documentId },
+        { $set: { attempts } }
+      );
+      return res.status(400).json({ success: false, message: "Code incorrect." });
+    }
+
+    await verificationSecurityCollection.deleteOne({ _id: documentId });
+
+    const token = createVerificationToken();
+    await verificationSecurityCollection.insertOne({
+      _id: `token:${hashVerificationValue(token)}`,
+      kind: "token",
+      key,
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + VERIFIED_TOKEN_TTL_MS)
+    });
+
+    return res.json({ success: true, verificationToken: token });
+  } catch (error) {
+    console.error("Erreur vérification du code :", error);
+    return res.status(500).json({ success: false, message: "Vérification du code impossible." });
   }
-  stored.attempts += 1;
-  if (stored.attempts > 5) {
-    verificationCodes.delete(key);
-    return res.status(429).json({ success: false, message: "Trop de tentatives. Demandez un nouveau code." });
-  }
-  if (String(code || "").trim() !== stored.code) return res.status(400).json({ success: false, message: "Code incorrect." });
-  verificationCodes.delete(key);
-  const token = createVerificationToken();
-  verifiedTokens.set(token, { key, expiresAt: Date.now() + VERIFIED_TOKEN_TTL_MS });
-  return res.json({ success: true, verificationToken: token });
 });
 
 
@@ -1182,7 +1239,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
       (file) => file.fieldname === "imageProfile"
     );
 
-    if (!consumeVerifiedToken({ token: req.body.verificationToken, mail: profile.mail, purpose: "register" })) {
+    if (!(await consumeVerifiedToken({ token: req.body.verificationToken, mail: profile.mail, purpose: "register" }))) {
       return res.status(403).json({ success: false, message: "Vérification e-mail requise ou expirée." });
     }
 
@@ -1419,12 +1476,12 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
 
     const userId = String(req.body.userId || "");
 
-    if (!consumeVerifiedToken({
+    if (!(await consumeVerifiedToken({
       token: req.body.verificationToken,
       mail: profile.mail,
       purpose: "add-account",
       userId
-    })) {
+    }))) {
       return res.status(403).json({ success: false, message: "Vérification e-mail requise ou expirée." });
     }
 
@@ -1849,7 +1906,7 @@ app.post("/api/login/live-check", async (req, res) => {
 
 app.post("/api/login/send-code", async (req, res) => {
   try {
-    cleanupVerificationStores();
+    await cleanupVerificationStores();
 
     const { mail, password, phone } = req.body || {};
     const normalizedMail = normalizeMail(mail);
@@ -1882,11 +1939,7 @@ app.post("/api/login/send-code", async (req, res) => {
     const code = createVerificationCode();
     const key = createVerificationKey(normalizedMail, "login");
 
-    verificationCodes.set(key, {
-      code,
-      expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS,
-      attempts: 0
-    });
+    await storeVerificationCode(key, code);
 
     await resend.emails.send({
       from: "Sonara Pack <notifications@sonarapack.com>",
@@ -1918,11 +1971,11 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    if (!consumeVerifiedToken({
+    if (!(await consumeVerifiedToken({
       token: verificationToken,
       mail: normalizedMail,
       purpose: "login"
-    })) {
+    }))) {
       return res.status(403).json({
         success: false,
         error: "Vérification e-mail obligatoire ou expirée."
@@ -2062,7 +2115,7 @@ app.post("/api/accounts/switch", async (req, res) => {
 
 app.post("/api/accounts/login/send-code", async (req, res) => {
   try {
-    cleanupVerificationStores();
+    await cleanupVerificationStores();
 
     const { mail, password, phone } = req.body || {};
     const normalizedMail = normalizeMail(mail);
@@ -2095,11 +2148,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
     const code = createVerificationCode();
     const key = createVerificationKey(normalizedMail, "login-existing");
 
-    verificationCodes.set(key, {
-      code,
-      expiresAt: Date.now() + VERIFICATION_CODE_TTL_MS,
-      attempts: 0
-    });
+    await storeVerificationCode(key, code);
 
     await resend.emails.send({
       from: "Sonara Pack <admin@sonarapack.com>",
@@ -2132,11 +2181,11 @@ app.post("/api/accounts/login", async (req, res) => {
       });
     }
 
-    if (!consumeVerifiedToken({
+    if (!(await consumeVerifiedToken({
       token: verificationToken,
       mail: normalizedMail,
       purpose: "login-existing"
-    })) {
+    }))) {
       return res.status(403).json({
         success: false,
         error: "Vérification e-mail obligatoire ou expirée."
