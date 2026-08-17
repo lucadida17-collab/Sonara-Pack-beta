@@ -318,10 +318,6 @@ function renderTrackRows(trackEntries = []) {
               <p class="artist-track-pack" data-user-content>${artistEscape(pack.title || "Pack Sonara")}</p>
             </div>
 
-            <a class="artist-track-pack-link" href="${artistEscape(destination)}">
-              ${artistEscape(pack.title || "Voir le pack")}
-            </a>
-
             <button
               class="artist-track-preview"
               type="button"
@@ -388,7 +384,6 @@ function renderArtistPage() {
     artistCatalogue,
     publicArtist.accountId
   );
-  const firstPack = artistPacks[0] || null;
   const firstTrack = tracks[0] || null;
 
   artistContent.innerHTML = `
@@ -430,13 +425,6 @@ function renderArtistPage() {
             : ""
           }
 
-          ${firstPack
-            ? `<a class="artist-public-open-first-pack" href="${artistEscape(artistPackDestination(firstPack))}">
-                <i data-lucide="package-open"></i>
-                Voir le pack
-              </a>`
-            : ""
-          }
         </div>
       </div>
     </section>

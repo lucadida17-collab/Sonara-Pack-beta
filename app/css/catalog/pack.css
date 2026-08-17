@@ -3427,7 +3427,7 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
     max-width: 760px;
     margin: 0;
     color: #fff;
-    font-size: clamp(2.7rem, 4.8vw, 4.75rem);
+    font-size: clamp(2.25rem, 3.8vw, 3.75rem);
     font-weight: 850;
     line-height: .98;
     letter-spacing: -.055em;
@@ -3817,7 +3817,7 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
   }
 
   body.pack-page .title {
-    font-size: clamp(2.35rem, 5vw, 3.45rem);
+    font-size: clamp(2rem, 3.7vw, 2.75rem);
   }
 
   body.pack-page .track-list,

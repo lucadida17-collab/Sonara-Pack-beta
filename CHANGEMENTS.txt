@@ -1,0 +1,139 @@
+SONARA PACK — GRAND RANGEMENT DES FICHIERS
+13 août 2026
+
+Périmètre livré
+================
+
+- index.html et home.html restent à la racine.
+- Tous les autres fichiers HTML sont rangés dans app/pages par famille :
+  account, auth, catalog, components, creator et system.
+- Tous les fichiers JavaScript frontend sont rangés dans app/js par famille :
+  account, auth, catalog, components, core, creator, home, legacy et system.
+- Tous les fichiers CSS sont rangés dans app/css selon les mêmes familles.
+- Les modules backend auparavant dispersés à la racine sont rangés dans :
+  backend/config et backend/features.
+- server.js, server-test.js et server-local.js restent à la racine comme points
+  d'entrée backend.
+
+Migration des chemins
+=====================
+
+- Imports JS/CSS des 30 pages HTML migrés.
+- Redirections frontend et backend migrées vers les nouvelles pages.
+- Chargement du header et des dictionnaires i18n migré.
+- Imports CommonJS des trois serveurs migrés vers backend/.
+- Chemins de repli des données financières conservés vers data/.
+- Pont Founder financier conservé sur les trois environnements via
+  /api/founder/finance/* et /api/founder/platform-growth.
+- Aucun ancien dossier actif page-creator, page-management, js-creator,
+  js-management, css-creator ou css-management ne subsiste.
+
+Tests effectués
+===============
+
+- Validation syntaxique de tous les fichiers JavaScript.
+- Validation JSON de tous les fichiers de données et de traduction.
+- Validation statique de tous les imports HTML, JS, CSS et require locaux.
+- Vérification des 79 routes Express de chaque serveur : mêmes signatures et
+  même ordre avant/après le rangement.
+- Vérification du pont financier Founder Access en Local : Sonara sur 3001,
+  Founder sur 5501, lecture authentifiée de finance/summary,
+  finance/movements et platform-growth.
+- Démarrage réel de Local, Test et Main avec commercialMode PRE_V1.
+- Vérification HTTP des principales pages, feuilles de style et scripts rangés.
+
+Éléments non modifiés
+=====================
+
+- Logique métier, design et fonctionnalités.
+- Bank, Stripe, missions, distribution et cinématiques.
+- Revenus, ventes, statistiques financières et commissions.
+- Contenu des pop-ups Pre-V1, leur versionnage et leur persistance par compte.
+
+HISTORIQUE — POP-UPS D'INFORMATION PRE-V1 HOME + CREATOR
+
+Périmètre livré
+================
+
+- Home : nouvelle annonce utilisateur « PRE-V1 Sonara Pack ».
+- Creator : nouvelle annonce artiste « PRE-V1 Artistes ».
+- Le texte Creator encourage explicitement la publication pendant la Pre-V1.
+- Les prix définis par les artistes sont annoncés comme conservés pour la V1.
+- Bank et les paiements sont annoncés comme disponibles lors de la V1.
+
+Affichage et versionnage
+========================
+
+- Version Home : PRE_V1_1.
+- Version Creator : PRE_V1_1.
+- Dernières versions vues :
+  - lastSeenHomeAnnouncement
+  - lastSeenCreatorAnnouncement
+- État séparé par compte, environnement et audience.
+- La version vue est enregistrée à la fermeture, au clic sur le bouton principal,
+  au clic sur l'overlay ou avec la touche Échap.
+- Une future version PRE_V1_2 pourra réapparaître une fois sans supprimer les
+  données de PRE_V1_1.
+- Les annonces utilisent exclusivement le mode central SonaraCommercial : elles
+  sont disponibles en PRE_V1 et absentes en COMMERCIAL.
+
+Interface et traductions
+========================
+
+- Réutilisation de la modale Sonara Pack existante : overlay sombre, carte
+  centrée, coins arrondis, croix et un bouton principal.
+- Adaptation desktop/mobile avec hauteur bornée, défilement interne, bouton et
+  fermeture accessibles, gestion de la zone sûre mobile.
+- Ajout des nouvelles clés aux 16 dictionnaires existants : ar, de, en, es, fr,
+  id, it, nl, pl, pt, ro, ru, sq, sw, tr et zh.
+- Aucun deuxième système de traduction créé.
+
+Fichiers fonctionnels modifiés
+==============================
+
+- home.html
+- app/pages/creator/dashboard.html
+- app/js/creator/dashboard/creator.js
+- app/js/home/pre-v1-notice.js
+- app/js/core/i18n.js
+- app/css/home/pre-v1-notice.css
+- app/lang/ar.json
+- app/lang/de.json
+- app/lang/en.json
+- app/lang/es.json
+- app/lang/fr.json
+- app/lang/id.json
+- app/lang/it.json
+- app/lang/nl.json
+- app/lang/pl.json
+- app/lang/pt.json
+- app/lang/ro.json
+- app/lang/ru.json
+- app/lang/sq.json
+- app/lang/sw.json
+- app/lang/tr.json
+- app/lang/zh.json
+
+Tests effectués
+===============
+
+- Validation syntaxique JavaScript.
+- Validation JSON des 16 dictionnaires.
+- Message Home distinct du message Creator.
+- Filtrage des rôles user / artist / both.
+- Non-réapparition après fermeture pour la même version et le même compte.
+- États Home et Creator indépendants pour un compte both.
+- Réapparition autorisée lorsqu'une ancienne version PRE_V1_0 est enregistrée.
+- Absence complète de pop-up en mode COMMERCIAL.
+- Contrat responsive mobile vérifié.
+
+Éléments explicitement non modifiés
+===================================
+
+- Bank
+- Stripe
+- Missions
+- Distribution
+- Cinématiques
+- Revenus, ventes, statistiques financières et commissions
+- Serveurs et logique commerciale centrale

@@ -212,11 +212,11 @@
 
       // Contrat stable Sonara Pack :
       // - 6 secondes visibles minimum, même si Local/Test/Main répond immédiatement ;
-      // - 14 secondes maximum pour obtenir une réponse serveur ;
+      // - jusqu’à 60 secondes pour laisser Local/Test/Main démarrer, notamment après un réveil serveur ;
       // - après l'erreur, l'écran reste affiché jusqu'au clic manuel sur « Réessayer ».
       const MIN_LOADING_DURATION = 6000;
-      const SERVER_MAX_WAIT = 14000;
-      const SERVER_ATTEMPT_TIMEOUT = 3500;
+      const SERVER_MAX_WAIT = 60000;
+      const SERVER_ATTEMPT_TIMEOUT = 8000;
       const SERVER_RETRY_DELAY = 650;
       const MIN_STEP_TIME = 360;
       const TYPE_SPEED = 18;

@@ -1105,6 +1105,109 @@ function renderSummaryRow(label, value) {
   `;
 }
 
+
+const PACK_SUBMISSION_TIPS = [
+  "Une cover simple et lisible reste plus forte dans le catalogue mobile.",
+  "Un titre court et identifiable aide les utilisateurs à retrouver ton pack.",
+  "Pour un album, garde une vraie cohérence entre les tracks pour renforcer son identité.",
+  "Évite les silences inutiles au début des sons : l'écoute doit commencer proprement.",
+  "Des noms de tracks clairs facilitent leur utilisation dans les projets des utilisateurs.",
+  "Vérifie le volume de chaque track avant publication pour garder un pack homogène.",
+  "Une licence claire rassure l'utilisateur au moment d'intégrer le son dans son projet.",
+  "Publier régulièrement aide ton catalogue à rester vivant et à être redécouvert.",
+  "Teste toujours tes sons au casque et sur des haut-parleurs avant de les envoyer.",
+  "Si plusieurs sons appartiennent au même univers, garde une identité visuelle cohérente."
+];
+
+function formatSubmissionElapsed(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function openPackSubmissionLoader(finalPack) {
+  document.querySelector(".pack-submission-overlay")?.remove();
+
+  const trackCount = Array.isArray(finalPack?.tracks) ? finalPack.tracks.length : packData.tracks.length;
+  const formatLabel = trackCount > 1 ? "Album" : "Single";
+  const overlay = document.createElement("div");
+  overlay.className = "pack-submission-overlay";
+  overlay.innerHTML = `
+    <section class="pack-submission-dialog" role="status" aria-live="polite" aria-busy="true">
+      <div class="pack-submission-orbit" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+
+      <p class="pack-submission-eyebrow">SONARA CREATOR</p>
+      <h2>Envoi de ton pack</h2>
+      <p class="pack-submission-status" data-submit-status>Envoi et traitement en cours…</p>
+
+      <div class="pack-submission-pulse" aria-hidden="true"><span></span></div>
+
+      <div class="pack-submission-meta">
+        <div><span>Format</span><strong>${formatLabel}</strong></div>
+        <div><span>Tracks</span><strong>${trackCount}</strong></div>
+        <div><span>Temps écoulé</span><strong data-submit-elapsed>00:00</strong></div>
+      </div>
+
+      <aside class="pack-submission-tip">
+        <div>
+          <span class="pack-submission-tip-label">CONSEIL ARTISTE</span>
+          <strong data-submit-tip>${PACK_SUBMISSION_TIPS[0]}</strong>
+        </div>
+        <button type="button" class="pack-submission-next-tip" aria-label="Afficher le conseil suivant">Conseil suivant</button>
+      </aside>
+
+      <small class="pack-submission-note">Tu peux rester sur cette page pendant que Sonara finalise l'envoi. Ne ferme pas l'onglet.</small>
+    </section>
+  `;
+
+  document.body.appendChild(overlay);
+  const startedAt = Date.now();
+  const elapsed = overlay.querySelector("[data-submit-elapsed]");
+  const tip = overlay.querySelector("[data-submit-tip]");
+  const nextTipButton = overlay.querySelector(".pack-submission-next-tip");
+  let tipIndex = 0;
+
+  const showNextTip = () => {
+    tipIndex = (tipIndex + 1) % PACK_SUBMISSION_TIPS.length;
+    tip.classList.remove("is-changing");
+    void tip.offsetWidth;
+    tip.classList.add("is-changing");
+    tip.textContent = PACK_SUBMISSION_TIPS[tipIndex];
+  };
+
+  nextTipButton.addEventListener("click", showNextTip);
+
+  const timer = window.setInterval(() => {
+    elapsed.textContent = formatSubmissionElapsed((Date.now() - startedAt) / 1000);
+  }, 250);
+
+  const tipTimer = window.setInterval(showNextTip, 6500);
+
+  requestAnimationFrame(() => overlay.classList.add("is-visible"));
+
+  return {
+    setStatus(message) {
+      const status = overlay.querySelector("[data-submit-status]");
+      if (status && message) status.textContent = message;
+    },
+    close() {
+      window.clearInterval(timer);
+      window.clearInterval(tipTimer);
+      overlay.classList.remove("is-visible");
+      window.setTimeout(() => overlay.remove(), 220);
+    }
+  };
+}
+
 async function submitPack() {
   if (isSubmitting) return;
 
@@ -1130,8 +1233,11 @@ async function submitPack() {
   submitButton.textContent = "Envoi en cours…";
   submitError.hidden = true;
 
+  let submissionLoader = null;
+
   try {
     const finalPack = buildFinalPack();
+    submissionLoader = openPackSubmissionLoader(finalPack);
     const formData = new FormData();
 
     formData.append("packData", JSON.stringify(finalPack));
@@ -1142,11 +1248,14 @@ async function submitPack() {
       formData.append(`trackAudio_${index}`, track.audioFile);
     });
 
+    submissionLoader?.setStatus("Tes fichiers sont envoyés à Sonara…");
+
     const response = await fetch(`${API_URL}/api/packs/pending`, {
       method: "POST",
       body: formData
     });
 
+    submissionLoader?.setStatus("Fichiers reçus · vérification du pack…");
     const responseText = await response.text();
     let result = {};
 
@@ -1164,10 +1273,13 @@ async function submitPack() {
       );
     }
 
+    submissionLoader?.setStatus("Pack confirmé · finalisation…");
     const storedPack = await confirmPackPersistence(finalPack, result);
+    submissionLoader?.close();
     await finalizePublishedPack(storedPack);
     return;
   } catch (error) {
+    submissionLoader?.close();
     submitError.hidden = false;
     submitError.textContent = error.message;
     submitButton.disabled = false;

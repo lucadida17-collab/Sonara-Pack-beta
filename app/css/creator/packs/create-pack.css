@@ -3143,3 +3143,259 @@ html {
 html:not([lang="fr"]):not([lang="en"]) .create-license-choice small {
   display: none;
 }
+
+
+/* ========================================
+   CREATE PACK — ENVOI INTERACTIF
+======================================== */
+.pack-submission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(5, 6, 10, .84);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.pack-submission-overlay.is-visible {
+  opacity: 1;
+}
+
+.pack-submission-dialog {
+  width: min(620px, 100%);
+  overflow: hidden;
+  padding: 34px;
+  border: 1px solid rgba(125, 220, 255, .22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(0, 170, 255, .19), transparent 45%),
+    linear-gradient(180deg, rgba(22, 24, 31, .98), rgba(11, 12, 16, .98));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .48);
+  text-align: center;
+}
+
+.pack-submission-orbit {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 20px;
+}
+
+.pack-submission-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  background: #eafaff;
+  box-shadow: 0 0 28px rgba(93, 215, 255, .78);
+}
+
+.pack-submission-orbit span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(94, 216, 255, .38);
+  border-radius: 50%;
+  animation: packSubmissionOrbit 2.4s linear infinite;
+}
+
+.pack-submission-orbit span:nth-child(2) {
+  inset: 8px;
+  animation-direction: reverse;
+  animation-duration: 1.8s;
+  border-color: rgba(139, 106, 255, .45);
+}
+
+.pack-submission-orbit span:nth-child(3) {
+  inset: -7px 12px;
+  transform: rotate(56deg);
+  animation-duration: 3.2s;
+  border-color: rgba(255, 109, 210, .25);
+}
+
+@keyframes packSubmissionOrbit {
+  to { transform: rotate(360deg); }
+}
+
+.pack-submission-eyebrow {
+  margin: 0 0 9px;
+  color: #76ddff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+.pack-submission-dialog h2 {
+  margin: 0;
+  font-size: clamp(27px, 5vw, 39px);
+  letter-spacing: -.045em;
+}
+
+.pack-submission-status {
+  min-height: 24px;
+  margin: 12px 0 20px;
+  color: #b9bbc2;
+  line-height: 1.55;
+}
+
+.pack-submission-pulse {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.pack-submission-pulse span {
+  display: block;
+  width: 36%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6ddcff, #8776ff, #ff79d9);
+  animation: packSubmissionPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes packSubmissionPulse {
+  0% { transform: translateX(-105%); }
+  50% { transform: translateX(180%); }
+  100% { transform: translateX(390%); }
+}
+
+.pack-submission-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.pack-submission-meta div {
+  display: grid;
+  gap: 6px;
+  padding: 13px 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.pack-submission-meta span {
+  color: #7f828b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.pack-submission-meta strong {
+  font-size: 14px;
+}
+
+.pack-submission-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(109, 220, 255, .16);
+  border-radius: 18px;
+  background: rgba(73, 177, 255, .055);
+  text-align: left;
+}
+
+.pack-submission-tip > div {
+  display: grid;
+  gap: 7px;
+}
+
+.pack-submission-tip-label {
+  color: #6fdaff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.pack-submission-tip strong {
+  color: #e8e8eb;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pack-submission-tip strong.is-changing {
+  animation: packTipIn .28s ease;
+}
+
+@keyframes packTipIn {
+  from { opacity: .25; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pack-submission-next-tip {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pack-submission-next-tip:hover {
+  background: rgba(255, 255, 255, .1);
+}
+
+.pack-submission-note {
+  display: block;
+  margin-top: 16px;
+  color: #747780;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 620px) {
+  .pack-submission-overlay {
+    padding: 14px;
+  }
+
+  .pack-submission-dialog {
+    padding: 27px 17px 22px;
+    border-radius: 23px;
+  }
+
+  .pack-submission-meta {
+    gap: 6px;
+  }
+
+  .pack-submission-meta div {
+    padding: 11px 5px;
+  }
+
+  .pack-submission-meta strong {
+    font-size: 12px;
+  }
+
+  .pack-submission-tip {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .pack-submission-next-tip {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-submission-orbit span,
+  .pack-submission-pulse span,
+  .pack-submission-tip strong.is-changing {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
