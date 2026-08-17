@@ -5,6 +5,67 @@ let homeSections = [];
 
 const HOME_RAIL_ITEM_LIMIT = 12;
 
+/*
+  Titres de packs adaptatifs : on conserve la taille CSS normale tant que
+  le titre tient dans sa carte. Si nécessaire, Sonara réduit progressivement
+  la police jusqu'à un seuil minimum. Au-delà, l'ellipsis CSS existante prend
+  simplement le relais. La largeur réelle de la carte est utilisée : aucun
+  breakpoint supplémentaire n'est nécessaire.
+*/
+let homePackTitleFitFrame = 0;
+
+function fitHomePackTitle(titleElement) {
+  if (!(titleElement instanceof HTMLElement)) return;
+
+  titleElement.style.removeProperty("font-size");
+
+  const baseStyle = window.getComputedStyle(titleElement);
+  const baseSize = Number.parseFloat(baseStyle.fontSize);
+
+  if (!Number.isFinite(baseSize) || baseSize <= 0 || titleElement.clientWidth <= 0) {
+    return;
+  }
+
+  if (titleElement.scrollWidth <= titleElement.clientWidth + 1) {
+    return;
+  }
+
+  const minimumSize = Math.max(14, baseSize * 0.72);
+  let low = minimumSize;
+  let high = baseSize;
+
+  // Recherche rapide de la plus grande taille qui tient sur une ligne.
+  for (let index = 0; index < 8; index += 1) {
+    const candidate = (low + high) / 2;
+    titleElement.style.setProperty("font-size", `${candidate}px`, "important");
+
+    if (titleElement.scrollWidth <= titleElement.clientWidth + 1) {
+      low = candidate;
+    } else {
+      high = candidate;
+    }
+  }
+
+  titleElement.style.setProperty("font-size", `${low.toFixed(2)}px`, "important");
+}
+
+function fitHomePackTitles() {
+  document
+    .querySelectorAll("body.home .card .title")
+    .forEach(fitHomePackTitle);
+}
+
+function scheduleHomePackTitleFit() {
+  window.cancelAnimationFrame(homePackTitleFitFrame);
+  homePackTitleFitFrame = window.requestAnimationFrame(fitHomePackTitles);
+}
+
+window.addEventListener("resize", scheduleHomePackTitleFit, { passive: true });
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(scheduleHomePackTitleFit).catch(() => {});
+}
+
 const desktopBrandVersion =
   document.querySelector(
     ".desktop-brand-version"
@@ -1001,6 +1062,7 @@ function renderHome() {
 
   initializeHomeScrollControls();
   initializeHomeViewAllControls();
+  scheduleHomePackTitleFit();
 
   if (window.lucide) {
     lucide.createIcons();
@@ -1055,6 +1117,7 @@ function renderHomeSectionViewAll(sectionId) {
     section,
     { limit: Infinity }
   );
+  scheduleHomePackTitleFit();
 
   const backButton = content.querySelector(".home-view-all-back");
   backButton?.addEventListener("click", renderHome, { once: true });

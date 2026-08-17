@@ -21,6 +21,8 @@ require("dotenv").config({
 path: path.resolve(__dirname, ".env.local")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
+const { analyzeAudioPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const {
   PRE_V1_ACTIVITY_CONFIG,
   buildPreV1ActivityReport,
@@ -3517,6 +3519,10 @@ async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId])
   const creatorPacks = packs.filter((pack) =>
     creatorPackBelongsTo(pack, accountId) && !isPackHiddenByModeration(pack)
   );
+  const acquisitionAnalytics = buildCreatorAcquisitionAnalytics(
+    readJsonArray(usersPath),
+    creatorPacks
+  );
   let stripeSales = [];
   let stripeStatsAvailable = true;
 
@@ -3536,12 +3542,19 @@ async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId])
       (sum, sale) => sum + sale.artistRevenue,
       0
     );
+    const downloads = acquisitionAnalytics.byPack[String(pack.id)] || {
+      downloadCount: 0,
+      packDownloadCount: 0,
+      trackDownloadCount: 0,
+      uniqueDownloaders: 0
+    };
 
     return {
       ...pack,
       license: normalizePackLicense(pack.license),
       licenseSummary: licenseModerationSummary(pack),
       trackCount: Array.isArray(pack.tracks) ? pack.tracks.length : 0,
+      ...downloads,
       salesCount: packSales.length,
       buyerCount: buyers.size,
       revenue: Number((revenueCents / 100).toFixed(2))
@@ -3557,13 +3570,16 @@ async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId])
     stats: {
       packCount: enriched.length,
       publishedCount: enriched.filter((pack) => pack.status === "approved").length,
+      ...acquisitionAnalytics.totals,
       salesCount: stripeSales.length,
       buyerCount: new Set(stripeSales.map((sale) => sale.buyerId)).size,
       revenue: Number(
         (stripeSales.reduce((sum, sale) => sum + sale.artistRevenue, 0) / 100).toFixed(2)
       ),
       stripeStatsAvailable
-    }
+    },
+    recentAcquisitions: acquisitionAnalytics.recentAcquisitions,
+    commercialState: commercialPolicy.publicState()
   };
 }
 
@@ -3688,7 +3704,7 @@ app.patch("/api/creator/packs/:id/license", (req, res) => {
   }
 });
 
-app.patch("/api/creator/packs/:id", handlePackRevisionUpload, (req, res) => {
+app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) => {
   const uploadedFiles = Array.isArray(req.files)
     ? req.files.map((file) => file.path)
     : [];
@@ -3786,10 +3802,12 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, (req, res) => {
       }
 
       const track = tracks[trackIndex];
+      const preview = await analyzeAudioPreview(file.path);
       replacedAudioNames.push(track.audioName);
       track.audioName = file.filename;
       track.audioVersion = Math.max(1, Number.parseInt(track.audioVersion, 10) || 1) + 1;
       track.audioUpdatedAt = now;
+      Object.assign(track, preview);
       audioVersionsUpdated += 1;
       contentChanged = true;
     }
@@ -4141,6 +4159,60 @@ app.get("/api/packs", (req, res) => {
   res.json(approvedPacks);
 });
 
+
+app.post("/api/packs/:id/preview-analysis", async (req, res) => {
+  try {
+    const packId = String(req.params.id || "").trim();
+    const packs = readJsonArray(packsPath);
+    const packIndex = packs.findIndex((pack) =>
+      String(pack?.id || "") === packId &&
+      String(pack?.status || "").toLowerCase() === "approved" &&
+      !isPackHiddenByModeration(pack)
+    );
+
+    if (packIndex < 0) {
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const pack = packs[packIndex];
+    const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+    let changed = false;
+
+    for (const track of tracks) {
+      const previewReady =
+        Number.isFinite(Number(track.previewStart)) &&
+        Number(track.previewAnalysisVersion || 0) >= PREVIEW_ANALYSIS_VERSION;
+
+      if (previewReady) continue;
+
+      const audioName = path.basename(String(track.audioName || track.audio || ""));
+      const audioPath = audioName ? path.join(__dirname, "uploads", audioName) : "";
+      const preview = await analyzeAudioPreview(audioPath);
+      Object.assign(track, preview);
+      changed = true;
+    }
+
+    if (changed) {
+      pack.previewAnalysisUpdatedAt = new Date().toISOString();
+      writeJsonArray(packsPath, packs);
+    }
+
+    return res.json({
+      success: true,
+      packId,
+      tracks: tracks.map((track) => ({
+        id: track.id,
+        previewStart: Number(track.previewStart || 0),
+        previewDuration: Number(track.previewDuration || 30),
+        previewAnalysisVersion: Number(track.previewAnalysisVersion || 0)
+      }))
+    });
+  } catch (error) {
+    console.error("Erreur analyse preview pack :", error);
+    return res.status(500).json({ success: false, message: "Analyse des extraits indisponible." });
+  }
+});
+
 function createZip(zipPath, files) {
 
   const zip = new AdmZip();
@@ -4248,17 +4320,24 @@ app.post(
       const coverPackFile = fileByField.get("coverPack");
       receivedPack.coverPack = coverPackFile.filename;
 
-      receivedPack.tracks = receivedPack.tracks.map((track, index) => {
+      const preparedTracks = [];
+
+      for (let index = 0; index < receivedPack.tracks.length; index += 1) {
+        const track = receivedPack.tracks[index];
         const trackCoverFile = fileByField.get(`trackCover_${index}`);
         const trackAudioFile = fileByField.get(`trackAudio_${index}`);
+        const preview = await analyzeAudioPreview(trackAudioFile.path);
 
-         return {
-           ...track,
-           coverPack: trackCoverFile.filename,
-           audioName: trackAudioFile.filename,
-           audioVersion: 1
-         };
-      });
+        preparedTracks.push({
+          ...track,
+          coverPack: trackCoverFile.filename,
+          audioName: trackAudioFile.filename,
+          audioVersion: 1,
+          ...preview
+        });
+      }
+
+      receivedPack.tracks = preparedTracks;
 
       const newPack = {
         ...receivedPack,
@@ -4438,22 +4517,34 @@ app.post("/api/free-download-access", (req, res) => {
       });
     }
 
+    let acquisitionAdded = false;
+
     if (trackId) {
       account.downloadedTracks = Array.isArray(account.downloadedTracks)
         ? account.downloadedTracks
         : [];
 
-      if (!account.downloadedTracks.includes(trackId)) {
+      if (!account.downloadedTracks.some((id) => String(id) === String(trackId))) {
         account.downloadedTracks.push(trackId);
+        acquisitionAdded = true;
       }
     } else {
       account.downloadedPacks = Array.isArray(account.downloadedPacks)
         ? account.downloadedPacks
         : [];
 
-      if (!account.downloadedPacks.includes(packId)) {
+      if (!account.downloadedPacks.some((id) => String(id) === String(packId))) {
         account.downloadedPacks.push(packId);
+        acquisitionAdded = true;
       }
+    }
+
+    if (acquisitionAdded) {
+      appendAcquisitionHistory(account, {
+        packId,
+        trackId: trackId || null,
+        source: "pre_v1_free"
+      });
     }
 
     account.updatedAt = new Date().toISOString();
@@ -4500,6 +4591,8 @@ async function fulfillPaidStripeCheckout(session) {
     throw new Error("Compte acheteur introuvable.");
   }
 
+  let acquisitionAdded = false;
+
   if (purchaseType === "track") {
     if (!trackId) throw new Error("Track Stripe manquante.");
     account.downloadedTracks = Array.isArray(account.downloadedTracks)
@@ -4508,6 +4601,7 @@ async function fulfillPaidStripeCheckout(session) {
 
     if (!account.downloadedTracks.some((id) => String(id) === trackId)) {
       account.downloadedTracks.push(trackId);
+      acquisitionAdded = true;
     }
   } else {
     account.downloadedPacks = Array.isArray(account.downloadedPacks)
@@ -4516,7 +4610,16 @@ async function fulfillPaidStripeCheckout(session) {
 
     if (!account.downloadedPacks.some((id) => String(id) === packId)) {
       account.downloadedPacks.push(packId);
+      acquisitionAdded = true;
     }
+  }
+
+  if (acquisitionAdded) {
+    appendAcquisitionHistory(account, {
+      packId,
+      trackId: trackId || null,
+      source: "stripe_paid"
+    });
   }
 
   account.lastStripePurchase = {

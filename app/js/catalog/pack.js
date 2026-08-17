@@ -33,6 +33,70 @@ let selectedPackId = null;
 let selectedTrackId = null;
 let selectedPurchaseType = null;
 
+/*
+  Le titre principal du pack garde sa taille CSS normale tant qu'elle tient.
+  Si le titre devient long, Sonara réduit automatiquement la police jusqu'à
+  un seuil lisible. Contrairement aux cartes du catalogue, le titre complet
+  reste toujours visible sur la page Pack : aucune ellipse ici.
+*/
+let packTitleFitFrame = 0;
+
+function fitPackPageTitle() {
+  const titleElement = document.querySelector("body.pack-page .pack-info > .title");
+  if (!(titleElement instanceof HTMLElement)) return;
+
+  titleElement.style.removeProperty("font-size");
+
+  const baseStyle = window.getComputedStyle(titleElement);
+  const baseSize = Number.parseFloat(baseStyle.fontSize);
+
+  if (!Number.isFinite(baseSize) || baseSize <= 0 || titleElement.clientWidth <= 0) {
+    return;
+  }
+
+  const isMobile = window.innerWidth < 900;
+  const targetLines = isMobile ? 3 : 2;
+  const minimumSize = Math.max(isMobile ? 22 : 24, baseSize * 0.58);
+
+  const lineCount = () => {
+    const style = window.getComputedStyle(titleElement);
+    const lineHeight = Number.parseFloat(style.lineHeight) ||
+      (Number.parseFloat(style.fontSize) * 1.05);
+    return lineHeight > 0 ? titleElement.scrollHeight / lineHeight : 1;
+  };
+
+  if (lineCount() <= targetLines + 0.05) {
+    return;
+  }
+
+  let low = minimumSize;
+  let high = baseSize;
+
+  for (let index = 0; index < 8; index += 1) {
+    const candidate = (low + high) / 2;
+    titleElement.style.setProperty("font-size", `${candidate}px`, "important");
+
+    if (lineCount() <= targetLines + 0.05) {
+      low = candidate;
+    } else {
+      high = candidate;
+    }
+  }
+
+  titleElement.style.setProperty("font-size", `${low.toFixed(2)}px`, "important");
+}
+
+function schedulePackPageTitleFit() {
+  window.cancelAnimationFrame(packTitleFitFrame);
+  packTitleFitFrame = window.requestAnimationFrame(fitPackPageTitle);
+}
+
+window.addEventListener("resize", schedulePackPageTitleFit, { passive: true });
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(schedulePackPageTitleFit).catch(() => {});
+}
+
 const PACK_LICENSE_PERMISSION_LABELS = {
   personalProjects: "Projets personnels",
   commercialProjects: "Projets commerciaux",
@@ -507,6 +571,605 @@ const packList = document.querySelector(".pack-list");
 const btnAccueil = document.querySelector('.accueil-btn');
 const pageName = document.querySelector('.page');
 
+
+const PACK_PREVIEW_DURATION = 30;
+let packPreviewAnalysisPromise = null;
+let packPreviewAudio = null;
+let packPreviewState = null;
+
+function packTrackPreviewReady(track = {}) {
+  return Number.isFinite(Number(track.previewStart)) &&
+    Number(track.previewAnalysisVersion || 0) >= 1;
+}
+
+function preparePackPreviewIntelligence() {
+  if (!packData || !Array.isArray(packData.tracks)) {
+    return Promise.resolve();
+  }
+
+  if (packData.tracks.every(packTrackPreviewReady)) {
+    return Promise.resolve();
+  }
+
+  if (packPreviewAnalysisPromise) return packPreviewAnalysisPromise;
+
+  packPreviewAnalysisPromise = fetch(
+    `${API_URL}/api/packs/${encodeURIComponent(packData.id)}/preview-analysis`,
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: { Accept: "application/json" }
+    }
+  )
+    .then(async (response) => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || "Analyse preview indisponible.");
+      }
+
+      const previewByTrack = new Map(
+        (Array.isArray(data.tracks) ? data.tracks : [])
+          .map((track) => [String(track.id), track])
+      );
+
+      packData.tracks.forEach((track) => {
+        const preview = previewByTrack.get(String(track.id));
+        if (!preview) return;
+        track.previewStart = Number(preview.previewStart || 0);
+        track.previewDuration = Number(preview.previewDuration || PACK_PREVIEW_DURATION);
+        track.previewAnalysisVersion = Number(preview.previewAnalysisVersion || 0);
+      });
+    })
+    .catch((error) => {
+      console.warn("Sélection intelligente du preview indisponible, fallback conservé :", error);
+    })
+    .finally(() => {
+      packPreviewAnalysisPromise = null;
+    });
+
+  return packPreviewAnalysisPromise;
+}
+
+function formatPackPreviewTime(value) {
+  const seconds = Math.max(0, Math.floor(Number(value) || 0));
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function fallbackPackPreviewStart(track, duration) {
+  const stored = Number(track?.previewStart);
+  if (Number.isFinite(stored) && stored >= 0) {
+    return Math.min(stored, Math.max(0, duration - 1));
+  }
+
+  if (!Number.isFinite(duration) || duration <= PACK_PREVIEW_DURATION) return 0;
+
+  return Math.min(
+    Math.max(0, duration * 0.32),
+    Math.max(0, duration - PACK_PREVIEW_DURATION)
+  );
+}
+
+function ensurePackPreviewPlayerMarkup() {
+  document.querySelector(".pack-preview-player-root")?.remove();
+
+  const root = document.createElement("div");
+  root.className = "pack-preview-player-root";
+  root.innerHTML = `
+    <div class="mini-player-mobile" aria-label="Lecteur preview Sonara">
+      <img class="mini-player-cover" src="" alt="">
+
+      <div class="mini-player-info">
+        <h3 class="mini-player-title"></h3>
+        <p class="mini-player-artist"></p>
+
+        <div class="mini-player-progress" aria-hidden="true">
+          <div class="mini-player-progress-fill"></div>
+        </div>
+      </div>
+
+      <button class="mini-player-btn" type="button" aria-label="Lecture ou pause">▶</button>
+    </div>
+
+    <div class="grand-player" aria-label="Grand lecteur preview Sonara">
+      <button class="grand-player-back" type="button" aria-label="Réduire le lecteur">⌄</button>
+
+      <div class="grand-player-shell">
+        <img class="grand-player-cover" src="" alt="">
+
+        <div class="position">
+          <div class="player-progress-content">
+            <div class="player-time-row">
+              <span class="current-time">0:00</span>
+              <span class="total-time">0:30</span>
+            </div>
+
+            <div class="player-progress-bar" role="slider" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0" tabindex="0">
+              <div class="player-progress-fill"></div>
+              <div class="player-progress-thumb"></div>
+            </div>
+          </div>
+
+          <div class="grand-player-controls">
+            <button class="back" type="button" aria-label="Track précédente">
+              <svg class="grand-player-icon" viewBox="0 0 100 100" aria-hidden="true">
+                <rect x="24" y="25" width="8" height="50" rx="2"></rect>
+                <polygon points="72,25 38,50 72,75"></polygon>
+              </svg>
+            </button>
+
+            <button class="grand-player-play" type="button" aria-label="Lecture ou pause">
+              <svg class="grand-player-icon grand-player-play-icon" viewBox="0 0 100 100" aria-hidden="true">
+                <polygon points="38,25 38,75 76,50"></polygon>
+              </svg>
+            </button>
+
+            <button class="grand-player-next" type="button" aria-label="Track suivante">
+              <svg class="grand-player-icon" viewBox="0 0 100 100" aria-hidden="true">
+                <polygon points="28,25 62,50 28,75"></polygon>
+                <rect x="68" y="25" width="8" height="50" rx="2"></rect>
+              </svg>
+            </button>
+          </div>
+
+          <div class="grand-player-info">
+            <h3 class="grand-player-title"></h3>
+            <p class="grand-player-artist"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(root);
+  return root;
+}
+
+function alignPackMiniPlayerToContent() {
+  const miniPlayer = document.querySelector(
+    "body.pack-page .pack-preview-player-root .mini-player-mobile"
+  );
+
+  if (!miniPlayer) return;
+
+  if (!window.matchMedia("(min-width: 900px)").matches) {
+    miniPlayer.style.removeProperty("left");
+    miniPlayer.style.removeProperty("right");
+    miniPlayer.style.removeProperty("width");
+    return;
+  }
+
+  const packContent = document.querySelector("body.pack-page .pack-content");
+  if (!packContent) return;
+
+  const rect = packContent.getBoundingClientRect();
+  miniPlayer.style.left = `${Math.round(rect.left)}px`;
+  miniPlayer.style.right = "auto";
+  miniPlayer.style.width = `${Math.round(rect.width)}px`;
+}
+
+if (!window.__sonaraPackPreviewPlayerAlignBound) {
+  window.__sonaraPackPreviewPlayerAlignBound = true;
+  window.addEventListener("resize", alignPackMiniPlayerToContent, { passive: true });
+}
+
+function setupPackPreviewPlayer() {
+  const tracks = Array.isArray(packData?.tracks) ? packData.tracks : [];
+  if (!tracks.length) return;
+
+  if (packPreviewAudio) {
+    packPreviewAudio.pause();
+    packPreviewAudio.removeAttribute("src");
+    packPreviewAudio.load();
+  }
+
+  const root = ensurePackPreviewPlayerMarkup();
+  const audio = new Audio();
+  audio.preload = "metadata";
+  packPreviewAudio = audio;
+  packPreviewState = null;
+
+  const miniPlayer = root.querySelector(".mini-player-mobile");
+  const miniCover = root.querySelector(".mini-player-cover");
+  const miniTitle = root.querySelector(".mini-player-title");
+  const miniArtist = root.querySelector(".mini-player-artist");
+  const miniButton = root.querySelector(".mini-player-btn");
+  const miniProgressFill = root.querySelector(".mini-player-progress-fill");
+
+  const grandPlayer = root.querySelector(".grand-player");
+  const grandBack = root.querySelector(".grand-player-back");
+  const grandCover = root.querySelector(".grand-player-cover");
+  const grandTitle = root.querySelector(".grand-player-title");
+  const grandArtist = root.querySelector(".grand-player-artist");
+  const grandPlay = root.querySelector(".grand-player-play");
+  const grandPrevious = root.querySelector(".back");
+  const grandNext = root.querySelector(".grand-player-next");
+  const grandProgressBar = root.querySelector(".player-progress-bar");
+  const grandProgressFill = root.querySelector(".player-progress-fill");
+  const grandProgressThumb = root.querySelector(".player-progress-thumb");
+  const grandCurrent = root.querySelector(".current-time");
+  const grandTotal = root.querySelector(".total-time");
+  const heroPlayButton = document.querySelector("body.pack-page .playerBtnMob");
+
+  let switchingTrack = false;
+  let draggingProgress = false;
+
+  const currentTrack = () => Number.isInteger(packPreviewState?.trackIndex)
+    ? tracks[packPreviewState.trackIndex]
+    : null;
+
+  function setGrandPlayIcon(isPlaying) {
+    grandPlay.innerHTML = isPlaying
+      ? `<svg class="grand-player-icon" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="32" y="25" width="12" height="50" rx="2"></rect>
+          <rect x="56" y="25" width="12" height="50" rx="2"></rect>
+        </svg>`
+      : `<svg class="grand-player-icon grand-player-play-icon" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="38,25 38,75 76,50"></polygon>
+        </svg>`;
+  }
+
+  function syncPlayButtons() {
+    const playing = Boolean(packPreviewState) && !audio.paused;
+    miniButton.textContent = playing ? "❚❚" : "▶";
+    setGrandPlayIcon(playing);
+
+    if (heroPlayButton) {
+      const firstTrackActive = packPreviewState?.trackIndex === 0;
+      heroPlayButton.classList.toggle("pause", firstTrackActive && playing);
+      heroPlayButton.classList.toggle("play", !(firstTrackActive && playing));
+    }
+  }
+
+  function syncRows() {
+    const activeTrack = currentTrack();
+    const activeId = String(activeTrack?.id || "");
+    const playing = Boolean(activeTrack) && !audio.paused;
+    const remaining = packPreviewState
+      ? Math.max(0, Math.ceil(packPreviewState.end - audio.currentTime))
+      : PACK_PREVIEW_DURATION;
+
+    document.querySelectorAll("body.pack-page [data-track-id]").forEach((row) => {
+      const isActive = String(row.dataset.trackId || "") === activeId;
+      const isPlaying = isActive && playing;
+
+      row.classList.toggle("mobile-playing", isPlaying);
+
+      const playButton = row.querySelector(".track-btn-play");
+      if (playButton) {
+        playButton.classList.toggle("active", isActive);
+        playButton.classList.toggle("pause", isPlaying);
+        playButton.classList.toggle("play", !isPlaying);
+        if (isActive) playButton.style.opacity = "1";
+        else playButton.style.removeProperty("opacity");
+      }
+
+      const timer = row.querySelector(".track-preview-time, .mobile-preview-time");
+      if (timer) {
+        timer.textContent = String(Math.min(PACK_PREVIEW_DURATION, remaining));
+        if (isPlaying) timer.style.display = "flex";
+        else timer.style.removeProperty("display");
+      }
+    });
+  }
+
+  function updatePlayerIdentity(track) {
+    const title = track?.title || "Track Sonara";
+    const artist = track?.artist || packData?.artistProfile?.name || packData?.artist || "Artiste Sonara";
+    const cover = getFilePath(track?.coverPack || packData?.coverPack);
+
+    miniCover.src = cover;
+    miniTitle.textContent = title;
+    miniArtist.textContent = artist;
+    grandCover.src = cover;
+    grandTitle.textContent = title;
+    grandArtist.textContent = artist;
+    miniPlayer.classList.add("active");
+  }
+
+  function previewWindowDuration() {
+    if (!packPreviewState) return PACK_PREVIEW_DURATION;
+    return Math.max(0.1, packPreviewState.end - packPreviewState.start);
+  }
+
+  function syncProgress() {
+    if (!packPreviewState) return;
+
+    const duration = previewWindowDuration();
+    const elapsed = Math.max(
+      0,
+      Math.min(duration, audio.currentTime - packPreviewState.start)
+    );
+    const ratio = Math.min(1, elapsed / duration);
+
+    miniProgressFill.style.width = `${ratio * 100}%`;
+    grandProgressFill.style.width = `${ratio * 100}%`;
+    grandProgressThumb.style.left = `${ratio * 100}%`;
+    grandProgressBar.setAttribute("aria-valuemax", String(Math.round(duration)));
+    grandProgressBar.setAttribute("aria-valuenow", String(Math.round(elapsed)));
+    grandCurrent.textContent = formatPackPreviewTime(elapsed);
+    grandTotal.textContent = formatPackPreviewTime(duration);
+    syncRows();
+  }
+
+  function waitForMetadata() {
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const onLoaded = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error("Audio preview indisponible."));
+      };
+      const cleanup = () => {
+        audio.removeEventListener("loadedmetadata", onLoaded);
+        audio.removeEventListener("error", onError);
+      };
+
+      audio.addEventListener("loadedmetadata", onLoaded, { once: true });
+      audio.addEventListener("error", onError, { once: true });
+    });
+  }
+
+  async function selectTrack(index, { autoplay = true } = {}) {
+    const track = tracks[index];
+    if (!track) return;
+
+    await Promise.race([
+      preparePackPreviewIntelligence(),
+      new Promise((resolve) => window.setTimeout(resolve, 2200))
+    ]);
+
+    const source = getFilePath(track.audioName || track.audio);
+    if (!source) return;
+
+    let absoluteSource = source;
+    try {
+      absoluteSource = new URL(source, window.location.href).href;
+    } catch {}
+
+    if (audio.src !== absoluteSource) {
+      audio.pause();
+      audio.src = source;
+      audio.load();
+
+      try {
+        await waitForMetadata();
+      } catch (error) {
+        showPopup({
+          type: "error",
+          title: "Preview indisponible",
+          message: error.message
+        });
+        return;
+      }
+    }
+
+    const duration = Number(audio.duration || track.duration || 0);
+    const start = fallbackPackPreviewStart(track, duration);
+    const requestedDuration = Math.min(
+      PACK_PREVIEW_DURATION,
+      Math.max(1, Number(track.previewDuration || PACK_PREVIEW_DURATION))
+    );
+    const end = duration > 0
+      ? Math.min(duration, start + requestedDuration)
+      : start + requestedDuration;
+
+    packPreviewState = {
+      trackIndex: index,
+      start,
+      end
+    };
+
+    updatePlayerIdentity(track);
+    audio.currentTime = start;
+    syncProgress();
+
+    if (autoplay) {
+      try {
+        await audio.play();
+      } catch (error) {
+        console.warn("Lecture preview bloquée :", error);
+      }
+    }
+
+    syncPlayButtons();
+    syncRows();
+  }
+
+  function togglePlayback() {
+    if (!packPreviewState) {
+      selectTrack(0, { autoplay: true });
+      return;
+    }
+
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+
+    if (audio.currentTime >= packPreviewState.end - 0.05) {
+      audio.currentTime = packPreviewState.start;
+    }
+
+    audio.play().catch(() => {});
+  }
+
+  async function finishCurrentPreview() {
+    if (!packPreviewState || switchingTrack) return;
+    switchingTrack = true;
+
+    const currentIndex = packPreviewState.trackIndex;
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex < tracks.length) {
+      await selectTrack(nextIndex, { autoplay: true });
+    } else {
+      audio.pause();
+      audio.currentTime = packPreviewState.end;
+      syncProgress();
+      syncPlayButtons();
+      syncRows();
+    }
+
+    switchingTrack = false;
+  }
+
+  function seekPreviewFromPointer(event) {
+    if (!packPreviewState) return;
+
+    const rect = grandProgressBar.getBoundingClientRect();
+    if (!rect.width) return;
+
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const duration = previewWindowDuration();
+    audio.currentTime = packPreviewState.start + ratio * duration;
+    syncProgress();
+  }
+
+  audio.addEventListener("timeupdate", () => {
+    syncProgress();
+    if (packPreviewState && audio.currentTime >= packPreviewState.end - 0.04) {
+      finishCurrentPreview();
+    }
+  });
+  audio.addEventListener("ended", finishCurrentPreview);
+  audio.addEventListener("play", () => {
+    syncPlayButtons();
+    syncRows();
+  });
+  audio.addEventListener("pause", () => {
+    syncPlayButtons();
+    syncRows();
+  });
+
+  miniButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    togglePlayback();
+  });
+
+  miniPlayer.addEventListener("click", () => {
+    if (!packPreviewState) return;
+    grandPlayer.classList.add("active");
+    syncProgress();
+  });
+
+  grandBack.addEventListener("click", () => {
+    grandPlayer.classList.remove("active");
+  });
+
+  grandPlay.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    togglePlayback();
+  });
+
+  grandPrevious.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!tracks.length) return;
+
+    const currentIndex = Number.isInteger(packPreviewState?.trackIndex)
+      ? packPreviewState.trackIndex
+      : 0;
+    const previousIndex = currentIndex - 1 >= 0
+      ? currentIndex - 1
+      : tracks.length - 1;
+    selectTrack(previousIndex, { autoplay: true });
+  });
+
+  grandNext.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!tracks.length) return;
+
+    const currentIndex = Number.isInteger(packPreviewState?.trackIndex)
+      ? packPreviewState.trackIndex
+      : -1;
+    const nextIndex = currentIndex + 1 < tracks.length
+      ? currentIndex + 1
+      : 0;
+    selectTrack(nextIndex, { autoplay: true });
+  });
+
+  grandProgressBar.addEventListener("pointerdown", (event) => {
+    if (!packPreviewState) return;
+    draggingProgress = true;
+    grandProgressBar.setPointerCapture?.(event.pointerId);
+    seekPreviewFromPointer(event);
+  });
+
+  grandProgressBar.addEventListener("pointermove", (event) => {
+    if (!draggingProgress) return;
+    seekPreviewFromPointer(event);
+  });
+
+  const stopDragging = (event) => {
+    draggingProgress = false;
+    try {
+      grandProgressBar.releasePointerCapture?.(event.pointerId);
+    } catch {}
+  };
+
+  grandProgressBar.addEventListener("pointerup", stopDragging);
+  grandProgressBar.addEventListener("pointercancel", stopDragging);
+
+  grandProgressBar.addEventListener("keydown", (event) => {
+    if (!packPreviewState || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const duration = previewWindowDuration();
+    const elapsed = Math.max(0, audio.currentTime - packPreviewState.start);
+    const nextElapsed = Math.max(0, Math.min(duration, elapsed + direction * 5));
+    audio.currentTime = packPreviewState.start + nextElapsed;
+    syncProgress();
+  });
+
+  document.querySelectorAll("body.pack-page .track-btn-play").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const row = button.closest("[data-track-id]");
+      const index = tracks.findIndex((track) => String(track.id) === String(row?.dataset.trackId || ""));
+      if (index < 0) return;
+
+      if (packPreviewState?.trackIndex === index) togglePlayback();
+      else selectTrack(index, { autoplay: true });
+    });
+  });
+
+  document.querySelectorAll("body.pack-page .track-row-mobile").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest(".track-price-mobile")) return;
+
+      const index = tracks.findIndex((track) => String(track.id) === String(row.dataset.trackId || ""));
+      if (index < 0) return;
+
+      if (packPreviewState?.trackIndex === index) togglePlayback();
+      else selectTrack(index, { autoplay: true });
+    });
+  });
+
+  heroPlayButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (packPreviewState?.trackIndex === 0) togglePlayback();
+    else selectTrack(0, { autoplay: true });
+  });
+
+  window.requestAnimationFrame(alignPackMiniPlayerToContent);
+  preparePackPreviewIntelligence();
+}
+
 function renderPack() {
 
   if (packData && packList) {
@@ -661,6 +1324,8 @@ src="${getFilePath(track.audioName || track.audio)}"
     </section>
     `;
 
+    schedulePackPageTitleFit();
+
     const retourBtn = document.querySelector('.retour');
 
     retourBtn.addEventListener('click', () => {
@@ -701,92 +1366,6 @@ src="${getFilePath(track.audioName || track.audio)}"
         });
     }
 
-    const trackRow = document.querySelectorAll('.track-row');
-    let currentMobileAudio = null;
-    let currentMobileRow = null;
-    let currentMobileTimer = null;
-    let mobilePreviewInterval = null;
-
-    const mobileTrackRows = document.querySelectorAll(".track-row-mobile");
-
-    mobileTrackRows.forEach((row) => {
-      const audio = row.querySelector(".mobile-track-audio");
-      const timer = row.querySelector(".mobile-preview-time");
-
-      row.addEventListener("click", () => {
-        // Si une autre track jouait déjà, on la reset
-        if (currentMobileAudio && currentMobileAudio !== audio) {
-          currentMobileAudio.pause();
-          currentMobileAudio.currentTime = 0;
-
-          if (currentMobileRow) {
-            currentMobileRow.classList.remove("mobile-playing");
-          }
-
-          if (currentMobileTimer) {
-            currentMobileTimer.style.display = "none";
-            currentMobileTimer.textContent = "30";
-          }
-
-          clearInterval(mobilePreviewInterval);
-        }
-
-        // Si on reclique sur la même track active : stop
-        if (currentMobileAudio === audio && !audio.paused) {
-          audio.pause();
-          audio.currentTime = 0;
-
-          row.classList.remove("mobile-playing");
-          timer.style.display = "none";
-          timer.textContent = "30";
-
-          clearInterval(mobilePreviewInterval);
-
-          currentMobileAudio = null;
-          currentMobileRow = null;
-          currentMobileTimer = null;
-
-          return;
-        }
-
-        // Play propre
-        audio.currentTime = 0;
-        audio.play();
-
-        currentMobileAudio = audio;
-        currentMobileRow = row;
-        currentMobileTimer = timer;
-
-        row.classList.add("mobile-playing");
-
-        let timeLeft = 30;
-        timer.textContent = timeLeft;
-        timer.style.display = "flex";
-
-        clearInterval(mobilePreviewInterval);
-
-        mobilePreviewInterval = setInterval(() => {
-          timeLeft--;
-          timer.textContent = timeLeft;
-
-          if (timeLeft <= 0) {
-            clearInterval(mobilePreviewInterval);
-
-            audio.pause();
-            audio.currentTime = 0;
-
-            row.classList.remove("mobile-playing");
-            timer.style.display = "none";
-            timer.textContent = "30";
-
-            currentMobileAudio = null;
-            currentMobileRow = null;
-            currentMobileTimer = null;
-          }
-        }, 1000);
-      });
-    });
-
     if (pageName) {
       pageName.textContent = "V0.9.3 - Sonara ";
     };
@@ -802,162 +1381,13 @@ src="${getFilePath(track.audioName || track.audio)}"
 
     lucide.createIcons();
 
+    setupPackPreviewPlayer();
+
     const btnAcheter = document.querySelectorAll('.btn-acheter, .btn-acheter-desktop');
-    const btnAcheterTrack = document.querySelectorAll('.track-price')
     const noticeOverlay = document.querySelector('.notice-overlay');
     const noticeClose = document.querySelector('.notice-close');
     const noticeRefuse = document.querySelector('.notice-refuse');
     const noticeAccept = document.querySelector('.notice-accept');
-
-    console.log(btnAcheter);
-    console.log(noticeOverlay);
-    console.log(noticeClose);
-    console.log(noticeRefuse);
-    console.log(noticeAccept);
-
-
-    let currentTrackAudio = null;
-    let currentTrackBtn = null;
-    let trackPreviewTimeout = null;
-    let previewInterval = null;
-
-    const trackButtons = document.querySelectorAll(".track-btn-play");
-
-    trackButtons.forEach((trackBtn) => {
-
-      const trackCard = trackBtn.closest(".track-card");
-      const trackAudio = trackCard.querySelector(".track-audio");
-      const timerElement = trackCard.querySelector(".track-preview-time");
-
-
-      trackBtn.addEventListener("click", () => {
-        playTrackPreview(trackAudio, trackBtn, timerElement);
-      });
-
-    });
-
-    function playTrackPreview(audio, trackBtn) {
-
-      const trackCard = trackBtn.closest(".track-card");
-      const timerElement = trackCard.querySelector(".track-preview-time");
-      const trackRowActive = trackBtn.closest(".track-row");
-      // RECILC = STOP
-      if (currentTrackAudio === audio && !audio.paused) {
-
-        audio.pause();
-        audio.currentTime = 0;
-
-        trackBtn.classList.remove("active");
-        trackBtn.classList.remove("pause");
-        trackBtn.classList.add("play");
-
-
-        clearTimeout(trackPreviewTimeout);
-        clearInterval(previewInterval);
-
-
-        trackBtn.style.opacity = "1";
-        trackRowActive.style.background = " rgba(90, 71, 71, 0.197)"
-        timerElement.style.display = "none";
-
-        timerElement.textContent = "30";
-
-
-
-
-        return;
-      }
-
-      // STOP ancien audio
-      if (currentTrackAudio && currentTrackAudio !== audio) {
-        currentTrackAudio.pause();
-        currentTrackAudio.currentTime = 0;
-
-        trackBtn.style.display = "0"
-      }
-
-      // RESET ancien bouton
-      if (currentTrackBtn && currentTrackBtn !== trackBtn) {
-        const oldTrackCard = currentTrackBtn.closest(".track-card");
-        const oldTrackRow = currentTrackBtn.closest(".track-row");
-        const oldTimerElement = oldTrackCard.querySelector(".track-preview-time");
-
-        currentTrackBtn.classList.remove("active");
-        currentTrackBtn.classList.remove("pause");
-        currentTrackBtn.classList.add("play");
-
-        currentTrackBtn.style.opacity = "0";
-
-        oldTimerElement.style.display = "none";
-        oldTimerElement.textContent = "30";
-
-        oldTrackCard.removeAttribute("style");
-        oldTrackRow.removeAttribute("style");
-      }
-
-      clearTimeout(trackPreviewTimeout);
-      clearInterval(previewInterval);
-
-      currentTrackAudio = audio;
-      currentTrackBtn = trackBtn;
-
-      trackBtn.classList.add("active");
-      trackBtn.classList.remove("play");
-      trackBtn.classList.add("pause");
-
-      audio.currentTime = 0;
-      audio.play();
-
-
-      // TIMER
-      let remainingTime = 30;
-
-      timerElement.textContent = "30";
-
-      trackBtn.style.opacity = "1";
-      trackRowActive.style.background = " rgba(90, 71, 71, 0.197)";
-      timerElement.style.display = "flex";
-
-      previewInterval = setInterval(() => {
-
-        remainingTime--;
-
-        timerElement.textContent = remainingTime;
-
-        if (remainingTime <= 0) {
-          clearInterval(previewInterval);
-        }
-        console.log(timerElement);
-      }, 1000);
-
-
-      trackPreviewTimeout = setTimeout(() => {
-
-        audio.pause();
-        audio.currentTime = 0;
-
-        trackBtn.classList.remove("active");
-        trackBtn.classList.remove("pause");
-        trackBtn.classList.add("play");
-
-
-        timerElement.textContent = "0";
-
-
-        trackBtn.style.opacity = "0";
-        trackRowActive.style.background = " rgba(90, 71, 71, 0.197)";
-        timerElement.style.display = "";
-
-        clearInterval(previewInterval);
-
-
-        currentTrackAudio = audio;
-        currentTrackBtn = trackBtn;
-
-      }, 30000);
-
-    }
-
 
     const zipTrackButtons = document.querySelectorAll(".track-price, .track-price-mobile");
 

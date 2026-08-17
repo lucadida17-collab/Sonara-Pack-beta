@@ -813,6 +813,12 @@ function renderCreatorManagement() {
         <small>Gérer ton image, ton nom et tes informations publiques</small>
       </button>
 
+      <button class="creator-action creator-statistics-btn">
+        <i data-lucide="chart-no-axes-combined"></i>
+        <span>Statistiques</span>
+        <small>Téléchargements, audience, ventes et performances de tes packs</small>
+      </button>
+
     </section>
   `;
 
@@ -831,6 +837,10 @@ function renderCreatorManagement() {
 
   document.querySelector(".artist-profile-btn").addEventListener("click", () => {
     window.location.href = "/app/pages/creator/management/profile-creator.html";
+  });
+
+  document.querySelector(".creator-statistics-btn").addEventListener("click", () => {
+    window.location.href = "/app/pages/creator/management/statistics.html";
   });
 
   document.querySelector(".creator-settings-management-btn").addEventListener("click", () => {

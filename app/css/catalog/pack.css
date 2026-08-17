@@ -2770,7 +2770,7 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
   body.pack-page .pack-content {
     position: relative;
     padding: 8px clamp(14px, 4vw, 22px)
-      calc(116px + env(safe-area-inset-bottom, 0px));
+      calc(164px + env(safe-area-inset-bottom, 0px));
     overflow-x: clip;
   }
 
@@ -3195,54 +3195,50 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
     box-shadow: none;
   }
 
-  /* Navigation basse : largeur et safe-area cohérentes sur iPhone/Android. */
+  /* Navigation basse mobile : même norme que Library. */
   body.pack-page .mobile-bottom-bar {
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 9999;
-    min-height: 66px;
     margin: 0;
-    padding: 8px 8px;
+    padding: 10px 8px;
     box-sizing: border-box;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    justify-content: space-around;
     align-items: center;
-    border: 1px solid rgba(120, 210, 255, .16);
-    border-radius: 23px;
-    background: rgba(6, 14, 32, .91);
-    box-shadow: 0 12px 34px rgba(0, 0, 0, .34);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(120, 210, 255, 0.18);
+    border-radius: 0;
+    background: rgba(6, 14, 32, 0.92);
+    box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 
   body.pack-page .nav-mobile-btn {
-    min-width: 0;
-    min-height: 50px;
-    padding: 5px 3px;
+    padding: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
     flex-direction: column;
-    gap: 3px;
-    border: 0;
-    border-radius: 15px;
+    align-items: center;
+    gap: 4px;
+    border: none;
     background: transparent;
-    color: rgba(255, 255, 255, .62);
-    font-size: .68rem;
-    font-weight: 720;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 11px;
+    font-weight: 700;
     cursor: pointer;
   }
 
+  body.pack-page .nav-mobile-btn i,
   body.pack-page .nav-mobile-btn svg {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
   }
 
   body.pack-page .nav-mobile-btn.active {
-    color: #5de7ff;
-    background: linear-gradient(135deg, rgba(20, 178, 255, .12), rgba(73, 90, 255, .06));
+    color: #00d9ff;
+    background: transparent;
   }
 
   /* Loader pack : mêmes proportions sur petits écrans, sans sortir du viewport. */
@@ -3281,6 +3277,10 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
     padding-bottom: 20px;
     overscroll-behavior: contain;
   }
+
+  body.pack-page .pack-preview-player-root .mini-player-mobile {
+    margin-left: 3px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -3310,6 +3310,289 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
   }
 }
 
+
+/* ==========================================================
+   PREVIEW PLAYER — même logique visuelle que Library.
+   Le lecteur est hors du layout Pack : mini player fixe en bas,
+   grand player plein écran. Le Pack lui-même reste inchangé.
+========================================================= */
+body.pack-page .pack-preview-player-root .mini-player-mobile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 70px;
+  width: 96.8%;
+  height: 66px;
+  margin-top: 0;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  background: rgba(3, 22, 32, 0.95);
+  border: 1.5px solid rgba(199, 145, 32, 0.95);
+  border-radius: 0;
+  box-shadow:
+    0 0 22px rgba(199, 145, 32, 0.35),
+    inset 0 0 18px rgba(0, 217, 255, 0.05);
+  z-index: 9999;
+  transform: translateY(130px);
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  box-sizing: border-box;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-mobile.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-cover {
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-title {
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-artist {
+  margin: 4px 0 10px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-progress {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-progress-fill {
+  width: 0;
+  height: 100%;
+  background: #d39b2d;
+  border-radius: 10px;
+}
+
+body.pack-page .pack-preview-player-root .mini-player-btn {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(199, 145, 32, 0.95);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  box-shadow: 0 0 22px rgba(199, 145, 32, 0.75);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+body.pack-page .pack-preview-player-root .grand-player {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  text-align: center;
+  background: #061f5f;
+  transform: translateY(100%);
+  transition: transform 2s ease;
+}
+
+body.pack-page .pack-preview-player-root .grand-player.active {
+  transform: translateY(0);
+}
+
+body.pack-page .pack-preview-player-root .grand-player-back {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 52px;
+  line-height: 42px;
+  cursor: pointer;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+body.pack-page .pack-preview-player-root .position {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+body.pack-page .pack-preview-player-root .player-progress-content {
+  width: 82%;
+  max-width: 620px;
+  margin: 70px auto 28px;
+}
+
+body.pack-page .pack-preview-player-root .player-time-row {
+  width: 98%;
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+}
+
+body.pack-page .pack-preview-player-root .total-time,
+body.pack-page .pack-preview-player-root .current-time {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+}
+
+body.pack-page .pack-preview-player-root .player-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  touch-action: none;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+body.pack-page .pack-preview-player-root .player-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  background: #fff;
+  border-radius: 999px;
+}
+
+body.pack-page .pack-preview-player-root .player-progress-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+body.pack-page .pack-preview-player-root .grand-player-cover {
+  width: 78%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  margin-top: 50px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-controls {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+body.pack-page .pack-preview-player-root .back,
+body.pack-page .pack-preview-player-root .grand-player-play,
+body.pack-page .pack-preview-player-root .grand-player-next {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+body.pack-page .pack-preview-player-root .back,
+body.pack-page .pack-preview-player-root .grand-player-next {
+  color: #fff;
+  font-size: 32px;
+  font-weight: 900;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-icon {
+  width: 42px;
+  height: 42px;
+  fill: #fff;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-play {
+  width: 72px;
+  height: 72px;
+  border: 2px solid rgba(199, 145, 32, 0.95);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+body.pack-page .pack-preview-player-root .grand-player-play-icon {
+  width: 54px;
+  height: 54px;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-title {
+  margin: 18px 0 0;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 0 2px #fff;
+}
+
+body.pack-page .pack-preview-player-root .grand-player-artist {
+  margin: 2px 0 0;
+  color: #fff;
+  opacity: 0.75;
+  font-size: 14px;
+}
+
 /* ==========================================================
    PRE-V1 — PACK DESKTOP POLISH
    Le mobile validé reste isolé sous 900px.
@@ -3317,6 +3600,40 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
    cohérente avec le shell Sonara, sans changer le DOM métier.
 ========================================================== */
 @media (min-width: 900px) {
+  /* Preview player desktop : mêmes proportions / comportement que Library. */
+  body.pack-page .pack-preview-player-root .mini-player-mobile {
+    left: 12px;
+    right: auto;
+    bottom: 34px;
+    width: 87%;
+    height: 70px;
+    border-radius: 18px;
+    justify-content: flex-start;
+    text-align: left;
+    z-index: 2600;
+  }
+
+  body.pack-page .pack-preview-player-root .grand-player {
+    flex-direction: column;
+  }
+
+  body.pack-page .pack-preview-player-root .grand-player-shell {
+    flex-direction: row;
+  }
+
+  body.pack-page .pack-preview-player-root .position {
+    width: 50%;
+    flex-direction: column;
+  }
+
+  body.pack-page .pack-preview-player-root .grand-player-cover {
+    width: 110%;
+    max-width: 490px;
+    margin-top: 0;
+    margin-left: 30px;
+  }
+
+
   body.pack-page .pack-content {
     position: relative;
     padding: 0;
@@ -3817,7 +4134,7 @@ body.pack-page .pack-artist-reward-badge{width:19px;height:19px;object-fit:conta
   }
 
   body.pack-page .title {
-    font-size: clamp(2rem, 3.7vw, 2.75rem);
+    font-size: clamp(2.05rem, 4vw, 2.9rem);
   }
 
   body.pack-page .track-list,

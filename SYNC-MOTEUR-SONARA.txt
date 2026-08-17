@@ -1,0 +1,13 @@
+SONARA SYNC - MOTEUR NATIF SERVEUR
+
+- Plus aucun Mediabunny/CDN dans l'export.
+- La vidéo est envoyée au backend Sonara avec les sons et réglages Sync.
+- Le backend mélange uniquement l'audio avec FFmpeg.
+- La piste vidéo est copiée avec -c:v copy : pas de réencodage image.
+- Le résultat est renvoyé en MP4 via une URL temporaire de téléchargement.
+- Le fichier final n'est pas reconstruit frame par frame dans le navigateur.
+
+Après remplacement des fichiers :
+  npm install
+
+Puis redémarrer le serveur local / Render.

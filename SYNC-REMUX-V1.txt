@@ -1,0 +1,10 @@
+SONARA SYNC — REMUX V1
+
+- Supprime l'ancien export Canvas + MediaRecorder.
+- Copie la piste vidéo encodée sans réencodage quand le codec est compatible MP4.
+- Ne change ni la résolution, ni le FPS, ni le bitrate vidéo.
+- Reconstruit uniquement la piste audio (audio original + sons Sonara + trims + positions + volumes).
+- Écrit progressivement sur disque / stockage navigateur pour éviter de garder le film final en RAM.
+- Produit un MP4 final seekable.
+- Les codecs vidéo non compatibles avec un remux MP4 sont refusés au lieu de dégrader l'image silencieusement.
+- Moteur média frontend : Mediabunny 1.54.0 chargé via jsDelivr (MPL-2.0).

@@ -581,11 +581,14 @@ async function initializeMyPacks() {
     currentPacks = data.packs || [];
     selected.clear();
 
+    const commercialActive = data.commercialState?.paymentsActive === true;
+
     statsZone.innerHTML = `
       <article><span>Packs créés</span><strong>${data.stats?.packCount || 0}</strong></article>
-      <article><span>Vente</span><strong>${data.stats?.stripeStatsAvailable === false ? "—" : (data.stats?.salesCount || 0)}</strong></article>
-      <article><span>Acheteurs</span><strong>${data.stats?.stripeStatsAvailable === false ? "—" : (data.stats?.buyerCount || 0)}</strong></article>
-      <article><span>Revenus Stripe</span><strong>${data.stats?.stripeStatsAvailable === false ? "—" : formatMyPackMoney(data.stats?.revenue || 0)}</strong><small>${data.stats?.stripeStatsAvailable === false ? "Synchronisation Stripe indisponible" : "Calculés depuis les paiements Stripe confirmés"}</small></article>`;
+      <article><span>Téléchargements</span><strong>${data.stats?.downloadCount || 0}</strong><small>Packs + tracks acquis</small></article>
+      <article><span>Utilisateurs</span><strong>${data.stats?.uniqueAudienceCount || 0}</strong><small>Audience unique générée</small></article>
+      <article><span>Ventes</span><strong>${commercialActive ? (data.stats?.salesCount || 0) : "V1"}</strong><small>${commercialActive ? "Paiements confirmés" : "Commercial Mode inactif"}</small></article>
+      <article><span>Revenus Stripe</span><strong>${commercialActive ? (data.stats?.stripeStatsAvailable === false ? "—" : formatMyPackMoney(data.stats?.revenue || 0)) : "V1"}</strong><small>${commercialActive ? (data.stats?.stripeStatsAvailable === false ? "Synchronisation Stripe indisponible" : "Calculés depuis les paiements Stripe confirmés") : "Prêt pour le lancement commercial"}</small></article>`;
 
     if (!currentPacks.length) {
       list.innerHTML = `
@@ -630,9 +633,10 @@ async function initializeMyPacks() {
             </div>
             <div class="my-pack-meta">
               <span><i data-lucide="music-2"></i>${pack.trackCount || pack.tracks?.length || 0} tracks</span>
-              <span><i data-lucide="shopping-bag"></i>${pack.salesCount || 0} ventes</span>
-              <span><i data-lucide="users"></i>${pack.buyerCount || 0} acheteurs</span>
-              <span><i data-lucide="euro"></i>${formatMyPackMoney(pack.revenue || 0)}</span>
+              <span><i data-lucide="download"></i>${pack.downloadCount || 0} téléchargements</span>
+              <span><i data-lucide="users"></i>${pack.uniqueDownloaders || 0} utilisateurs</span>
+              <span><i data-lucide="shopping-bag"></i>${commercialActive ? (pack.salesCount || 0) : "V1"} ventes</span>
+              <span><i data-lucide="euro"></i>${commercialActive ? formatMyPackMoney(pack.revenue || 0) : "V1"}</span>
             </div>
             ${pack.rejectionReason
               ? `<p class="my-pack-rejection"><strong>Motif :</strong> ${escapeMyPackHtml(pack.rejectionReason)}</p>`

@@ -1,0 +1,6 @@
+SONARA SYNC — FIX ENGINE + MOBILE
+
+- Mediabunny: version CDN corrigée de 1.54.0 (inexistante) vers 1.51.0.
+- Le moteur global Mediabunny peut de nouveau être chargé avant montage.js.
+- Mobile < 900px: fond sombre + layout Sync explicites ajoutés.
+- Aucun changement serveur / Mongo / R2 / distribution.
