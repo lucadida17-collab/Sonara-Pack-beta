@@ -1,6 +1,6 @@
 /* ==========================================================
    SONARA PACK — DISTRIBUTION HOME
-   V2.0 : réputation / discipline / performance / découverte
+   V2.1 : format / récence / performance / découverte
 
    RÈGLES :
    - aucune donnée n'est persistée ici ;
@@ -22,7 +22,7 @@ function getDistributionCategories(mainMood) {
 }
 
 (function attachSonaraDistribution(globalScope) {
-  const DISTRIBUTION_VERSION = "2.0.0";
+  const DISTRIBUTION_VERSION = "2.1.0";
   const DEFAULT_MAX_SECTION_ITEMS = 10;
 
   /*
@@ -32,12 +32,31 @@ function getDistributionCategories(mainMood) {
   */
   const DISTRIBUTION_CONFIG = Object.freeze({
     weights: Object.freeze({
-      reputation: 0.17,
-      consistency: 0.14,
-      performance: 0.27,
-      discovery: 0.18,
-      recency: 0.24,
+      /*
+        V2.1 : le pack lui-même passe devant le statut historique de l'artiste.
+        Récence + performance représentent 64 % du score : un nouveau pack
+        obtient sa vraie fenêtre de découverte, puis ses statistiques prennent
+        progressivement le relais.
+      */
+      reputation: 0.12,
+      consistency: 0.10,
+      performance: 0.34,
+      discovery: 0.14,
+      recency: 0.30,
       affinity: 0
+    }),
+    format: Object.freeze({
+      albumMinTracks: 2
+    }),
+    ordering: Object.freeze({
+      /*
+        Trois étages de récence garantissent qu'un pack fraîchement publié
+        ne soit pas enterré immédiatement par un ancien catalogue. À
+        l'intérieur d'un même étage, le score de distribution (donc les stats)
+        décide de l'ordre.
+      */
+      newestWindowDays: 14,
+      recentWindowDays: 45
     }),
     recency: Object.freeze({
       halfLifeDays: 45
@@ -314,6 +333,87 @@ function getDistributionCategories(mainMood) {
     const referenceDate = getPackReferenceDate(pack);
     if (!referenceDate) return Infinity;
     return Math.max(0, (safeNumber(now, Date.now()) - referenceDate) / 86400000);
+  }
+
+
+  function getPackTrackCount(pack = {}) {
+    if (Array.isArray(pack.tracks)) {
+      return pack.tracks.length;
+    }
+
+    const candidates = [
+      pack.trackCount,
+      pack.tracksCount,
+      pack.numberOfTracks
+    ];
+
+    for (const candidate of candidates) {
+      const value = Number(candidate);
+      if (Number.isFinite(value) && value >= 0) {
+        return Math.floor(value);
+      }
+    }
+
+    return 0;
+  }
+
+  function getPackFormat(pack = {}) {
+    const minimum = Math.max(2, safeNumber(DISTRIBUTION_CONFIG.format.albumMinTracks, 2));
+    return getPackTrackCount(pack) >= minimum ? "album" : "single";
+  }
+
+  function getRecencyBand(pack = {}, context = {}) {
+    const ageDays = getPackAgeDays(pack, context.now);
+    if (!Number.isFinite(ageDays)) return 0;
+
+    const newestWindow = Math.max(1, safeNumber(
+      DISTRIBUTION_CONFIG.ordering.newestWindowDays,
+      14
+    ));
+    const recentWindow = Math.max(newestWindow, safeNumber(
+      DISTRIBUTION_CONFIG.ordering.recentWindowDays,
+      45
+    ));
+
+    if (ageDays <= newestWindow) return 3;
+    if (ageDays <= recentWindow) return 2;
+    return 1;
+  }
+
+  function compareSectionPriority(a = {}, b = {}, context = {}) {
+    const aBand = getRecencyBand(a.pack || a, context);
+    const bBand = getRecencyBand(b.pack || b, context);
+
+    if (bBand !== aBand) {
+      return bBand - aBand;
+    }
+
+    const aScore = safeNumber(a.score?.total, 0);
+    const bScore = safeNumber(b.score?.total, 0);
+
+    if (bScore !== aScore) {
+      return bScore - aScore;
+    }
+
+    const aPerformance = safeNumber(a.score?.signals?.performance, 0);
+    const bPerformance = safeNumber(b.score?.signals?.performance, 0);
+
+    if (bPerformance !== aPerformance) {
+      return bPerformance - aPerformance;
+    }
+
+    return getPackReferenceDate(b.pack || b) - getPackReferenceDate(a.pack || a);
+  }
+
+  function prioritizeRecencyBands(items = [], context = {}) {
+    return items
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const bandA = getRecencyBand(a.item.pack || a.item, context);
+        const bandB = getRecencyBand(b.item.pack || b.item, context);
+        return (bandB - bandA) || (a.index - b.index);
+      })
+      .map((entry) => entry.item);
   }
 
   function getOptionalMetric(pack = {}, names = []) {
@@ -1575,12 +1675,16 @@ function getDistributionCategories(mainMood) {
       const minimumItems = packCount < 7 ? 2 : 3;
       if (allowed.length < minimumItems) continue;
 
-      const diversified = diversifyArtists(allowed, {
+      const prioritizedAllowed = [...allowed].sort(
+        (a, b) => compareSectionPriority(a, b, context)
+      );
+      const diversified = diversifyArtists(prioritizedAllowed, {
         repetitionPenalty: penalties.repetition,
         consecutivePenalty: penalties.consecutive
       });
+      const recencyPrioritized = prioritizeRecencyBands(diversified, context);
 
-      const items = diversified.slice(0, DEFAULT_MAX_SECTION_ITEMS);
+      const items = recencyPrioritized.slice(0, DEFAULT_MAX_SECTION_ITEMS);
       const uniqueArtists = new Set(items.map((item) => item.artistKey));
 
       if (
@@ -1663,22 +1767,28 @@ function getDistributionCategories(mainMood) {
     const penalties = resolveArtistPenalties(profile);
     const groupList = [...groups.values()]
       .map((group) => {
-        const diversified = diversifyArtists(group.items, {
+        const prioritized = [...group.items].sort(
+          (a, b) => compareSectionPriority(a, b, context)
+        );
+
+        const diversified = diversifyArtists(prioritized, {
           repetitionPenalty: penalties.repetition,
           consecutivePenalty: penalties.consecutive
         });
 
-        const averageScore = diversified.reduce(
+        const recencyPrioritized = prioritizeRecencyBands(diversified, context);
+
+        const averageScore = recencyPrioritized.reduce(
           (sum, item) => sum + safeNumber(item.score?.total, 0),
           0
         ) / Math.max(1, diversified.length);
 
         return {
           ...group,
-          items: diversified.slice(0, DEFAULT_MAX_SECTION_ITEMS),
+          items: recencyPrioritized.slice(0, DEFAULT_MAX_SECTION_ITEMS),
           score:
             averageScore +
-            Math.min(diversified.length, 8) * 2
+            Math.min(recencyPrioritized.length, 8) * 2
         };
       })
       .sort((a, b) => b.score - a.score);
@@ -1711,6 +1821,33 @@ function getDistributionCategories(mainMood) {
           items: group.items
         };
       });
+  }
+
+  function buildAlbumSection(rankedItems = [], context = {}) {
+    if (!rankedItems.length) return null;
+
+    const albumItems = rankedItems
+      .filter((item) => getPackFormat(item.pack) === "album")
+      .sort((a, b) => compareSectionPriority(a, b, context));
+
+    if (!albumItems.length) return null;
+
+    const profile = context.catalogueProfile || {};
+    const penalties = resolveArtistPenalties(profile);
+    const diversified = diversifyArtists(albumItems, {
+      repetitionPenalty: penalties.repetition,
+      consecutivePenalty: penalties.consecutive
+    });
+    const recencyPrioritized = prioritizeRecencyBands(diversified, context);
+
+    return {
+      id: "format:album",
+      kind: "album",
+      title: "Albums",
+      subtitle: "",
+      signature: [{ key: "album", display: "Albums", coverage: 1 }],
+      items: recencyPrioritized.slice(0, DEFAULT_MAX_SECTION_ITEMS)
+    };
   }
 
   function buildArtistSpotlightSection(rankedItems = [], context = {}) {
@@ -1865,13 +2002,14 @@ function getDistributionCategories(mainMood) {
       repetitionPenalty: penalties.repetition,
       consecutivePenalty: penalties.consecutive
     });
+    const recencyPrioritized = prioritizeRecencyBands(diversified, context);
 
     return {
       id: "discovery:alternate",
       kind: "exploration",
       title: "Un autre angle",
       subtitle: "",
-      items: diversified.slice(0, DEFAULT_MAX_SECTION_ITEMS)
+      items: recencyPrioritized.slice(0, DEFAULT_MAX_SECTION_ITEMS)
     };
   }
 
@@ -1892,7 +2030,10 @@ function getDistributionCategories(mainMood) {
           Object.entries(item.score?.weights || {}).map(
             ([key, value]) => [key, Number(safeNumber(value, 1).toFixed(3))]
           )
-        )
+        ),
+        format: getPackFormat(item.pack),
+        trackCount: getPackTrackCount(item.pack),
+        recencyBand: getRecencyBand(item.pack, context)
       }
     };
   }
@@ -1957,20 +2098,19 @@ function getDistributionCategories(mainMood) {
         artistKey: getArtistKey(pack),
         score: scorePack(pack, context)
       }))
-      .sort((a, b) => {
-        if (b.score.total !== a.score.total) {
-          return b.score.total - a.score.total;
-        }
-        return getPackReferenceDate(b.pack) - getPackReferenceDate(a.pack);
-      });
+      .sort((a, b) => compareSectionPriority(a, b, context));
 
     const diversifiedItems = diversifyArtists(scoredItems, {
       repetitionPenalty: artistPenalties.repetition,
       consecutivePenalty: artistPenalties.consecutive
     });
+    const recencyPrioritizedItems = prioritizeRecencyBands(
+      diversifiedItems,
+      context
+    );
 
     const rankedItems = ensureInitialDiscoveryExposure(
-      diversifiedItems,
+      recencyPrioritizedItems,
       context
     );
 
@@ -1997,6 +2137,12 @@ function getDistributionCategories(mainMood) {
 
     if (discoverySection) {
       sections.push(discoverySection);
+    }
+
+    const albumSection = buildAlbumSection(rankedItems, context);
+
+    if (albumSection) {
+      sections.push(albumSection);
     }
 
     const artistSpotlightSection =
@@ -2027,6 +2173,8 @@ function getDistributionCategories(mainMood) {
         : "new-user-adaptive",
       catalogue: {
         packCount: catalogueProfile.packCount,
+        albumCount: eligiblePacks.filter((pack) => getPackFormat(pack) === "album").length,
+        singleCount: eligiblePacks.filter((pack) => getPackFormat(pack) === "single").length,
         uniqueArtistCount: catalogueProfile.uniqueArtistCount,
         activityCoverage: Number(catalogueProfile.activityCoverage.toFixed(3)),
         recent30Ratio: Number(catalogueProfile.recent30Ratio.toFixed(3)),
@@ -2048,6 +2196,9 @@ function getDistributionCategories(mainMood) {
       result.debug = rankedItems.map((item, index) => ({
         position: index + 1,
         packId: normalizeText(item.pack?.id),
+        format: getPackFormat(item.pack),
+        trackCount: getPackTrackCount(item.pack),
+        recencyBand: getRecencyBand(item.pack, context),
         artistId: normalizeText(
           item.pack?.artistProfile?.accountId ||
           item.pack?.accountId ||
@@ -2096,11 +2247,17 @@ function getDistributionCategories(mainMood) {
     isEligiblePack,
     getArtistKey,
     getPackTags,
+    getPackTrackCount,
+    getPackFormat,
+    getRecencyBand,
+    compareSectionPriority,
+    prioritizeRecencyBands,
     packSimilarity,
     buildCatalogueProfile,
     buildPerformanceProfile,
     buildArtistAnalytics,
     buildArtistSpotlightSection,
+    buildAlbumSection,
     buildBaseCategorySections,
     getArtistProfile,
     getMonthlyEditionKey

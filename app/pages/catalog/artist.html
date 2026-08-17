@@ -56,6 +56,14 @@
             <small>Vos téléchargements</small>
           </span>
         </button>
+
+        <button class="desktop-nav-btn" type="button" data-sonara-montage-entry hidden>
+          <i data-lucide="clapperboard"></i>
+          <span>
+            <strong>Sync</strong>
+            <small>Synchroniser vos sons</small>
+          </span>
+        </button>
       </nav>
 
       <div class="desktop-side-footer">
@@ -86,6 +94,11 @@
             <i data-lucide="library"></i>
             <span>Bibliothèque</span>
           </button>
+
+          <button class="nav-mobile-btn nav-mobile-montage" type="button" data-sonara-montage-entry hidden>
+            <i data-lucide="clapperboard"></i>
+            <span>Sync</span>
+          </button>
         </nav>
 
         <section class="main-content">
@@ -103,9 +116,10 @@
   </div>
 
   <script src="/app/js/core/config.js?v=pre-v1-commercial-1"></script>
-  <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v1" data-sonara-auth="required"></script>
+  <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/app/js/components/header/header.js?v=cinematic-replay-component-v3"></script>
+  <script src="/app/js/components/navigation/montage-access.js?v=montage-v1"></script>
   <script src="/app/js/catalog/distribution.js?v=pre-v1-distribution-v1.2-artists-categories"></script>
   <script src="/app/js/catalog/artist.js?v=pre-v1-commercial-1"></script>
   <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5" defer></script>

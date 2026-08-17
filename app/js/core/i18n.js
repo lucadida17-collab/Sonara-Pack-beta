@@ -13,7 +13,10 @@
   const SCRIPT_URL = new URL(scriptElement.src, window.location.href);
   const APP_URL = new URL("../../", SCRIPT_URL);
   const STORAGE_KEY = "sonaraLanguage";
-  const CHOICE_KEY = "sonaraLanguageChoiceV2";
+  // Marqueur permanent : le choix initial ne doit jamais être rejoué
+  // à cause d'un changement de version du site.
+  const CHOICE_KEY = "sonaraLanguageChoice";
+  const LEGACY_CHOICE_KEYS = ["sonaraLanguageChoiceV2", "sonaraLanguageChoiceV1"];
 
   /*
     Cache persistant des dictionnaires.
@@ -25,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-15-language-choice-cinematic-v2";
+    "2026-08-17-sync-remux-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;
@@ -209,7 +212,7 @@
     if (element.isContentEditable || ignoredTags.has(element.tagName)) return true;
 
     const literal = canonicalize(element.textContent);
-    if (/^sonara pack(?:\s+(?:pré-)?v[\d.]+)?$/i.test(literal)) return true;
+    if (/^sonara (?:pack|sync)(?:\s+(?:pré-)?v[\d.]+)?$/i.test(literal)) return true;
 
     return false;
   }
@@ -684,9 +687,31 @@
     };
   }
 
+  function persistLanguageChoice() {
+    try {
+      localStorage.setItem(CHOICE_KEY, "1");
+
+      // Compatibilité avec les pages éventuellement encore servies depuis
+      // un ancien cache : elles doivent elles aussi considérer l'onboarding vu.
+      LEGACY_CHOICE_KEYS.forEach((key) => localStorage.setItem(key, "1"));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function hasChosenLanguage() {
     try {
-      return localStorage.getItem(CHOICE_KEY) === "1";
+      if (localStorage.getItem(CHOICE_KEY) === "1") return true;
+
+      // Migration automatique des anciens marqueurs. Le passage V1 -> V2 ne
+      // doit plus jamais forcer un utilisateur existant à revoir l'écran.
+      const legacyChoice = LEGACY_CHOICE_KEYS.some(
+        (key) => localStorage.getItem(key) === "1"
+      );
+
+      if (legacyChoice) persistLanguageChoice();
+      return legacyChoice;
     } catch {
       return false;
     }
@@ -715,7 +740,7 @@
 
     try {
       localStorage.setItem(STORAGE_KEY, currentLanguage);
-      if (confirmChoice) localStorage.setItem(CHOICE_KEY, "1");
+      if (confirmChoice) persistLanguageChoice();
     } catch (error) {
       console.warn("Préférence de langue non enregistrée :", error);
     }

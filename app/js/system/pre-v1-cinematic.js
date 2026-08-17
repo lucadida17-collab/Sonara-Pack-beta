@@ -13,6 +13,7 @@
   const CINEMATIC_AUDIO_ENABLED = true;
   const CINEMATIC_AUDIO_SOURCE = "/assets/son/NEW%20UNIVERSE.wav";
   const PRE_V1_CINEMATIC_VERSION = "PRE_V1_CINEMATIC_4";
+  const CINEMATIC_ONCE_STORAGE_KEY = "sonara:preV1CinematicSeen";
   const CINEMATIC_BODY_CLASS = "sonara-cinematic-running";
   const MOBILE_CINEMA_BODY_CLASS = "sonara-cinematic-mobile-frame";
   const MOBILE_CINEMA_ROOT_CLASS = "is-mobile-cinema-frame";
@@ -1089,18 +1090,35 @@
     return `sonara:lastSeenCinematicVersion:${getAccountKey()}`;
   }
 
-  function hasSeenCurrentVersion() {
+  function hasSeenCinematicOnce() {
     try {
+      if (localStorage.getItem(CINEMATIC_ONCE_STORAGE_KEY) === "1") return true;
+
+      // Migration transparente : toute ancienne cinématique déjà vue compte comme
+      // vue définitivement. Une nouvelle version du JS ne doit plus provoquer de reboot.
       const profile = getStoredProfile();
-      return profile?.lastSeenCinematicVersion === CINEMATIC_CONFIG.version ||
-        localStorage.getItem(getSeenStorageKey()) === CINEMATIC_CONFIG.version;
+      if (profile?.lastSeenCinematicVersion) {
+        localStorage.setItem(CINEMATIC_ONCE_STORAGE_KEY, "1");
+        return true;
+      }
+
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith("sonara:lastSeenCinematicVersion:") && localStorage.getItem(key)) {
+          localStorage.setItem(CINEMATIC_ONCE_STORAGE_KEY, "1");
+          return true;
+        }
+      }
     } catch {
-      return false;
+      // Si le stockage est indisponible, la cinématique reste fonctionnelle pour cette entrée.
     }
+
+    return false;
   }
 
-  function markCurrentVersionSeen() {
+  function markCinematicSeenOnce() {
     try {
+      localStorage.setItem(CINEMATIC_ONCE_STORAGE_KEY, "1");
       localStorage.setItem(getSeenStorageKey(), CINEMATIC_CONFIG.version);
 
       const profile = getStoredProfile();
@@ -1109,12 +1127,8 @@
         localStorage.setItem("sonaraProfile", JSON.stringify(profile));
       }
     } catch (error) {
-      console.warn("Version de cinématique non mémorisée :", error);
+      console.warn("Cinématique vue non mémorisée :", error);
     }
-  }
-
-  function isPreV1Mode() {
-    return window.SonaraCommercial?.getState?.().mode !== "COMMERCIAL";
   }
 
   function isManualReplayRequested() {
@@ -1126,12 +1140,11 @@
   }
 
   function shouldPlay(forceReplay = false) {
-    // Un replay demandé par l’utilisateur est toujours autorisé.
-    // La règle « une seule fois » ne concerne que le lancement automatique.
+    // Un replay demandé volontairement reste autorisé. Le lancement automatique,
+    // lui, ne se produit qu’une seule fois pour ce navigateur, sans dépendre du serveur.
     if (forceReplay || isManualReplayRequested()) return true;
-    if (!isPreV1Mode()) return false;
     if (CINEMATIC_CONFIG.devLoop) return true;
-    return !hasSeenCurrentVersion();
+    return !hasSeenCinematicOnce();
   }
 
   function loadCinematicAudio() {
@@ -1175,39 +1188,30 @@
     state.audioUnlockPending = false;
   }
 
-  function armAudioUnlock(visualTime = 0) {
+  function armAudioUnlock() {
     if (!state.root || state.audioUnlockPending) return;
 
-    const safeTime = clamp(visualTime, 0, CINEMATIC_TIMELINE.end);
+    // Le navigateur peut bloquer le son automatique, mais il ne doit jamais
+    // bloquer la cinématique visuelle. Un toucher ultérieur raccorde simplement
+    // l’audio à la position déjà atteinte.
     state.audioUnlockPending = true;
-    state.running = true;
-    state.paused = true;
-    state.pausedAt = performance.now();
-    state.root.classList.add("is-paused");
-    if (state.status) state.status.textContent = "TOUCHER POUR LANCER";
+    state.root.classList.remove("is-paused");
+    if (state.status) state.status.textContent = "";
 
     state.audioUnlockHandler = async () => {
       if (!state.audioUnlockPending || !state.started) return;
       const audio = loadCinematicAudio();
-      if (audio) audio.currentTime = safeTime;
+      if (!audio) {
+        clearAudioUnlock();
+        return;
+      }
+
+      audio.currentTime = getVisualTime();
       const started = await playCinematicAudio();
       if (!started) return;
-
       clearAudioUnlock();
-      const now = performance.now();
-      state.startAt = now - (safeTime / state.speed) * 1000;
-      state.pausedAt = now;
-      state.lastRenderedAt = now;
-      state.lastAnimationFrameAt = 0;
-      state.paused = false;
-      state.running = true;
-      state.root?.classList.remove("is-paused");
-      if (state.status) state.status.textContent = "";
-      state.frameId = window.requestAnimationFrame(tick);
     };
 
-    // Un clic/toucher utilisateur déverrouille l'audio sur Safari/iOS et les
-    // navigateurs qui interdisent la lecture sonore automatique.
     state.root.addEventListener("click", state.audioUnlockHandler, { once: true });
   }
 
@@ -1601,34 +1605,19 @@
       return;
     }
 
-    // La première frame attend la bande-son afin de préserver la synchro exacte.
-    // Si le navigateur bloque l'autoplay, on garde 00:00:05 figé jusqu'au
-    // premier toucher/clic au lieu de lancer la cinématique en silence.
+    // La vidéo démarre immédiatement. Le son tente de partir en parallèle :
+    // s’il est bloqué par Safari/Chrome, la cinématique continue sans attendre.
+    state.frameId = window.requestAnimationFrame(tick);
+
     void playCinematicAudio().then((started) => {
       if (generation !== state.playbackGeneration || !state.started) return;
-      if (!started) {
-        armAudioUnlock(safeTime);
-        return;
-      }
-
-      const syncedNow = performance.now();
-      state.startAt = syncedNow - (safeTime / state.speed) * 1000;
-      state.pausedAt = syncedNow;
-      state.lastRenderedAt = syncedNow;
-      state.lastAnimationFrameAt = 0;
-      state.frameId = window.requestAnimationFrame(tick);
+      if (!started) armAudioUnlock();
     });
   }
 
   function finishToLoader() {
     if (state.completionStarted) return;
     state.completionStarted = true;
-
-    // Seule la lecture automatique valide la règle « vue une fois ».
-    // Un replay manuel ne modifie pas cette logique.
-    if (!state.forceReplay && !isManualReplayRequested()) {
-      markCurrentVersionSeen();
-    }
 
     state.root?.classList.add("is-finishing");
   }
@@ -1871,14 +1860,8 @@
     state.forceReplay = Boolean(options?.forceReplay);
     state.started = true;
     state.startPromise = (async () => {
-      if (!CINEMATIC_CONFIG.devLoop) {
-        try {
-          await window.SonaraCommercial?.ready?.();
-        } catch {
-          // La configuration centrale conserve déjà son fallback de sécurité PRE_V1.
-        }
-      }
-
+      // Aucun appel serveur ici : la décision et le lancement de la cinématique
+      // sont entièrement locaux pour qu’elle démarre dès l’ouverture de Sonara.
       if (!shouldPlay(state.forceReplay)) {
         state.root.classList.add("is-inactive");
         state.root.setAttribute("aria-hidden", "true");
@@ -1891,6 +1874,12 @@
       const completion = new Promise((resolve) => {
         state.completionResolve = resolve;
       });
+
+      // On mémorise dès le démarrage (et non à la fin) : ouvrir une deuxième
+      // fenêtre pendant la lecture ne peut donc jamais relancer automatiquement la cinématique.
+      if (!state.forceReplay && !isManualReplayRequested() && !CINEMATIC_CONFIG.devLoop) {
+        markCinematicSeenOnce();
+      }
 
       resetRuntime(0, true);
       return completion;
@@ -1944,8 +1933,8 @@
     playCinematicAudio,
     pauseCinematicAudio,
     resetCinematicAudio,
-    hasSeenCurrentVersion,
-    markCurrentVersionSeen,
+    hasSeenCurrentVersion: hasSeenCinematicOnce,
+    markCurrentVersionSeen: markCinematicSeenOnce,
     isManualReplayRequested
   });
 })();

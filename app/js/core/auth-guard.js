@@ -1,8 +1,25 @@
-const SONARA_LANGUAGE_CHOICE_KEY = "sonaraLanguageChoiceV1";
+const SONARA_LANGUAGE_CHOICE_KEY = "sonaraLanguageChoice";
+const SONARA_LANGUAGE_LEGACY_CHOICE_KEYS = ["sonaraLanguageChoiceV2", "sonaraLanguageChoiceV1"];
 
 (() => {
   try {
-    const hasLanguageChoice = localStorage.getItem(SONARA_LANGUAGE_CHOICE_KEY) === "1";
+    const hasPermanentChoice = localStorage.getItem(SONARA_LANGUAGE_CHOICE_KEY) === "1";
+    const hasLegacyChoice = SONARA_LANGUAGE_LEGACY_CHOICE_KEYS.some(
+      (key) => localStorage.getItem(key) === "1"
+    );
+    const hasLanguageChoice = hasPermanentChoice || hasLegacyChoice;
+
+    if (hasLegacyChoice && !hasPermanentChoice) {
+      localStorage.setItem(SONARA_LANGUAGE_CHOICE_KEY, "1");
+    }
+
+    // Maintient les anciens caches cohérents pendant la migration.
+    if (hasLanguageChoice) {
+      SONARA_LANGUAGE_LEGACY_CHOICE_KEYS.forEach(
+        (key) => localStorage.setItem(key, "1")
+      );
+    }
+
     const entryPath = window.location.pathname.replace(/\/+$/, "") || "/";
     const isEntryPage = entryPath === "/" || /\/index\.html$/i.test(entryPath);
 

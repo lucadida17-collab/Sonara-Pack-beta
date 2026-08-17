@@ -222,6 +222,8 @@ function getCurrentPageTitle() {
     home: "Accueil",
     library: "Bibliothèque",
     pack: "Pack",
+    montage: "Sonara Sync",
+    "sync-saves": "Sauvegardes Sonara Sync",
   };
 
   return pageTitles[pageName] || "Sonara Pack";

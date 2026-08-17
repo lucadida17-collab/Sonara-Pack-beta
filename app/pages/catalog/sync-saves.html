@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr" translate="yes">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brouillons Sonara Sync - Sonara Pack</title>
+
+  <link rel="stylesheet" href="/app/css/core/catalog-shell.css?v=sync-saves-v1">
+  <link rel="stylesheet" href="/app/css/components/header/header.css?v=cinematic-replay-component-v3">
+  <link rel="stylesheet" href="/app/css/catalog/montage.css?v=sync-editor-v3">
+  <link rel="stylesheet" href="/app/css/catalog/sync-saves.css?v=sync-saves-v2">
+  <link rel="stylesheet" href="/app/css/core/i18n.css?v=sync-language-complete-v2">
+
+  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="montage sonara-shell-page">
+  <div class="desktop-shell">
+    <aside class="desktop-side-panel" aria-label="Navigation principale">
+      <div class="desktop-side-brand">
+        <span class="desktop-brand-logo"><img src="/assets/image/logo-sonara-pack.PNG" alt=""></span>
+        <span class="desktop-brand-copy"><strong>Sonara Pack</strong><small>Sonara Sync</small></span>
+      </div>
+
+      <nav class="desktop-side-nav">
+        <button class="desktop-nav-btn" type="button" data-sync-nav="home"><i data-lucide="home"></i><span><strong>Accueil</strong><small>Explorer les packs</small></span></button>
+        <button class="desktop-nav-btn desktop-nav-create" type="button" data-sync-nav="create"><i data-lucide="plus-circle"></i><span><strong>Créer</strong><small>Espace artiste</small></span></button>
+        <button class="desktop-nav-btn" type="button" data-sync-nav="library"><i data-lucide="library"></i><span><strong>Bibliothèque</strong><small>Vos téléchargements</small></span></button>
+        <button class="desktop-nav-btn active" type="button" data-sonara-montage-entry data-sync-nav="sync" hidden><i data-lucide="clapperboard"></i><span><strong>Sync</strong><small>Synchroniser vos sons</small></span></button>
+      </nav>
+
+      <div class="desktop-side-footer">
+        <span class="desktop-status-dot" aria-hidden="true"></span>
+        <span><strong>Sonara Sync</strong><small>Brouillons automatiques</small></span>
+      </div>
+    </aside>
+
+    <div class="desktop-workspace">
+      <header class="header"></header>
+      <main class="app-layout">
+        <nav class="mobile-bottom-bar">
+          <button class="nav-mobile-btn nav-mobile-home" type="button" data-sync-nav="home"><i data-lucide="home"></i><span>Accueil</span></button>
+          <button class="nav-mobile-btn nav-mobile-create" type="button" data-sync-nav="create"><i data-lucide="plus-circle"></i><span>Crée</span></button>
+          <button class="nav-mobile-btn nav-mobile-library" type="button" data-sync-nav="library"><i data-lucide="library"></i><span>Bibliothèque</span></button>
+          <button class="nav-mobile-btn nav-mobile-montage active" type="button" data-sonara-montage-entry data-sync-nav="sync" hidden><i data-lucide="clapperboard"></i><span>Sync</span></button>
+        </nav>
+
+        <section class="main-content">
+          <section class="scroll-zone">
+            <section class="sync-saves-content shell-content" aria-live="polite">
+              <section class="montage-loading" role="status"><span class="montage-loading-ring" aria-hidden="true"></span><strong>Ouverture de vos brouillons…</strong></section>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/app/js/core/config.js?v=5.3.8.56-app-version"></script>
+  <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/app/js/components/header/header.js?v=sync-header-v2"></script>
+  <script src="/app/js/components/navigation/montage-access.js?v=sync-access-v2"></script>
+  <script src="/app/js/catalog/sync-project-store.js?v=sync-project-store-v1"></script>
+  <script src="/app/js/catalog/sync-saves.js?v=sync-saves-v2"></script>
+  <script src="/app/js/core/i18n.js?v=sync-language-complete-v2" defer></script>
+</body>
+</html>

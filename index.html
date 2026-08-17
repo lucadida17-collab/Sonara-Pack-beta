@@ -5,8 +5,12 @@
   <meta name="google" content="notranslate">
   <script>
     try {
+      const languageChoiceSeen =
+        localStorage.getItem("sonaraLanguageChoice") === "1" ||
+        localStorage.getItem("sonaraLanguageChoiceV2") === "1" ||
+        localStorage.getItem("sonaraLanguageChoiceV1") === "1";
       document.documentElement.dataset.sonaraLanguageChosen =
-        localStorage.getItem("sonaraLanguageChoiceV2") === "1" ? "true" : "false";
+        languageChoiceSeen ? "true" : "false";
     } catch {
       document.documentElement.dataset.sonaraLanguageChosen = "false";
     }
@@ -199,9 +203,9 @@
     </section>
   </main>
 
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-reboot-v6"></script>
+  <script src="/app/js/core/i18n.js?v=pre-v1-language-once-v7"></script>
   <script src="/app/js/core/config.js"></script>
-  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-one-time-reboot-v14"></script>
+  <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-once-fast-v15"></script>
   <script>
     (() => {
       "use strict";
@@ -392,7 +396,7 @@
           }
 
           const script = document.createElement("script");
-          script.src = "/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v1";
+          script.src = "/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2";
           script.dataset.sonaraAuth = "entry";
           script.onload = resolve;
           script.onerror = () => reject(new Error("Auth Guard indisponible."));

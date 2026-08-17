@@ -31,6 +31,7 @@ if (!currentUser) {
 
 
 let selectedDownload = null;
+let selectedPack = null;
 
 const isMobile =
   window.innerWidth <= 768 ||
@@ -107,7 +108,7 @@ function downloadFile() {
   if (!finalUrl) {
     console.log("Aucun ZIP trouvé :", selectedDownload);
     renderError("Aucun fichier ZIP disponible pour ce téléchargement.");
-    return;
+    return false;
   }
 
   console.log("ZIP FINAL =", finalUrl);
@@ -119,6 +120,188 @@ function downloadFile() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  return true;
+}
+
+function escapeDownloadHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getPlatformContext() {
+  const userAgent = navigator.userAgent || "";
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(userAgent);
+  const isAndroid = /Android/i.test(userAgent);
+  const isMac = /Macintosh|Mac OS X/i.test(userAgent) && !isAppleMobile;
+  const isWindows = /Windows/i.test(userAgent);
+
+  if (isAppleMobile) return { key: "ios", label: "iPhone / iPad", downloads: "l’app Fichiers" };
+  if (isAndroid) return { key: "android", label: "Android", downloads: "le dossier Téléchargements" };
+  if (isMac) return { key: "mac", label: "Mac", downloads: "le dossier Téléchargements du Finder" };
+  if (isWindows) return { key: "windows", label: "Windows", downloads: "le dossier Téléchargements" };
+  return { key: "desktop", label: isMobile ? "Mobile" : "Ordinateur", downloads: "vos téléchargements" };
+}
+
+function getDownloadKind() {
+  if (trackId) return "track";
+  return Array.isArray(selectedPack?.tracks) && selectedPack.tracks.length > 1
+    ? "pack"
+    : "track";
+}
+
+function getProjectChoices() {
+  return [
+    {
+      key: "video",
+      icon: "clapperboard",
+      title: "Vidéo / Film",
+      description: "Synchroniser le son avec des images."
+    },
+    {
+      key: "music",
+      icon: "audio-lines",
+      title: "Musique / DAW",
+      description: "Importer le son dans une session audio."
+    },
+    {
+      key: "game",
+      icon: "gamepad-2",
+      title: "Jeu / Expérience",
+      description: "Ajouter le fichier comme ressource audio."
+    },
+    {
+      key: "other",
+      icon: "folder-open",
+      title: "Autre projet",
+      description: "Voir une méthode d’import universelle."
+    }
+  ];
+}
+
+function buildIntegrationGuide(kind) {
+  const platform = getPlatformContext();
+  const downloadKind = getDownloadKind();
+  const firstStep = downloadKind === "pack"
+    ? `Ouvrez ${platform.downloads} puis décompressez le ZIP Sonara Pack.`
+    : `Ouvrez ${platform.downloads} puis repérez le fichier Sonara téléchargé.`;
+
+  const guides = {
+    video: {
+      title: "Introduire le son dans une vidéo",
+      steps: [
+        firstStep,
+        "Ouvrez votre projet vidéo et ajoutez le fichier Sonara comme piste audio.",
+        "Placez le son sous la vidéo, alignez son départ avec l’image puis ajustez son volume.",
+        "Vous pouvez aussi ouvrir Sonara Sync pour faire cette synchronisation directement ici."
+      ]
+    },
+    music: {
+      title: "Introduire le son dans une session audio",
+      steps: [
+        firstStep,
+        "Créez ou sélectionnez une piste audio dans votre projet.",
+        "Importez le fichier Sonara sur cette piste et placez-le à l’endroit voulu dans la timeline.",
+        "Ajustez le niveau, les fondus et le placement sans modifier votre fichier original."
+      ]
+    },
+    game: {
+      title: "Introduire le son dans un projet interactif",
+      steps: [
+        firstStep,
+        "Importez le fichier dans le dossier audio ou assets de votre projet.",
+        "Associez-le ensuite à la scène, l’événement, l’objet ou l’action qui doit le déclencher.",
+        "Gardez le fichier Sonara original intact et travaillez avec une copie dans le projet."
+      ]
+    },
+    other: {
+      title: "Méthode universelle",
+      steps: [
+        firstStep,
+        "Ouvrez votre logiciel ou application puis cherchez Importer, Ajouter un média ou Ajouter un fichier.",
+        "Sélectionnez le fichier audio Sonara depuis vos téléchargements.",
+        "Placez-le dans votre projet puis sauvegardez votre projet avant de modifier le son."
+      ]
+    }
+  };
+
+  return guides[kind] || guides.video;
+}
+
+function renderIntegrationGuide(kind) {
+  const guide = buildIntegrationGuide(kind);
+  const container = document.querySelector(".download-integration-guide");
+  if (!container) return;
+
+  container.innerHTML = `
+    <p class="download-guide-kicker">GUIDE DYNAMIQUE</p>
+    <h2>${escapeDownloadHtml(guide.title)}</h2>
+    <ol>
+      ${guide.steps.map((step) => `<li>${escapeDownloadHtml(step)}</li>`).join("")}
+    </ol>
+  `;
+}
+
+function renderPostDownloadAssistant() {
+  const platform = getPlatformContext();
+  const choices = getProjectChoices();
+  const itemTitle = selectedDownload?.title || selectedPack?.title || "Votre fichier Sonara";
+
+  downloadPage.innerHTML = `
+    <section class="download-after">
+      <div class="download-after-shell">
+        <header class="download-after-header">
+          <p class="download-kicker">SONARA PACK · ${escapeDownloadHtml(platform.label)}</p>
+          <span class="download-after-check" aria-hidden="true">✓</span>
+          <h1>Téléchargement lancé.</h1>
+          <p><strong data-user-content>${escapeDownloadHtml(itemTitle)}</strong> est prêt. Dites à Sonara dans quel type de projet vous voulez l’utiliser.</p>
+        </header>
+
+        <div class="download-project-choices">
+          ${choices.map((choice, index) => `
+            <button class="download-project-choice ${index === 0 ? "active" : ""}" type="button" data-project-kind="${choice.key}">
+              <i data-lucide="${choice.icon}"></i>
+              <span><strong>${choice.title}</strong><small>${choice.description}</small></span>
+            </button>
+          `).join("")}
+        </div>
+
+        <section class="download-integration-guide"></section>
+
+        <div class="download-after-actions">
+          <button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>Ouvrir Sonara Sync</button>
+          <button class="download-library-button" type="button">Bibliothèque</button>
+          <button class="download-home-button" type="button">Accueil</button>
+        </div>
+      </div>
+    </section>
+  `;
+
+  document.querySelectorAll("[data-project-kind]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll("[data-project-kind]").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      renderIntegrationGuide(button.dataset.projectKind);
+    });
+  });
+
+  document.querySelector(".download-montage-button")?.addEventListener("click", () => {
+    window.location.assign("/app/pages/catalog/montage.html");
+  });
+
+  document.querySelector(".download-library-button")?.addEventListener("click", () => {
+    window.location.assign("/app/pages/catalog/library.html");
+  });
+
+  document.querySelector(".download-home-button")?.addEventListener("click", () => {
+    window.location.assign("/home.html");
+  });
+
+  renderIntegrationGuide("video");
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function finishDesktopDownload() {
@@ -127,14 +310,10 @@ function finishDesktopDownload() {
 
   if (title) title.textContent = "Téléchargement terminé";
   if (text) {
-    text.textContent = window.SonaraCommercial?.getState?.().mode === "PRE_V1"
-      ? "Téléchargement terminé. Retour automatique à l’accueil..."
-      : "Merci pour votre achat. Retour automatique à l’accueil...";
+    text.textContent = "Le fichier est lancé. Préparation de votre guide d’intégration…";
   }
 
-  setTimeout(() => {
-    window.location.href = "/home.html";
-  }, 6000);
+  setTimeout(renderPostDownloadAssistant, 850);
 }
 
 function connectMobileButtons() {
@@ -143,8 +322,11 @@ function connectMobileButtons() {
 
   if (downloadButton) {
     downloadButton.addEventListener("click", () => {
-      downloadFile();
+      const started = downloadFile();
+      if (!started) return;
       downloadButton.textContent = "Téléchargement lancé";
+      downloadButton.disabled = true;
+      setTimeout(renderPostDownloadAssistant, 700);
     });
   }
 
@@ -244,7 +426,7 @@ async function loadDownloadData() {
 
     const response = await fetch(`${API_URL}/api/packs`);
     const packs = await readJsonResponse(response);
-    const selectedPack = packs.find((pack) => String(pack.id) === String(packId));
+    selectedPack = packs.find((pack) => String(pack.id) === String(packId));
 
     if (!selectedPack) {
       throw new Error("Pack introuvable.");
@@ -269,8 +451,8 @@ async function loadDownloadData() {
       connectMobileButtons();
     } else {
       setTimeout(() => {
-        downloadFile();
-        finishDesktopDownload();
+        const started = downloadFile();
+        if (started) finishDesktopDownload();
       }, 2000);
     }
   } catch (error) {

@@ -1,0 +1,39 @@
+.sync-saves-content { display: grid; gap: 18px; }
+.sync-saves-hero .montage-actions { margin-top: 18px; }
+.sync-saves-list { display: grid; gap: 14px; }
+.sync-save-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.018));
+}
+.sync-save-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: var(--montage-cyan);
+  background: rgba(53, 215, 255, .09);
+  border: 1px solid rgba(83, 222, 255, .18);
+}
+.sync-save-icon svg { width: 23px; height: 23px; }
+.sync-save-copy { min-width: 0; }
+.sync-save-copy h2 { margin: 2px 0 4px; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync-save-copy > p:not(.montage-kicker) { margin: 0; color: rgba(255,255,255,.46); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync-save-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; color: rgba(255,255,255,.38); font-size: 9px; }
+.sync-save-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.montage-btn.danger { color: #ffb8c4; border-color: rgba(255, 94, 126, .18); background: rgba(255, 55, 94, .08); }
+.sync-saves-empty { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 9px; text-align: center; padding: 28px; border: 1px dashed rgba(255,255,255,.10); border-radius: 24px; color: rgba(255,255,255,.48); }
+.sync-saves-empty svg { width: 30px; height: 30px; color: var(--montage-cyan); }
+.sync-saves-empty strong { color: #fff; font-size: 14px; }
+.sync-saves-empty p { max-width: 500px; margin: 0; font-size: 10px; line-height: 1.55; }
+@media (max-width: 760px) {
+  .sync-save-card { grid-template-columns: auto minmax(0, 1fr); }
+  .sync-save-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .sync-save-actions .montage-btn { flex: 1 1 150px; }
+}

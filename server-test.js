@@ -11,6 +11,7 @@ const multer = require("multer");
 const AdmZip = require("adm-zip");
 const path = require("path");
 const crypto = require("crypto");
+const { registerSonaraSyncEngine } = require("./sync-engine");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
 const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
 const {
@@ -360,6 +361,7 @@ app.post(
 );
 
 app.use(express.json());
+registerSonaraSyncEngine(app);
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     ok: true,
