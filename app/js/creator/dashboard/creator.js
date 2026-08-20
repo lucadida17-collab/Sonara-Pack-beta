@@ -1,125 +1,151 @@
-const creatorPage = document.querySelector(".creator-page")
+const creatorPage = document.querySelector(".creator-page");
 const initialCreatorPreV1 = window.SonaraCommercial?.getState?.().mode === "PRE_V1";
 
-
 creatorPage.innerHTML = `
+  <section class="creator-header">
+    <p class="creator-label">SONARA ARTIST DASHBOARD</p>
+    <h1>Dashboard Artistique</h1>
+  </section>
+
+  <section class="creator-stats">
+    <div class="stat-card creator-pack-count-card">
+      <span>Packs créés</span>
+      <strong id="creator-pack-count">0</strong>
+    </div>
+
+    <div class="stat-card creator-revenue-card">
+      <span>Revenus</span>
+      <strong id="creator-revenue">0,00 €</strong>
+    </div>
+  </section>
+
+  <section class="creator-actions">
+    <button class="creator-action crée-un-pack ${initialCreatorPreV1 ? "" : "is-locked"}" type="button" aria-disabled="${initialCreatorPreV1 ? "false" : "true"}">
+      <span class="creator-action-icon">
+        <i data-lucide="square-plus" class="svg-create-pack"></i>
+      </span>
+
+      <span class="creator-action-copy">
+        <strong>Créer un pack</strong>
+        <small>Ajouter sons, cover, prix et droits</small>
+      </span>
 
 
-<div class="creator-toolbar">
+      ${initialCreatorPreV1 ? "" : `
+      <span class="create-pack-lock-overlay" aria-live="polite">
+        <span class="create-pack-lock-icon">
+          <i data-lucide="ban"></i>
+        </span>
+        <strong>Avant de commencer à vendre un pack, vous devez d’abord ajouter un compte bancaire.</strong>
+      </span>`}
+    </button>
 
-  <button
-    class="creator-cinematic-btn"
-    type="button"
-    aria-label="Revoir la cinématique"
-    title="Revoir la cinématique"
-  >
-    <i data-lucide="clapperboard" aria-hidden="true"></i>
-  </button>
+    <button class="creator-action mes-pack" type="button">
+      <span class="creator-action-icon">
+        <i data-lucide="library" class="svg-create-pack"></i>
+      </span>
 
-  <button class="creator-settings-btn">
-      <i data-lucide="settings"></i>
-  </button>
-
-  <button class="creator-settings-btn-desktop">
-      <i data-lucide="settings"></i>
-  </button>
-</div>
-
-       <section class="creator-header">
-       
-      <p class="creator-label">SONARA CREATOR</p>
-      <h1>Dashboard Artistique</h1>
-    </section>
-<button class="btn-home ">Retourner à l'accueil</button>
-    <section class="creator-stats">
-      <div class="stat-card creator-pack-count-card">
-        <span>Packs créés</span>
-        <strong id="creator-pack-count">0</strong>
-      </div>
-
-
-      <div class="stat-card creator-revenue-card">
-        <span>Revenus</span>
-        <strong id="creator-revenue">0,00 €</strong>
-      </div>
-    </section>
-
-    <section class="creator-actions">
-
-      <button class="creator-action crée-un-pack ${initialCreatorPreV1 ? "" : "is-locked"}" type="button" aria-disabled="${initialCreatorPreV1 ? "false" : "true"}">
-
-          <i data-lucide="SquarePlus" class="svg-create-pack"></i>
-          <span>Créer un pack</span>
-          <small>Ajouter sons, cover, prix et droits</small>
-
-
-        ${initialCreatorPreV1 ? "" : `
-        <span class="create-pack-lock-overlay" aria-live="polite">
-          <span class="create-pack-lock-icon">
-            <i data-lucide="ban"></i>
-          </span>
-          <strong>Avant de commencer à vendre un pack, vous devez d’abord ajouter un compte bancaire.</strong>
-        </span>`}
-      </button>
-      
-  
-
-      <button class="creator-action mes-pack">
-      <i data-lucide="library" class="svg-create-pack"></i>
-        <span>Mes packs</span>
+      <span class="creator-action-copy">
+        <strong>Mes packs</strong>
         <small>Gérer vos packs créés et publiés</small>
-      </button>
+      </span>
 
-    </section>
+    </button>
+  </section>
 
-    <section class="creator-missions" aria-labelledby="creator-missions-title">
-      <div class="creator-missions-heading">
-        <h2 id="creator-missions-title">Missions</h2>
-      </div>
-      <div class="creator-missions-list" id="creator-missions-list">
-        <div class="creator-mission-loading">Chargement…</div>
-      </div>
-    </section>
+  <section class="creator-missions" aria-labelledby="creator-missions-title">
+    <div class="creator-missions-heading">
+      <h2 id="creator-missions-title">Missions</h2>
+    </div>
 
-  
-    `;
+    <div class="creator-missions-list" id="creator-missions-list">
+      <div class="creator-mission-loading">Chargement…</div>
+    </div>
+  </section>
+`;
 
-lucide.createIcons();
-
-function openCreatorCinematicReplay() {
-  const returnTo =
-    `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-  try {
-    sessionStorage.setItem(
-      "sonara:cinematicReplayRequest",
-      JSON.stringify({ returnTo, requestedAt: Date.now() })
-    );
-  } catch (error) {
-    console.warn("Replay cinématique Creator non mémorisé en session :", error);
-  }
-
-  const replayUrl = new URL("/index.html", window.location.origin);
-  replayUrl.searchParams.set("cinematic", "replay");
-  replayUrl.searchParams.set("returnTo", returnTo);
-  replayUrl.searchParams.set("replay", String(Date.now()));
-
-  window.location.assign(replayUrl.href);
+if (window.lucide) {
+  lucide.createIcons();
 }
 
-document.querySelector(".creator-cinematic-btn")?.addEventListener(
-  "click",
-  openCreatorCinematicReplay
-);
+function setActiveCreatorNavigation(navigationName) {
+  document.querySelectorAll("[data-creator-nav]").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.creatorNav === navigationName
+    );
+  });
+}
 
-    document.querySelector(".creator-settings-btn").addEventListener("click", () => {
-  renderCreatorManagement();
-});
+function setupCreatorShellNavigation() {
+  document.querySelectorAll('[data-creator-nav="home"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveCreatorNavigation("home");
+      window.location.href = "/home.html";
+    });
+  });
 
- document.querySelector(".creator-settings-btn-desktop").addEventListener("click", () => {
-  renderCreatorManagement();
-});
+  document.querySelectorAll('[data-creator-nav="create"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveCreatorNavigation("create");
+      window.location.href = "/app/pages/creator/dashboard.html";
+    });
+  });
 
+  document.querySelectorAll('[data-creator-nav="library"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveCreatorNavigation("library");
+      window.location.href = "/app/pages/catalog/library.html";
+    });
+  });
+
+  setActiveCreatorNavigation("create");
+}
+
+function openCreatorManagement() {
+  window.location.href = "/app/pages/creator/dashboard.html?mode=management";
+}
+
+function mountCreatorHeaderManagementButton() {
+  const headerRoot = document.querySelector(".header");
+  if (!headerRoot) return;
+
+  const mount = () => {
+    const actions = headerRoot.querySelector(".dynamic-header-actions");
+    if (!actions || actions.querySelector(".creator-header-settings")) {
+      return Boolean(actions);
+    }
+
+    const button = document.createElement("button");
+    button.className = "creator-header-settings";
+    button.type = "button";
+    button.setAttribute("aria-label", "Dashboard management");
+    button.setAttribute("title", "Dashboard management");
+    button.innerHTML = '<i data-lucide="settings" aria-hidden="true"></i>';
+    button.addEventListener("click", openCreatorManagement);
+    actions.appendChild(button);
+
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+
+    return true;
+  };
+
+  if (mount()) return;
+
+  const observer = new MutationObserver(() => {
+    if (mount()) observer.disconnect();
+  });
+
+  observer.observe(headerRoot, {
+    childList: true,
+    subtree: true
+  });
+}
+
+setupCreatorShellNavigation();
+mountCreatorHeaderManagementButton();
 
 const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
 
@@ -307,7 +333,7 @@ function showCreatorUnlockPopup() {
         <i data-lucide="x"></i>
       </button>
       <i data-lucide="badge-check" class="creator-unlock-main-icon"></i>
-      <p class="creator-unlock-label">SONARA CREATOR</p>
+      <p class="creator-unlock-label">SONARA ARTIST DASHBOARD</p>
       <h2>Créer un pack est maintenant disponible</h2>
       <p>Votre compte bancaire Stripe est vérifié. Vous pouvez désormais publier et vendre vos packs.</p>
       <div class="creator-unlock-tips">
@@ -528,21 +554,6 @@ verifyCreatorStripeAccess();
 
 
 
-
-
-
-
-const btnHome = document.querySelector(".btn-home")
-
-btnHome.addEventListener("click", () => {
-  if (profile.role === "both") {
-    window.location.href = "/home.html"
-  }
-})
-
-if (profile.role === "artist") {
-  btnHome.style.display = "none"
-}
 
 
 
@@ -776,23 +787,22 @@ if (returnedPackId && window.history?.replaceState) {
 
 function renderCreatorManagement() {
   creatorPage.innerHTML = `
-    <button class="creator-settings-btn">
-      <i data-lucide="settings"></i>
-    </button>
+    <section class="creator-management-head">
+      <button class="creator-management-back back-creator-dashboard" type="button">
+        <i data-lucide="arrow-left"></i>
+        <span>Dashboard Artistique</span>
+      </button>
 
-    <section class="creator-header">
-      <p class="creator-label">SONARA CREATOR</p>
-      <h1>Dashboard management</h1>
-      <p class="creator-subtitle">
-        Gère ton compte, tes revenus et les paramètres importants de ton espace artiste.
-      </p>
+      <div class="creator-management-title-block">
+        <p class="creator-label">SONARA ARTIST MANAGEMENT</p>
+        <h1>Dashboard management</h1>
+        <p class="creator-subtitle">
+          Gère ton compte, tes revenus et les paramètres importants de ton espace artiste.
+        </p>
+      </div>
     </section>
 
-    <button class="btn-home back-creator-dashboard">
-      Retourner à l'espace Artistique
-    </button>
-
-    <section class="creator-actions">
+    <section class="creator-actions creator-management-actions">
       <button class="creator-action stripe-connect-btn ${isCreatorPreV1() ? "is-locked" : ""}" ${isCreatorPreV1() ? 'type="button" aria-disabled="true"' : 'type="button"'}>
         ${isCreatorPreV1() ? `
           <div class="pre-v1-bank-lock">
@@ -801,50 +811,50 @@ function renderCreatorManagement() {
             <small>Ajouter un compte bancaire sera disponible au lancement de la V1.</small>
           </div>
         ` : `
-          <i data-lucide="landmark"></i>
-          <span>Compte bancaire</span>
-          <small>Ajoute ton compte bancaire pour recevoir l’argent de tes ventes</small>
+          <span class="creator-action-icon"><i data-lucide="landmark"></i></span>
+          <span class="creator-action-copy">
+            <strong>Compte bancaire</strong>
+            <small>Ajoute ton compte bancaire pour recevoir l’argent de tes ventes</small>
+          </span>
         `}
       </button>
 
-      <button class="creator-action artist-profile-btn">
-        <i data-lucide="user-round"></i>
-        <span>Profil artiste</span>
-        <small>Gérer ton image, ton nom et tes informations publiques</small>
+      <button class="creator-action artist-profile-btn" type="button">
+        <span class="creator-action-icon"><i data-lucide="user-round"></i></span>
+        <span class="creator-action-copy">
+          <strong>Profil artiste</strong>
+          <small>Gérer ton image, ton nom et tes informations publiques</small>
+        </span>
       </button>
 
-      <button class="creator-action creator-statistics-btn">
-        <i data-lucide="chart-no-axes-combined"></i>
-        <span>Statistiques</span>
-        <small>Téléchargements, audience, ventes et performances de tes packs</small>
+      <button class="creator-action creator-statistics-btn" type="button">
+        <span class="creator-action-icon"><i data-lucide="chart-no-axes-combined"></i></span>
+        <span class="creator-action-copy">
+          <strong>Statistiques</strong>
+          <small>Téléchargements, audience, ventes et performances de tes packs</small>
+        </span>
       </button>
-
     </section>
   `;
 
   if (window.lucide) lucide.createIcons();
 
-  document.querySelector(".back-creator-dashboard").addEventListener("click", () => {
-    window.location.href = "/app/pages/creator/dashboard.html"
+  document.querySelector(".back-creator-dashboard")?.addEventListener("click", () => {
+    window.location.href = "/app/pages/creator/dashboard.html";
   });
 
-  document.querySelector(".stripe-connect-btn").addEventListener("click", async () => {
+  document.querySelector(".stripe-connect-btn")?.addEventListener("click", async () => {
     await window.SonaraCommercial?.ready?.();
     if (isCreatorPreV1()) return;
     window.location.href = "/app/pages/creator/management/bank.html";
   });
 
-
-  document.querySelector(".artist-profile-btn").addEventListener("click", () => {
+  document.querySelector(".artist-profile-btn")?.addEventListener("click", () => {
     window.location.href = "/app/pages/creator/management/profile-creator.html";
   });
 
-  document.querySelector(".creator-statistics-btn").addEventListener("click", () => {
+  document.querySelector(".creator-statistics-btn")?.addEventListener("click", () => {
     window.location.href = "/app/pages/creator/management/statistics.html";
-  });
-
-  document.querySelector(".creator-settings-management-btn").addEventListener("click", () => {
-    window.location.href = "/app/pages/creator/management/settings/settings-creator.html";
   });
 }
 

@@ -218,6 +218,13 @@ function getCurrentPageTitle() {
     .replace(".html", "")
     .toLowerCase();
 
+  if (pageName === "dashboard") {
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    return mode === "management"
+      ? "Management artiste"
+      : "Artist Dashboard";
+  }
+
   const pageTitles = {
     home: "Accueil",
     library: "Bibliothèque",

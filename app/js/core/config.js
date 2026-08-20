@@ -1,7 +1,19 @@
-const SONARA_VERSION = "Bêta - Pré sorti V1";
+const SONARA_VERSION = "Pre V1.01";
 
 window.SONARA_VERSION =
   SONARA_VERSION;
+
+function syncSonaraVersionLabels() {
+  document.querySelectorAll(".desktop-brand-version").forEach((element) => {
+    element.textContent = `Version ${SONARA_VERSION}`;
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", syncSonaraVersionLabels, { once: true });
+} else {
+  syncSonaraVersionLabels();
+}
 
 const HOSTNAME = window.location.hostname.toLowerCase();
 

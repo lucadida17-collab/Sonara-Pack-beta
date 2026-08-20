@@ -1797,8 +1797,13 @@
     if (CINEMATIC_CONFIG.devControls) document.addEventListener("keydown", handleKeydown);
     if (CINEMATIC_CONFIG.recording.controls) {
       state.recordButton?.addEventListener("click", handleRecordingButtonClick);
-    state.skipButton?.addEventListener("click", skip);
     }
+
+    // Le bouton « Passer la cinématique » doit rester actif indépendamment
+    // des contrôles privés d’enregistrement. La destination finale est gérée
+    // par le flux d’entrée : chargement pour une première ouverture, ou retour
+    // vers la page ayant demandé le replay (Home, Artist Dashboard, etc.).
+    state.skipButton?.addEventListener("click", skip);
   }
 
   function detachListeners() {

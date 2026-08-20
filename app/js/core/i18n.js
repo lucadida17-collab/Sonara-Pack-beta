@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-19-download-creator-cinematic-v2";
+    "2026-08-20-artist-dashboard-i18n-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;
