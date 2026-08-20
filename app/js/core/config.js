@@ -121,7 +121,13 @@ const SonaraCommercial = (() => {
 })();
 
 window.SonaraCommercial = SonaraCommercial;
-SonaraCommercial.refresh();
+
+// L'écran d'entrée vérifie déjà /api/health. Il ne lance pas en parallèle
+// /api/commercial-mode afin d'éviter plusieurs requêtes au réveil du serveur.
+const IS_ENTRY_PAGE = /^\/(?:index\.html)?$/.test(window.location.pathname);
+if (!IS_ENTRY_PAGE) {
+  SonaraCommercial.refresh();
+}
 
 console.info(`[Sonara API] ${SONARA_ENV} -> ${API_URL}`);
 

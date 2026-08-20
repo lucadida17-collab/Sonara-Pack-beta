@@ -211,7 +211,7 @@
   </main>
 
   <script src="/app/js/core/i18n.js?v=pre-v1-language-once-v7"></script>
-  <script src="/app/js/core/config.js"></script>
+  <script src="/app/js/core/config.js?v=pre-v1-startup-rate-limit-v1"></script>
   <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-once-fast-v16"></script>
   <script>
     (() => {
@@ -220,11 +220,14 @@
       // Contrat stable Sonara Pack :
       // - 6 secondes visibles minimum, même si Local/Test/Main répond immédiatement ;
       // - jusqu’à 60 secondes pour laisser Local/Test/Main démarrer, notamment après un réveil serveur ;
+      // - les tentatives serveur sont volontairement espacées pour ne jamais marteler /api/health ;
       // - après l'erreur, l'écran reste affiché jusqu'au clic manuel sur « Réessayer ».
       const MIN_LOADING_DURATION = 6000;
       const SERVER_MAX_WAIT = 60000;
       const SERVER_ATTEMPT_TIMEOUT = 8000;
-      const SERVER_RETRY_DELAY = 650;
+      const SERVER_RETRY_BASE_DELAY = 5000;
+      const SERVER_RETRY_MAX_DELAY = 15000;
+      const SERVER_RATE_LIMIT_DELAY = 15000;
       const MIN_STEP_TIME = 360;
       const TYPE_SPEED = 18;
 
@@ -317,6 +320,26 @@
         }
       }
 
+      function retryAfterMilliseconds(response) {
+        const value = response?.headers?.get?.("Retry-After");
+        if (!value) return 0;
+
+        const seconds = Number(value);
+        if (Number.isFinite(seconds) && seconds >= 0) {
+          return seconds * 1000;
+        }
+
+        const date = Date.parse(value);
+        return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
+      }
+
+      function normalRetryDelay(attempt) {
+        return Math.min(
+          SERVER_RETRY_MAX_DELAY,
+          SERVER_RETRY_BASE_DELAY + Math.max(0, attempt - 1) * 2500
+        );
+      }
+
       async function checkServerUntilReady() {
         const serverSearchStartedAt = performance.now();
         const deadline = serverSearchStartedAt + SERVER_MAX_WAIT;
@@ -330,6 +353,8 @@
           const progress = 12 + Math.min(22, (elapsed / SERVER_MAX_WAIT) * 22);
           setProgress(progress, `Serveur · tentative ${attempt}`);
 
+          let retryDelay = normalRetryDelay(attempt);
+
           try {
             const attemptTimeout = Math.max(500, Math.min(SERVER_ATTEMPT_TIMEOUT, remaining));
             const response = await fetchWithTimeout(
@@ -340,14 +365,26 @@
             const payload = await response.json().catch(() => null);
 
             if (response.ok && payload?.ok === true) return payload;
-            lastError = new Error(`Réponse serveur invalide : ${response.status}`);
+
+            if (response.status === 429) {
+              retryDelay = Math.max(
+                SERVER_RATE_LIMIT_DELAY,
+                retryAfterMilliseconds(response)
+              );
+              lastError = new Error("Serveur temporairement limité (429).");
+            } else {
+              lastError = new Error(`Réponse serveur invalide : ${response.status}`);
+            }
           } catch (error) {
+            // Un 429 renvoyé par l'hébergeur peut être masqué par CORS et arriver ici
+            // comme une simple erreur réseau. On espace donc aussi ces échecs.
             lastError = error;
+            retryDelay = Math.max(retryDelay, SERVER_RETRY_BASE_DELAY);
           }
 
           const waitRemaining = deadline - performance.now();
           if (waitRemaining <= 0) break;
-          await wait(Math.min(SERVER_RETRY_DELAY, waitRemaining));
+          await wait(Math.min(retryDelay, waitRemaining));
         }
 
         throw lastError;
