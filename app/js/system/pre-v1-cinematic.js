@@ -896,6 +896,7 @@
     clock: null,
     countdown: null,
     status: null,
+    skipButton: null,
     recordButton: null,
     recordLabel: null,
     recordHint: null,
@@ -1796,6 +1797,7 @@
     if (CINEMATIC_CONFIG.devControls) document.addEventListener("keydown", handleKeydown);
     if (CINEMATIC_CONFIG.recording.controls) {
       state.recordButton?.addEventListener("click", handleRecordingButtonClick);
+    state.skipButton?.addEventListener("click", skip);
     }
   }
 
@@ -1807,6 +1809,7 @@
     document.removeEventListener("visibilitychange", handleVisibilityChange);
     document.removeEventListener("keydown", handleKeydown);
     state.recordButton?.removeEventListener("click", handleRecordingButtonClick);
+    state.skipButton?.removeEventListener("click", skip);
   }
 
   function initialise() {
@@ -1816,6 +1819,7 @@
     state.clock = document.getElementById("sonaraCinematicClock");
     state.countdown = document.getElementById("sonaraCinematicCountdown");
     state.status = document.getElementById("sonaraCinematicStatus");
+    state.skipButton = document.getElementById("sonaraCinematicSkipButton");
     state.recordButton = document.getElementById("sonaraCinematicRecordButton");
     state.recordLabel = document.getElementById("sonaraCinematicRecordLabel");
     state.recordHint = document.getElementById("sonaraCinematicRecorderHint");

@@ -1,4 +1,8 @@
 "use strict";
+
+function downloadTranslate(value) {
+  return window.SonaraI18n?.t?.(value) || value;
+}
 function getFilePath(file) {
   if (!file) return "";
 
@@ -20,6 +24,7 @@ const downloadPage = document.querySelector(".download-page");
 const params = new URLSearchParams(window.location.search);
 const packId = params.get("id");
 const trackId = params.get("trackId");
+const acceptanceId = params.get("acceptanceId");
 
 let currentUser = JSON.parse(
   localStorage.getItem("sonaraProfile")
@@ -44,14 +49,14 @@ function renderLayout() {
         <div class="download-mobile-card">
           <p class="download-kicker">SONARA PACK</p>
 
-          <h1 class="download-mobile-title">Téléchargement prêt</h1>
+          <h1 class="download-mobile-title">${escapeDownloadHtml(downloadTranslate("Téléchargement prêt"))}</h1>
 
           <p class="download-mobile-text">
-            Votre fichier est prêt. Sur mobile, appuyez sur le bouton ci-dessous pour lancer le téléchargement.
+            ${escapeDownloadHtml(downloadTranslate("Votre fichier est prêt. Sur mobile, appuyez sur le bouton ci-dessous pour lancer le téléchargement."))}
           </p>
 
-          <button class="download-button">Télécharger le fichier</button>
-          <button class="download-home-button">Retour à l’accueil</button>
+          <button class="download-button">${escapeDownloadHtml(downloadTranslate("Télécharger le fichier"))}</button>
+          <button class="download-home-button">${escapeDownloadHtml(downloadTranslate("Retour à l’accueil"))}</button>
         </div>
       </section>
     `;
@@ -61,12 +66,12 @@ function renderLayout() {
         <div class="download-desktop-card">
           <p class="download-kicker">SONARA PACK</p>
 
-          <h1 class="download-title">Préparation du téléchargement</h1>
+          <h1 class="download-title">${escapeDownloadHtml(downloadTranslate("Préparation du téléchargement"))}</h1>
 
           <div class="download-loader"></div>
 
           <p class="download-text">
-            Votre fichier est en cours de préparation...
+            ${escapeDownloadHtml(downloadTranslate("Votre fichier est en cours de préparation..."))}
           </p>
         </div>
       </section>
@@ -79,9 +84,9 @@ function renderError(message) {
     <section class="download-desktop">
       <div class="download-desktop-card">
         <p class="download-kicker">SONARA PACK</p>
-        <h1 class="download-title">Téléchargement impossible</h1>
-        <p class="download-text">${message}</p>
-        <button class="download-home-button">Retour à l’accueil</button>
+        <h1 class="download-title">${escapeDownloadHtml(downloadTranslate("Téléchargement impossible"))}</h1>
+        <p class="download-text">${escapeDownloadHtml(downloadTranslate(message))}</p>
+        <button class="download-home-button">${escapeDownloadHtml(downloadTranslate("Retour à l’accueil"))}</button>
       </div>
     </section>
   `;
@@ -94,33 +99,50 @@ function renderError(message) {
   }
 }
 
-function getFinalDownloadUrl() {
-  if (!selectedDownload || !selectedDownload.downloadZip) {
-    return null;
+async function prepareProtectedDownload() {
+  const userId = getCurrentUserId();
+  if (!userId) {
+    throw new Error("Reconnecte-toi pour accéder à ce téléchargement.");
   }
 
-  return `${getFilePath(selectedDownload.downloadZip)}`;
+  const response = await fetch(`${API_URL}/api/downloads/prepare`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      userId,
+      packId,
+      trackId: trackId || null,
+      acceptanceId: acceptanceId || null
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!data.fileUrl) {
+    throw new Error("Aucun fichier ZIP disponible pour ce téléchargement.");
+  }
+  return /^(https?:|blob:|data:)/i.test(data.fileUrl)
+    ? data.fileUrl
+    : `${API_URL}${String(data.fileUrl).startsWith("/") ? "" : "/"}${data.fileUrl}`;
 }
 
-function downloadFile() {
-  const finalUrl = getFinalDownloadUrl();
+async function downloadFile() {
+  try {
+    const finalUrl = await prepareProtectedDownload();
+    const link = document.createElement("a");
+    link.href = finalUrl;
+    link.download = `${selectedDownload?.title || "sonara-pack"}.zip`;
 
-  if (!finalUrl) {
-    console.log("Aucun ZIP trouvé :", selectedDownload);
-    renderError("Aucun fichier ZIP disponible pour ce téléchargement.");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return true;
+  } catch (error) {
+    console.error("Téléchargement protégé refusé :", error);
+    renderError(error.message || "Accès au téléchargement refusé.");
     return false;
   }
-
-  console.log("ZIP FINAL =", finalUrl);
-
-  const link = document.createElement("a");
-  link.href = finalUrl;
-  link.download = `${selectedDownload.title || "sonara-pack"}.zip`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  return true;
 }
 
 function escapeDownloadHtml(value = "") {
@@ -139,11 +161,15 @@ function getPlatformContext() {
   const isMac = /Macintosh|Mac OS X/i.test(userAgent) && !isAppleMobile;
   const isWindows = /Windows/i.test(userAgent);
 
-  if (isAppleMobile) return { key: "ios", label: "iPhone / iPad", downloads: "l’app Fichiers" };
-  if (isAndroid) return { key: "android", label: "Android", downloads: "le dossier Téléchargements" };
-  if (isMac) return { key: "mac", label: "Mac", downloads: "le dossier Téléchargements du Finder" };
-  if (isWindows) return { key: "windows", label: "Windows", downloads: "le dossier Téléchargements" };
-  return { key: "desktop", label: isMobile ? "Mobile" : "Ordinateur", downloads: "vos téléchargements" };
+  if (isAppleMobile) return { key: "ios", label: "iPhone / iPad", downloads: downloadTranslate("l’app Fichiers") };
+  if (isAndroid) return { key: "android", label: "Android", downloads: downloadTranslate("le dossier Téléchargements") };
+  if (isMac) return { key: "mac", label: "Mac", downloads: downloadTranslate("le dossier Téléchargements du Finder") };
+  if (isWindows) return { key: "windows", label: "Windows", downloads: downloadTranslate("le dossier Téléchargements") };
+  return {
+    key: "desktop",
+    label: downloadTranslate(isMobile ? "Mobile" : "Ordinateur"),
+    downloads: downloadTranslate("vos téléchargements")
+  };
 }
 
 function getDownloadKind() {
@@ -158,26 +184,26 @@ function getProjectChoices() {
     {
       key: "video",
       icon: "clapperboard",
-      title: "Vidéo / Film",
-      description: "Synchroniser le son avec des images."
+      title: downloadTranslate("Vidéo / Film"),
+      description: downloadTranslate("Synchroniser le son avec des images.")
     },
     {
       key: "music",
       icon: "audio-lines",
-      title: "Musique / DAW",
-      description: "Importer le son dans une session audio."
+      title: downloadTranslate("Musique / DAW"),
+      description: downloadTranslate("Importer le son dans une session audio.")
     },
     {
       key: "game",
       icon: "gamepad-2",
-      title: "Jeu / Expérience",
-      description: "Ajouter le fichier comme ressource audio."
+      title: downloadTranslate("Jeu / Expérience"),
+      description: downloadTranslate("Ajouter le fichier comme ressource audio.")
     },
     {
       key: "other",
       icon: "folder-open",
-      title: "Autre projet",
-      description: "Voir une méthode d’import universelle."
+      title: downloadTranslate("Autre projet"),
+      description: downloadTranslate("Voir une méthode d’import universelle.")
     }
   ];
 }
@@ -185,45 +211,47 @@ function getProjectChoices() {
 function buildIntegrationGuide(kind) {
   const platform = getPlatformContext();
   const downloadKind = getDownloadKind();
-  const firstStep = downloadKind === "pack"
-    ? `Ouvrez ${platform.downloads} puis décompressez le ZIP Sonara Pack.`
-    : `Ouvrez ${platform.downloads} puis repérez le fichier Sonara téléchargé.`;
+  const firstStep = (
+    downloadKind === "pack"
+      ? downloadTranslate("Ouvrez {0} puis décompressez le ZIP Sonara Pack.")
+      : downloadTranslate("Ouvrez {0} puis repérez le fichier Sonara téléchargé.")
+  ).replace("{0}", platform.downloads);
 
   const guides = {
     video: {
-      title: "Introduire le son dans une vidéo",
+      title: downloadTranslate("Introduire le son dans une vidéo"),
       steps: [
         firstStep,
-        "Ouvrez votre projet vidéo et ajoutez le fichier Sonara comme piste audio.",
-        "Placez le son sous la vidéo, alignez son départ avec l’image puis ajustez son volume.",
-        "Vous pouvez aussi ouvrir Sonara Sync pour faire cette synchronisation directement ici."
+        downloadTranslate("Ouvrez votre projet vidéo et ajoutez le fichier Sonara comme piste audio."),
+        downloadTranslate("Placez le son sous la vidéo, alignez son départ avec l’image puis ajustez son volume."),
+        downloadTranslate("Vous pouvez aussi ouvrir Sonara Sync pour faire cette synchronisation directement ici.")
       ]
     },
     music: {
-      title: "Introduire le son dans une session audio",
+      title: downloadTranslate("Introduire le son dans une session audio"),
       steps: [
         firstStep,
-        "Créez ou sélectionnez une piste audio dans votre projet.",
-        "Importez le fichier Sonara sur cette piste et placez-le à l’endroit voulu dans la timeline.",
-        "Ajustez le niveau, les fondus et le placement sans modifier votre fichier original."
+        downloadTranslate("Créez ou sélectionnez une piste audio dans votre projet."),
+        downloadTranslate("Importez le fichier Sonara sur cette piste et placez-le à l’endroit voulu dans la timeline."),
+        downloadTranslate("Ajustez le niveau, les fondus et le placement sans modifier votre fichier original.")
       ]
     },
     game: {
-      title: "Introduire le son dans un projet interactif",
+      title: downloadTranslate("Introduire le son dans un projet interactif"),
       steps: [
         firstStep,
-        "Importez le fichier dans le dossier audio ou assets de votre projet.",
-        "Associez-le ensuite à la scène, l’événement, l’objet ou l’action qui doit le déclencher.",
-        "Gardez le fichier Sonara original intact et travaillez avec une copie dans le projet."
+        downloadTranslate("Importez le fichier dans le dossier audio ou assets de votre projet."),
+        downloadTranslate("Associez-le ensuite à la scène, l’événement, l’objet ou l’action qui doit le déclencher."),
+        downloadTranslate("Gardez le fichier Sonara original intact et travaillez avec une copie dans le projet.")
       ]
     },
     other: {
-      title: "Méthode universelle",
+      title: downloadTranslate("Méthode universelle"),
       steps: [
         firstStep,
-        "Ouvrez votre logiciel ou application puis cherchez Importer, Ajouter un média ou Ajouter un fichier.",
-        "Sélectionnez le fichier audio Sonara depuis vos téléchargements.",
-        "Placez-le dans votre projet puis sauvegardez votre projet avant de modifier le son."
+        downloadTranslate("Ouvrez votre logiciel ou application puis cherchez Importer, Ajouter un média ou Ajouter un fichier."),
+        downloadTranslate("Sélectionnez le fichier audio Sonara depuis vos téléchargements."),
+        downloadTranslate("Placez-le dans votre projet puis sauvegardez votre projet avant de modifier le son.")
       ]
     }
   };
@@ -237,7 +265,7 @@ function renderIntegrationGuide(kind) {
   if (!container) return;
 
   container.innerHTML = `
-    <p class="download-guide-kicker">GUIDE DYNAMIQUE</p>
+    <p class="download-guide-kicker">${escapeDownloadHtml(downloadTranslate("GUIDE DYNAMIQUE"))}</p>
     <h2>${escapeDownloadHtml(guide.title)}</h2>
     <ol>
       ${guide.steps.map((step) => `<li>${escapeDownloadHtml(step)}</li>`).join("")}
@@ -248,7 +276,7 @@ function renderIntegrationGuide(kind) {
 function renderPostDownloadAssistant() {
   const platform = getPlatformContext();
   const choices = getProjectChoices();
-  const itemTitle = selectedDownload?.title || selectedPack?.title || "Votre fichier Sonara";
+  const itemTitle = selectedDownload?.title || selectedPack?.title || downloadTranslate("Votre fichier Sonara");
 
   downloadPage.innerHTML = `
     <section class="download-after">
@@ -256,15 +284,15 @@ function renderPostDownloadAssistant() {
         <header class="download-after-header">
           <p class="download-kicker">SONARA PACK · ${escapeDownloadHtml(platform.label)}</p>
           <span class="download-after-check" aria-hidden="true">✓</span>
-          <h1>Téléchargement lancé.</h1>
-          <p><strong data-user-content>${escapeDownloadHtml(itemTitle)}</strong> est prêt. Dites à Sonara dans quel type de projet vous voulez l’utiliser.</p>
+          <h1>${escapeDownloadHtml(downloadTranslate("Téléchargement lancé."))}</h1>
+          <p><strong data-user-content>${escapeDownloadHtml(itemTitle)}</strong> ${escapeDownloadHtml(downloadTranslate("est prêt. Dites à Sonara dans quel type de projet vous voulez l’utiliser."))}</p>
         </header>
 
         <div class="download-project-choices">
           ${choices.map((choice, index) => `
             <button class="download-project-choice ${index === 0 ? "active" : ""}" type="button" data-project-kind="${choice.key}">
               <i data-lucide="${choice.icon}"></i>
-              <span><strong>${choice.title}</strong><small>${choice.description}</small></span>
+              <span><strong>${escapeDownloadHtml(choice.title)}</strong><small>${escapeDownloadHtml(choice.description)}</small></span>
             </button>
           `).join("")}
         </div>
@@ -272,9 +300,9 @@ function renderPostDownloadAssistant() {
         <section class="download-integration-guide"></section>
 
         <div class="download-after-actions">
-          <button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>Ouvrir Sonara Sync</button>
-          <button class="download-library-button" type="button">Bibliothèque</button>
-          <button class="download-home-button" type="button">Accueil</button>
+          <button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>${escapeDownloadHtml(downloadTranslate("Ouvrir Sonara Sync"))}</button>
+          <button class="download-library-button" type="button">${escapeDownloadHtml(downloadTranslate("Bibliothèque"))}</button>
+          <button class="download-home-button" type="button">${escapeDownloadHtml(downloadTranslate("Accueil"))}</button>
         </div>
       </div>
     </section>
@@ -308,9 +336,9 @@ function finishDesktopDownload() {
   const title = document.querySelector(".download-title");
   const text = document.querySelector(".download-text");
 
-  if (title) title.textContent = "Téléchargement terminé";
+  if (title) title.textContent = downloadTranslate("Téléchargement terminé");
   if (text) {
-    text.textContent = "Le fichier est lancé. Préparation de votre guide d’intégration…";
+    text.textContent = downloadTranslate("Le fichier est lancé. Préparation de votre guide d’intégration…");
   }
 
   setTimeout(renderPostDownloadAssistant, 850);
@@ -321,10 +349,10 @@ function connectMobileButtons() {
   const homeButton = document.querySelector(".download-home-button");
 
   if (downloadButton) {
-    downloadButton.addEventListener("click", () => {
-      const started = downloadFile();
+    downloadButton.addEventListener("click", async () => {
+      const started = await downloadFile();
       if (!started) return;
-      downloadButton.textContent = "Téléchargement lancé";
+      downloadButton.textContent = downloadTranslate("Téléchargement lancé");
       downloadButton.disabled = true;
       setTimeout(renderPostDownloadAssistant, 700);
     });
@@ -417,6 +445,10 @@ async function confirmStripePurchase() {
 }
 
 async function loadDownloadData() {
+  try {
+    await window.SonaraI18n?.ready;
+  } catch {}
+
   renderLayout();
 
   try {
@@ -450,8 +482,8 @@ async function loadDownloadData() {
     if (isMobile) {
       connectMobileButtons();
     } else {
-      setTimeout(() => {
-        const started = downloadFile();
+      setTimeout(async () => {
+        const started = await downloadFile();
         if (started) finishDesktopDownload();
       }, 2000);
     }

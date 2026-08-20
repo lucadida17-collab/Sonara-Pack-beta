@@ -273,12 +273,39 @@ function renderSupportForm(initialCategory = "") {
                 <option value="pack">Pack</option>
                 <option value="artist">Artiste</option>
                 <option value="security">Sécurité / fraude</option>
+                <option value="rights_incident">Droits / republication non autorisée</option>
                 <option value="other">Autre</option>
               </select>
               <i data-lucide="chevron-down"></i>
             </div>
             <p class="support-field-message" data-for="category"></p>
           </div>
+
+          <section class="support-rights-fields" hidden>
+            <div class="support-field">
+              <label for="support-rights-pack">ID du pack Sonara</label>
+              <input id="support-rights-pack" class="support-input support-rights-pack" type="text" maxlength="180" placeholder="pack_…">
+              <p class="support-field-message" data-for="rights-pack"></p>
+            </div>
+            <div class="support-field">
+              <label for="support-rights-track">ID de la track (si le signalement vise une track précise)</label>
+              <input id="support-rights-track" class="support-input support-rights-track" type="text" maxlength="180" placeholder="track_…">
+            </div>
+            <div class="support-field">
+              <label for="support-rights-platform">Plateforme externe</label>
+              <input id="support-rights-platform" class="support-input support-rights-platform" type="text" maxlength="120" placeholder="Spotify, YouTube, SoundCloud…">
+              <p class="support-field-message" data-for="rights-platform"></p>
+            </div>
+            <div class="support-field">
+              <label for="support-rights-url">URL du contenu présumé litigieux</label>
+              <input id="support-rights-url" class="support-input support-rights-url" type="url" maxlength="1200" placeholder="https://…">
+              <p class="support-field-message" data-for="rights-url"></p>
+            </div>
+            <div class="support-field">
+              <label for="support-rights-evidence">Preuves complémentaires (facultatif)</label>
+              <textarea id="support-rights-evidence" class="support-input support-rights-evidence" maxlength="1200" placeholder="Liens ou éléments utiles à la vérification humaine"></textarea>
+            </div>
+          </section>
 
           <div class="support-field">
             <label for="support-subject">Objet</label>
@@ -316,6 +343,12 @@ function renderSupportForm(initialCategory = "") {
   const categoryInput = document.querySelector(".support-category-input");
   const subjectInput = document.querySelector(".support-subject-input");
   const messageInput = document.querySelector(".support-message-input");
+  const rightsFields = document.querySelector(".support-rights-fields");
+  const rightsPackInput = document.querySelector(".support-rights-pack");
+  const rightsTrackInput = document.querySelector(".support-rights-track");
+  const rightsPlatformInput = document.querySelector(".support-rights-platform");
+  const rightsUrlInput = document.querySelector(".support-rights-url");
+  const rightsEvidenceInput = document.querySelector(".support-rights-evidence");
   const submitButton = document.querySelector(".support-submit-button");
   const characterCount = document.querySelector(".support-character-count");
   const submitMessage = document.querySelector(".support-submit-message");
@@ -335,21 +368,37 @@ function renderSupportForm(initialCategory = "") {
     const categoryValid = Boolean(categoryInput.value);
     const subjectValid = subjectInput.value.trim().length >= 3;
     const messageValid = messageInput.value.trim().length >= 10;
+    const rightsMode = categoryInput.value === "rights_incident";
+    const rightsPackValid = !rightsMode || rightsPackInput.value.trim().length > 0;
+    const rightsPlatformValid = !rightsMode || rightsPlatformInput.value.trim().length > 0;
+    const rightsUrlValid = !rightsMode || /^https?:\/\//i.test(rightsUrlInput.value.trim());
 
     if (showErrors) {
       setFieldMessage("category", categoryValid ? "" : "Choisissez une catégorie.");
       setFieldMessage("subject", subjectValid ? "" : "L’objet doit contenir au moins 3 caractères.");
       setFieldMessage("message", messageValid ? "" : "La description doit contenir au moins 10 caractères.");
+      setFieldMessage("rights-pack", rightsPackValid ? "" : "Indiquez le pack Sonara concerné.");
+      setFieldMessage("rights-platform", rightsPlatformValid ? "" : "Indiquez la plateforme externe.");
+      setFieldMessage("rights-url", rightsUrlValid ? "" : "Indiquez une URL externe valide commençant par http:// ou https://.");
     }
 
-    submitButton.disabled = !(categoryValid && subjectValid && messageValid);
-    return categoryValid && subjectValid && messageValid;
+    submitButton.disabled = !(categoryValid && subjectValid && messageValid && rightsPackValid && rightsPlatformValid && rightsUrlValid);
+    return categoryValid && subjectValid && messageValid && rightsPackValid && rightsPlatformValid && rightsUrlValid;
   }
 
-  [categoryInput, subjectInput, messageInput].forEach((input) => {
+  function syncRightsFields() {
+    rightsFields.hidden = categoryInput.value !== "rights_incident";
+  }
+
+  [categoryInput, subjectInput, messageInput, rightsPackInput, rightsTrackInput, rightsPlatformInput, rightsUrlInput, rightsEvidenceInput].forEach((input) => {
     input.addEventListener("input", () => {
+      syncRightsFields();
       submitMessage.textContent = "";
       submitMessage.className = "support-submit-message";
+      validateForm(false);
+    });
+    input.addEventListener("change", () => {
+      syncRightsFields();
       validateForm(false);
     });
   });
@@ -378,7 +427,14 @@ function renderSupportForm(initialCategory = "") {
       role: profile.role || "user",
       category: categoryInput.value,
       subject: subjectInput.value.trim(),
-      message: messageInput.value.trim()
+      message: messageInput.value.trim(),
+      ...(categoryInput.value === "rights_incident" ? {
+        packId: rightsPackInput.value.trim(),
+        trackId: rightsTrackInput.value.trim() || null,
+        externalPlatform: rightsPlatformInput.value.trim(),
+        externalUrl: rightsUrlInput.value.trim(),
+        evidence: rightsEvidenceInput.value.trim() || null
+      } : {})
     };
 
     try {
@@ -411,6 +467,7 @@ function renderSupportForm(initialCategory = "") {
     }
   });
 
+  syncRightsFields();
   validateForm(false);
 }
 

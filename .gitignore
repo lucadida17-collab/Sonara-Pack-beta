@@ -60,3 +60,4 @@ Thumbs.db
 # server-local.js, server-test.js et server.js restent volontairement suivis.
 # Render doit pouvoir les récupérer depuis Git.
 # Un .gitignore ne peut pas rendre ces fichiers privés dans un dépôt public.
+data/

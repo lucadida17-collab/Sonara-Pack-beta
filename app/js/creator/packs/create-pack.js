@@ -5,6 +5,10 @@ if (!CreatePack) {
   throw new Error("Conteneur .create-pack introuvable.");
 }
 
+function createPackTranslate(value) {
+  return window.SonaraI18n?.t?.(value) || value;
+}
+
 
 const artistProfile = readArtistProfile();
 const draftId = new URLSearchParams(window.location.search).get("draft") || "current";
@@ -137,6 +141,7 @@ const packData = {
   globalIsFree: false,
   globalPriceCustomized: false,
   license: createDefaultPackLicense(),
+  rightsDeclarationAccepted: false,
   updatedAt: null
 };
 
@@ -274,6 +279,7 @@ function hydratePackData(saved) {
   packData.globalIsFree = Boolean(saved.globalIsFree);
   packData.globalPriceCustomized = Boolean(saved.globalPriceCustomized);
   packData.license = cloneCreatePackLicense(saved.license);
+  packData.rightsDeclarationAccepted = Boolean(saved.rightsDeclarationAccepted);
   packData.updatedAt = saved.updatedAt || null;
 }
 
@@ -1049,6 +1055,14 @@ function renderLicense() {
             <span>Conditions complémentaires</span>
             <textarea name="customTerms" maxlength="1600" placeholder="Précisions particulières visibles par l’acheteur">${escapeHtml(license.customTerms || "")}</textarea>
           </label>
+
+          <label class="create-license-credit create-rights-declaration">
+            <input type="checkbox" name="rightsDeclarationAccepted" ${packData.rightsDeclarationAccepted ? "checked" : ""}>
+            <span>
+              <strong>Déclaration de droits obligatoire</strong>
+              <small>Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.</small>
+            </span>
+          </label>
         </form>
 
         <aside class="create-license-preview-panel">
@@ -1070,7 +1084,7 @@ function renderLicense() {
 
       <div class="actions">
         <button type="button" class="prev-btn">Retour</button>
-        <button type="button" class="submit-btn">Envoyer en modération</button>
+        <button type="button" class="submit-btn">${escapeHtml(createPackTranslate("Envoyer à la modération"))}</button>
       </div>
     </section>
   `;
@@ -1092,6 +1106,7 @@ function renderLicense() {
 
   document.querySelector(".submit-btn").addEventListener("click", () => {
     syncCreatePackLicenseForm(form);
+    packData.rightsDeclarationAccepted = Boolean(form.elements.rightsDeclarationAccepted?.checked);
     submitPack();
   });
 }
@@ -1146,26 +1161,26 @@ function openPackSubmissionLoader(finalPack) {
       </div>
 
       <p class="pack-submission-eyebrow">SONARA CREATOR</p>
-      <h2>Envoi de ton pack</h2>
-      <p class="pack-submission-status" data-submit-status>Envoi et traitement en cours…</p>
+      <h2>${escapeHtml(createPackTranslate("Envoi de ton pack"))}</h2>
+      <p class="pack-submission-status" data-submit-status>${escapeHtml(createPackTranslate("Envoi et traitement en cours…"))}</p>
 
       <div class="pack-submission-pulse" aria-hidden="true"><span></span></div>
 
       <div class="pack-submission-meta">
-        <div><span>Format</span><strong>${formatLabel}</strong></div>
-        <div><span>Tracks</span><strong>${trackCount}</strong></div>
-        <div><span>Temps écoulé</span><strong data-submit-elapsed>00:00</strong></div>
+        <div><span>${escapeHtml(createPackTranslate("Format"))}</span><strong>${escapeHtml(createPackTranslate(formatLabel))}</strong></div>
+        <div><span>${escapeHtml(createPackTranslate("Tracks"))}</span><strong>${trackCount}</strong></div>
+        <div><span>${escapeHtml(createPackTranslate("Temps écoulé"))}</span><strong data-submit-elapsed>00:00</strong></div>
       </div>
 
       <aside class="pack-submission-tip">
         <div>
-          <span class="pack-submission-tip-label">CONSEIL ARTISTE</span>
-          <strong data-submit-tip>${PACK_SUBMISSION_TIPS[0]}</strong>
+          <span class="pack-submission-tip-label">${escapeHtml(createPackTranslate("CONSEIL ARTISTE"))}</span>
+          <strong data-submit-tip>${escapeHtml(createPackTranslate(PACK_SUBMISSION_TIPS[0]))}</strong>
         </div>
-        <button type="button" class="pack-submission-next-tip" aria-label="Afficher le conseil suivant">Conseil suivant</button>
+        <button type="button" class="pack-submission-next-tip" aria-label="${escapeHtml(createPackTranslate("Afficher le conseil suivant"))}">${escapeHtml(createPackTranslate("Conseil suivant"))}</button>
       </aside>
 
-      <small class="pack-submission-note">Tu peux rester sur cette page pendant que Sonara finalise l'envoi. Ne ferme pas l'onglet.</small>
+      <small class="pack-submission-note">${escapeHtml(createPackTranslate("Tu peux rester sur cette page pendant que Sonara finalise l’envoi. Ne ferme pas l’onglet."))}</small>
     </section>
   `;
 
@@ -1181,7 +1196,7 @@ function openPackSubmissionLoader(finalPack) {
     tip.classList.remove("is-changing");
     void tip.offsetWidth;
     tip.classList.add("is-changing");
-    tip.textContent = PACK_SUBMISSION_TIPS[tipIndex];
+    tip.textContent = createPackTranslate(PACK_SUBMISSION_TIPS[tipIndex]);
   };
 
   nextTipButton.addEventListener("click", showNextTip);
@@ -1197,7 +1212,7 @@ function openPackSubmissionLoader(finalPack) {
   return {
     setStatus(message) {
       const status = overlay.querySelector("[data-submit-status]");
-      if (status && message) status.textContent = message;
+      if (status && message) status.textContent = createPackTranslate(message);
     },
     close() {
       window.clearInterval(timer);
@@ -1230,7 +1245,7 @@ async function submitPack() {
 
   isSubmitting = true;
   submitButton.disabled = true;
-  submitButton.textContent = "Envoi en cours…";
+  submitButton.textContent = createPackTranslate("Envoi en cours…");
   submitError.hidden = true;
 
   let submissionLoader = null;
@@ -1283,7 +1298,7 @@ async function submitPack() {
     submitError.hidden = false;
     submitError.textContent = error.message;
     submitButton.disabled = false;
-    submitButton.textContent = "Envoyer en validation";
+    submitButton.textContent = createPackTranslate("Envoyer à la modération");
     isSubmitting = false;
   }
 }
@@ -1392,6 +1407,7 @@ function buildFinalPack() {
       updatedAt: new Date().toISOString(),
       updatedByAccountId: artistProfile.accountId || artistProfile.id || null
     },
+    rightsDeclarationAccepted: packData.rightsDeclarationAccepted === true,
     status: "pending",
     createdAt: new Date().toISOString()
   };
@@ -1504,6 +1520,14 @@ function validateEverything() {
       valid: false,
       step: 3,
       show: () => showFieldError("license", "Donne un nom à la licence avant l’envoi.")
+    };
+  }
+
+  if (packData.rightsDeclarationAccepted !== true) {
+    return {
+      valid: false,
+      step: 3,
+      show: () => showFieldError("license", "Confirme la déclaration de droits avant l’envoi.")
     };
   }
 
@@ -1741,6 +1765,7 @@ async function persistCurrentScreen() {
     const licenseForm = document.querySelector(".create-license-editor");
     if (licenseForm) {
       packData.license = readCreatePackLicenseForm(licenseForm);
+      packData.rightsDeclarationAccepted = Boolean(licenseForm.elements.rightsDeclarationAccepted?.checked);
     }
   }
 }
@@ -1792,7 +1817,7 @@ async function finalizePublishedPack(storedPack = {}) {
   // Sécurité de reprise : même si IndexedDB refuse exceptionnellement la suppression,
   // le prochain accès à Create Pack supprimera ce brouillon avant tout affichage.
   sessionStorage.setItem(FORCE_NEW_PACK_KEY, "true");
-  localStorage.setItem("creatorToast", "Pack envoyé en validation");
+  localStorage.setItem("creatorToast", createPackTranslate("Pack envoyé à la modération"));
 
   const dashboardUrl = new URL(
     "/app/pages/creator/dashboard.html",
@@ -1807,10 +1832,10 @@ async function finalizePublishedPack(storedPack = {}) {
   overlay.className = "pack-sent-overlay";
   overlay.innerHTML = `
     <div class="pack-sent-dialog" role="status" aria-live="assertive">
-      <strong>Pack envoyé en validation</strong>
-      <span>Retour au dashboard…</span>
+      <strong>${escapeHtml(createPackTranslate("Pack envoyé à la modération"))}</strong>
+      <span>${escapeHtml(createPackTranslate("Retour au dashboard…"))}</span>
       <button type="button" class="submit-btn pack-sent-dashboard">
-        Ouvrir le dashboard Creator
+        ${escapeHtml(createPackTranslate("Ouvrir le dashboard Creator"))}
       </button>
     </div>
   `;

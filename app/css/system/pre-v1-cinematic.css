@@ -767,6 +767,38 @@ body.sonara-cinematic-running #sonara-language-switcher {
   display: none;
 }
 
+
+.sonara-cinematic-skip {
+  position: absolute;
+  z-index: 32;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(126, 235, 255, .28);
+  border-radius: 999px;
+  color: rgba(237, 251, 255, .92);
+  background: rgba(1, 9, 24, .74);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .08);
+  backdrop-filter: blur(10px);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.sonara-cinematic-skip:focus-visible {
+  outline: 2px solid var(--cinematic-cyan);
+  outline-offset: 3px;
+}
+
+.sonara-cinematic.is-inactive .sonara-cinematic-skip {
+  display: none;
+}
+
 .sonara-cinematic-recorder {
   position: absolute;
   z-index: 30;
@@ -1230,6 +1262,14 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 @media (max-width: 760px) {
+  .sonara-cinematic-skip {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    min-height: 34px;
+    padding-inline: 11px;
+    font-size: 9px;
+  }
+
   .sonara-cinematic-recorder {
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));

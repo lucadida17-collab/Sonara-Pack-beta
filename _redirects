@@ -1,0 +1,15 @@
+# SONARA — fichiers serveur / secrets jamais publiables par Netlify
+/.env                 /index.html 404!
+/.env.local           /index.html 404!
+/.env.test            /index.html 404!
+/.env.prod            /index.html 404!
+/.git/*                /index.html 404!
+/data/*                /index.html 404!
+/backend/*             /index.html 404!
+/node_modules/*        /index.html 404!
+/server.js             /index.html 404!
+/server-test.js        /index.html 404!
+/server-local.js       /index.html 404!
+/sync-engine.js        /index.html 404!
+/package.json          /index.html 404!
+/package-lock.json     /index.html 404!
