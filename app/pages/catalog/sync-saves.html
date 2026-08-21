@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/app/css/catalog/montage.css?v=sync-editor-v3">
   <link rel="stylesheet" href="/app/css/catalog/sync-saves.css?v=sync-saves-v2">
   <link rel="stylesheet" href="/app/css/core/i18n.css?v=sync-language-complete-v2">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 
   <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -52,7 +53,7 @@
         <section class="main-content">
           <section class="scroll-zone">
             <section class="sync-saves-content shell-content" aria-live="polite">
-              <section class="montage-loading" role="status"><span class="montage-loading-ring" aria-hidden="true"></span><strong>Ouverture de vos brouillons…</strong></section>
+              <section class="montage-loading sonara-loading-surface" data-sonara-loading-audience="user" role="status"><strong>Ouverture de vos brouillons…</strong></section>
             </section>
           </section>
         </section>
@@ -66,7 +67,8 @@
   <script src="/app/js/components/header/header.js?v=sync-header-v2"></script>
   <script src="/app/js/components/navigation/montage-access.js?v=sync-access-v2"></script>
   <script src="/app/js/catalog/sync-project-store.js?v=sync-project-store-v1"></script>
-  <script src="/app/js/catalog/sync-saves.js?v=sync-saves-v2"></script>
-  <script src="/app/js/core/i18n.js?v=sync-language-complete-v2" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1"></script>
+  <script src="/app/js/catalog/sync-saves.js?v=loading-bg-v1"></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 </html>

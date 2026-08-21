@@ -1,6 +1,9 @@
 (() => {
   "use strict";
 
+  const MONTAGE_MIN_LOADING_MS = 6000;
+  const montageLoadingStartedAt = Date.now();
+
   const root = document.querySelector(".montage-content");
   if (!root) return;
 
@@ -807,6 +810,7 @@
       }
     }
 
+    await window.SonaraLoadingExperience?.waitMinimum?.(montageLoadingStartedAt, MONTAGE_MIN_LOADING_MS);
     render();
   }
 

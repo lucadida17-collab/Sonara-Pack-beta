@@ -12,11 +12,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/creator/packs/manage-pack.css?v=1.1.0-license-direct">
   <link rel="stylesheet" href="/app/css/core/i18n.css">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 </head>
 <body class="manage-pack-page">
   <main id="managePackRoot" class="manage-pack-root" aria-busy="true">
-    <section class="manage-pack-loading">
-      <span class="manage-pack-loading-orb" aria-hidden="true"></span>
+    <section class="manage-pack-loading sonara-loading-surface" data-sonara-loading-audience="artist">
       <p>SONARA CREATOR</p>
       <h1>Ouverture du pack</h1>
       <small>Chargement de la licence…</small>
@@ -26,7 +26,8 @@
   <script src="/app/js/core/config.js?v=5.3.8.15" defer></script>
   <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="/app/js/creator/packs/manage-pack.js?v=1.1.0-license-direct" defer></script>
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1" defer></script>
+  <script src="/app/js/creator/packs/manage-pack.js?v=loading-bg-v1" defer></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 </html>

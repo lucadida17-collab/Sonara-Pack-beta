@@ -276,7 +276,8 @@ function getStoredPackProfile() {
 }
 
 
-const PACK_MIN_LOADING_TIME = 700;
+const PACK_MIN_LOADING_TIME = 6000;
+const PACK_REQUEST_TIMEOUT = 60000;
 
 function updatePackLoading(progress, message) {
   const loader = document.querySelector(".my-pack-page-loader");
@@ -536,11 +537,19 @@ let packData = null;
 
 async function loadPack() {
 
-  const response = await fetch(`${API_URL}/api/packs`, {
-    method: "GET",
-    cache: "no-store",
-    headers: { Accept: "application/json" }
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), PACK_REQUEST_TIMEOUT);
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api/packs`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`Chargement du pack impossible (${response.status}).`);
@@ -1513,8 +1522,9 @@ async function initializePackPage() {
     console.error("Erreur ouverture du pack :", error);
 
     const message =
-      error?.message ||
-      "Impossible d’ouvrir ce pack.";
+      error?.name === "AbortError"
+        ? "Problème de chargement : le serveur met trop de temps à répondre."
+        : error?.message || "Impossible d’ouvrir ce pack.";
 
     updatePackLoading(100, message);
     await waitForPackMinimum(loadingStartedAt);

@@ -6,6 +6,9 @@ let artistCatalogue = [];
 let artistPacks = [];
 let publicArtist = null;
 let activePreview = null;
+const ARTIST_PUBLIC_MIN_LOADING_MS = 6000;
+const ARTIST_PUBLIC_REQUEST_TIMEOUT = 60000;
+const artistPublicLoadingStartedAt = Date.now();
 
 function artistSafeNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -588,11 +591,19 @@ async function loadPublicArtist() {
   try {
     await window.SonaraCommercial?.ready?.();
 
-    const response = await fetch(`${API_URL}/api/packs`, {
-      method: "GET",
-      cache: "no-store",
-      headers: { Accept: "application/json" }
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ARTIST_PUBLIC_REQUEST_TIMEOUT);
+    let response;
+    try {
+      response = await fetch(`${API_URL}/api/packs`, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: controller.signal
+      });
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
 
@@ -619,6 +630,7 @@ async function loadPublicArtist() {
 
     publicArtist = getPackArtist(artistPacks[0]);
 
+    await window.SonaraLoadingExperience?.waitMinimum?.(artistPublicLoadingStartedAt, ARTIST_PUBLIC_MIN_LOADING_MS);
     renderArtistPage();
   } catch (error) {
     console.error("Erreur profil artiste public :", error);

@@ -10,14 +10,12 @@
   <title>Sonara Pack — Redirection sécurisée</title>
   <link rel="stylesheet" href="/app/css/system/stripe-loading.css">
   <link rel="stylesheet" href="/app/css/core/i18n.css">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 </head>
 <body>
-  <main class="stripe-loading-page" aria-live="polite">
+  <main class="stripe-loading-page sonara-loading-surface" data-sonara-loading-audience="user" data-sonara-loading-tip-host=".stripe-loading-card" aria-live="polite">
     <section class="stripe-loading-card">
       <p class="stripe-loading-kicker">SONARA PACK · PAIEMENT SÉCURISÉ</p>
-
-      <div class="stripe-loader-scene" aria-hidden="true">
-        <div class="stripe-loader-ring stripe-loader-ring-a"></div>
         <div class="stripe-loader-ring stripe-loader-ring-b"></div>
         <div class="stripe-loader-core">S</div>
       </div>
@@ -45,7 +43,8 @@
 
   <script src="/app/js/core/config.js?v=pre-v1-commercial-1"></script>
 <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
-  <script src="/app/js/system/stripe-loading.js?v=pre-v1-commercial-1" defer></script>
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1" defer></script>
+  <script src="/app/js/system/stripe-loading.js?v=loading-bg-v1" defer></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 </html>

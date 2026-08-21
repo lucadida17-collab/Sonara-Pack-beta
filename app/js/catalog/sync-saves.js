@@ -1,6 +1,9 @@
 (() => {
   "use strict";
 
+  const SYNC_SAVES_MIN_LOADING_MS = 6000;
+  const syncSavesLoadingStartedAt = Date.now();
+
   const root = document.querySelector(".sync-saves-content");
   if (!root) return;
 
@@ -129,6 +132,7 @@
     }
 
     try { await window.SonaraI18n?.ready; } catch {}
+    await window.SonaraLoadingExperience?.waitMinimum?.(syncSavesLoadingStartedAt, SYNC_SAVES_MIN_LOADING_MS);
     await render();
   }
 

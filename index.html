@@ -26,6 +26,7 @@
   </script>
 
   <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-language-gate-v1">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-bg-v1">
   <link rel="stylesheet" href="/app/css/system/pre-v1-cinematic.css?v=pre-v1-cinematic-final-audio-v10">
   <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -162,7 +163,8 @@
   </section>
 
   <main
-    class="sonara-entry-loader is-cinematic-waiting"
+    class="sonara-entry-loader sonara-loading-surface is-cinematic-waiting"
+    data-sonara-loading-audience="none"
     id="sonaraEntryLoader"
     role="progressbar"
     aria-label="Chargement de Sonara Pack"
@@ -175,16 +177,6 @@
     <div class="sonara-loader-glow sonara-loader-glow-two" aria-hidden="true"></div>
 
     <section class="sonara-loader-content">
-      <div class="sonara-loader-scene" aria-hidden="true">
-        <span class="sonara-loader-orbit sonara-loader-orbit-one"></span>
-        <span class="sonara-loader-orbit sonara-loader-orbit-two"></span>
-        <div class="sonara-loader-logo">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-
       <p class="sonara-loader-kicker" translate="no" data-i18n-ignore="true">SONARA PACK</p>
       <h1>Connexion à votre espace</h1>
 
@@ -210,9 +202,10 @@
     </section>
   </main>
 
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-once-v7"></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1"></script>
   <script src="/app/js/core/config.js?v=pre-v1-main-failover-v1"></script>
   <script src="/app/js/system/pre-v1-cinematic.js?v=pre-v1-cinematic-once-fast-v16"></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-bg-v1"></script>
   <script>
     (() => {
       "use strict";

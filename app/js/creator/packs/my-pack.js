@@ -1,6 +1,6 @@
 const myPackPage = document.querySelector(".create-pack");
-const MY_PACK_MIN_LOADING_TIME = 4000;
-const MY_PACK_SERVER_LOADING_TIMEOUT = 20000;
+const MY_PACK_MIN_LOADING_TIME = 6000;
+const MY_PACK_SERVER_LOADING_TIMEOUT = 60000;
 const MY_PACK_IMAGE_LOADING_TIMEOUT = 12000;
 
 function ensureMyPackLucide() {
@@ -486,20 +486,14 @@ function renderMyPacksStructure() {
   myPackPage.setAttribute("aria-busy", "true");
   myPackPage.innerHTML = `
     <section
-      class="my-pack-page-loader"
+      class="my-pack-page-loader sonara-loading-surface"
+      data-sonara-loading-audience="artist"
       role="progressbar"
       aria-label="Chargement de vos packs"
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow="5"
     >
-      <div class="my-pack-loader-scene" aria-hidden="true">
-        <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
-        <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
-        <span class="my-pack-loader-core">
-          <span></span><span></span><span></span>
-        </span>
-      </div>
       <p class="my-pack-loader-label">SONARA CREATOR</p>
       <h1>Chargement de vos packs</h1>
       <p class="my-pack-loader-message" aria-live="polite">Connexion au serveur Sonara…</p>

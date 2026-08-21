@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/app/css/components/header/header.css?v=cinematic-replay-component-v3">
   <link rel="stylesheet" href="/app/css/core/catalog-shell.css?v=5.3.8.67">
   <link rel="stylesheet" href="/app/css/core/i18n.css">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 
   <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
   <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
@@ -104,8 +105,7 @@
         <section class="main-content">
           <section class="scroll-zone">
             <section class="artist-public-content shell-content" aria-live="polite">
-              <section class="artist-public-loading" role="status">
-                <span class="artist-public-loading-dot"></span>
+              <section class="artist-public-loading sonara-loading-surface" data-sonara-loading-audience="user" role="status">
                 <p>Chargement du profil artiste…</p>
               </section>
             </section>
@@ -121,7 +121,8 @@
   <script src="/app/js/components/header/header.js?v=cinematic-replay-component-v3"></script>
   <script src="/app/js/components/navigation/montage-access.js?v=montage-v1"></script>
   <script src="/app/js/catalog/distribution.js?v=pre-v1-distribution-v1.2-artists-categories"></script>
-  <script src="/app/js/catalog/artist.js?v=pre-v1-commercial-1"></script>
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1"></script>
+  <script src="/app/js/catalog/artist.js?v=loading-bg-v1"></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 </html>

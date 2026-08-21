@@ -568,3 +568,14 @@ button { color: inherit; }
   .license-preview-columns { grid-template-columns: 1fr; }
   .license-preview-columns section + section { border-left: 0; border-top: 1px solid rgba(255, 255, 255, .08); }
 }
+
+
+/* Chargeur plein écran commun — retiré dès que renderManagePack remplace le contenu. */
+.manage-pack-loading.sonara-loading-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 28px;
+}

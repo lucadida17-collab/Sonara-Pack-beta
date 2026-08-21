@@ -1,6 +1,6 @@
 const SHARE_REDIRECT_KEY = "sonaraRedirectAfterAuth";
 const SHARE_MIN_LOADING_TIME = 6000;
-const SHARE_REQUEST_TIMEOUT = 20000;
+const SHARE_REQUEST_TIMEOUT = 60000;
 const SHARE_NAVIGATION_FALLBACK_DELAY = 1400;
 
 const shareParams =

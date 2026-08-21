@@ -2,7 +2,9 @@
 
 const PURCHASE_STORAGE_KEY = "sonaraStripePurchase";
 const PURCHASE_MAX_AGE_MS = 10 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 30000;
+const REQUEST_TIMEOUT_MS = 60000;
+const STRIPE_MIN_LOADING_MS = 6000;
+const stripeLoadingStartedAt = Date.now();
 
 const statusElement = document.getElementById("stripeLoadingStatus");
 const stepElement = document.getElementById("stripeProgressStep");
@@ -149,6 +151,7 @@ async function createCheckoutSession() {
 
     sessionStorage.removeItem(PURCHASE_STORAGE_KEY);
     setProgress(100, "Session prête", "Redirection vers le paiement sécurisé Stripe…");
+    await window.SonaraLoadingExperience?.waitMinimum?.(stripeLoadingStartedAt, STRIPE_MIN_LOADING_MS);
     window.location.replace(checkoutUrl);
   } catch (error) {
     showError(error);

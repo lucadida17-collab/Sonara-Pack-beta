@@ -1319,12 +1319,11 @@ function openPackSubmissionLoader(finalPack) {
   const trackCount = Array.isArray(finalPack?.tracks) ? finalPack.tracks.length : packData.tracks.length;
   const formatLabel = trackCount > 1 ? "Album" : "Single";
   const overlay = document.createElement("div");
-  overlay.className = "pack-submission-overlay";
+  overlay.className = "pack-submission-overlay sonara-loading-surface";
+  overlay.dataset.sonaraLoadingAudience = "artist";
+  overlay.dataset.sonaraLoadingNativeTips = "true";
   overlay.innerHTML = `
     <section class="pack-submission-dialog" role="status" aria-live="polite" aria-busy="true">
-      <div class="pack-submission-orbit" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </div>
 
       <p class="pack-submission-eyebrow">SONARA CREATOR</p>
       <h2>${escapeHtml(createPackTranslate("Envoi de ton pack"))}</h2>
@@ -1343,7 +1342,10 @@ function openPackSubmissionLoader(finalPack) {
           <span class="pack-submission-tip-label">${escapeHtml(createPackTranslate("CONSEIL ARTISTE"))}</span>
           <strong data-submit-tip>${escapeHtml(createPackTranslate(PACK_SUBMISSION_TIPS[0]))}</strong>
         </div>
-        <button type="button" class="pack-submission-next-tip" aria-label="${escapeHtml(createPackTranslate("Afficher le conseil suivant"))}">${escapeHtml(createPackTranslate("Conseil suivant"))}</button>
+        <span class="pack-submission-tip-actions">
+          <button type="button" class="sonara-loading-advice-button pack-submission-previous-tip" aria-label="${escapeHtml(createPackTranslate("Conseil précédent"))}"></button>
+          <button type="button" class="sonara-loading-advice-button pack-submission-next-tip" aria-label="${escapeHtml(createPackTranslate("Conseil suivant"))}"></button>
+        </span>
       </aside>
 
       <small class="pack-submission-note">${escapeHtml(createPackTranslate("Tu peux rester sur cette page pendant que Sonara finalise l’envoi. Ne ferme pas l’onglet."))}</small>
@@ -1354,20 +1356,34 @@ function openPackSubmissionLoader(finalPack) {
   const startedAt = Date.now();
   const elapsed = overlay.querySelector("[data-submit-elapsed]");
   const tip = overlay.querySelector("[data-submit-tip]");
+  const previousTipButton = overlay.querySelector(".pack-submission-previous-tip");
   const nextTipButton = overlay.querySelector(".pack-submission-next-tip");
   const progressBar = overlay.querySelector(".pack-submission-pulse");
   const progressFill = overlay.querySelector(".pack-submission-pulse span");
   let tipIndex = 0;
 
-  const showNextTip = () => {
-    tipIndex = (tipIndex + 1) % PACK_SUBMISSION_TIPS.length;
+  const showTip = (direction) => {
+    tipIndex = (tipIndex + direction + PACK_SUBMISSION_TIPS.length) % PACK_SUBMISSION_TIPS.length;
     tip.classList.remove("is-changing");
     void tip.offsetWidth;
     tip.classList.add("is-changing");
     tip.textContent = createPackTranslate(PACK_SUBMISSION_TIPS[tipIndex]);
   };
 
-  nextTipButton.addEventListener("click", showNextTip);
+  const showNextTip = () => showTip(1);
+  const showPreviousTip = () => showTip(-1);
+  const loadingIcons = window.SonaraLoadingExperience?.icons;
+  if (previousTipButton) previousTipButton.innerHTML = loadingIcons?.left || "‹";
+  if (nextTipButton) nextTipButton.innerHTML = loadingIcons?.right || "›";
+
+  previousTipButton?.addEventListener("click", showPreviousTip);
+  nextTipButton?.addEventListener("click", showNextTip);
+  const unbindTipKeyboard = window.SonaraLoadingExperience?.bindTipNavigation?.(overlay, {
+    onPrevious: showPreviousTip,
+    onNext: showNextTip,
+    previousButton: previousTipButton,
+    nextButton: nextTipButton
+  }) || (() => {});
 
   const timer = window.setInterval(() => {
     elapsed.textContent = formatSubmissionElapsed((Date.now() - startedAt) / 1000);
@@ -1399,9 +1415,13 @@ function openPackSubmissionLoader(finalPack) {
       progressBar?.removeAttribute("aria-valuenow");
       if (progressFill) progressFill.style.width = "36%";
     },
+    waitMinimum() {
+      return window.SonaraLoadingExperience?.waitMinimum?.(startedAt, 6000) || Promise.resolve();
+    },
     close() {
       window.clearInterval(timer);
       window.clearInterval(tipTimer);
+      unbindTipKeyboard();
       overlay.classList.remove("is-visible");
       window.setTimeout(() => overlay.remove(), 220);
     }
@@ -1417,6 +1437,7 @@ async function sendPackFormData(formData, submissionLoader) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", requestUrl, true);
+    xhr.timeout = 180000;
 
     const token = window.SonaraSession?.getToken?.();
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -1446,6 +1467,10 @@ async function sendPackFormData(formData, submissionLoader) {
 
     xhr.addEventListener("abort", () => {
       reject(new Error("L’envoi du pack a été interrompu."));
+    });
+
+    xhr.addEventListener("timeout", () => {
+      reject(new Error("Le serveur met trop de temps à finaliser l’envoi du pack. Réessaie dans un instant."));
     });
 
     submissionLoader?.setUploadProgress(0);
@@ -1517,6 +1542,7 @@ async function submitPack() {
 
     submissionLoader?.setStatus("Pack confirmé · finalisation…");
     const storedPack = await confirmPackPersistence(finalPack, result);
+    await submissionLoader?.waitMinimum?.();
     submissionLoader?.close();
     await finalizePublishedPack(storedPack);
     return;

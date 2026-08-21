@@ -27,6 +27,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sonara Pack - Catalogue de Pack</title>
   <link rel="stylesheet" href="/app/css/core/i18n.css">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 </head>
 
 <body class="pack-page sonara-shell-page">
@@ -135,20 +136,14 @@
               <div class="finger"></div>
 
               <section
-                class="my-pack-page-loader"
+                class="my-pack-page-loader sonara-loading-surface"
+                data-sonara-loading-audience="user"
                 role="progressbar"
                 aria-label="Ouverture du pack"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow="5"
               >
-                <div class="my-pack-loader-scene" aria-hidden="true">
-                  <span class="my-pack-loader-orbit my-pack-loader-orbit-one"></span>
-                  <span class="my-pack-loader-orbit my-pack-loader-orbit-two"></span>
-                  <span class="my-pack-loader-core">
-                    <span></span><span></span><span></span>
-                  </span>
-                </div>
                 <p class="my-pack-loader-label">SONARA PACK</p>
                 <h1>Ouverture du pack</h1>
                 <p class="my-pack-loader-message">Préparation du pack…</p>
@@ -230,8 +225,9 @@
   <script src="/app/js/components/header/header.js?v=cinematic-replay-component-v3"></script>
   <script src="/app/js/components/navigation/montage-access.js?v=montage-v1"></script>
   <script src="/app/js/legacy/memoire.js"></script>
-  <script src="/app/js/catalog/pack.js?v=preview-player-v2" defer></script>
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v6" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1" defer></script>
+  <script src="/app/js/catalog/pack.js?v=loading-bg-v1" defer></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 
 </html>

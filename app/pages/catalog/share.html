@@ -39,34 +39,20 @@
     href="/app/css/catalog/pack.css?v=5.3.8.51-share-stable"
   >
   <link rel="stylesheet" href="/app/css/core/i18n.css">
+  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-tip-controls-v1">
 </head>
 
 <body>
   <main>
     <section
-      class="my-pack-page-loader"
+      class="my-pack-page-loader sonara-loading-surface"
+      data-sonara-loading-audience="user"
       role="progressbar"
       aria-label="Ouverture du pack partagé"
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow="5"
     >
-      <div class="my-pack-loader-scene" aria-hidden="true">
-        <span
-          class="my-pack-loader-orbit my-pack-loader-orbit-one"
-        ></span>
-
-        <span
-          class="my-pack-loader-orbit my-pack-loader-orbit-two"
-        ></span>
-
-        <span class="my-pack-loader-core">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </div>
-
       <p class="my-pack-loader-label">SONARA PACK</p>
 
       <h1>Ouverture du pack partagé</h1>
@@ -83,8 +69,9 @@
 
   <script src="/app/js/core/config.js?v=5.3.8.51-share-stable"></script>
 <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="optional"></script>
-  <script src="/app/js/catalog/share.js?v=5.3.8.51-share-stable"></script>
-  <script src="/app/js/core/i18n.js?v=pre-v1-language-global-v5" defer></script>
+  <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1"></script>
+  <script src="/app/js/catalog/share.js?v=loading-bg-v1"></script>
+  <script src="/app/js/core/i18n.js?v=loader-language-v1" defer></script>
 </body>
 
 </html>

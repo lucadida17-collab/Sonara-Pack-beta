@@ -3404,22 +3404,12 @@ html:not([lang="fr"]):not([lang="en"]) .create-license-choice small {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.pack-submission-next-tip {
+.pack-submission-tip-actions {
   flex: 0 0 auto;
-  min-height: 38px;
-  padding: 0 13px;
-  border: 1px solid rgba(255, 255, 255, .12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, .06);
-  color: #fff;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.pack-submission-next-tip:hover {
-  background: rgba(255, 255, 255, .1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .pack-submission-note {
@@ -3458,8 +3448,8 @@ html:not([lang="fr"]):not([lang="en"]) .create-license-choice small {
     gap: 13px;
   }
 
-  .pack-submission-next-tip {
-    width: 100%;
+  .pack-submission-tip-actions {
+    align-self: flex-end;
   }
 }
 

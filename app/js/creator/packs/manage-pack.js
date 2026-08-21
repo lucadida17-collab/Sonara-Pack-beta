@@ -3,6 +3,9 @@
 const managePackRoot = document.getElementById("managePackRoot");
 const managePackParams = new URLSearchParams(window.location.search);
 const managePackId = managePackParams.get("id");
+const MANAGE_PACK_MIN_LOADING_TIME = 6000;
+const MANAGE_PACK_REQUEST_TIMEOUT = 60000;
+const managePackLoadingStartedAt = Date.now();
 
 const MANAGE_PACK_PERMISSIONS = [
   ["personalProjects", "Projets personnels", "Utilisation dans ses propres créations personnelles."],
@@ -436,10 +439,17 @@ async function initializeManagePack() {
     if (!managePackId) throw new Error("Pack introuvable.");
 
     const apiUrl = await managePackWaitForApi();
-    const response = await fetch(
-      `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`,
-      { headers: { Accept: "application/json" }, cache: "no-store" }
-    );
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), MANAGE_PACK_REQUEST_TIMEOUT);
+    let response;
+    try {
+      response = await fetch(
+        `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`,
+        { headers: { Accept: "application/json" }, cache: "no-store", signal: controller.signal }
+      );
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     const data = await managePackReadJson(response);
     if (!response.ok) throw new Error(data.message || "Impossible de récupérer le pack.");
 
@@ -447,13 +457,14 @@ async function initializeManagePack() {
       .find((item) => String(item.id) === String(managePackId));
     if (!pack) throw new Error("Ce pack n’existe pas ou ne vous appartient pas.");
 
+    await window.SonaraLoadingExperience?.waitMinimum?.(managePackLoadingStartedAt, MANAGE_PACK_MIN_LOADING_TIME);
     renderManagePack(pack);
   } catch (error) {
     managePackRoot.innerHTML = `
       <section class="manage-pack-error">
         <i data-lucide="triangle-alert"></i>
         <h1>Impossible d’ouvrir le pack</h1>
-        <p>${managePackEscape(error.message)}</p>
+        <p>${managePackEscape(error?.name === "AbortError" ? "Problème de chargement : le serveur met trop de temps à répondre." : error.message)}</p>
         <button type="button">Retour à Mes packs</button>
       </section>`;
     managePackRoot.setAttribute("aria-busy", "false");
