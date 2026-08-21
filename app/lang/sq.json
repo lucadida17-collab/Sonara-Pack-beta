@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "SONARA PANELI I ARTISTIT",
   "SONARA ARTIST MANAGEMENT": "SONARA MENAXHIMI I ARTISTIT",
   "Ajouter plusieurs tracks": "Shto disa track-e",
-  "20 tracks maximum par pack.": "Maksimumi 20 track-e për pack."
+  "20 tracks maximum par pack.": "Maksimumi 20 track-e për pack.",
+  "Déclaration de droits obligatoire": "Deklarata e të drejtave është e detyrueshme",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Konfirmoj se kam të drejtat e nevojshme për ta publikuar dhe licencuar këtë përmbajtje në Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Vendosi licencës një emër para dërgimit.",
+  "Confirme la déclaration de droits avant l’envoi.": "Konfirmo deklaratën e të drejtave para dërgimit.",
+  "La cover de la track {1} est obligatoire.": "Track-u {1} kërkon një kopertinë.",
+  "Le fichier audio de la track {1} est obligatoire.": "Track-u {1} kërkon një skedar audio.",
+  "Le titre de la track {1} est invalide.": "Titulli i track-ut {1} është i pavlefshëm.",
+  "Le prix de la track {1} est invalide.": "Çmimi i track-ut {1} është i pavlefshëm.",
+  "La cover de la track {1} dépasse 8 Mo.": "Kopertina e track-ut {1} tejkalon 8 MB.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Skedari audio i track-ut {1} tejkalon 250 MB."
 }

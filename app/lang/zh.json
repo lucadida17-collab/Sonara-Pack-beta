@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "SONARA 艺术家控制台",
   "SONARA ARTIST MANAGEMENT": "SONARA 艺术家管理",
   "Ajouter plusieurs tracks": "添加多个音轨",
-  "20 tracks maximum par pack.": "每个音乐包最多 20 个音轨。"
+  "20 tracks maximum par pack.": "每个音乐包最多 20 个音轨。",
+  "Déclaration de droits obligatoire": "必须确认权利声明",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "我确认拥有在 Sonara Pack 上发布和许可此内容所需的权利。",
+  "Donne un nom à la licence avant l’envoi.": "提交前请为许可证命名。",
+  "Confirme la déclaration de droits avant l’envoi.": "提交前请确认权利声明。",
+  "La cover de la track {1} est obligatoire.": "曲目 {1} 必须有封面。",
+  "Le fichier audio de la track {1} est obligatoire.": "曲目 {1} 必须有音频文件。",
+  "Le titre de la track {1} est invalide.": "曲目 {1} 的标题无效。",
+  "Le prix de la track {1} est invalide.": "曲目 {1} 的价格无效。",
+  "La cover de la track {1} dépasse 8 Mo.": "曲目 {1} 的封面超过 8 MB。",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "曲目 {1} 的音频文件超过 250 MB。"
 }

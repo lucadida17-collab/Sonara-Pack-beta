@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "DASHIBODI YA MSANII SONARA",
   "SONARA ARTIST MANAGEMENT": "USIMAMIZI WA MSANII SONARA",
   "Ajouter plusieurs tracks": "Ongeza track nyingi",
-  "20 tracks maximum par pack.": "Kiwango cha juu ni track 20 kwa pack."
+  "20 tracks maximum par pack.": "Kiwango cha juu ni track 20 kwa pack.",
+  "Déclaration de droits obligatoire": "Tamko la haki linahitajika",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Ninathibitisha kuwa nina haki zinazohitajika kuchapisha na kutoa leseni ya maudhui haya kwenye Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Lipe leseni jina kabla ya kutuma.",
+  "Confirme la déclaration de droits avant l’envoi.": "Thibitisha tamko la haki kabla ya kutuma.",
+  "La cover de la track {1} est obligatoire.": "Track {1} inahitaji cover.",
+  "Le fichier audio de la track {1} est obligatoire.": "Track {1} inahitaji faili ya sauti.",
+  "Le titre de la track {1} est invalide.": "Kichwa cha track {1} si sahihi.",
+  "Le prix de la track {1} est invalide.": "Bei ya track {1} si sahihi.",
+  "La cover de la track {1} dépasse 8 Mo.": "Cover ya track {1} imezidi 8 MB.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Faili ya sauti ya track {1} imezidi 250 MB."
 }

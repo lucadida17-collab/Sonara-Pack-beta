@@ -728,6 +728,7 @@ function validatePendingPackRequest(req) {
     const price = trackIsFree
       ? 0
       : Number(String(track?.price || "").replace("€", "").replace(",", "."));
+    const usesPackCover = track?.coverMode !== "custom";
     const cover = fileByField.get(`trackCover_${index}`);
     const audio = fileByField.get(`trackAudio_${index}`);
 
@@ -752,8 +753,9 @@ function validatePendingPackRequest(req) {
 
     track.isFree = trackIsFree;
     track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
+    track.coverMode = usesPackCover ? "pack" : "custom";
 
-    if (!cover) {
+    if (!usesPackCover && !cover) {
       return {
         valid: false,
         status: 400,
@@ -761,7 +763,7 @@ function validatePendingPackRequest(req) {
       };
     }
 
-    if (cover.size > PACK_MAX_IMAGE_SIZE) {
+    if (cover && cover.size > PACK_MAX_IMAGE_SIZE) {
       return {
         valid: false,
         status: 400,
@@ -788,8 +790,8 @@ function validatePendingPackRequest(req) {
 
   const expectedFields = new Set([
     "coverPack",
-    ...tracks.flatMap((_, index) => [
-      `trackCover_${index}`,
+    ...tracks.flatMap((track, index) => [
+      ...(track?.coverMode === "custom" ? [`trackCover_${index}`] : []),
       `trackAudio_${index}`
     ])
   ]);
@@ -4384,11 +4386,14 @@ app.post(
 
       for (let index = 0; index < receivedPack.tracks.length; index += 1) {
         const track = receivedPack.tracks[index];
+        const usesPackCover = track?.coverMode !== "custom";
         const trackCoverFile = fileByField.get(`trackCover_${index}`);
         const trackAudioFile = fileByField.get(`trackAudio_${index}`);
 
         const [trackCoverKey, trackAudioKey, preview, originalFileHash] = await Promise.all([
-          uploadToR2(trackCoverFile, "tracks/covers"),
+          usesPackCover
+            ? Promise.resolve(packCoverKey)
+            : uploadToR2(trackCoverFile, "tracks/covers"),
           uploadToR2(trackAudioFile, "tracks/audio"),
           analyzeAudioPreview(trackAudioFile.path),
           hashFileSha256(trackAudioFile.path)

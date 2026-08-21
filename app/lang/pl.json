@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "PANEL ARTYSTY SONARA",
   "SONARA ARTIST MANAGEMENT": "ZARZĄDZANIE ARTYSTĄ SONARA",
   "Ajouter plusieurs tracks": "Dodaj wiele utworów",
-  "20 tracks maximum par pack.": "Maksymalnie 20 utworów na pack."
+  "20 tracks maximum par pack.": "Maksymalnie 20 utworów na pack.",
+  "Déclaration de droits obligatoire": "Wymagana deklaracja praw",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Potwierdzam, że posiadam prawa wymagane do publikowania i licencjonowania tej zawartości w Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Nadaj licencji nazwę przed wysłaniem.",
+  "Confirme la déclaration de droits avant l’envoi.": "Potwierdź deklarację praw przed wysłaniem.",
+  "La cover de la track {1} est obligatoire.": "Utwór {1} wymaga okładki.",
+  "Le fichier audio de la track {1} est obligatoire.": "Utwór {1} wymaga pliku audio.",
+  "Le titre de la track {1} est invalide.": "Tytuł utworu {1} jest nieprawidłowy.",
+  "Le prix de la track {1} est invalide.": "Cena utworu {1} jest nieprawidłowa.",
+  "La cover de la track {1} dépasse 8 Mo.": "Okładka utworu {1} przekracza 8 MB.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Plik audio utworu {1} przekracza 250 MB."
 }

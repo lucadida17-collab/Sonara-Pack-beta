@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "DASBOR ARTIS SONARA",
   "SONARA ARTIST MANAGEMENT": "MANAJEMEN ARTIS SONARA",
   "Ajouter plusieurs tracks": "Tambahkan beberapa track",
-  "20 tracks maximum par pack.": "Maksimal 20 track per pack."
+  "20 tracks maximum par pack.": "Maksimal 20 track per pack.",
+  "Déclaration de droits obligatoire": "Pernyataan hak wajib",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Saya mengonfirmasi bahwa saya memiliki hak yang diperlukan untuk menerbitkan dan melisensikan konten ini di Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Beri nama lisensi sebelum mengirim.",
+  "Confirme la déclaration de droits avant l’envoi.": "Konfirmasikan pernyataan hak sebelum mengirim.",
+  "La cover de la track {1} est obligatoire.": "Track {1} memerlukan cover.",
+  "Le fichier audio de la track {1} est obligatoire.": "Track {1} memerlukan file audio.",
+  "Le titre de la track {1} est invalide.": "Judul track {1} tidak valid.",
+  "Le prix de la track {1} est invalide.": "Harga track {1} tidak valid.",
+  "La cover de la track {1} dépasse 8 Mo.": "Cover track {1} melebihi 8 MB.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "File audio track {1} melebihi 250 MB."
 }

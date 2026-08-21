@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "لوحة تحكم فنان SONARA",
   "SONARA ARTIST MANAGEMENT": "إدارة فنان SONARA",
   "Ajouter plusieurs tracks": "إضافة عدة مقاطع",
-  "20 tracks maximum par pack.": "الحد الأقصى 20 مقطعًا لكل حزمة."
+  "20 tracks maximum par pack.": "الحد الأقصى 20 مقطعًا لكل حزمة.",
+  "Déclaration de droits obligatoire": "إقرار الحقوق إلزامي",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "أؤكد أنني أمتلك الحقوق اللازمة لنشر هذا المحتوى وترخيصه على Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "أعطِ الترخيص اسمًا قبل الإرسال.",
+  "Confirme la déclaration de droits avant l’envoi.": "أكد إقرار الحقوق قبل الإرسال.",
+  "La cover de la track {1} est obligatoire.": "يتطلب المسار {1} غلافًا.",
+  "Le fichier audio de la track {1} est obligatoire.": "يتطلب المسار {1} ملفًا صوتيًا.",
+  "Le titre de la track {1} est invalide.": "عنوان المسار {1} غير صالح.",
+  "Le prix de la track {1} est invalide.": "سعر المسار {1} غير صالح.",
+  "La cover de la track {1} dépasse 8 Mo.": "غلاف المسار {1} يتجاوز 8 ميغابايت.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "الملف الصوتي للمسار {1} يتجاوز 250 ميغابايت."
 }

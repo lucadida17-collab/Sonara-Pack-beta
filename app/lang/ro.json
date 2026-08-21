@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "PANOU ARTIST SONARA",
   "SONARA ARTIST MANAGEMENT": "MANAGEMENT ARTIST SONARA",
   "Ajouter plusieurs tracks": "Adaugă mai multe track-uri",
-  "20 tracks maximum par pack.": "Maximum 20 de track-uri per pack."
+  "20 tracks maximum par pack.": "Maximum 20 de track-uri per pack.",
+  "Déclaration de droits obligatoire": "Declarație de drepturi obligatorie",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Confirm că dețin drepturile necesare pentru a publica și licenția acest conținut pe Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Dă un nume licenței înainte de trimitere.",
+  "Confirme la déclaration de droits avant l’envoi.": "Confirmă declarația de drepturi înainte de trimitere.",
+  "La cover de la track {1} est obligatoire.": "Piesa {1} necesită o copertă.",
+  "Le fichier audio de la track {1} est obligatoire.": "Piesa {1} necesită un fișier audio.",
+  "Le titre de la track {1} est invalide.": "Titlul piesei {1} este invalid.",
+  "Le prix de la track {1} est invalide.": "Prețul piesei {1} este invalid.",
+  "La cover de la track {1} dépasse 8 Mo.": "Coperta piesei {1} depășește 8 MB.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Fișierul audio al piesei {1} depășește 250 MB."
 }

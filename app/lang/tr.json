@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "SONARA SANATÇI PANELİ",
   "SONARA ARTIST MANAGEMENT": "SONARA SANATÇI YÖNETİMİ",
   "Ajouter plusieurs tracks": "Birden fazla track ekle",
-  "20 tracks maximum par pack.": "Paket başına en fazla 20 track."
+  "20 tracks maximum par pack.": "Paket başına en fazla 20 track.",
+  "Déclaration de droits obligatoire": "Hak beyanı zorunludur",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Bu içeriği Sonara Pack üzerinde yayınlamak ve lisanslamak için gerekli haklara sahip olduğumu onaylıyorum.",
+  "Donne un nom à la licence avant l’envoi.": "Göndermeden önce lisansa bir ad ver.",
+  "Confirme la déclaration de droits avant l’envoi.": "Göndermeden önce hak beyanını onayla.",
+  "La cover de la track {1} est obligatoire.": "{1}. parça için kapak gereklidir.",
+  "Le fichier audio de la track {1} est obligatoire.": "{1}. parça için ses dosyası gereklidir.",
+  "Le titre de la track {1} est invalide.": "{1}. parçanın başlığı geçersiz.",
+  "Le prix de la track {1} est invalide.": "{1}. parçanın fiyatı geçersiz.",
+  "La cover de la track {1} dépasse 8 Mo.": "{1}. parçanın kapağı 8 MB sınırını aşıyor.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "{1}. parçanın ses dosyası 250 MB sınırını aşıyor."
 }

@@ -1175,23 +1175,31 @@ select option:checked {
 
 .track-footer-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px;
 }
 
 .add-track-btn {
+  width: auto;
+  height: 48px;
   min-height: 48px;
+  margin: 0;
   padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid #37373c;
   border-radius: 14px;
   background: #1e1e21;
   color: #fff;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .add-track-btn span {
-  margin-right: 8px;
+  margin-right: 0;
 }
 
 .add-track-btn:disabled,
@@ -1874,7 +1882,7 @@ html {
     grid-template-columns: 1fr;
   }
 
-  .add-track-btn {
+  .track-footer-actions .add-track-btn {
     width: 100%;
   }
 
@@ -3319,6 +3327,13 @@ html:not([lang="fr"]):not([lang="en"]) .create-license-choice small {
   0% { transform: translateX(-105%); }
   50% { transform: translateX(180%); }
   100% { transform: translateX(390%); }
+}
+
+.pack-submission-pulse.is-upload-progress span {
+  width: 0;
+  transform: none;
+  animation: none;
+  transition: width .16s linear;
 }
 
 .pack-submission-meta {

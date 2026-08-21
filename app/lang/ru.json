@@ -2523,5 +2523,15 @@
   "SONARA ARTIST DASHBOARD": "ПАНЕЛЬ АРТИСТА SONARA",
   "SONARA ARTIST MANAGEMENT": "УПРАВЛЕНИЕ АРТИСТОМ SONARA",
   "Ajouter plusieurs tracks": "Добавить несколько треков",
-  "20 tracks maximum par pack.": "Максимум 20 треков в одном паке."
+  "20 tracks maximum par pack.": "Максимум 20 треков в одном паке.",
+  "Déclaration de droits obligatoire": "Обязательное подтверждение прав",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Я подтверждаю, что обладаю необходимыми правами для публикации и лицензирования этого контента в Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Укажите название лицензии перед отправкой.",
+  "Confirme la déclaration de droits avant l’envoi.": "Подтвердите декларацию прав перед отправкой.",
+  "La cover de la track {1} est obligatoire.": "Для трека {1} требуется обложка.",
+  "Le fichier audio de la track {1} est obligatoire.": "Для трека {1} требуется аудиофайл.",
+  "Le titre de la track {1} est invalide.": "Название трека {1} недопустимо.",
+  "Le prix de la track {1} est invalide.": "Цена трека {1} недопустима.",
+  "La cover de la track {1} dépasse 8 Mo.": "Обложка трека {1} превышает 8 МБ.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Аудиофайл трека {1} превышает 250 МБ."
 }

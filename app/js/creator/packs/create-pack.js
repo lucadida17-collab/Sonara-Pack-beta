@@ -256,9 +256,43 @@ function createEmptyTrack({ coverFile = null, coverMode = "pack" } = {}) {
   };
 }
 
+function trackUsesPackCover(track) {
+  return track?.coverMode !== "custom";
+}
+
+function sameFileIdentity(firstFile, secondFile) {
+  if (!firstFile || !secondFile) return false;
+  return (
+    String(firstFile.name || "") === String(secondFile.name || "") &&
+    Number(firstFile.size || 0) === Number(secondFile.size || 0) &&
+    String(firstFile.type || "") === String(secondFile.type || "") &&
+    Number(firstFile.lastModified || 0) === Number(secondFile.lastModified || 0)
+  );
+}
+
+function resolveHydratedTrackCoverMode(track, packCoverFile) {
+  if (track?.coverMode === "custom") return "custom";
+  if (track?.coverMode === "pack") return "pack";
+
+  // Migration des brouillons créés avant l'héritage automatique des covers.
+  // Une ancienne track qui contient la même image que le pack doit être
+  // considérée comme héritée, pas comme une cover personnalisée obligatoire.
+  if (!track?.coverFile || sameFileIdentity(track.coverFile, packCoverFile)) {
+    return "pack";
+  }
+
+  return "custom";
+}
+
+function getEffectiveTrackCover(track) {
+  return trackUsesPackCover(track)
+    ? packData.identity.coverFile || null
+    : track?.coverFile || null;
+}
+
 function syncInheritedTrackCovers() {
   packData.tracks.forEach((track) => {
-    if (track.coverMode === "custom") return;
+    if (!trackUsesPackCover(track)) return;
     track.coverMode = "pack";
     track.coverFile = packData.identity.coverFile || null;
   });
@@ -291,13 +325,10 @@ function hydratePackData(saved) {
           title: track.title || "",
           price: track.price || "",
           isFree: Boolean(track.isFree),
-          coverMode: track.coverMode === "pack"
-            ? "pack"
-            : track.coverMode === "custom"
-              ? "custom"
-              : track.coverFile
-                ? "custom"
-                : "pack",
+          coverMode: resolveHydratedTrackCoverMode(
+            track,
+            saved.identity?.coverFile || null
+          ),
           coverFile: track.coverFile || null,
           audioFile: track.audioFile || null,
           duration: Number(track.duration) || 0
@@ -1324,6 +1355,8 @@ function openPackSubmissionLoader(finalPack) {
   const elapsed = overlay.querySelector("[data-submit-elapsed]");
   const tip = overlay.querySelector("[data-submit-tip]");
   const nextTipButton = overlay.querySelector(".pack-submission-next-tip");
+  const progressBar = overlay.querySelector(".pack-submission-pulse");
+  const progressFill = overlay.querySelector(".pack-submission-pulse span");
   let tipIndex = 0;
 
   const showNextTip = () => {
@@ -1349,6 +1382,23 @@ function openPackSubmissionLoader(finalPack) {
       const status = overlay.querySelector("[data-submit-status]");
       if (status && message) status.textContent = createPackTranslate(message);
     },
+    setUploadProgress(value) {
+      const percent = Math.max(0, Math.min(100, Number(value) || 0));
+      progressBar?.classList.add("is-upload-progress");
+      progressBar?.setAttribute("role", "progressbar");
+      progressBar?.setAttribute("aria-valuemin", "0");
+      progressBar?.setAttribute("aria-valuemax", "100");
+      progressBar?.setAttribute("aria-valuenow", String(Math.round(percent)));
+      if (progressFill) progressFill.style.width = `${percent}%`;
+    },
+    setProcessing() {
+      progressBar?.classList.remove("is-upload-progress");
+      progressBar?.removeAttribute("role");
+      progressBar?.removeAttribute("aria-valuemin");
+      progressBar?.removeAttribute("aria-valuemax");
+      progressBar?.removeAttribute("aria-valuenow");
+      if (progressFill) progressFill.style.width = "36%";
+    },
     close() {
       window.clearInterval(timer);
       window.clearInterval(tipTimer);
@@ -1356,6 +1406,51 @@ function openPackSubmissionLoader(finalPack) {
       window.setTimeout(() => overlay.remove(), 220);
     }
   };
+}
+
+async function sendPackFormData(formData, submissionLoader) {
+  await window.SonaraApiRouter?.ready?.();
+
+  const activeApi = window.SonaraApiRouter?.getState?.().active || API_URL;
+  const requestUrl = `${String(activeApi || API_URL).replace(/\/+$/, "")}/api/packs/pending`;
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", requestUrl, true);
+
+    const token = window.SonaraSession?.getToken?.();
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      submissionLoader?.setUploadProgress((event.loaded / event.total) * 100);
+    });
+
+    xhr.upload.addEventListener("load", () => {
+      submissionLoader?.setUploadProgress(100);
+      submissionLoader?.setStatus("Fichiers reçus · vérification du pack…");
+      window.setTimeout(() => submissionLoader?.setProcessing(), 180);
+    });
+
+    xhr.addEventListener("load", () => {
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        responseText: xhr.responseText || ""
+      });
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Connexion interrompue pendant l’envoi du pack."));
+    });
+
+    xhr.addEventListener("abort", () => {
+      reject(new Error("L’envoi du pack a été interrompu."));
+    });
+
+    submissionLoader?.setUploadProgress(0);
+    xhr.send(formData);
+  });
 }
 
 async function submitPack() {
@@ -1394,19 +1489,16 @@ async function submitPack() {
     formData.append("coverPack", packData.identity.coverFile);
 
     packData.tracks.forEach((track, index) => {
-      formData.append(`trackCover_${index}`, track.coverFile);
+      if (track.coverMode === "custom") {
+        formData.append(`trackCover_${index}`, track.coverFile);
+      }
       formData.append(`trackAudio_${index}`, track.audioFile);
     });
 
     submissionLoader?.setStatus("Tes fichiers sont envoyés à Sonara…");
 
-    const response = await fetch(`${API_URL}/api/packs/pending`, {
-      method: "POST",
-      body: formData
-    });
-
-    submissionLoader?.setStatus("Fichiers reçus · vérification du pack…");
-    const responseText = await response.text();
+    const response = await sendPackFormData(formData, submissionLoader);
+    const responseText = response.responseText;
     let result = {};
 
     try {
@@ -1431,7 +1523,7 @@ async function submitPack() {
   } catch (error) {
     submissionLoader?.close();
     submitError.hidden = false;
-    submitError.textContent = error.message;
+    submitError.textContent = createPackTranslate(error.message);
     submitButton.disabled = false;
     submitButton.textContent = createPackTranslate("Envoyer à la modération");
     isSubmitting = false;
@@ -1523,19 +1615,25 @@ function buildFinalPack() {
     categorie: getDistributionCategories(packData.identity.categorie),
     downloadPage: `app/pages/catalog/download.html?id=${packId}`,
     paymentReady: false,
-    tracks: packData.tracks.map((track, index) => ({
-      id: `${packId}-${index + 1}`,
-      trackLink: `app/pages/catalog/pack.html?id=${packId}&trackId=${packId}-${index + 1}`,
-      downloadPage: `app/pages/catalog/download.html?id=${packId}&trackId=${packId}-${index + 1}`,
-      title: track.title.trim(),
-      artist: artistProfile.pseudo || "",
-      coverPack: track.coverFile.name,
-      audioName: track.audioFile.name,
-      isFree: track.isFree,
-      price: track.isFree ? "Gratuit" : formatPriceForSubmission(track.price),
-      previewDuration: 30,
-      duration: track.duration || 0
-    })),
+    tracks: packData.tracks.map((track, index) => {
+      const usesPackCover = trackUsesPackCover(track);
+      const effectiveCover = getEffectiveTrackCover(track);
+
+      return {
+        id: `${packId}-${index + 1}`,
+        trackLink: `app/pages/catalog/pack.html?id=${packId}&trackId=${packId}-${index + 1}`,
+        downloadPage: `app/pages/catalog/download.html?id=${packId}&trackId=${packId}-${index + 1}`,
+        title: track.title.trim(),
+        artist: artistProfile.pseudo || "",
+        coverMode: usesPackCover ? "pack" : "custom",
+        coverPack: effectiveCover?.name || "",
+        audioName: track.audioFile.name,
+        isFree: track.isFree,
+        price: track.isFree ? "Gratuit" : formatPriceForSubmission(track.price),
+        previewDuration: 30,
+        duration: track.duration || 0
+      };
+    }),
     license: {
       ...cloneCreatePackLicense(packData.license),
       version: 1,
@@ -1585,7 +1683,7 @@ function validateTrack(index, focus = false) {
     valid = false;
   }
 
-  if (!track.coverFile) {
+  if (!trackUsesPackCover(track) && !track.coverFile) {
     showTrackError(card, "cover", "Ajoute la cover de cette track.");
     valid = false;
   }
@@ -1630,7 +1728,7 @@ function validateEverything() {
   const invalidTrackIndex = packData.tracks.findIndex((track) =>
     !track.title.trim() ||
     (!track.isFree && !isPaidPrice(track.price)) ||
-    !track.coverFile ||
+    (!trackUsesPackCover(track) && !track.coverFile) ||
     !track.audioFile
   );
 

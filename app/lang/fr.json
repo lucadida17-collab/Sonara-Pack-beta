@@ -2518,5 +2518,15 @@
   "SONARA ARTIST DASHBOARD": "SONARA DASHBOARD ARTISTE",
   "SONARA ARTIST MANAGEMENT": "SONARA MANAGEMENT ARTISTE",
   "Ajouter plusieurs tracks": "Ajouter plusieurs tracks",
-  "20 tracks maximum par pack.": "20 tracks maximum par pack."
+  "20 tracks maximum par pack.": "20 tracks maximum par pack.",
+  "Déclaration de droits obligatoire": "Déclaration de droits obligatoire",
+  "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.": "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.",
+  "Donne un nom à la licence avant l’envoi.": "Donne un nom à la licence avant l’envoi.",
+  "Confirme la déclaration de droits avant l’envoi.": "Confirme la déclaration de droits avant l’envoi.",
+  "La cover de la track {1} est obligatoire.": "La cover de la track {1} est obligatoire.",
+  "Le fichier audio de la track {1} est obligatoire.": "Le fichier audio de la track {1} est obligatoire.",
+  "Le titre de la track {1} est invalide.": "Le titre de la track {1} est invalide.",
+  "Le prix de la track {1} est invalide.": "Le prix de la track {1} est invalide.",
+  "La cover de la track {1} dépasse 8 Mo.": "La cover de la track {1} dépasse 8 Mo.",
+  "Le fichier audio de la track {1} dépasse 250 Mo.": "Le fichier audio de la track {1} dépasse 250 Mo."
 }

@@ -263,7 +263,7 @@ body.creator-dashboard-body {
 .creator-action {
   position: relative;
   width: 100%;
-  min-height: 72px;
+  min-height: 98px;
   padding: 11px 14px;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
@@ -747,6 +747,17 @@ body.creator-dashboard-body {
   cursor: pointer;
 }
 
+/* Mobile / iPhone — titre du header un peu moins tronqué, actions à hauteur naturelle. */
+@media (max-width: 560px) {
+  .creator-dashboard-body .dynamic-header-title {
+    max-width: 52vw;
+  }
+
+  .creator-action {
+    min-height: 0;
+  }
+}
+
 /* Ordinateur / laptop */
 @media (min-width: 900px) {
   .creator-page {
@@ -789,7 +800,7 @@ body.creator-dashboard-body {
   }
 
   .stat-card {
-    min-height: 92px;
+    min-height: 82px;
     padding: 14px 17px;
   }
 
@@ -799,7 +810,6 @@ body.creator-dashboard-body {
   }
 
   .creator-action {
-    min-height: 96px;
     padding: 14px 17px;
   }
 
@@ -825,12 +835,9 @@ body.creator-dashboard-body {
   }
 
   .stat-card {
-    min-height: 94px;
+    min-height: 84px;
   }
 
-  .creator-action {
-    min-height: 98px;
-  }
 
   .creator-management-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
