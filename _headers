@@ -11,3 +11,6 @@
 
 /backend/*
   Cache-Control: no-store
+
+/app/js/core/config.js
+  Cache-Control: no-store, max-age=0
