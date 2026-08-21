@@ -243,16 +243,38 @@ function readArtistProfile() {
   }
 }
 
-function createEmptyTrack() {
+function createEmptyTrack({ coverFile = null, coverMode = "pack" } = {}) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : `track_${Date.now()}_${Math.random()}`,
     title: "",
     price: "",
     isFree: false,
-    coverFile: null,
+    coverMode: coverMode === "custom" ? "custom" : "pack",
+    coverFile,
     audioFile: null,
     duration: 0
   };
+}
+
+function syncInheritedTrackCovers() {
+  packData.tracks.forEach((track) => {
+    if (track.coverMode === "custom") return;
+    track.coverMode = "pack";
+    track.coverFile = packData.identity.coverFile || null;
+  });
+}
+
+function titleFromAudioFile(file) {
+  return String(file?.name || "")
+    .replace(/\.[^.]+$/, "")
+    .replace(/_+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 70);
+}
+
+function isBlankTrack(track) {
+  return Boolean(track) && !String(track.title || "").trim() && !track.audioFile;
 }
 
 function hydratePackData(saved) {
@@ -269,11 +291,20 @@ function hydratePackData(saved) {
           title: track.title || "",
           price: track.price || "",
           isFree: Boolean(track.isFree),
+          coverMode: track.coverMode === "pack"
+            ? "pack"
+            : track.coverMode === "custom"
+              ? "custom"
+              : track.coverFile
+                ? "custom"
+                : "pack",
           coverFile: track.coverFile || null,
           audioFile: track.audioFile || null,
           duration: Number(track.duration) || 0
         }))
       : [createEmptyTrack()];
+
+  syncInheritedTrackCovers();
 
   packData.globalPrice = saved.globalPrice || "";
   packData.globalIsFree = Boolean(saved.globalIsFree);
@@ -401,6 +432,7 @@ function renderIdentity() {
     }
 
     packData.identity.coverFile = file;
+    syncInheritedTrackCovers();
     clearFieldError("identity-cover");
     renderIdentity();
   });
@@ -408,6 +440,7 @@ function renderIdentity() {
   document.querySelector(".next-btn").addEventListener("click", async () => {
     if (!validateIdentity()) return;
 
+    syncInheritedTrackCovers();
     currentStep = 1;
     render();
   });
@@ -426,17 +459,33 @@ function renderTracks() {
       </section>
 
       <div class="track-footer">
-        <button
-          type="button"
-          class="add-track-btn"
-          ${packData.tracks.length >= MAX_TRACKS ? "disabled" : ""}
-        >
-          <span>+</span>
-          Ajouter une nouvelle track
-        </button>
+        <div class="track-footer-actions">
+          <button
+            type="button"
+            class="add-track-btn"
+            ${packData.tracks.length >= MAX_TRACKS ? "disabled" : ""}
+          >
+            <span>+</span>
+            Ajouter une nouvelle track
+          </button>
+
+          <label class="add-track-btn import-tracks-btn ${packData.tracks.length >= MAX_TRACKS && !packData.tracks.some(isBlankTrack) ? "is-disabled" : ""}">
+            <input
+              class="import-tracks-input"
+              type="file"
+              multiple
+              accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/flac,audio/x-flac"
+              ${packData.tracks.length >= MAX_TRACKS && !packData.tracks.some(isBlankTrack) ? "disabled" : ""}
+            >
+            <span>+</span>
+            Ajouter plusieurs tracks
+          </label>
+        </div>
 
         <small>${packData.tracks.length} / ${MAX_TRACKS} tracks</small>
       </div>
+
+      <small class="field-error track-import-error" data-track-import-error></small>
 
       <div class="actions">
         <button type="button" class="prev-btn">Retour</button>
@@ -447,15 +496,26 @@ function renderTracks() {
 
   bindTrackCards();
 
-  document.querySelector(".add-track-btn").addEventListener("click", async () => {
-    const lastIndex = packData.tracks.length - 1;
-
-    if (!validateTrack(lastIndex, true)) return;
+  document.querySelector("button.add-track-btn").addEventListener("click", async () => {
     if (packData.tracks.length >= MAX_TRACKS) return;
 
-    packData.tracks.push(createEmptyTrack());
+    packData.tracks.push(createEmptyTrack({
+      coverFile: packData.identity.coverFile,
+      coverMode: "pack"
+    }));
     syncGlobalPriceFromTracks();
     renderTracks();
+
+    requestAnimationFrame(() => {
+      document.querySelector(".track-card:last-child")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    });
+  });
+
+  document.querySelector(".import-tracks-input")?.addEventListener("change", async (event) => {
+    await importMultipleTrackAudios(event.currentTarget.files);
   });
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
@@ -476,7 +536,71 @@ function renderTracks() {
   });
 }
 
+async function importMultipleTrackAudios(fileList) {
+  const selectedFiles = Array.from(fileList || []);
+  if (!selectedFiles.length) return;
+
+  const blankIndexes = packData.tracks
+    .map((track, index) => (isBlankTrack(track) ? index : -1))
+    .filter((index) => index >= 0);
+  const availableSlots = blankIndexes.length + Math.max(0, MAX_TRACKS - packData.tracks.length);
+  const rejected = [];
+  const validFiles = [];
+
+  selectedFiles.forEach((file) => {
+    const error = validateAudioFile(file);
+    if (error) rejected.push(error);
+    else validFiles.push(file);
+  });
+
+  const accepted = validFiles.slice(0, availableSlots);
+  const durations = await Promise.all(accepted.map((file) => readAudioDuration(file)));
+
+  accepted.forEach((file, acceptedIndex) => {
+    const blankIndex = blankIndexes.shift();
+    const duration = durations[acceptedIndex] || 0;
+
+    if (blankIndex !== undefined) {
+      const track = packData.tracks[blankIndex];
+      track.title = titleFromAudioFile(file) || `Track ${blankIndex + 1}`;
+      track.audioFile = file;
+      track.duration = duration;
+      if (track.coverMode !== "custom") {
+        track.coverMode = "pack";
+        track.coverFile = packData.identity.coverFile;
+      }
+      return;
+    }
+
+    const track = createEmptyTrack({
+      coverFile: packData.identity.coverFile,
+      coverMode: "pack"
+    });
+    track.title = titleFromAudioFile(file) || `Track ${packData.tracks.length + 1}`;
+    track.audioFile = file;
+    track.duration = duration;
+    packData.tracks.push(track);
+  });
+
+  syncGlobalPriceFromTracks();
+  renderTracks();
+
+  const feedback = document.querySelector("[data-track-import-error]");
+  if (!feedback) return;
+
+  if (validFiles.length > availableSlots) {
+    feedback.textContent = `${MAX_TRACKS} tracks maximum par pack.`;
+    return;
+  }
+
+  if (rejected.length) {
+    feedback.textContent = rejected[0];
+  }
+}
+
 function renderTrackCard(track, index) {
+  const usesPackCover = track.coverMode !== "custom";
+
   return `
     <article class="track-card" data-track-index="${index}">
       <header class="track-card-header">
@@ -539,10 +663,13 @@ function renderTrackCard(track, index) {
 
       <div class="track-upload-grid">
         <div class="upload-section compact">
-          <div class="upload-heading">
+          <div class="upload-heading track-cover-heading">
             <div>
-              <h3>Cover de la track</h3>
+              <h3>${usesPackCover ? "Cover du pack" : "Cover de la track"}</h3>
             </div>
+            ${!usesPackCover ? `
+              <button type="button" class="use-pack-cover-btn">Cover du pack</button>
+            ` : ""}
           </div>
 
           ${renderImageDropzone(
@@ -735,7 +862,15 @@ function bindTrackCards() {
         return;
       }
 
+      track.coverMode = "custom";
       track.coverFile = file;
+      clearTrackError(card, "cover");
+      renderTracks();
+    });
+
+    card.querySelector(".use-pack-cover-btn")?.addEventListener("click", () => {
+      track.coverMode = "pack";
+      track.coverFile = packData.identity.coverFile;
       clearTrackError(card, "cover");
       renderTracks();
     });

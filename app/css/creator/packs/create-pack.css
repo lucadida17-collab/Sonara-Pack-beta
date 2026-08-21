@@ -1173,6 +1173,13 @@ select option:checked {
   margin-top: 22px;
 }
 
+.track-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .add-track-btn {
   min-height: 48px;
   padding: 0 18px;
@@ -1187,9 +1194,53 @@ select option:checked {
   margin-right: 8px;
 }
 
-.add-track-btn:disabled {
+.add-track-btn:disabled,
+.add-track-btn.is-disabled {
   opacity: .4;
   cursor: default;
+  pointer-events: none;
+}
+
+.import-tracks-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.import-tracks-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.track-import-error {
+  display: block;
+  margin-top: 8px;
+}
+
+.track-cover-heading {
+  align-items: center;
+}
+
+.use-pack-cover-btn {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #38383d;
+  border-radius: 10px;
+  background: #202023;
+  color: #c7c7cb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.use-pack-cover-btn:hover {
+  border-color: #55555c;
+  color: #fff;
 }
 
 .track-footer small {
@@ -1815,6 +1866,12 @@ html {
   .track-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .track-footer-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .add-track-btn {
