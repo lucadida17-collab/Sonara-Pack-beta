@@ -406,7 +406,7 @@ button, input, textarea { font: inherit; }
   box-shadow:
     inset 0 0 28px rgba(66, 211, 255, .06),
     0 30px 50px rgba(0, 22, 67, .38);
-  animation: myPackBackPlateReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+  animation: myPackBackPlateReveal 4s cubic-bezier(.2, .76, .22, 1) both;
 }
 
 .my-pack-loader-scene::after {
@@ -419,7 +419,7 @@ button, input, textarea { font: inherit; }
     0 0 26px rgba(18, 135, 255, .3),
     0 0 58px rgba(0, 221, 255, .17);
   filter: blur(8px);
-  animation: myPackShadowReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+  animation: myPackShadowReveal 4s cubic-bezier(.2, .76, .22, 1) both;
 }
 
 .my-pack-loader-core {
@@ -444,7 +444,7 @@ button, input, textarea { font: inherit; }
     inset 0 0 30px rgba(75, 225, 255, .15);
   transform-style: preserve-3d;
   backface-visibility: hidden;
-  animation: myPackCoreReveal 6s cubic-bezier(.2, .76, .22, 1) both;
+  animation: myPackCoreReveal 4s cubic-bezier(.2, .76, .22, 1) both;
 }
 
 .my-pack-loader-core::before,
@@ -519,7 +519,7 @@ button, input, textarea { font: inherit; }
     inset 0 0 20px rgba(78, 225, 255, .08);
   transform-style: preserve-3d;
   backface-visibility: visible;
-  animation-duration: 6s;
+  animation-duration: 4s;
   animation-timing-function: linear;
   animation-fill-mode: both;
 }
@@ -562,7 +562,7 @@ button, input, textarea { font: inherit; }
   clip-path: inset(0 100% 0 0);
   transform: translateY(8px);
   text-shadow: 0 0 18px rgba(88, 234, 255, .34);
-  animation: myPackSonaraWrite 6s cubic-bezier(.2, .76, .22, 1) both;
+  animation: myPackSonaraWrite 4s cubic-bezier(.2, .76, .22, 1) both;
 }
 
 .my-pack-page-loader h1 {
@@ -599,6 +599,37 @@ button, input, textarea { font: inherit; }
   transition: width .48s cubic-bezier(.22, 1, .36, 1);
 }
 
+.my-pack-loader-retry {
+  margin-top: 18px;
+  min-width: 150px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid rgba(104, 231, 255, .34);
+  border-radius: 14px;
+  background: rgba(12, 43, 79, .72);
+  color: #f5fbff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(0, 20, 58, .28);
+}
+
+.my-pack-loader-retry:hover,
+.my-pack-loader-retry:focus-visible {
+  border-color: rgba(104, 231, 255, .72);
+  background: rgba(17, 62, 110, .86);
+  outline: none;
+}
+
+.my-pack-page-loader.has-error .my-pack-loader-progress-fill {
+  background: linear-gradient(90deg, #ff9a45, #ff5f65);
+  box-shadow: 0 0 18px rgba(255, 101, 76, .5);
+}
+
+.my-pack-page-loader.has-error .my-pack-loader-scene {
+  animation-play-state: paused;
+}
+
 @keyframes myPackCoreReveal {
   0%,
   34% {
@@ -619,7 +650,7 @@ button, input, textarea { font: inherit; }
       scale(1.02);
   }
 
-  68%,
+  75%,
   100% {
     transform:
       rotateX(0deg)
@@ -642,7 +673,7 @@ button, input, textarea { font: inherit; }
     opacity: .66;
   }
 
-  68%,
+  75%,
   100% {
     transform: translateZ(-28px) rotateX(0deg) rotateZ(0deg) scale(.96);
     opacity: .34;
@@ -661,7 +692,7 @@ button, input, textarea { font: inherit; }
     opacity: .56;
   }
 
-  68%,
+  75%,
   100% {
     transform: translateZ(-66px) rotateX(86deg) scaleX(.7);
     opacity: .38;
@@ -685,7 +716,7 @@ button, input, textarea { font: inherit; }
     filter: blur(.4px);
   }
 
-  66%,
+  75%,
   100% {
     transform: rotateX(0deg) rotateY(0deg) rotateZ(900deg) translateZ(36px) scale(.72);
     opacity: 0;
@@ -710,7 +741,7 @@ button, input, textarea { font: inherit; }
     filter: blur(.5px);
   }
 
-  66%,
+  75%,
   100% {
     transform: rotateY(0deg) rotateX(0deg) rotateZ(-980deg) translateZ(48px) scale(.66);
     opacity: 0;

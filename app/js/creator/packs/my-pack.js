@@ -1,5 +1,6 @@
 const myPackPage = document.querySelector(".create-pack");
-const MY_PACK_MIN_LOADING_TIME = 6000;
+const MY_PACK_MIN_LOADING_TIME = 4000;
+const MY_PACK_SERVER_LOADING_TIMEOUT = 20000;
 const MY_PACK_IMAGE_LOADING_TIMEOUT = 12000;
 
 function ensureMyPackLucide() {
@@ -75,8 +76,25 @@ function myPackMediaUrl(value) {
   return `${API_URL}/uploads/${clean}`;
 }
 
+
+function myPackLocale() {
+  const language = String(
+    window.SonaraI18n?.getLanguage?.() ||
+    localStorage.getItem("sonaraLanguage") ||
+    "fr"
+  ).toLowerCase();
+
+  const locales = {
+    fr: "fr-FR", en: "en-US", sq: "sq-AL", ar: "ar", tr: "tr-TR",
+    id: "id-ID", es: "es-ES", de: "de-DE", it: "it-IT", pt: "pt-PT",
+    nl: "nl-NL", pl: "pl-PL", ro: "ro-RO", ru: "ru-RU", zh: "zh-CN", sw: "sw-KE"
+  };
+
+  return locales[language] || "fr-FR";
+}
+
 function formatMyPackMoney(value) {
-  return new Intl.NumberFormat("fr-FR", {
+  return new Intl.NumberFormat(myPackLocale(), {
     style: "currency",
     currency: "EUR"
   }).format(Number(value || 0));
@@ -143,23 +161,43 @@ function showMyPackMessage(message, type = "success") {
   }, 3200);
 }
 
-async function fetchMyPacksOverview() {
+async function fetchMyPacksOverview(onStatus) {
   const accountId = getMyPackAccountId();
   if (!accountId) {
     throw new Error("Compte artiste introuvable.");
   }
 
+  onStatus?.(18, "Connexion au serveur Sonara…");
   const apiUrl = await waitForApiUrl();
-  const response = await fetch(
-    `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`
+  onStatus?.(30, "Chargement des packs depuis le serveur…");
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    MY_PACK_SERVER_LOADING_TIMEOUT
   );
-  const data = await readMyPackJson(response);
 
-  if (!response.ok) {
-    throw new Error(data.message || "Impossible de récupérer vos packs.");
+  try {
+    const response = await fetch(
+      `${apiUrl}/api/creator/packs/${encodeURIComponent(accountId)}`,
+      { cache: "no-store", signal: controller.signal }
+    );
+    const data = await readMyPackJson(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Impossible de récupérer vos packs.");
+    }
+
+    onStatus?.(56, "Packs reçus, préparation de l’affichage…");
+    return data;
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("Le serveur met trop de temps à répondre.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
   }
-
-  return data;
 }
 
 function copyMyPackTextFallback(text) {
@@ -367,6 +405,10 @@ function openMyPackEditor(pack, onSaved) {
 }
 
 
+function translateMyPackLoading(value) {
+  return window.SonaraI18n?.t?.(value) || String(value || "");
+}
+
 function updateMyPackLoading(progress, message) {
   const loader = document.querySelector(".my-pack-page-loader");
   const fill = loader?.querySelector(".my-pack-loader-progress-fill");
@@ -374,8 +416,27 @@ function updateMyPackLoading(progress, message) {
   const value = Math.min(100, Math.max(0, Number(progress) || 0));
 
   if (fill) fill.style.width = `${value}%`;
-  if (label && message) label.textContent = message;
+  if (label && message) label.textContent = translateMyPackLoading(message);
   loader?.setAttribute("aria-valuenow", String(value));
+}
+
+function showMyPackLoadingError(message) {
+  const loader = document.querySelector(".my-pack-page-loader");
+  const title = loader?.querySelector("h1");
+  const retry = loader?.querySelector(".my-pack-loader-retry");
+
+  loader?.classList.add("has-error");
+  loader?.setAttribute("role", "alert");
+  loader?.removeAttribute("aria-valuenow");
+
+  if (title) title.textContent = translateMyPackLoading("Chargement impossible");
+  updateMyPackLoading(100, message || "Le serveur met trop de temps à répondre.");
+
+  if (retry) {
+    retry.hidden = false;
+    retry.disabled = false;
+    retry.focus({ preventScroll: true });
+  }
 }
 
 function waitForMyPackMinimum(startedAt) {
@@ -411,8 +472,6 @@ async function finishMyPackLoading(startedAt, message = "Vos packs sont prêts")
   await waitForMyPackMinimum(startedAt);
   updateMyPackLoading(100, message);
 
-  await new Promise((resolve) => window.setTimeout(resolve, 280));
-
   const loader = document.querySelector(".my-pack-page-loader");
   const content = document.querySelector(".my-pack-loaded-content");
 
@@ -443,10 +502,11 @@ function renderMyPacksStructure() {
       </div>
       <p class="my-pack-loader-label">SONARA CREATOR</p>
       <h1>Chargement de vos packs</h1>
-      <p class="my-pack-loader-message">Connexion au serveur Sonara…</p>
+      <p class="my-pack-loader-message" aria-live="polite">Connexion au serveur Sonara…</p>
       <div class="my-pack-loader-progress" aria-hidden="true">
         <span class="my-pack-loader-progress-fill"></span>
       </div>
+      <button class="my-pack-loader-retry" type="button" hidden>Réessayer</button>
     </section>
 
     <div class="my-pack-loaded-content">
@@ -499,6 +559,10 @@ async function initializeMyPacks() {
 
   renderMyPacksStructure();
   updateMyPackLoading(12, "Compte Creator identifié…");
+
+  document.querySelector(".my-pack-loader-retry")?.addEventListener("click", () => {
+    window.location.reload();
+  });
 
   document.querySelector(".my-pack-back").addEventListener("click", () => {
     window.location.href = "/app/pages/creator/dashboard.html";
@@ -575,9 +639,7 @@ async function initializeMyPacks() {
   };
 
   const load = async () => {
-    updateMyPackLoading(28, "Chargement des packs depuis le serveur…");
-    const data = await fetchMyPacksOverview();
-    updateMyPackLoading(58, "Packs reçus, préparation de l’affichage…");
+    const data = await fetchMyPacksOverview(updateMyPackLoading);
     currentPacks = data.packs || [];
     selected.clear();
 
@@ -790,15 +852,8 @@ async function initializeMyPacks() {
     await load();
     await finishMyPackLoading(loadingStartedAt);
   } catch (error) {
-    list.innerHTML = `
-      <div class="my-pack-empty">
-        <h2>Impossible de charger vos packs</h2>
-        <p>${escapeMyPackHtml(error.message)}</p>
-      </div>`;
-    await finishMyPackLoading(
-      loadingStartedAt,
-      "Le chargement est terminé avec une erreur"
-    );
+    console.error("Erreur chargement My Packs :", error);
+    showMyPackLoadingError(error?.message || "Le serveur met trop de temps à répondre.");
   }
 }
 
