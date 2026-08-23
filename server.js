@@ -729,10 +729,12 @@ function validatePendingPackRequest(req) {
       ? 0
       : Number(String(track?.price || "").replace("€", "").replace(",", "."));
     const customCover = fileByField.get(`trackCover_${index}`);
-    // La cover du pack/album est la cover par défaut de la track.
-    // Si un ancien brouillon indique "custom" mais n'envoie aucun fichier
-    // personnalisé, on utilise la cover du pack au lieu de bloquer.
-    const usesPackCover = track?.coverMode !== "custom" || !customCover;
+    // MAIN : la cover du pack/album est la cover effective par défaut de la track.
+    // Une cover de track n'est considérée personnalisée que si le fichier est
+    // réellement présent. Cela évite de bloquer MAIN sur un ancien coverMode
+    // "custom" alors que la track hérite bien de l'image d'album.
+    const hasCustomCover = Boolean(customCover);
+    const usesPackCover = track?.coverMode !== "custom" || !hasCustomCover;
     const cover = usesPackCover ? coverPackFile : customCover;
     const audio = fileByField.get(`trackAudio_${index}`);
 
@@ -759,14 +761,9 @@ function validatePendingPackRequest(req) {
     track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
     track.coverMode = usesPackCover ? "pack" : "custom";
 
-    if (!cover) {
-      return {
-        valid: false,
-        status: 400,
-        message: `La cover de la track ${index + 1} est obligatoire.`
-      };
-    }
-
+    // coverPackFile a déjà été validé comme obligatoire plus haut. Sur MAIN,
+    // on ne déclenche donc pas une seconde erreur « cover de track obligatoire »
+    // pour une track qui hérite de cette cover.
     if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) {
       return {
         valid: false,
