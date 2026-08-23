@@ -558,8 +558,21 @@ textarea:focus-visible {
 }
 
 /* États vides / chargement de contenu. */
+.my-pack-list:has(.my-pack-empty) {
+  grid-template-columns: 1fr;
+  min-height: max(320px, calc(100dvh - 460px));
+}
+
 .my-pack-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
   padding: 48px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   border: 1px dashed rgba(125, 211, 252, 0.18);
   border-radius: 22px;

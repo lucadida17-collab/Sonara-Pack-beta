@@ -828,13 +828,6 @@ async function initializeMyPacks() {
         return;
       }
 
-      if (
-        action === "delete" &&
-        !window.confirm(`Supprimer définitivement ${packs.length} pack(s) ?`)
-      ) {
-        return;
-      }
-
       await applyBulkAction(action, packs.map((pack) => pack.id));
       await load();
     } catch (error) {
