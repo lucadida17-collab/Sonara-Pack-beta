@@ -257,7 +257,12 @@ function createEmptyTrack({ coverFile = null, coverMode = "pack" } = {}) {
 }
 
 function trackUsesPackCover(track) {
-  return track?.coverMode !== "custom";
+  // La cover du pack/album est la cover par défaut d'une track.
+  // Un ancien brouillon peut encore annoncer "custom" sans contenir
+  // de vraie cover personnalisée : dans ce cas on retombe sur l'album.
+  if (track?.coverMode !== "custom") return true;
+  if (!track?.coverFile) return true;
+  return sameFileIdentity(track.coverFile, packData.identity.coverFile);
 }
 
 function sameFileIdentity(firstFile, secondFile) {
@@ -271,7 +276,14 @@ function sameFileIdentity(firstFile, secondFile) {
 }
 
 function resolveHydratedTrackCoverMode(track, packCoverFile) {
-  if (track?.coverMode === "custom") return "custom";
+  if (track?.coverMode === "custom") {
+    // Compatibilité anciens brouillons : sans vraie cover personnalisée,
+    // la cover du pack/album reste bien celle de la track.
+    if (!track?.coverFile || sameFileIdentity(track.coverFile, packCoverFile)) {
+      return "pack";
+    }
+    return "custom";
+  }
   if (track?.coverMode === "pack") return "pack";
 
   // Migration des brouillons créés avant l'héritage automatique des covers.
@@ -630,7 +642,7 @@ async function importMultipleTrackAudios(fileList) {
 }
 
 function renderTrackCard(track, index) {
-  const usesPackCover = track.coverMode !== "custom";
+  const usesPackCover = trackUsesPackCover(track);
 
   return `
     <article class="track-card" data-track-index="${index}">
@@ -1514,7 +1526,9 @@ async function submitPack() {
     formData.append("coverPack", packData.identity.coverFile);
 
     packData.tracks.forEach((track, index) => {
-      if (track.coverMode === "custom") {
+      // N'envoie une cover de track que si elle est réellement personnalisée.
+      // La cover du pack est envoyée une seule fois et sert aux tracks héritées.
+      if (!trackUsesPackCover(track) && track.coverFile) {
         formData.append(`trackCover_${index}`, track.coverFile);
       }
       formData.append(`trackAudio_${index}`, track.audioFile);
@@ -1709,7 +1723,9 @@ function validateTrack(index, focus = false) {
     valid = false;
   }
 
-  if (!trackUsesPackCover(track) && !track.coverFile) {
+  // Une track est valide si elle a soit sa propre cover, soit la cover
+  // du pack/album. L'erreur n'apparaît ici que si aucune des deux n'existe.
+  if (!getEffectiveTrackCover(track)) {
     showTrackError(card, "cover", "Ajoute la cover de cette track.");
     valid = false;
   }
@@ -1754,7 +1770,7 @@ function validateEverything() {
   const invalidTrackIndex = packData.tracks.findIndex((track) =>
     !track.title.trim() ||
     (!track.isFree && !isPaidPrice(track.price)) ||
-    (!trackUsesPackCover(track) && !track.coverFile) ||
+    !getEffectiveTrackCover(track) ||
     !track.audioFile
   );
 

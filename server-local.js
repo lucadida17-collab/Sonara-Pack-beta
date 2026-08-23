@@ -510,8 +510,12 @@ function validatePendingPackRequest(req) {
     const price = trackIsFree
       ? 0
       : Number(String(track?.price || "").replace("€", "").replace(",", "."));
-    const usesPackCover = track?.coverMode !== "custom";
-    const cover = fileByField.get(`trackCover_${index}`);
+    const customCover = fileByField.get(`trackCover_${index}`);
+    // La cover du pack/album est la cover par défaut de la track.
+    // Si un ancien brouillon indique "custom" mais n'envoie aucun fichier
+    // personnalisé, on utilise la cover du pack au lieu de bloquer.
+    const usesPackCover = track?.coverMode !== "custom" || !customCover;
+    const cover = usesPackCover ? coverPackFile : customCover;
     const audio = fileByField.get(`trackAudio_${index}`);
 
     if (!trackTitle || trackTitle.length > 70) {
@@ -537,7 +541,7 @@ function validatePendingPackRequest(req) {
     track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
     track.coverMode = usesPackCover ? "pack" : "custom";
 
-    if (!usesPackCover && !cover) {
+    if (!cover) {
       return {
         valid: false,
         status: 400,
@@ -545,7 +549,7 @@ function validatePendingPackRequest(req) {
       };
     }
 
-    if (cover && cover.size > PACK_MAX_IMAGE_SIZE) {
+    if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) {
       return {
         valid: false,
         status: 400,
