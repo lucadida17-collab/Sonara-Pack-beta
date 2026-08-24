@@ -125,8 +125,9 @@ function buildLicenseSnapshot(pack, createdAt = nowIso()) {
   };
 }
 
-function fileEvidenceForItem(pack, trackId = null) {
+function fileEvidenceForItem(pack, trackId = null, resourceId = null) {
   const tracks = Array.isArray(pack?.tracks) ? pack.tracks : [];
+  const resources = Array.isArray(pack?.resources) ? pack.resources : [];
   if (trackId) {
     const track = tracks.find((item) => String(item?.id || "") === String(trackId));
     if (!track) return [];
@@ -139,8 +140,20 @@ function fileEvidenceForItem(pack, trackId = null) {
       fingerprintStatus: text(track.fingerprintStatus || FINGERPRINT_STATUS, 80)
     }];
   }
+  if (resourceId) {
+    const resource = resources.find((item) => String(item?.id || "") === String(resourceId));
+    if (!resource) return [];
+    return [{
+      resourceId: text(resource.id, 180),
+      titleSnapshot: text(resource.title || resource.originalName, 240),
+      fileName: text(resource.fileKey || resource.originalName, 500),
+      originalFileHash: text(resource.originalFileHash, 128) || null,
+      originalFileHashAlgorithm: resource.originalFileHash ? "SHA-256" : null,
+      fingerprintStatus: text(resource.fingerprintStatus || FINGERPRINT_STATUS, 80)
+    }];
+  }
 
-  return tracks.map((track) => ({
+  const trackEvidence = tracks.map((track) => ({
     trackId: text(track?.id, 180),
     titleSnapshot: text(track?.title, 240),
     fileName: text(track?.audioName || track?.audio, 500),
@@ -148,8 +161,18 @@ function fileEvidenceForItem(pack, trackId = null) {
     originalFileHashAlgorithm: track?.originalFileHash ? "SHA-256" : null,
     fingerprintStatus: text(track?.fingerprintStatus || FINGERPRINT_STATUS, 80)
   }));
-}
 
+  const resourceEvidence = resources.map((resource) => ({
+    resourceId: text(resource?.id, 180),
+    titleSnapshot: text(resource?.title || resource?.originalName, 240),
+    fileName: text(resource?.fileKey || resource?.originalName, 500),
+    originalFileHash: text(resource?.originalFileHash, 128) || null,
+    originalFileHashAlgorithm: resource?.originalFileHash ? "SHA-256" : null,
+    fingerprintStatus: text(resource?.fingerprintStatus || FINGERPRINT_STATUS, 80)
+  }));
+
+  return [...trackEvidence, ...resourceEvidence];
+}
 class EvidenceStore {
   constructor({ environment, dataDir, collection }) {
     this.environment = environment;
@@ -292,6 +315,7 @@ function createLicenseProtection(options = {}) {
       packId: text(pack?.id, 180),
       packTitleSnapshot: text(pack?.title || pack?.name, 240),
       trackIds: tracks.map((track) => text(track?.id, 180)).filter(Boolean),
+      resourceIds: (Array.isArray(pack?.resources) ? pack.resources : []).map((resource) => text(resource?.id, 180)).filter(Boolean),
       files: fileEvidenceForItem(pack, null),
       submittedAt: pack?.submittedAt || pack?.createdAt || null,
       acceptedAt,
@@ -335,7 +359,7 @@ function createLicenseProtection(options = {}) {
     return record;
   }
 
-  async function recordAcceptance({ rootUserId, accountId, pack, trackId = null, source = "pre_v1_free", acceptedAt = nowIso() }) {
+  async function recordAcceptance({ rootUserId, accountId, pack, trackId = null, resourceId = null, source = "pre_v1_free", acceptedAt = nowIso() }) {
     const snapshot = await archiveLicense(pack, acceptedAt);
     const acceptanceId = makeId("license_acceptance");
     const record = await store.insert({
@@ -347,6 +371,7 @@ function createLicenseProtection(options = {}) {
       artistId: text(pack?.accountId || pack?.artistAccountId || pack?.artistId, 180) || null,
       packId: text(pack?.id, 180),
       trackId: text(trackId, 180) || null,
+      resourceId: text(resourceId, 180) || null,
       licenseVersion: snapshot.licenseVersion,
       licenseSnapshotId: snapshot.id,
       licenseHash: snapshot.licenseHash,
@@ -364,6 +389,7 @@ function createLicenseProtection(options = {}) {
       artistId: record.artistId,
       packId: record.packId,
       trackId: record.trackId,
+      resourceId: record.resourceId,
       acceptanceId,
       licenseVersion: record.licenseVersion,
       licenseHash: record.licenseHash,
@@ -372,18 +398,21 @@ function createLicenseProtection(options = {}) {
     return record;
   }
 
-  async function findLatestAcceptance({ accountId, packId, trackId = null }) {
+  async function findLatestAcceptance({ accountId, packId, trackId = null, resourceId = null }) {
     const records = await store.find({ recordType: "LICENSE_ACCEPTANCE", accountId: text(accountId, 180), packId: text(packId, 180) }, { limit: 100 });
-    const exact = records.find((item) => String(item.trackId || "") === String(trackId || ""));
+    const exact = records.find((item) =>
+      String(item.trackId || "") === String(trackId || "") &&
+      String(item.resourceId || "") === String(resourceId || "")
+    );
     if (exact) return exact;
-    if (trackId) {
-      return records.find((item) => !item.trackId) || null;
+    if (trackId || resourceId) {
+      return records.find((item) => !item.trackId && !item.resourceId) || null;
     }
     return null;
   }
 
-  async function ensureLegacyDownload({ rootUserId, accountId, pack, trackId = null }) {
-    const legacyKey = `legacy:${text(accountId, 180)}:${text(pack?.id, 180)}:${text(trackId, 180) || "pack"}`;
+  async function ensureLegacyDownload({ rootUserId, accountId, pack, trackId = null, resourceId = null }) {
+    const legacyKey = `legacy:${text(accountId, 180)}:${text(pack?.id, 180)}:${text(trackId, 180) || text(resourceId, 180) || "pack"}`;
     return store.insert({
       recordType: "LEGACY_DOWNLOAD",
       id: makeId("legacy_download"),
@@ -393,6 +422,7 @@ function createLicenseProtection(options = {}) {
       artistId: text(pack?.accountId || pack?.artistAccountId || pack?.artistId, 180) || null,
       packId: text(pack?.id, 180),
       trackId: text(trackId, 180) || null,
+      resourceId: text(resourceId, 180) || null,
       acceptedAt: null,
       licenseVersion: null,
       licenseHash: null,
@@ -404,10 +434,10 @@ function createLicenseProtection(options = {}) {
     });
   }
 
-  async function prepareDownload({ rootUserId, accountId, pack, trackId = null, acceptanceId = null, source = "download_page" }) {
+  async function prepareDownload({ rootUserId, accountId, pack, trackId = null, resourceId = null, acceptanceId = null, source = "download_page" }) {
     let acceptance = acceptanceId
       ? await store.findOne({ recordType: "LICENSE_ACCEPTANCE", acceptanceId: text(acceptanceId, 220) })
-      : await findLatestAcceptance({ accountId, packId: pack?.id, trackId });
+      : await findLatestAcceptance({ accountId, packId: pack?.id, trackId, resourceId });
 
     if (acceptanceId && !acceptance) {
       const error = new Error("Acceptation de licence introuvable.");
@@ -422,11 +452,19 @@ function createLicenseProtection(options = {}) {
         ? Boolean(acceptanceTrackId && acceptanceTrackId !== requestedTrackId)
         : Boolean(acceptanceTrackId))
       : false;
+    const acceptanceResourceId = String(acceptance?.resourceId || "");
+    const requestedResourceId = String(resourceId || "");
+    const resourceAcceptanceMismatch = acceptance
+      ? (requestedResourceId
+        ? Boolean(acceptanceResourceId && acceptanceResourceId !== requestedResourceId)
+        : Boolean(acceptanceResourceId))
+      : false;
 
     if (acceptance && (
       String(acceptance.accountId || "") !== String(accountId || "") ||
       String(acceptance.packId || "") !== String(pack?.id || "") ||
-      trackAcceptanceMismatch
+      trackAcceptanceMismatch ||
+      resourceAcceptanceMismatch
     )) {
       const error = new Error("Cette acceptation de licence ne correspond pas à ce téléchargement.");
       error.code = "LICENSE_ACCEPTANCE_MISMATCH";
@@ -435,7 +473,7 @@ function createLicenseProtection(options = {}) {
 
     const legacyLicenseRecord = !acceptance;
     if (!acceptance) {
-      await ensureLegacyDownload({ rootUserId, accountId, pack, trackId });
+      await ensureLegacyDownload({ rootUserId, accountId, pack, trackId, resourceId });
     }
 
     const snapshot = acceptance
@@ -446,7 +484,7 @@ function createLicenseProtection(options = {}) {
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256(rawToken);
     const createdAt = nowIso();
-    const files = fileEvidenceForItem(pack, trackId);
+    const files = fileEvidenceForItem(pack, trackId, resourceId);
 
     const receipt = await store.insert({
       recordType: "LICENSE_RECEIPT",
@@ -459,6 +497,10 @@ function createLicenseProtection(options = {}) {
       packId: text(pack?.id, 180),
       packTitleSnapshot: text(pack?.title || pack?.name, 240),
       trackId: text(trackId, 180) || null,
+      resourceId: text(resourceId, 180) || null,
+      resourceTitleSnapshot: resourceId
+        ? text((pack?.resources || []).find((item) => String(item?.id || "") === String(resourceId))?.title || (pack?.resources || []).find((item) => String(item?.id || "") === String(resourceId))?.originalName, 240)
+        : null,
       trackTitleSnapshot: trackId
         ? text((pack?.tracks || []).find((item) => String(item?.id || "") === String(trackId))?.title, 240)
         : null,
@@ -492,6 +534,7 @@ function createLicenseProtection(options = {}) {
       artistId: receipt.artistId,
       packId: receipt.packId,
       trackId: receipt.trackId,
+      resourceId: receipt.resourceId,
       downloadId,
       licenseReceiptId,
       acceptanceId: receipt.acceptanceId,

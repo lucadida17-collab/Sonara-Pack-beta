@@ -21,6 +21,7 @@ function acquisitionAccountKey(rootUser, account, index = 0) {
 function appendAcquisitionHistory(account, {
   packId,
   trackId = null,
+  resourceId = null,
   source = "free",
   acquiredAt = new Date().toISOString()
 } = {}) {
@@ -28,13 +29,15 @@ function appendAcquisitionHistory(account, {
 
   const normalizedPackId = String(packId);
   const normalizedTrackId = trackId ? String(trackId) : null;
+  const normalizedResourceId = resourceId ? String(resourceId) : null;
   account.downloadHistory = Array.isArray(account.downloadHistory)
     ? account.downloadHistory
     : [];
 
   const alreadyRecorded = account.downloadHistory.some((entry) =>
     String(entry?.packId || "") === normalizedPackId &&
-    String(entry?.trackId || "") === String(normalizedTrackId || "")
+    String(entry?.trackId || "") === String(normalizedTrackId || "") &&
+    String(entry?.resourceId || "") === String(normalizedResourceId || "")
   );
 
   if (alreadyRecorded) return false;
@@ -42,7 +45,8 @@ function appendAcquisitionHistory(account, {
   account.downloadHistory.push({
     packId: normalizedPackId,
     trackId: normalizedTrackId,
-    acquisitionType: normalizedTrackId ? "track" : "pack",
+    resourceId: normalizedResourceId,
+    acquisitionType: normalizedTrackId ? "track" : normalizedResourceId ? "resource" : "pack",
     source: String(source || "free"),
     acquiredAt
   });
@@ -60,6 +64,7 @@ function buildCreatorAcquisitionAnalytics(rootUsers, creatorPacks) {
   const roots = Array.isArray(rootUsers) ? rootUsers : [];
   const packIds = new Set(packs.map((pack) => String(pack?.id || "")).filter(Boolean));
   const trackToPack = new Map();
+  const resourceToPack = new Map();
   const statsByPack = new Map();
 
   packs.forEach((pack) => {
@@ -70,6 +75,7 @@ function buildCreatorAcquisitionAnalytics(rootUsers, creatorPacks) {
       downloadCount: 0,
       packDownloadCount: 0,
       trackDownloadCount: 0,
+      resourceDownloadCount: 0,
       uniqueDownloaders: 0,
       _audience: new Set()
     };
@@ -78,6 +84,10 @@ function buildCreatorAcquisitionAnalytics(rootUsers, creatorPacks) {
     (Array.isArray(pack?.tracks) ? pack.tracks : []).forEach((track) => {
       const trackId = String(track?.id || "").trim();
       if (trackId) trackToPack.set(trackId, packId);
+    });
+    (Array.isArray(pack?.resources) ? pack.resources : []).forEach((resource) => {
+      const resourceId = String(resource?.id || "").trim();
+      if (resourceId) resourceToPack.set(resourceId, packId);
     });
   });
 
@@ -111,6 +121,16 @@ function buildCreatorAcquisitionAnalytics(rootUsers, creatorPacks) {
         if (!packStats) return;
 
         packStats.trackDownloadCount += 1;
+        packStats.downloadCount += 1;
+        packStats._audience.add(accountKey);
+        touchedCreator = true;
+      });
+      uniqueStrings(account?.downloadedResources).forEach((downloadedResourceId) => {
+        const relatedPackId = resourceToPack.get(downloadedResourceId);
+        const packStats = relatedPackId ? statsByPack.get(relatedPackId) : null;
+        if (!packStats) return;
+
+        packStats.resourceDownloadCount += 1;
         packStats.downloadCount += 1;
         packStats._audience.add(accountKey);
         touchedCreator = true;

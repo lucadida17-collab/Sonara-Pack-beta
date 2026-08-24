@@ -1,4 +1,7 @@
 const creatorPage = document.querySelector(".creator-page");
+const creatorParams = new URLSearchParams(window.location.search);
+const creatorShopMode = ["shop", "purchases"].includes(creatorParams.get("mode"));
+if (creatorShopMode) document.body.classList.add("creator-shop-mode");
 const initialCreatorPreV1 = window.SonaraCommercial?.getState?.().mode === "PRE_V1";
 
 creatorPage.innerHTML = `
@@ -50,6 +53,16 @@ creatorPage.innerHTML = `
         <small>Gérer vos packs créés et publiés</small>
       </span>
 
+    </button>
+
+    <button class="creator-action creator-purchases" type="button">
+      <span class="creator-action-icon">
+        <i data-lucide="shopping-bag"></i>
+      </span>
+      <span class="creator-action-copy">
+        <strong>Boutique</strong>
+        <small>Découvrir MIDI, projets DAW et ressources pour créer</small>
+      </span>
     </button>
   </section>
 
@@ -566,6 +579,7 @@ verifyCreatorStripeAccess();
 const creatorPackCountElement = document.querySelector("#creator-pack-count");
 const creatorRevenueElement = document.querySelector("#creator-revenue");
 const mesPacksButton = document.querySelector(".mes-pack");
+const creatorPurchasesButton = document.querySelector(".creator-purchases");
 
 function getCreatorAccountId() {
   const current = getCurrentCreatorProfile();
@@ -700,6 +714,243 @@ async function refreshCreatorDashboardStats() {
 mesPacksButton?.addEventListener("click", () => {
   window.location.href = "/app/pages/creator/packs/my-pack.html";
 });
+
+creatorPurchasesButton?.addEventListener("click", () => {
+  const url = new URL(window.location.href);
+  url.searchParams.set("mode", "shop");
+  window.location.href = url.href;
+});
+
+const requestedCreatorShopFilter = creatorParams.get("shopType");
+let creatorShopFilter = ["midi", "daw", "audio"].includes(requestedCreatorShopFilter) ? requestedCreatorShopFilter : "midi";
+let creatorShopOwnedOnly = creatorParams.get("library") === "1";
+
+function creatorPurchaseContentType(pack = {}) {
+  const type = String(pack.contentType || "audio").trim().toLowerCase();
+  return ["audio", "midi", "daw"].includes(type) ? type : "audio";
+}
+
+function creatorPurchaseEligible(pack = {}) {
+  const type = creatorPurchaseContentType(pack);
+  const audience = String(pack.primaryAudience || "both").trim().toLowerCase();
+  if (type === "midi" || type === "daw") return true;
+  return type === "audio" && ["artists", "both"].includes(audience);
+}
+
+function creatorPurchaseMediaUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  if (raw.startsWith("/uploads/")) return `${API_URL}${raw}`;
+  if (raw.startsWith("uploads/")) return `${API_URL}/${raw}`;
+  return `${API_URL}/uploads/${raw.replace(/^\/+/, "")}`;
+}
+
+function creatorShopTypeLabel(type) {
+  if (type === "midi") return "MIDI";
+  if (type === "daw") return "Projet DAW";
+  return "Audio pour artistes";
+}
+
+function creatorShopIntro(type) {
+  if (type === "midi") return {
+    eyebrow: "SONARA ARTIST",
+    title: "MIDI",
+    text: "Fichiers MIDI destinés à la création et à la production musicale.",
+    icon: "piano"
+  };
+  if (type === "daw") return {
+    eyebrow: "SONARA ARTIST",
+    title: "Projets DAW",
+    text: "Projets de production musicale à ouvrir dans un DAW compatible.",
+    icon: "panels-top-left"
+  };
+  return {
+    eyebrow: "SONARA ARTIST",
+    title: "Audio pour artistes",
+    text: "Morceaux, prods, instrumentales, samples et autres fichiers audio.",
+    icon: "headphones"
+  };
+}
+
+function creatorShopProductsFromPack(pack = {}) {
+  const type = creatorPurchaseContentType(pack);
+  const resources = Array.isArray(pack.resources) ? pack.resources : [];
+  const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+  const itemCount = type === "audio" ? tracks.length : resources.length;
+  const singular = type === "midi" ? "MIDI" : type === "daw" ? "projet" : "track";
+  const plural = type === "midi" ? "MIDI" : type === "daw" ? "projets" : "tracks";
+
+  return [{
+    id: String(pack.id || ""),
+    packId: String(pack.id || ""),
+    resourceId: "",
+    type,
+    title: pack.title || "Pack Sonara",
+    artist: pack.artistProfile?.name || pack.artist || "Artiste Sonara",
+    cover: pack.coverPack,
+    price: pack.price || pack.packPrice || pack.totalPrice || "Gratuit",
+    meta: `${itemCount} ${itemCount > 1 ? plural : singular}`,
+    pack
+  }];
+}
+
+function creatorShopPackUrl(product = {}, { ownedView = false } = {}) {
+  const packId = encodeURIComponent(product.packId || "");
+  const ownedQuery = ownedView ? "&library=1" : "";
+  if (product.type === "midi") return `/app/pages/creator/shop/midi.html?id=${packId}${ownedQuery}`;
+  if (product.type === "daw") return `/app/pages/creator/shop/daw.html?id=${packId}${ownedQuery}`;
+  return `/app/pages/catalog/pack.html?id=${packId}`;
+}
+
+function renderCreatorShopProduct(product, owned = false, ownedOnly = false) {
+  const cover = creatorPurchaseMediaUrl(product.cover);
+  const ownedLabel = window.SonaraI18n?.t?.("Déjà téléchargé") || "Déjà téléchargé";
+  const ownedBadge = owned && !ownedOnly
+    ? `<span class="artist-shop-product-owned" title="${escapeCreatorMissionText(ownedLabel)}" aria-label="${escapeCreatorMissionText(ownedLabel)}"><i data-lucide="circle-check"></i></span>`
+    : "";
+  return `
+    <article class="artist-shop-product" tabindex="0" role="link" aria-label="${escapeCreatorMissionText(product.title || "Pack Sonara")}" data-shop-pack-id="${escapeCreatorMissionText(product.packId)}" data-shop-resource-id="${escapeCreatorMissionText(product.resourceId || "")}">
+      <div class="artist-shop-product-media">
+        ${cover ? `<img src="${escapeCreatorMissionText(cover)}" alt="">` : `<span><i data-lucide="${product.type === "midi" ? "piano" : product.type === "daw" ? "panels-top-left" : "headphones"}"></i></span>`}
+        <span class="artist-shop-product-type">${escapeCreatorMissionText(creatorShopTypeLabel(product.type))}</span>
+        ${ownedBadge}
+      </div>
+      <div class="artist-shop-product-copy">
+        <small>${escapeCreatorMissionText(product.artist)}</small>
+        <strong>${escapeCreatorMissionText(product.title)}</strong>
+        <p>${escapeCreatorMissionText(product.meta || "")}</p>
+        <div class="artist-shop-product-footer">
+          <b>${escapeCreatorMissionText(ownedOnly ? (window.SonaraI18n?.t?.("Déjà téléchargé") || "Déjà téléchargé") : String(product.price || "Gratuit"))}</b>
+        </div>
+      </div>
+    </article>`;
+}
+
+function setCreatorShopTheme(type) {
+  document.body.classList.remove("creator-shop-theme-midi", "creator-shop-theme-daw", "creator-shop-theme-audio");
+  document.body.classList.add(`creator-shop-theme-${type}`);
+  document.title = `Sonara - ${window.SonaraI18n?.t?.("Boutique") || "Boutique"} · ${creatorShopTypeLabel(type)}`;
+}
+
+async function renderCreatorShop() {
+  const intro = creatorShopIntro(creatorShopFilter);
+  setCreatorShopTheme(creatorShopFilter);
+  creatorPage.innerHTML = `
+    <section class="artist-shop-shell">
+      <header class="artist-shop-header">
+        <button class="artist-shop-back" type="button" aria-label="Retourner à l’Artist Dashboard">
+          <i data-lucide="chevron-left"></i><span>Dashboard</span>
+        </button>
+        <div class="artist-shop-brand">
+          <small>SONARA ARTIST</small>
+          <strong>Boutique</strong>
+        </div>
+        <nav class="artist-shop-tabs" aria-label="Catégories Boutique">
+          ${[["midi","MIDI","piano"],["daw","Projets DAW","panels-top-left"],["audio","Audio","headphones"]].map(([value,label,icon]) => `
+            <button type="button" class="artist-shop-tab ${creatorShopFilter === value ? "is-active" : ""}" data-shop-filter="${value}">
+              <i data-lucide="${icon}"></i><span>${label}</span>
+            </button>`).join("")}
+        </nav>
+        <button class="artist-shop-owned ${creatorShopOwnedOnly ? "is-active" : ""}" type="button"><i data-lucide="shopping-bag"></i><span>Mes achats</span></button>
+      </header>
+
+      <section class="artist-shop-hero">
+        <span class="artist-shop-hero-icon"><i data-lucide="${intro.icon}"></i></span>
+        <div><p>${intro.eyebrow}</p><h1>${intro.title}</h1><span>${intro.text}</span></div>
+      </section>
+
+      <section class="artist-shop-content">
+        <div class="artist-shop-content-head">
+          <div><small>${creatorShopOwnedOnly ? "Mes achats" : "À découvrir"}</small><h2>${creatorShopOwnedOnly ? creatorShopTypeLabel(creatorShopFilter) : "À découvrir"}</h2></div>
+          <span data-shop-count>—</span>
+        </div>
+        <div class="artist-shop-grid" data-shop-grid><div class="artist-shop-loading">Chargement…</div></div>
+      </section>
+    </section>`;
+
+  if (window.lucide) lucide.createIcons();
+  document.querySelector(".artist-shop-back")?.addEventListener("click", () => {
+    window.location.href = "/app/pages/creator/dashboard.html";
+  });
+  document.querySelectorAll("[data-shop-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      creatorShopFilter = button.dataset.shopFilter || "midi";
+      renderCreatorShop();
+    });
+  });
+  document.querySelector(".artist-shop-owned")?.addEventListener("click", () => {
+    creatorShopOwnedOnly = !creatorShopOwnedOnly;
+    const url = new URL(window.location.href);
+    if (creatorShopOwnedOnly) url.searchParams.set("library", "1");
+    else url.searchParams.delete("library");
+    window.history.replaceState({}, "", url);
+    renderCreatorShop();
+  });
+
+  const grid = document.querySelector("[data-shop-grid]");
+  try {
+    const apiUrl = await waitForApiUrl();
+    const [catalogueResponse, freshProfile] = await Promise.all([
+      fetch(`${apiUrl}/api/packs`, { cache: "no-store" }),
+      refreshCreatorProfileFromServer()
+    ]);
+    const catalogue = await readCreatorJson(catalogueResponse);
+    if (!catalogueResponse.ok || !Array.isArray(catalogue)) throw new Error("La Boutique est indisponible pour le moment.");
+
+    const ownedIds = new Set((Array.isArray(freshProfile?.downloadedPacks) ? freshProfile.downloadedPacks : []).map(String));
+    const ownedResourceIds = new Set((Array.isArray(freshProfile?.downloadedResources) ? freshProfile.downloadedResources : []).map(String));
+    // La Boutique est aussi le catalogue public de l’artiste : un pack approuvé
+    // doit apparaître même pour son propre auteur. On ne filtre donc jamais
+    // les ressources publiées par le compte actuellement connecté.
+    const eligiblePacks = catalogue
+      .filter(creatorPurchaseEligible)
+      .filter((pack) => creatorPurchaseContentType(pack) === creatorShopFilter);
+
+    const distributedPacks = window.SonaraDistribution?.createStoreDistribution
+      ? window.SonaraDistribution.createStoreDistribution(eligiblePacks, {
+          contentType: creatorShopFilter,
+          userContext: freshProfile || profile || { role: "artist" }
+        }).items
+      : eligiblePacks;
+
+    const products = distributedPacks.flatMap(creatorShopProductsFromPack)
+      .map((product) => {
+        const packOwned = ownedIds.has(String(product.packId));
+        const resourceOwned = Array.isArray(product.pack?.resources) && product.pack.resources.some((resource) => ownedResourceIds.has(String(resource?.id || "")));
+        return { ...product, owned: packOwned || resourceOwned };
+      })
+      .filter((product) => !creatorShopOwnedOnly || product.owned);
+
+    document.querySelector("[data-shop-count]").textContent = String(products.length);
+    grid.innerHTML = products.length
+      ? products.map((product) => renderCreatorShopProduct(product, product.owned, creatorShopOwnedOnly)).join("")
+      : `<div class="artist-shop-empty"><i data-lucide="store"></i><strong>${creatorShopOwnedOnly ? "Aucun achat artiste pour le moment." : "Aucune ressource disponible pour le moment."}</strong><small>${creatorShopOwnedOnly ? "Aucun achat artiste pour le moment." : "Aucune ressource disponible pour le moment."}</small></div>`;
+
+    creatorPage.querySelectorAll("[data-shop-pack-id]").forEach((card) => {
+      const openCard = () => {
+        const packId = card.dataset.shopPackId;
+        const sourcePack = eligiblePacks.find((pack) => String(pack.id || "") === String(packId || ""));
+        window.location.href = creatorShopPackUrl({
+          packId,
+          type: creatorPurchaseContentType(sourcePack || {})
+        }, { ownedView: creatorShopOwnedOnly });
+      };
+      card.addEventListener("click", openCard);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openCard();
+        }
+      });
+    });
+    if (window.lucide) lucide.createIcons();
+    requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
+  } catch (error) {
+    grid.innerHTML = `<div class="artist-shop-empty"><i data-lucide="triangle-alert"></i><strong>Ressources indisponibles.</strong><small>${escapeCreatorMissionText(error.message || "Réessaie dans un instant.")}</small></div>`;
+    if (window.lucide) lucide.createIcons();
+  }
+}
 
 refreshCreatorDashboardStats();
 refreshCreatorMissions();
@@ -858,8 +1109,8 @@ function renderCreatorManagement() {
   });
 }
 
-const params = new URLSearchParams(window.location.search);
-
-if (params.get("mode") === "management") {
+if (creatorParams.get("mode") === "management") {
   renderCreatorManagement();
+} else if (["shop", "purchases"].includes(creatorParams.get("mode"))) {
+  renderCreatorShop();
 }

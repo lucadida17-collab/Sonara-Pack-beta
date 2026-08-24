@@ -688,7 +688,7 @@ async function initializeMyPacks() {
               <span class="my-pack-status status-${escapeMyPackHtml(status)}">${escapeMyPackHtml(myPackStatusLabel(status))}</span>
             </div>
             <div class="my-pack-meta">
-              <span><i data-lucide="music-2"></i>${pack.trackCount || pack.tracks?.length || 0} tracks</span>
+              <span><i data-lucide="${["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase()) ? "file-cog" : "music-2"}"></i>${["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase()) ? `${pack.resourceCount || pack.resources?.length || 0} ressources` : `${pack.trackCount || pack.tracks?.length || 0} tracks`}</span>
               <span><i data-lucide="download"></i>${pack.downloadCount || 0} téléchargements</span>
               <span><i data-lucide="users"></i>${pack.uniqueDownloaders || 0} utilisateurs</span>
               <span><i data-lucide="shopping-bag"></i>${commercialActive ? (pack.salesCount || 0) : "V1"} ventes</span>

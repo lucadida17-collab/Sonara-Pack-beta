@@ -264,7 +264,7 @@ function renderManagePack(pack) {
         <h1 data-user-content>${managePackEscape(title)}</h1>
         <div class="manage-pack-meta">
           <span class="manage-pack-status status-${managePackEscape(status)}">${managePackEscape(managePackStatusLabel(status))}</span>
-          <span><i data-lucide="music-2"></i>${Number(pack.trackCount || pack.tracks?.length || 0)} tracks</span>
+          <span><i data-lucide="${["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase()) ? "file-cog" : "music-2"}"></i>${["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase()) ? `${Number(pack.resourceCount || pack.resources?.length || 0)} ressources` : `${Number(pack.trackCount || pack.tracks?.length || 0)} tracks`}</span>
           <span><i data-lucide="shield-check"></i>Licence v${Number(license.version || 1)}</span>
         </div>
       </div>
@@ -276,7 +276,7 @@ function renderManagePack(pack) {
           <div>
             <p class="manage-pack-eyebrow">LICENCE DU PACK</p>
             <h2>Définir les droits accordés</h2>
-            <p>Cette licence s’applique au pack complet et à toutes ses tracks vendues séparément.</p>
+            <p>${["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase()) ? "Cette licence s’applique au pack et à toutes les ressources qu’il contient." : "Cette licence s’applique au pack complet et à toutes ses tracks vendues séparément."}</p>
           </div>
           <button class="license-reset" type="button">
             <i data-lucide="rotate-ccw"></i>

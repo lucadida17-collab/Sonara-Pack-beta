@@ -172,6 +172,9 @@ function collectPackR2Keys(pack) {
   for (const track of Array.isArray(pack?.tracks) ? pack.tracks : []) {
     keys.push(track?.coverPack, track?.audioName, track?.downloadZip);
   }
+  for (const resource of Array.isArray(pack?.resources) ? pack.resources : []) {
+    keys.push(resource?.coverPack, resource?.fileKey, resource?.downloadZip);
+  }
 
   return [...new Set(keys
     .filter((value) => typeof value === "string" && value.trim())
@@ -212,6 +215,52 @@ async function permanentlyRejectMongoPack(packId) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+const AUTH_EMAIL_FROM = String(
+  process.env.SONARA_AUTH_EMAIL_FROM || "Sonara Pack <notifications@sonarapack.com>"
+).trim();
+
+async function sendAuthVerificationEmail({ to, code, subject, title, from = AUTH_EMAIL_FROM }) {
+  if (!String(process.env.RESEND_API_KEY || "").trim()) {
+    const error = new Error("RESEND_API_KEY absente.");
+    error.code = "EMAIL_PROVIDER_NOT_CONFIGURED";
+    throw error;
+  }
+
+  const normalizedRecipient = normalizeMail(to);
+  if (!normalizedRecipient) {
+    const error = new Error("Adresse e-mail invalide.");
+    error.code = "EMAIL_RECIPIENT_INVALID";
+    throw error;
+  }
+
+  const safeTitle = String(title || "Vérification Sonara Pack").trim();
+  const safeCode = String(code || "").trim();
+  const delivery = await resend.emails.send({
+    from,
+    to: normalizedRecipient,
+    subject,
+    text: `${safeTitle}\n\nVotre code Sonara Pack est : ${safeCode}\n\nCe code expire dans 10 minutes.`,
+    html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">${safeTitle}</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${safeCode}</p><p>Ce code expire dans 10 minutes.</p></div>`
+  });
+
+  // Le SDK Resend renvoie { data, error } : une erreur fournisseur ne lève pas
+  // forcément une exception. Ne jamais annoncer « Code envoyé » si Resend l'a refusé.
+  if (delivery?.error || !delivery?.data?.id) {
+    const providerMessage = String(delivery?.error?.message || "E-mail non accepté par Resend.");
+    const error = new Error(providerMessage);
+    error.code = "EMAIL_PROVIDER_REJECTED";
+    error.providerStatusCode = delivery?.error?.statusCode || null;
+    throw error;
+  }
+
+  console.log("AUTH EMAIL ACCEPTED", {
+    messageId: delivery.data.id,
+    recipientDomain: normalizedRecipient.split("@")[1] || "unknown"
+  });
+
+  return delivery.data.id;
+}
 const client = new MongoClient(process.env.MONGO_URI);
 
 const db = client.db(mongoDatabaseName);
@@ -506,7 +555,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const PACK_MAX_TRACKS = 20;
 const PACK_MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const PACK_MAX_AUDIO_SIZE = 250 * 1024 * 1024;
-const PACK_MAX_FILES = 1 + (PACK_MAX_TRACKS * 2);
+const PACK_MAX_RESOURCES = 20;
+const PACK_MAX_RESOURCE_SIZE = 250 * 1024 * 1024;
+const PACK_MAX_FILES = 1 + Math.max(PACK_MAX_TRACKS * 2, PACK_MAX_RESOURCES);
 
 const PACK_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -525,11 +576,15 @@ const PACK_AUDIO_TYPES = new Set([
 ]);
 
 function isPackImageField(fieldname) {
-  return fieldname === "coverPack" || /^trackCover_\d+$/.test(fieldname);
+  return fieldname === "coverPack" || /^trackCover_\d+$/.test(fieldname) || /^resourceCover_\d+$/.test(fieldname);
 }
 
 function isPackAudioField(fieldname) {
   return /^trackAudio_\d+$/.test(fieldname);
+}
+
+function isPackResourceField(fieldname) {
+  return /^resourceFile_\d+$/.test(fieldname);
 }
 
 function packFileFilter(req, file, cb) {
@@ -547,6 +602,10 @@ function packFileFilter(req, file, cb) {
     if (!PACK_AUDIO_TYPES.has(file.mimetype) && !validExtension) {
       return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
     }
+    return cb(null, true);
+  }
+
+  if (isPackResourceField(file.fieldname)) {
     return cb(null, true);
   }
 
@@ -619,6 +678,133 @@ function handlePackRevisionUpload(req, res, next) {
   });
 }
 
+function readMidiVariableLength(buffer, offset) {
+  let value = 0;
+  let cursor = offset;
+  let count = 0;
+  while (cursor < buffer.length && count < 4) {
+    const byte = buffer[cursor++];
+    value = (value << 7) | (byte & 0x7f);
+    count += 1;
+    if ((byte & 0x80) === 0) break;
+  }
+  return { value, offset: cursor };
+}
+
+function buildMidiPreviewFromFile(filePath) {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    const buffer = fs.readFileSync(filePath);
+    if (buffer.length < 14 || buffer.toString("ascii", 0, 4) !== "MThd") return null;
+    const headerLength = buffer.readUInt32BE(4);
+    const trackCount = buffer.readUInt16BE(10);
+    const divisionRaw = buffer.readUInt16BE(12);
+    const ticksPerQuarter = (divisionRaw & 0x8000) === 0 ? Math.max(1, divisionRaw) : 480;
+    const previewTickLimit = ticksPerQuarter * 32;
+    const notes = [];
+    let cursor = 8 + headerLength;
+    let totalTicks = 0;
+
+    for (let trackIndex = 0; trackIndex < trackCount && cursor + 8 <= buffer.length; trackIndex += 1) {
+      if (buffer.toString("ascii", cursor, cursor + 4) !== "MTrk") break;
+      const trackLength = buffer.readUInt32BE(cursor + 4);
+      cursor += 8;
+      const trackEnd = Math.min(buffer.length, cursor + trackLength);
+      let tick = 0;
+      let runningStatus = 0;
+      const activeNotes = new Map();
+
+      while (cursor < trackEnd) {
+        const delta = readMidiVariableLength(buffer, cursor);
+        tick += delta.value;
+        cursor = delta.offset;
+        totalTicks = Math.max(totalTicks, tick);
+        if (cursor >= trackEnd) break;
+
+        let status = buffer[cursor];
+        if (status >= 0x80) {
+          cursor += 1;
+          if (status < 0xf0) runningStatus = status;
+        } else if (runningStatus) {
+          status = runningStatus;
+        } else {
+          break;
+        }
+
+        if (status === 0xff) {
+          if (cursor >= trackEnd) break;
+          cursor += 1;
+          const length = readMidiVariableLength(buffer, cursor);
+          cursor = Math.min(trackEnd, length.offset + length.value);
+          continue;
+        }
+        if (status === 0xf0 || status === 0xf7) {
+          const length = readMidiVariableLength(buffer, cursor);
+          cursor = Math.min(trackEnd, length.offset + length.value);
+          continue;
+        }
+        if (status >= 0xf0) continue;
+
+        const command = status & 0xf0;
+        const channel = status & 0x0f;
+        const dataLength = command === 0xc0 || command === 0xd0 ? 1 : 2;
+        if (cursor + dataLength > trackEnd) break;
+        const data1 = buffer[cursor++];
+        const data2 = dataLength === 2 ? buffer[cursor++] : 0;
+
+        if (command === 0x90 && data2 > 0) {
+          const key = `${channel}:${data1}`;
+          if (!activeNotes.has(key)) activeNotes.set(key, { start: tick, velocity: data2, note: data1 });
+        } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
+          const key = `${channel}:${data1}`;
+          const active = activeNotes.get(key);
+          if (active) {
+            if (active.start <= previewTickLimit && notes.length < 96) {
+              notes.push({
+                note: active.note,
+                start: active.start,
+                duration: Math.max(1, tick - active.start),
+                velocity: active.velocity
+              });
+            }
+            activeNotes.delete(key);
+          }
+        }
+      }
+      cursor = trackEnd;
+    }
+
+    if (!notes.length) return { kind: "midi", ticksPerQuarter, totalTicks: Math.max(totalTicks, ticksPerQuarter * 4), notes: [] };
+    const lowestNote = Math.min(...notes.map((note) => note.note));
+    const highestNote = Math.max(...notes.map((note) => note.note));
+    const visibleTotal = Math.max(ticksPerQuarter * 4, Math.min(previewTickLimit, Math.max(...notes.map((note) => note.start + note.duration))));
+    return {
+      kind: "midi",
+      ticksPerQuarter,
+      totalTicks: visibleTotal,
+      lowestNote,
+      highestNote,
+      notes
+    };
+  } catch (error) {
+    console.warn("Aperçu MIDI indisponible :", error.message);
+    return null;
+  }
+}
+
+function buildDawResourcePreview(resource = {}, pack = {}) {
+  return {
+    kind: "daw",
+    dawName: String(resource.dawName || pack.dawName || ""),
+    dawVersion: String(resource.dawVersion || pack.dawVersion || ""),
+    dawPlugins: String(resource.dawPlugins || pack.dawPlugins || ""),
+    extension: String(resource.extension || path.extname(resource.originalName || "") || "").toLowerCase(),
+    originalName: String(resource.originalName || ""),
+    size: Number(resource.size || 0)
+  };
+}
+
+
 function removeFileIfExists(filePath) {
   if (!filePath) return;
 
@@ -651,7 +837,13 @@ function validatePendingPackRequest(req) {
 
   const title = String(pack.title || "").trim();
   const artistId = String(pack.artistId || "").trim();
+  const normalizedContentType = String(pack.contentType || "audio").trim().toLowerCase();
+  const normalizedAudience = String(pack.primaryAudience || "both").trim().toLowerCase();
+  const allowedContentTypes = new Set(["audio", "midi", "daw"]);
+  const allowedAudiences = new Set(["creators", "artists", "both"]);
+  const allowedDaws = new Set(["fl-studio", "ableton-live", "logic-pro", "reaper", "cubase", "pro-tools", "studio-one", "other"]);
   const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+  const resources = Array.isArray(pack.resources) ? pack.resources : [];
   const packIsFree =
     pack.isFree === true ||
     String(pack.price || "").trim().toLowerCase() === "gratuit";
@@ -660,162 +852,138 @@ function validatePendingPackRequest(req) {
     : Number(String(pack.price || "").replace("€", "").replace(",", "."));
 
   if (!title || title.length > 70) {
-    return {
-      valid: false,
-      status: 400,
-      message: "Le titre du pack est obligatoire et limité à 70 caractères."
-    };
+    return { valid: false, status: 400, message: "Le titre du pack est obligatoire et limité à 70 caractères." };
   }
-
   if (!artistId) {
     return { valid: false, status: 400, message: "L’artiste du pack est introuvable." };
   }
+  if (!allowedContentTypes.has(normalizedContentType)) {
+    return { valid: false, status: 400, message: "Le type de contenu du pack est invalide." };
+  }
+  if (!allowedAudiences.has(normalizedAudience)) {
+    return { valid: false, status: 400, message: "La cible principale du pack est invalide." };
+  }
+  pack.contentType = normalizedContentType;
+  pack.primaryAudience = normalizedAudience;
 
-  if (tracks.length < 1 || tracks.length > PACK_MAX_TRACKS) {
-    return {
-      valid: false,
-      status: 400,
-      message: `Un pack doit contenir entre 1 et ${PACK_MAX_TRACKS} tracks.`
-    };
+  if (normalizedContentType === "audio") {
+    if (tracks.length < 1 || tracks.length > PACK_MAX_TRACKS) {
+      return { valid: false, status: 400, message: `Un pack audio doit contenir entre 1 et ${PACK_MAX_TRACKS} tracks.` };
+    }
+    pack.resources = [];
+  } else {
+    pack.primaryAudience = "artists";
+    if (resources.length < 1 || resources.length > PACK_MAX_RESOURCES) {
+      return { valid: false, status: 400, message: `Un pack de ressources doit contenir entre 1 et ${PACK_MAX_RESOURCES} fichiers.` };
+    }
+    pack.tracks = [];
+    if (normalizedContentType === "daw") {
+      const dawName = String(pack.dawName || "").trim().toLowerCase();
+      if (!allowedDaws.has(dawName)) {
+        return { valid: false, status: 400, message: "Le logiciel DAW correspondant doit être indiqué." };
+      }
+      pack.dawName = dawName;
+      pack.dawVersion = String(pack.dawVersion || "").trim().slice(0, 40);
+      pack.dawPlugins = String(pack.dawPlugins || "").trim().slice(0, 220);
+    } else {
+      pack.dawName = "";
+      pack.dawVersion = "";
+      pack.dawPlugins = "";
+    }
   }
 
   if (!packIsFree && (!Number.isFinite(packPrice) || packPrice <= 0)) {
     return { valid: false, status: 400, message: "Le prix du pack est invalide." };
   }
-
   pack.isFree = packIsFree;
   pack.price = packIsFree ? "Gratuit" : `${packPrice.toFixed(2)}€`;
 
   if (!pack.license || typeof pack.license !== "object") {
-    return {
-      valid: false,
-      status: 400,
-      message: "La licence d’utilisation du pack est obligatoire."
-    };
+    return { valid: false, status: 400, message: "La licence d’utilisation du pack est obligatoire." };
   }
-
   if (pack.rightsDeclarationAccepted !== true) {
-    return {
-      valid: false,
-      status: 400,
-      code: "RIGHTS_DECLARATION_REQUIRED",
-      message: "La déclaration de droits est obligatoire avant publication."
-    };
+    return { valid: false, status: 400, code: "RIGHTS_DECLARATION_REQUIRED", message: "La déclaration de droits est obligatoire avant publication." };
   }
-
   pack.license = normalizePackLicense(pack.license);
 
   const files = Array.isArray(req.files) ? req.files : [];
   const fileByField = new Map(files.map((file) => [file.fieldname, file]));
   const coverPackFile = fileByField.get("coverPack");
+  if (!coverPackFile) return { valid: false, status: 400, message: "La cover du pack est obligatoire." };
+  if (coverPackFile.size > PACK_MAX_IMAGE_SIZE) return { valid: false, status: 400, message: "La cover du pack dépasse 8 Mo." };
 
-  if (!coverPackFile) {
-    return { valid: false, status: 400, message: "La cover du pack est obligatoire." };
-  }
+  if (normalizedContentType === "audio") {
+    for (let index = 0; index < tracks.length; index += 1) {
+      const track = tracks[index];
+      const trackTitle = String(track?.title || "").trim();
+      const trackIsFree = track?.isFree === true || String(track?.price || "").trim().toLowerCase() === "gratuit";
+      const price = trackIsFree ? 0 : Number(String(track?.price || "").replace("€", "").replace(",", "."));
+      const customCover = fileByField.get(`trackCover_${index}`);
+      const usesPackCover = track?.coverMode !== "custom" || !customCover;
+      const cover = usesPackCover ? coverPackFile : customCover;
+      const audio = fileByField.get(`trackAudio_${index}`);
 
-  if (coverPackFile.size > PACK_MAX_IMAGE_SIZE) {
-    return { valid: false, status: 400, message: "La cover du pack dépasse 8 Mo." };
-  }
-
-  for (let index = 0; index < tracks.length; index += 1) {
-    const track = tracks[index];
-    const trackTitle = String(track?.title || "").trim();
-    const trackIsFree =
-      track?.isFree === true ||
-      String(track?.price || "").trim().toLowerCase() === "gratuit";
-
-    const price = trackIsFree
-      ? 0
-      : Number(String(track?.price || "").replace("€", "").replace(",", "."));
-    const customCover = fileByField.get(`trackCover_${index}`);
-    // La cover du pack/album est la cover par défaut de la track.
-    // Si un ancien brouillon indique "custom" mais n'envoie aucun fichier
-    // personnalisé, on utilise la cover du pack au lieu de bloquer.
-    const usesPackCover = track?.coverMode !== "custom" || !customCover;
-    const cover = usesPackCover ? coverPackFile : customCover;
-    const audio = fileByField.get(`trackAudio_${index}`);
-
-    if (!trackTitle || trackTitle.length > 70) {
-      return {
-        valid: false,
-        status: 400,
-        message: `Le titre de la track ${index + 1} est invalide.`
-      };
+      if (!trackTitle || trackTitle.length > 70) return { valid: false, status: 400, message: `Le titre de la track ${index + 1} est invalide.` };
+      if ((!trackIsFree && (!Number.isFinite(price) || price <= 0)) || (trackIsFree && price !== 0)) {
+        return { valid: false, status: 400, message: `Le prix de la track ${index + 1} est invalide.` };
+      }
+      track.isFree = trackIsFree;
+      track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
+      track.coverMode = usesPackCover ? "pack" : "custom";
+      if (!cover) return { valid: false, status: 400, message: `La cover de la track ${index + 1} est obligatoire.` };
+      if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) return { valid: false, status: 400, message: `La cover de la track ${index + 1} dépasse 8 Mo.` };
+      if (!audio) return { valid: false, status: 400, message: `Le fichier audio de la track ${index + 1} est obligatoire.` };
+      if (audio.size > PACK_MAX_AUDIO_SIZE) return { valid: false, status: 400, message: `Le fichier audio de la track ${index + 1} dépasse 250 Mo.` };
     }
-
-    if (
-      (!trackIsFree && (!Number.isFinite(price) || price <= 0)) ||
-      (trackIsFree && price !== 0)
-    ) {
-      return {
-        valid: false,
-        status: 400,
-        message: `Le prix de la track ${index + 1} est invalide.`
-      };
-    }
-
-    track.isFree = trackIsFree;
-    track.price = trackIsFree ? "Gratuit" : `${price.toFixed(2)}€`;
-    track.coverMode = usesPackCover ? "pack" : "custom";
-
-    if (!cover) {
-      return {
-        valid: false,
-        status: 400,
-        message: `La cover de la track ${index + 1} est obligatoire.`
-      };
-    }
-
-    if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) {
-      return {
-        valid: false,
-        status: 400,
-        message: `La cover de la track ${index + 1} dépasse 8 Mo.`
-      };
-    }
-
-    if (!audio) {
-      return {
-        valid: false,
-        status: 400,
-        message: `Le fichier audio de la track ${index + 1} est obligatoire.`
-      };
-    }
-
-    if (audio.size > PACK_MAX_AUDIO_SIZE) {
-      return {
-        valid: false,
-        status: 400,
-        message: `Le fichier audio de la track ${index + 1} dépasse 250 Mo.`
-      };
+  } else {
+    const blockedDawExtensions = new Set([".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".js", ".mjs", ".cjs", ".html", ".htm", ".php", ".py", ".sh", ".ps1"]);
+    for (let index = 0; index < resources.length; index += 1) {
+      const resource = resources[index] || {};
+      const resourceFile = fileByField.get(`resourceFile_${index}`);
+      const customCover = fileByField.get(`resourceCover_${index}`);
+      const usesPackCover = resource?.coverMode !== "custom" || !customCover;
+      const cover = usesPackCover ? coverPackFile : customCover;
+      const resourceTitle = String(resource.title || "").trim();
+      const resourceIsFree = resource?.isFree === true || String(resource?.price || "").trim().toLowerCase() === "gratuit";
+      const resourcePrice = resourceIsFree ? 0 : Number(String(resource?.price || "").replace("€", "").replace(",", "."));
+      if (!resourceTitle || resourceTitle.length > 70) return { valid: false, status: 400, message: `Le titre de la ressource ${index + 1} est invalide.` };
+      if (!resourceIsFree && (!Number.isFinite(resourcePrice) || resourcePrice <= 0)) return { valid: false, status: 400, message: `Le prix de la ressource ${index + 1} est invalide.` };
+      if (!cover) return { valid: false, status: 400, message: `La cover de la ressource ${index + 1} est obligatoire.` };
+      if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) return { valid: false, status: 400, message: `La cover de la ressource ${index + 1} dépasse 8 Mo.` };
+      if (!resourceFile) return { valid: false, status: 400, message: `Le fichier de la ressource ${index + 1} est obligatoire.` };
+      if (resourceFile.size > PACK_MAX_RESOURCE_SIZE) return { valid: false, status: 400, message: `La ressource ${index + 1} dépasse 250 Mo.` };
+      const extension = path.extname(resourceFile.originalname || "").toLowerCase();
+      if (normalizedContentType === "midi" && ![".mid", ".midi"].includes(extension)) return { valid: false, status: 400, message: `La ressource ${index + 1} doit être un fichier MIDI .mid ou .midi.` };
+      if (normalizedContentType === "daw" && (!extension || blockedDawExtensions.has(extension))) return { valid: false, status: 400, message: `Le fichier du projet DAW ${index + 1} n’est pas autorisé.` };
+      resource.resourceType = normalizedContentType;
+      resource.isFree = resourceIsFree;
+      resource.price = resourceIsFree ? "Gratuit" : `${resourcePrice.toFixed(2)}€`;
+      resource.coverMode = usesPackCover ? "pack" : "custom";
+      resource.originalName = resourceFile.originalname;
+      resource.extension = extension;
+      resource.size = resourceFile.size;
+      if (normalizedContentType === "daw") { resource.dawName = pack.dawName; resource.dawVersion = pack.dawVersion || ""; resource.dawPlugins = pack.dawPlugins || ""; }
     }
   }
 
-  const expectedFields = new Set([
-    "coverPack",
-    ...tracks.flatMap((track, index) => [
-      ...(track?.coverMode === "custom" ? [`trackCover_${index}`] : []),
-      `trackAudio_${index}`
-    ])
-  ]);
-
+  const expectedFields = new Set(["coverPack"]);
+  if (normalizedContentType === "audio") {
+    tracks.forEach((track, index) => {
+      if (track?.coverMode === "custom") expectedFields.add(`trackCover_${index}`);
+      expectedFields.add(`trackAudio_${index}`);
+    });
+  } else {
+    resources.forEach((resource, index) => {
+      if (resource?.coverMode === "custom") expectedFields.add(`resourceCover_${index}`);
+      expectedFields.add(`resourceFile_${index}`);
+    });
+  }
   const unexpectedFile = files.find((file) => !expectedFields.has(file.fieldname));
-
-  if (unexpectedFile) {
-    return { valid: false, status: 400, message: "Le pack contient un fichier inattendu." };
-  }
-
-  if (files.length !== expectedFields.size) {
-    return {
-      valid: false,
-      status: 400,
-      message: "Le nombre de fichiers reçus ne correspond pas au pack."
-    };
-  }
+  if (unexpectedFile) return { valid: false, status: 400, message: "Le pack contient un fichier inattendu." };
+  if (files.length !== expectedFields.size) return { valid: false, status: 400, message: "Le nombre de fichiers reçus ne correspond pas au pack." };
 
   return { valid: true, pack, fileByField };
 }
-
 function createZipFromPaths(zipPath, filePaths) {
   const zip = new AdmZip();
 
@@ -1105,6 +1273,10 @@ async function storeVerificationCode(key, code) {
   );
 }
 
+async function deleteStoredVerificationCode(key) {
+  await verificationSecurityCollection.deleteOne({ _id: `code:${key}` });
+}
+
 async function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
   await cleanupVerificationStores();
   const expectedKey = createVerificationKey(mail, purpose, userId);
@@ -1204,12 +1376,17 @@ app.post("/api/account-security/send-code", async (req, res) => {
     const key = createVerificationKey(normalizedMail, purpose, userId);
     await storeVerificationCode(key, code);
 
-    await resend.emails.send({
-      from: "Sonara Pack <notifications@sonarapack.com>",
-      to: normalizedMail,
-      subject: "Votre code de vérification Sonara Pack",
-      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Vérification de votre adresse e-mail</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
-    });
+    try {
+      await sendAuthVerificationEmail({
+        to: normalizedMail,
+        code,
+        subject: "Votre code de vérification Sonara Pack",
+        title: "Vérification de votre adresse e-mail"
+      });
+    } catch (deliveryError) {
+      await deleteStoredVerificationCode(key).catch(() => {});
+      throw deliveryError;
+    }
 
     return res.json({ success: true, message: "Code envoyé." });
   } catch (error) {
@@ -1985,12 +2162,17 @@ app.post("/api/login/send-code", async (req, res) => {
 
     await storeVerificationCode(key, code);
 
-    await resend.emails.send({
-      from: "Sonara Pack <notifications@sonarapack.com>",
-      to: normalizedMail,
-      subject: "Code de connexion Sonara Pack",
-      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Connexion à votre compte</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
-    });
+    try {
+      await sendAuthVerificationEmail({
+        to: normalizedMail,
+        code,
+        subject: "Code de connexion Sonara Pack",
+        title: "Connexion à votre compte"
+      });
+    } catch (deliveryError) {
+      await deleteStoredVerificationCode(key).catch(() => {});
+      throw deliveryError;
+    }
 
     return res.json({ success: true, message: "Code envoyé." });
   } catch (error) {
@@ -2194,12 +2376,17 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
 
     await storeVerificationCode(key, code);
 
-    await resend.emails.send({
-      from: "Sonara Pack <admin@sonarapack.com>",
-      to: normalizedMail,
-      subject: "Code de connexion Sonara Pack",
-      html: `<div style="font-family:Arial,sans-serif;background:#080b12;color:white;padding:30px;border-radius:16px"><h1 style="color:#7ddcff">Connexion à votre compte</h1><p>Votre code Sonara Pack est :</p><p style="font-size:34px;font-weight:700;letter-spacing:8px">${code}</p><p>Ce code expire dans 10 minutes.</p></div>`
-    });
+    try {
+      await sendAuthVerificationEmail({
+        to: normalizedMail,
+        code,
+        subject: "Code de connexion Sonara Pack",
+        title: "Connexion à votre compte"
+      });
+    } catch (deliveryError) {
+      await deleteStoredVerificationCode(key).catch(() => {});
+      throw deliveryError;
+    }
 
     return res.json({ success: true, message: "Code envoyé." });
   } catch (error) {
@@ -3510,6 +3697,7 @@ async function buildCreatorPackOverview(accountId, artistIds = [accountId]) {
       license: normalizePackLicense(pack.license),
       licenseSummary: licenseModerationSummary(pack),
       trackCount: Array.isArray(pack.tracks) ? pack.tracks.length : 0,
+      resourceCount: Array.isArray(pack.resources) ? pack.resources.length : 0,
       ...downloads,
       salesCount: packSales.length,
       buyerCount: buyers.size,
@@ -4158,8 +4346,17 @@ function enrichPublicCataloguePack(pack, context) {
     }
   }
 
+  const publicResources = (Array.isArray(pack?.resources) ? pack.resources : []).map((resource) => {
+    const { fileKey, downloadZip, originalFileHash, originalFileHashAlgorithm, originalFileHashComputedAt, ...publicResource } = resource || {};
+    if (!publicResource.preview && String(pack?.contentType || "audio").toLowerCase() === "daw") {
+      publicResource.preview = buildDawResourcePreview(resource, pack);
+    }
+    return publicResource;
+  });
+
   return {
     ...pack,
+    resources: publicResources,
     artistProfile,
     metrics: {
       ...(pack?.metrics && typeof pack.metrics === "object" ? pack.metrics : {}),
@@ -4218,6 +4415,10 @@ app.post("/api/packs/:id/preview-analysis", async (req, res) => {
 
     if (!pack) {
       return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    if (String(pack.contentType || "audio").toLowerCase() !== "audio") {
+      return res.json({ success: true, packId, tracks: [], skipped: true, reason: "NON_AUDIO_RESOURCE" });
     }
 
     const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
@@ -4386,40 +4587,67 @@ app.post(
       const coverPackFile = fileByField.get("coverPack");
       const packCoverKey = await uploadToR2(coverPackFile, "packs/covers");
       const preparedTracks = [];
+      const preparedResources = [];
 
-      for (let index = 0; index < receivedPack.tracks.length; index += 1) {
-        const track = receivedPack.tracks[index];
-        const usesPackCover = track?.coverMode !== "custom";
-        const trackCoverFile = fileByField.get(`trackCover_${index}`);
-        const trackAudioFile = fileByField.get(`trackAudio_${index}`);
-
-        const [trackCoverKey, trackAudioKey, preview, originalFileHash] = await Promise.all([
-          usesPackCover
-            ? Promise.resolve(packCoverKey)
-            : uploadToR2(trackCoverFile, "tracks/covers"),
-          uploadToR2(trackAudioFile, "tracks/audio"),
-          analyzeAudioPreview(trackAudioFile.path),
-          hashFileSha256(trackAudioFile.path)
-        ]);
-
-         preparedTracks.push({
-           ...track,
-           coverPack: trackCoverKey,
-           audioName: trackAudioKey,
-           audioVersion: 1,
-           originalFileHash,
-           originalFileHashAlgorithm: "SHA-256",
-           originalFileHashComputedAt: new Date().toISOString(),
-           fingerprintStatus: FINGERPRINT_STATUS,
-           ...preview,
-           _audioLocalPath: trackAudioFile.path
-         });
+      if (receivedPack.contentType === "audio") {
+        for (let index = 0; index < receivedPack.tracks.length; index += 1) {
+          const track = receivedPack.tracks[index];
+          const usesPackCover = track?.coverMode !== "custom";
+          const trackCoverFile = fileByField.get(`trackCover_${index}`);
+          const trackAudioFile = fileByField.get(`trackAudio_${index}`);
+          const [trackCoverKey, trackAudioKey, preview, originalFileHash] = await Promise.all([
+            usesPackCover ? Promise.resolve(packCoverKey) : uploadToR2(trackCoverFile, "tracks/covers"),
+            uploadToR2(trackAudioFile, "tracks/audio"),
+            analyzeAudioPreview(trackAudioFile.path),
+            hashFileSha256(trackAudioFile.path)
+          ]);
+          preparedTracks.push({
+            ...track,
+            coverPack: trackCoverKey,
+            audioName: trackAudioKey,
+            audioVersion: 1,
+            originalFileHash,
+            originalFileHashAlgorithm: "SHA-256",
+            originalFileHashComputedAt: new Date().toISOString(),
+            fingerprintStatus: FINGERPRINT_STATUS,
+            ...preview,
+            _audioLocalPath: trackAudioFile.path
+          });
+        }
+      } else {
+        const resourceFolder = receivedPack.contentType === "midi" ? "resources/midi" : "resources/daw";
+        for (let index = 0; index < receivedPack.resources.length; index += 1) {
+          const resource = receivedPack.resources[index];
+          const resourceFile = fileByField.get(`resourceFile_${index}`);
+          const resourceCoverFile = fileByField.get(`resourceCover_${index}`);
+          const usesPackCover = resource?.coverMode !== "custom" || !resourceCoverFile;
+          const [resourceCoverKey, fileKey, originalFileHash] = await Promise.all([
+            usesPackCover ? Promise.resolve(packCoverKey) : uploadToR2(resourceCoverFile, "resources/covers"),
+            uploadToR2(resourceFile, resourceFolder),
+            hashFileSha256(resourceFile.path)
+          ]);
+          preparedResources.push({
+            ...resource,
+            coverMode: usesPackCover ? "pack" : "custom",
+            coverPack: resourceCoverKey,
+            fileKey,
+            originalName: resourceFile.originalname,
+            preview: receivedPack.contentType === "midi"
+              ? buildMidiPreviewFromFile(resourceFile.path)
+              : buildDawResourcePreview(resource, receivedPack),
+            originalFileHash,
+            originalFileHashAlgorithm: "SHA-256",
+            originalFileHashComputedAt: new Date().toISOString(),
+            _resourceLocalPath: resourceFile.path
+          });
+        }
       }
 
       const newPack = {
         ...receivedPack,
         coverPack: packCoverKey,
         tracks: preparedTracks,
+        resources: preparedResources,
         license: buildUpdatedPackLicense(
           null,
           receivedPack.license || defaultPackLicense(),
@@ -4441,29 +4669,27 @@ app.post(
       const packZipFullPath = path.join(packsZipPath, packZipName);
       temporaryZips.push(packZipFullPath);
 
-      createZipFromPaths(
-        packZipFullPath,
-        newPack.tracks.map((track) => track._audioLocalPath)
-      );
+      const packContentPaths = newPack.contentType === "audio"
+        ? newPack.tracks.map((track) => track._audioLocalPath)
+        : newPack.resources.map((resource) => resource._resourceLocalPath);
+      createZipFromPaths(packZipFullPath, packContentPaths);
 
       newPack.downloadZip = await uploadLocalFileToR2(
         packZipFullPath,
         `zips/packs/${packZipName}`
       );
 
-      for (const track of newPack.tracks) {
-        const trackZipName = `${track.id}.zip`;
-        const trackZipFullPath = path.join(tracksZipPath, trackZipName);
-        temporaryZips.push(trackZipFullPath);
-
-        createZipFromPaths(trackZipFullPath, [track._audioLocalPath]);
-
-        track.downloadZip = await uploadLocalFileToR2(
-          trackZipFullPath,
-          `zips/tracks/${trackZipName}`
-        );
-
-        delete track._audioLocalPath;
+      if (newPack.contentType === "audio") {
+        for (const track of newPack.tracks) {
+          const trackZipName = `${track.id}.zip`;
+          const trackZipFullPath = path.join(tracksZipPath, trackZipName);
+          temporaryZips.push(trackZipFullPath);
+          createZipFromPaths(trackZipFullPath, [track._audioLocalPath]);
+          track.downloadZip = await uploadLocalFileToR2(trackZipFullPath, `zips/tracks/${trackZipName}`);
+          delete track._audioLocalPath;
+        }
+      } else {
+        newPack.resources.forEach((resource) => delete resource._resourceLocalPath);
       }
 
       const insertResult = await packsCollection.insertOne(newPack);
@@ -4544,7 +4770,7 @@ app.post(
 
 app.post("/api/free-download-access", async (req, res) => {
   try {
-    const { userId, packId, trackId, licenseVersion, licenseId } = req.body || {};
+    const { userId, packId, trackId, resourceId, licenseVersion, licenseId } = req.body || {};
 
     if (!userId || !packId) {
       return res.status(400).json({
@@ -4590,13 +4816,15 @@ app.post("/api/free-download-access", async (req, res) => {
 
     const item = trackId
       ? pack.tracks?.find((track) => String(track.id) === String(trackId))
-      : pack;
+      : resourceId
+        ? pack.resources?.find((resource) => String(resource.id) === String(resourceId))
+        : pack;
 
     const isFree =
       item?.isFree === true ||
       String(item?.price || "").trim().toLowerCase() === "gratuit";
 
-    if (!item || (!isFree && !commercialPolicy.freeAcquisitionEnabled)) {
+    if (!item || !commercialPolicy.freeAcquisitionEnabled) {
       return res.status(409).json({
         success: false,
         message: "Ce contenu n’est pas gratuit."
@@ -4612,7 +4840,7 @@ app.post("/api/free-download-access", async (req, res) => {
       });
     }
 
-    if (result.account.role !== "user" && result.account.role !== "both") {
+    if (!(["user", "artist", "both"].includes(String(result.account.role || "").toLowerCase()))) {
       return res.status(403).json({
         success: false,
         message: "Ce compte ne peut pas effectuer de téléchargement."
@@ -4641,6 +4869,7 @@ app.post("/api/free-download-access", async (req, res) => {
       accountId: String(result.account.accountId || result.account.id || userId),
       pack,
       trackId: trackId || null,
+      resourceId: resourceId || null,
       source: "pre_v1_free"
     });
 
@@ -4653,6 +4882,15 @@ app.post("/api/free-download-access", async (req, res) => {
 
       if (!result.account.downloadedTracks.some((id) => String(id) === String(trackId))) {
         result.account.downloadedTracks.push(trackId);
+        acquisitionAdded = true;
+      }
+    } else if (resourceId) {
+      result.account.downloadedResources = Array.isArray(result.account.downloadedResources)
+        ? result.account.downloadedResources
+        : [];
+
+      if (!result.account.downloadedResources.some((id) => String(id) === String(resourceId))) {
+        result.account.downloadedResources.push(resourceId);
         acquisitionAdded = true;
       }
     } else {
@@ -4670,6 +4908,7 @@ app.post("/api/free-download-access", async (req, res) => {
       appendAcquisitionHistory(result.account, {
         packId,
         trackId: trackId || null,
+        resourceId: resourceId || null,
         source: "pre_v1_free"
       });
     }
@@ -4679,7 +4918,9 @@ app.post("/api/free-download-access", async (req, res) => {
     const acceptanceQuery = `&acceptanceId=${encodeURIComponent(licenseAcceptance.acceptanceId)}`;
     const pathPart = trackId
       ? `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&trackId=${encodeURIComponent(trackId)}&free=true${acceptanceQuery}`
-      : `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&free=true${acceptanceQuery}`;
+      : resourceId
+        ? `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&resourceId=${encodeURIComponent(resourceId)}&free=true${acceptanceQuery}`
+        : `app/pages/catalog/download.html?id=${encodeURIComponent(packId)}&free=true${acceptanceQuery}`;
 
     return res.json({
       success: true,
@@ -4701,6 +4942,7 @@ app.post("/api/downloads/prepare", async (req, res) => {
     const userId = String(req.body?.userId || "").trim();
     const packId = String(req.body?.packId || "").trim();
     const trackId = String(req.body?.trackId || "").trim();
+    const resourceId = String(req.body?.resourceId || "").trim();
     const acceptanceId = String(req.body?.acceptanceId || "").trim();
 
     if (!userId || !packId) {
@@ -4727,12 +4969,16 @@ app.post("/api/downloads/prepare", async (req, res) => {
 
     const ownsPack = Array.isArray(account.downloadedPacks) && account.downloadedPacks.some((id) => String(id) === packId);
     const ownsTrack = trackId && Array.isArray(account.downloadedTracks) && account.downloadedTracks.some((id) => String(id) === trackId);
-    if (!(ownsPack || ownsTrack)) {
+    const ownsResource = resourceId && Array.isArray(account.downloadedResources) && account.downloadedResources.some((id) => String(id) === resourceId);
+    if (!(ownsPack || ownsTrack || ownsResource)) {
       return res.status(403).json({ success: false, code: "DOWNLOAD_NOT_OWNED", message: "Ce contenu n’est pas présent dans votre bibliothèque." });
     }
 
     if (trackId && !(pack.tracks || []).some((track) => String(track?.id || "") === trackId)) {
       return res.status(404).json({ success: false, message: "Track introuvable." });
+    }
+    if (resourceId && !(pack.resources || []).some((resource) => String(resource?.id || "") === resourceId)) {
+      return res.status(404).json({ success: false, message: "Ressource introuvable." });
     }
 
     const prepared = await licenseProtection.prepareDownload({
@@ -4740,6 +4986,7 @@ app.post("/api/downloads/prepare", async (req, res) => {
       accountId: String(account.accountId || account.id || userId),
       pack,
       trackId: trackId || null,
+      resourceId: resourceId || null,
       acceptanceId: acceptanceId || null,
       source: acceptanceId ? "initial_download" : "library_redownload"
     });
@@ -4781,19 +5028,26 @@ app.get("/api/downloads/file/:token", async (req, res) => {
     if (!pack) return res.status(404).json({ success: false, message: "Pack introuvable." });
     const item = receipt.trackId
       ? (pack.tracks || []).find((track) => String(track?.id || "") === String(receipt.trackId))
-      : pack;
-    const key = normalizePackR2Key(item?.downloadZip);
-    if (!key || !key.startsWith("zips/")) {
-      return res.status(404).json({ success: false, message: "Fichier ZIP introuvable." });
+      : receipt.resourceId
+        ? (pack.resources || []).find((resource) => String(resource?.id || "") === String(receipt.resourceId))
+        : pack;
+    if (!item) return res.status(404).json({ success: false, message: "Fichier introuvable." });
+    const key = receipt.resourceId
+      ? normalizePackR2Key(item.fileKey)
+      : normalizePackR2Key(item.downloadZip);
+    if (!key || (!receipt.resourceId && !key.startsWith("zips/"))) {
+      return res.status(404).json({ success: false, message: "Fichier introuvable." });
     }
 
     const object = await r2.send(new GetObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key
     }));
-    const safeName = String(item.title || pack.title || "sonara-pack").replace(/[^a-z0-9._-]+/gi, "-").slice(0, 100) || "sonara-pack";
-    res.setHeader("Content-Type", object.ContentType || "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename=\"${safeName}.zip\"`);
+    const safeName = receipt.resourceId
+      ? String(item.originalName || item.title || "sonara-resource").replace(/[\r\n\"]/g, "").slice(0, 180)
+      : `${String(item.title || pack.title || "sonara-pack").replace(/[^a-z0-9._-]+/gi, "-").slice(0, 100) || "sonara-pack"}.zip`;
+    res.setHeader("Content-Type", object.ContentType || (receipt.resourceId ? "application/octet-stream" : "application/zip"));
+    res.setHeader("Content-Disposition", `attachment; filename=\"${safeName}\"`);
     if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
     if (!object.Body || typeof object.Body.pipe !== "function") throw new Error("Flux ZIP R2 introuvable.");
     const consumed = await licenseProtection.consumeDownloadToken(req.params.token);
@@ -4815,7 +5069,8 @@ async function fulfillPaidStripeCheckout(session) {
   const userId = String(metadata.userId || "").trim();
   const packId = String(metadata.packId || "").trim();
   const trackId = String(metadata.trackId || "").trim();
-  const purchaseType = String(metadata.purchaseType || (trackId ? "track" : "pack"));
+  const resourceId = String(metadata.resourceId || "").trim();
+  const purchaseType = String(metadata.purchaseType || (trackId ? "track" : resourceId ? "resource" : "pack"));
 
   if (!userId || !packId) {
     throw new Error("Métadonnées Stripe incomplètes.");
@@ -4840,6 +5095,16 @@ async function fulfillPaidStripeCheckout(session) {
       account.downloadedTracks.push(trackId);
       acquisitionAdded = true;
     }
+  } else if (purchaseType === "resource") {
+    if (!resourceId) throw new Error("Ressource Stripe manquante.");
+    account.downloadedResources = Array.isArray(account.downloadedResources)
+      ? account.downloadedResources
+      : [];
+
+    if (!account.downloadedResources.some((id) => String(id) === resourceId)) {
+      account.downloadedResources.push(resourceId);
+      acquisitionAdded = true;
+    }
   } else {
     account.downloadedPacks = Array.isArray(account.downloadedPacks)
       ? account.downloadedPacks
@@ -4855,6 +5120,7 @@ async function fulfillPaidStripeCheckout(session) {
     appendAcquisitionHistory(account, {
       packId,
       trackId: trackId || null,
+      resourceId: resourceId || null,
       source: "stripe_paid"
     });
   }
@@ -4864,6 +5130,7 @@ async function fulfillPaidStripeCheckout(session) {
     paymentIntentId: String(session.payment_intent || ""),
     packId,
     trackId: trackId || null,
+    resourceId: resourceId || null,
     purchaseType,
     amountTotal: Number(session.amount_total || 0),
     currency: String(session.currency || "eur"),
@@ -4872,7 +5139,7 @@ async function fulfillPaidStripeCheckout(session) {
 
   await saveAccountState(result.rootUser, account);
 
-  return { account, packId, trackId: trackId || null, purchaseType };
+  return { account, packId, trackId: trackId || null, resourceId: resourceId || null, purchaseType };
 }
 
 app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
@@ -4914,7 +5181,8 @@ app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
       paymentStatus: session.payment_status,
       purchaseType: fulfilled.purchaseType,
       packId: fulfilled.packId,
-      trackId: fulfilled.trackId
+      trackId: fulfilled.trackId,
+      resourceId: fulfilled.resourceId
     });
   } catch (error) {
     console.error("Confirmation Stripe impossible :", error);
@@ -4929,7 +5197,7 @@ app.post(
   "/api/stripe/create-checkout-session",
   async (req, res) => {
     try {
-      const { packId, trackId, userId, licenseVersion, licenseId } = req.body;
+      const { packId, trackId, resourceId, userId, licenseVersion, licenseId } = req.body;
 
       if (!packId) {
         return res.status(400).json({
@@ -4993,7 +5261,7 @@ app.post(
         });
       }
 
-      if (buyer.role !== "user" && buyer.role !== "both") {
+      if (!(["user", "artist", "both"].includes(String(buyer.role || "").toLowerCase()))) {
         return res.status(403).json({
           error: "Ce compte ne peut pas effectuer d’achat."
         });
@@ -5005,9 +5273,18 @@ app.post(
           ) || (
             Array.isArray(buyer.downloadedTracks) && buyer.downloadedTracks.some((id) => String(id) === String(trackId))
           )
-        : Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId));
+        : resourceId
+          ? (
+              Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId))
+            ) || (
+              Array.isArray(buyer.downloadedResources) && buyer.downloadedResources.some((id) => String(id) === String(resourceId))
+            )
+          : Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId));
 
-      if (alreadyOwned) {
+      // Phase 1 Boutique : en LOCAL / TEST commercial, autoriser un nouveau passage
+      // Stripe Test même si ce contenu avait déjà été ajouté gratuitement pendant la Pre-V1.
+      // MAIN conserve son blocage anti-double achat strict.
+      if (alreadyOwned && !commercialPolicy.checkoutEnabled) {
         return res.status(409).json({
           success: false,
           code: "ALREADY_OWNED",
@@ -5015,7 +5292,10 @@ app.post(
         });
       }
 
-      if (pack.paymentReady !== true) {
+      // En LOCAL / TEST, le mode COMMERCIAL existant sert aussi à tester le parcours V1
+      // avec des packs créés pendant la PRE_V1, donc leur ancien paymentReady=false
+      // ne doit pas bloquer Stripe TEST.
+      if (pack.paymentReady !== true && !commercialPolicy.checkoutEnabled) {
         return res.status(409).json({
           success: false,
           code: "PACK_PAYMENT_NOT_READY",
@@ -5099,6 +5379,14 @@ app.post(
         successUrl =
           `${resolveFrontUrl(req)}/${track.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
 
+      } else if (resourceId) {
+        const resource = pack.resources?.find(
+          (currentResource) => String(currentResource.id) === String(resourceId)
+        );
+        if (!resource) return res.status(404).json({ error: "Ressource introuvable." });
+        item = resource;
+        purchaseType = "resource";
+        successUrl = `${resolveFrontUrl(req)}/${resource.downloadPage}&success=true&session_id={CHECKOUT_SESSION_ID}`;
       } else {
         item = pack;
         purchaseType = "pack";
@@ -5108,8 +5396,11 @@ app.post(
       }
 
       const itemIsFree =
-        item.isFree === true ||
-        String(item.price || "").trim().toLowerCase() === "gratuit";
+        commercialPolicy.freeAcquisitionEnabled &&
+        (
+          item.isFree === true ||
+          String(item.price || "").trim().toLowerCase() === "gratuit"
+        );
 
       if (itemIsFree) {
         return res.status(409).json({
@@ -5155,6 +5446,7 @@ app.post(
         accountId: String(buyer.accountId || buyer.id || userId),
         pack,
         trackId: trackId || null,
+        resourceId: resourceId || null,
         source: "stripe_checkout"
       });
 
@@ -5176,8 +5468,8 @@ app.post(
                   currency: "eur",
                   product_data: {
                     name:
-                      purchaseType === "track"
-                        ? `${item.title} - ${pack.title || pack.name}`
+                      ["track", "resource"].includes(purchaseType)
+                        ? `${item.title || item.originalName} - ${pack.title || pack.name}`
                         : pack.title || pack.name || "Pack Sonara"
                   },
                   unit_amount: amount
@@ -5191,6 +5483,7 @@ app.post(
             metadata: {
               packId: String(pack.id),
               trackId: trackId ? String(trackId) : "",
+              resourceId: resourceId ? String(resourceId) : "",
               userId: String(userId),
               artistId: String(artist.accountId || artist.id),
               purchaseType: purchaseType,
@@ -5202,6 +5495,7 @@ app.post(
               orderId: sonaraOrderId,
               packTitleSnapshot: String(pack.title || pack.name || "Pack Sonara").slice(0, 450),
               trackTitleSnapshot: purchaseType === "track" ? String(item.title || "Track").slice(0, 450) : "",
+              resourceTitleSnapshot: purchaseType === "resource" ? String(item.title || item.originalName || "Ressource").slice(0, 450) : "",
               artistNameSnapshot: String(artist.username || artist.pseudo || artist.name || artist.firstname || "Artiste").slice(0, 450),
               ...licenseMetadata(pack)
             },
@@ -5211,6 +5505,7 @@ app.post(
               metadata: {
                 packId: String(pack.id),
                 trackId: trackId ? String(trackId) : "",
+                resourceId: resourceId ? String(resourceId) : "",
                 userId: String(userId),
                 artistId: String(artist.accountId || artist.id),
                 purchaseType: purchaseType,
@@ -5222,6 +5517,7 @@ app.post(
                 orderId: sonaraOrderId,
                 packTitleSnapshot: String(pack.title || pack.name || "Pack Sonara").slice(0, 450),
                 trackTitleSnapshot: purchaseType === "track" ? String(item.title || "Track").slice(0, 450) : "",
+                resourceTitleSnapshot: purchaseType === "resource" ? String(item.title || item.originalName || "Ressource").slice(0, 450) : "",
                 artistNameSnapshot: String(artist.username || artist.pseudo || artist.name || artist.firstname || "Artiste").slice(0, 450),
                 ...licenseMetadata(pack)
               },
@@ -5232,8 +5528,13 @@ app.post(
 
             success_url: successUrl,
 
-            cancel_url:
-              `${resolveFrontUrl(req)}/app/pages/catalog/pack.html?id=${pack.id}&cancel=true`
+            cancel_url: (() => {
+              const contentType = String(pack.contentType || "audio").toLowerCase();
+              if (contentType === "midi" || contentType === "daw") {
+                return `${resolveFrontUrl(req)}/app/pages/creator/shop/${contentType}.html?id=${encodeURIComponent(pack.id)}&cancel=true`;
+              }
+              return `${resolveFrontUrl(req)}/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&cancel=true`;
+            })()
           }
         );
 

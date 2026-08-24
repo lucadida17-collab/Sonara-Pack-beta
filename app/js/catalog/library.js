@@ -352,6 +352,7 @@ function getLibraryDownloadedPacks(account) {
             ? packs
             : []
     ).filter((pack) =>
+        String(pack?.contentType || "audio").trim().toLowerCase() === "audio" &&
         downloadedPackIds.includes(
             String(pack.id)
         )

@@ -24,6 +24,7 @@ const downloadPage = document.querySelector(".download-page");
 const params = new URLSearchParams(window.location.search);
 const packId = params.get("id");
 const trackId = params.get("trackId");
+const resourceId = params.get("resourceId");
 const acceptanceId = params.get("acceptanceId");
 
 let currentUser = JSON.parse(
@@ -115,6 +116,7 @@ async function prepareProtectedDownload() {
       userId,
       packId,
       trackId: trackId || null,
+      resourceId: resourceId || null,
       acceptanceId: acceptanceId || null
     })
   });
@@ -132,7 +134,9 @@ async function downloadFile() {
     const finalUrl = await prepareProtectedDownload();
     const link = document.createElement("a");
     link.href = finalUrl;
-    link.download = `${selectedDownload?.title || "sonara-pack"}.zip`;
+    link.download = resourceId
+      ? String(selectedDownload?.originalName || selectedDownload?.title || "sonara-resource")
+      : `${selectedDownload?.title || "sonara-pack"}.zip`;
 
     document.body.appendChild(link);
     link.click();
@@ -173,6 +177,8 @@ function getPlatformContext() {
 }
 
 function getDownloadKind() {
+  if (resourceId) return "resource";
+  if (["midi", "daw"].includes(String(selectedPack?.contentType || "").toLowerCase())) return "pack";
   if (trackId) return "track";
   return Array.isArray(selectedPack?.tracks) && selectedPack.tracks.length > 1
     ? "pack"
@@ -180,6 +186,13 @@ function getDownloadKind() {
 }
 
 function getProjectChoices() {
+  const contentType = String(selectedPack?.contentType || "audio").toLowerCase();
+  if (contentType === "midi") {
+    return [{ key: "music", icon: "piano", title: downloadTranslate("Musique / DAW"), description: downloadTranslate("Importer le MIDI dans une session de production.") }];
+  }
+  if (contentType === "daw") {
+    return [{ key: "music", icon: "panels-top-left", title: downloadTranslate("Projet DAW"), description: downloadTranslate("Ouvrir le projet dans le DAW compatible.") }];
+  }
   return [
     {
       key: "video",
@@ -210,12 +223,37 @@ function getProjectChoices() {
 
 function buildIntegrationGuide(kind) {
   const platform = getPlatformContext();
+  const contentType = String(selectedPack?.contentType || "audio").toLowerCase();
   const downloadKind = getDownloadKind();
   const firstStep = (
     downloadKind === "pack"
       ? downloadTranslate("Ouvrez {0} puis décompressez le ZIP Sonara Pack.")
       : downloadTranslate("Ouvrez {0} puis repérez le fichier Sonara téléchargé.")
   ).replace("{0}", platform.downloads);
+
+  if (contentType === "midi") {
+    return {
+      title: downloadTranslate("Utiliser le fichier MIDI"),
+      steps: [
+        firstStep,
+        downloadTranslate("Ouvrez votre DAW puis importez le fichier MIDI sur une piste instrument ou MIDI."),
+        downloadTranslate("Choisissez votre instrument virtuel, adaptez le tempo ou les notes selon votre projet."),
+        downloadTranslate("Conservez le fichier original Sonara avec votre licence.")
+      ]
+    };
+  }
+
+  if (contentType === "daw") {
+    return {
+      title: downloadTranslate("Ouvrir le projet DAW"),
+      steps: [
+        firstStep,
+        downloadTranslate("Vérifiez le DAW indiqué sur la page du pack avant d’ouvrir le projet."),
+        downloadTranslate("Ouvrez le fichier de projet dans le logiciel compatible puis sauvegardez une copie de travail."),
+        downloadTranslate("Conservez les fichiers originaux Sonara avec votre licence.")
+      ]
+    };
+  }
 
   const guides = {
     video: {
@@ -321,6 +359,11 @@ function renderPostDownloadAssistant() {
   });
 
   document.querySelector(".download-library-button")?.addEventListener("click", () => {
+    const contentType = String(selectedPack?.contentType || "audio").toLowerCase();
+    if (["midi", "daw"].includes(contentType)) {
+      window.location.assign(`/app/pages/creator/dashboard.html?mode=shop&shopType=${encodeURIComponent(contentType)}&library=1`);
+      return;
+    }
     window.location.assign("/app/pages/catalog/library.html");
   });
 
@@ -421,6 +464,12 @@ function hasDownloadAccess(profile) {
       hasOwnedId(profile?.downloadedTracks, trackId)
     );
   }
+  if (resourceId) {
+    return (
+      ownsWholePack ||
+      hasOwnedId(profile?.downloadedResources, resourceId)
+    );
+  }
 
   return ownsWholePack;
 }
@@ -473,7 +522,9 @@ async function loadDownloadData() {
 
     selectedDownload = trackId
       ? selectedPack.tracks?.find((track) => String(track.id) === String(trackId))
-      : selectedPack;
+      : resourceId
+        ? selectedPack.resources?.find((resource) => String(resource.id) === String(resourceId))
+        : selectedPack;
 
     if (!selectedDownload) {
       throw new Error("Fichier introuvable.");

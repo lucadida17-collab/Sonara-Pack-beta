@@ -4173,3 +4173,162 @@ body.pack-page .pack-preview-player-root .grand-player-artist {
     font-size: .68rem;
   }
 }
+
+
+/* Visibilité V2 — ressources MIDI / projets DAW dans la page Pack existante. */
+.resource-pack-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.resource-pack-badges span,
+.resource-pack-daw {
+  padding: 6px 9px;
+  border: 1px solid rgba(103,232,255,.2);
+  border-radius: 999px;
+  background: rgba(56,189,248,.07);
+  color: #8eeaff;
+  font-size: .7rem;
+  font-weight: 780;
+}
+.resource-pack-section {
+  width: min(100%, 1180px);
+  margin: 26px auto 110px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 24px;
+  background: rgba(255,255,255,.025);
+}
+.resource-pack-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.resource-pack-section > header p {
+  margin: 0 0 3px;
+  color: #7dd3fc;
+  font-size: .64rem;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+.resource-pack-section > header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.resource-pack-list {
+  display: grid;
+  gap: 9px;
+}
+.resource-pack-row {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 30px 42px minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px;
+  background: rgba(7,12,22,.55);
+}
+.resource-pack-index {
+  color: rgba(255,255,255,.38);
+  font-size: .74rem;
+  font-weight: 760;
+}
+.resource-pack-file-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(56,189,248,.08);
+  color: #72e9ff;
+}
+.resource-pack-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.resource-pack-row strong,
+.resource-pack-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resource-pack-row small,
+.resource-pack-note {
+  color: rgba(255,255,255,.48);
+  font-size: .76rem;
+}
+.resource-pack-note {
+  margin: 14px 0 0;
+  line-height: 1.45;
+}
+
+/* Boutique artiste — ressources MIDI / DAW lisibles comme des produits. */
+.resource-pack-row {
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.resource-pack-row.is-selected {
+  border-color: rgba(103,232,255,.38);
+  background: rgba(56,189,248,.055);
+  transform: translateY(-1px);
+}
+
+.resource-pack-thumb {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  color: #72e9ff;
+}
+
+.resource-pack-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resource-pack-thumb svg {
+  width: 20px;
+  height: 20px;
+}
+
+.resource-pack-item-price {
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.resource-pack-compatibility {
+  margin: 0 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resource-pack-compatibility span {
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+  color: rgba(255,255,255,.62);
+  font-size: .68rem;
+}
+
+.resource-pack-compatibility b {
+  color: #fff;
+  font-size: .62rem;
+  text-transform: uppercase;
+}

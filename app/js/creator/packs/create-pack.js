@@ -19,12 +19,27 @@ const DRAFT_STORE = "drafts";
 const MAX_TRACKS = 20;
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const MAX_AUDIO_SIZE = 250 * 1024 * 1024;
+const MAX_RESOURCE_SIZE = 250 * 1024 * 1024;
+const MAX_RESOURCES = 20;
 const TRACK_MIN_PRICE = 1;
 const TRACK_MAX_PRICE = 100;
 const PACK_MIN_PRICE = 1;
 const PACK_MAX_PRICE = 100000;
 const FORCE_NEW_PACK_KEY = "sonara-create-pack-force-new";
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_MIDI_EXTENSIONS = new Set([".mid", ".midi"]);
+const ALLOWED_DAW_EXTENSIONS = new Set([".flp", ".als", ".rpp", ".logicx", ".cpr", ".ptx", ".song"]);
+const DAW_OPTIONS = [
+  ["fl-studio", "FL Studio"],
+  ["ableton-live", "Ableton Live"],
+  ["logic-pro", "Logic Pro"],
+  ["reaper", "Reaper"],
+  ["cubase", "Cubase"],
+  ["pro-tools", "Pro Tools"],
+  ["studio-one", "Studio One"],
+  ["other", "Autre"]
+];
+
 const ALLOWED_AUDIO_TYPES = [
   "audio/mpeg",
   "audio/mp3",
@@ -134,9 +149,15 @@ const packData = {
   identity: {
     title: "",
     categorie: "",
+    contentType: "audio",
+    primaryAudience: "",
+    dawName: "",
+    dawVersion: "",
+    dawPlugins: "",
     coverFile: null
   },
   tracks: [createEmptyTrack()],
+  resources: [],
   globalPrice: "",
   globalIsFree: false,
   globalPriceCustomized: false,
@@ -144,6 +165,12 @@ const packData = {
   rightsDeclarationAccepted: false,
   updatedAt: null
 };
+
+const resourceDraftsByType = {
+  midi: [],
+  daw: []
+};
+
 
 CreatePack.innerHTML = `
   <button type="button" class="back-btn">Retour Dashboard</button>
@@ -156,7 +183,7 @@ CreatePack.innerHTML = `
 
   <section class="progress" aria-label="Progression">
     <button type="button" class="step active" data-step="0">Pack</button>
-    <button type="button" class="step" data-step="1">Tracks</button>
+    <button type="button" class="step" data-step="1">Contenu</button>
     <button type="button" class="step" data-step="2">Prix global</button>
     <button type="button" class="step" data-step="3">Licence</button>
   </section>
@@ -327,6 +354,15 @@ function hydratePackData(saved) {
   packData.identity = {
     title: saved.identity?.title || "",
     categorie: saved.identity?.categorie || "",
+    contentType: ["audio", "midi", "daw"].includes(saved.identity?.contentType)
+      ? saved.identity.contentType
+      : "audio",
+    primaryAudience: ["creators", "artists", "both"].includes(saved.identity?.primaryAudience)
+      ? saved.identity.primaryAudience
+      : "both",
+    dawName: String(saved.identity?.dawName || ""),
+    dawVersion: String(saved.identity?.dawVersion || ""),
+    dawPlugins: String(saved.identity?.dawPlugins || ""),
     coverFile: saved.identity?.coverFile || null
   };
 
@@ -348,6 +384,27 @@ function hydratePackData(saved) {
       : [createEmptyTrack()];
 
   syncInheritedTrackCovers();
+
+  packData.resources = Array.isArray(saved.resources)
+    ? saved.resources.map((resource) => ({
+        id: resource.id || createResourceId(),
+        title: String(resource.title || titleFromResourceFile(resource.file) || "Ressource"),
+        price: String(resource.price || ""),
+        isFree: Boolean(resource.isFree),
+        coverMode: resource?.coverMode === "custom" && resource?.coverFile ? "custom" : "pack",
+        coverFile: resource?.coverMode === "custom" && resource?.coverFile
+          ? resource.coverFile
+          : (saved.identity?.coverFile || resource.coverFile || null),
+        file: resource.file || null,
+        originalName: String(resource.originalName || resource.file?.name || ""),
+        size: Number(resource.size || resource.file?.size || 0),
+        extension: String(resource.extension || getFileExtension(resource.file?.name || resource.originalName || ""))
+      }))
+    : [];
+  syncInheritedResourceCovers();
+  if (["midi", "daw"].includes(packData.identity.contentType)) {
+    resourceDraftsByType[packData.identity.contentType] = packData.resources;
+  }
 
   packData.globalPrice = saved.globalPrice || "";
   packData.globalIsFree = Boolean(saved.globalIsFree);
@@ -371,7 +428,7 @@ function render() {
 
   const screens = [
     renderIdentity,
-    renderTracks,
+    renderContent,
     renderPrice,
     renderLicense
   ];
@@ -379,6 +436,125 @@ function render() {
   screens[currentStep]();
   requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function visibilityChoiceIcon(iconKey) {
+  const icons = {
+    audio: `
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M7 17v-2a9 9 0 0 1 18 0v2"></path>
+        <path d="M7 17h2.5v7H7a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Z"></path>
+        <path d="M25 17h-2.5v7H25a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2Z"></path>
+        <path d="M12 20h1.5l1.2-3.5 2.3 7 1.7-5 1.1 1.5H22"></path>
+      </svg>`,
+    midi: `
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="4.5" y="7" width="23" height="18" rx="3"></rect>
+        <path d="M9 7v18M14 7v18M19 7v18M24 7v18"></path>
+        <path class="icon-fill" d="M7.5 7h3v10h-3zM12.5 7h3v10h-3zM22.5 7h3v10h-3z"></path>
+      </svg>`,
+    daw: `
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="4" y="5" width="24" height="22" rx="3"></rect>
+        <path d="M4 11h24M11 11v16M18 11v16"></path>
+        <path d="M7 15h2M7 19h2M7 23h2M14 15h2M14 21h2M21 16h4M21 20h3M21 24h4"></path>
+        <circle class="icon-fill" cx="15" cy="18" r="1.4"></circle>
+      </svg>`,
+    creators: `
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M5 11h22v15H5z"></path>
+        <path d="M5 11 8 5h19l-3 6"></path>
+        <path d="M10 5 7 11M16 5l-3 6M22 5l-3 6"></path>
+        <path class="icon-fill" d="m14 16 6 3.5-6 3.5z"></path>
+      </svg>`,
+    artists: `
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="7" y="5" width="8" height="14" rx="4"></rect>
+        <path d="M4.5 15a6.5 6.5 0 0 0 13 0M11 21.5V27M7 27h8"></path>
+        <path d="M21 10v11"></path>
+        <path d="M21 10 27 8v9"></path>
+        <circle class="icon-fill" cx="19" cy="22" r="2.4"></circle>
+        <circle class="icon-fill" cx="25" cy="18" r="2.4"></circle>
+      </svg>`,
+    both: `
+      <svg viewBox="0 0 36 32" aria-hidden="true" focusable="false">
+        <rect x="2.5" y="7" width="14" height="18" rx="3"></rect>
+        <path d="M2.5 12h14M5 7l2 5M10 7l2 5"></path>
+        <path class="icon-fill" d="m8 16 5 3-5 3z"></path>
+        <rect x="21" y="5" width="7" height="13" rx="3.5"></rect>
+        <path d="M18.5 15a6 6 0 0 0 12 0M24.5 21v6M21 27h7"></path>
+        <path d="M31 9v10"></path>
+        <circle class="icon-fill" cx="29" cy="20" r="2"></circle>
+      </svg>`
+  };
+  return icons[iconKey] || icons.audio;
+}
+
+function renderVisibilityChoice(group, value, title, description, iconKey) {
+  const active = String(packData.identity?.[group] || "") === String(value);
+  const safeIconKey = ["audio", "midi", "daw", "creators", "artists", "both"].includes(iconKey)
+    ? iconKey
+    : "audio";
+  return `
+    <button
+      type="button"
+      class="visibility-v2-choice visibility-v2-choice--${safeIconKey} ${active ? "is-active" : ""}"
+      data-visibility-group="${group}"
+      data-visibility-value="${value}"
+      aria-pressed="${active ? "true" : "false"}"
+    >
+      <span class="visibility-v2-choice-icon">${visibilityChoiceIcon(safeIconKey)}</span>
+      <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(description)}</small></span>
+    </button>
+  `;
+}
+
+function cameraIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M14.5 4 16 6h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2h5Z"></path>
+      <circle cx="12" cy="13" r="3.5"></circle>
+    </svg>
+  `;
+}
+
+function renderImageDropzone(inputId, file, title, subtitle) {
+  const previewUrl = file ? createObjectUrl(file) : "";
+
+  return `
+    <label class="cover-picker ${file ? "has-file" : ""}" for="${inputId}">
+      <input id="${inputId}" type="file" accept="image/jpeg,image/png,image/webp">
+
+      ${file ? `
+        <img class="cover-picker-preview" src="${previewUrl}" alt="Aperçu de la cover sélectionnée">
+        <span class="cover-picker-action">
+          <span class="cover-picker-camera">${cameraIcon()}</span>
+          <span>
+            <strong>Changer la cover</strong>
+            <small>${escapeHtml(file.name)}</small>
+          </span>
+        </span>
+      ` : `
+        <span class="cover-picker-camera">${cameraIcon()}</span>
+        <span class="cover-picker-copy">
+          <strong>${title}</strong>
+          <small>${subtitle}</small>
+        </span>
+      `}
+    </label>
+  `;
+}
+
+function isAudioContent() {
+  return String(packData.identity.contentType || "audio") === "audio";
+}
+
+function isMidiContent() {
+  return String(packData.identity.contentType || "") === "midi";
+}
+
+function isDawContent() {
+  return String(packData.identity.contentType || "") === "daw";
 }
 
 function renderIdentity() {
@@ -417,6 +593,39 @@ function renderIdentity() {
         </label>
       </div>
 
+      <section class="visibility-v2-block" aria-labelledby="content-type-title">
+        <div class="visibility-v2-heading">
+          <h3 id="content-type-title">Type de contenu</h3>
+          <small>L’audio garde le fonctionnement Sonara actuel. MIDI et projets DAW sont des ressources de production.</small>
+        </div>
+        <div class="visibility-v2-choice-grid visibility-v2-content-types">
+          ${renderVisibilityChoice("contentType", "audio", "Audio", "Morceaux, prods, instrumentales, samples et autres fichiers audio.", "audio")}
+          ${renderVisibilityChoice("contentType", "midi", "MIDI", "Fichiers MIDI destinés à la création et à la production musicale.", "midi")}
+          ${renderVisibilityChoice("contentType", "daw", "Projet DAW", "Projet de production à ouvrir dans un logiciel compatible.", "daw")}
+        </div>
+      </section>
+
+      ${isAudioContent() ? `
+      <section class="visibility-v2-block" aria-labelledby="primary-audience-title">
+        <div class="visibility-v2-heading">
+          <h3 id="primary-audience-title">Destiné principalement à</h3>
+          <small>Ce choix améliore la mise en avant. Il ne bloque jamais l’achat par un autre public.</small>
+        </div>
+        <div class="visibility-v2-choice-grid visibility-v2-audiences">
+          ${renderVisibilityChoice("primaryAudience", "creators", "Créateurs & projets", "Pour les vidéos, films, jeux, contenus, podcasts et autres projets créatifs.", "creators")}
+          ${renderVisibilityChoice("primaryAudience", "artists", "Artistes / producteurs", "Pour les artistes, compositeurs et producteurs souhaitant créer ou produire de la musique.", "artists")}
+          ${renderVisibilityChoice("primaryAudience", "both", "Les deux", "Le contenu peut convenir aux deux publics.", "both")}
+        </div>
+        <small class="field-error visibility-v2-error" data-error="identity-audience"></small>
+      </section>` : `
+      <section class="visibility-v2-block visibility-v2-store-routing" aria-label="Visibilité Boutique">
+        <span class="visibility-v2-store-routing-icon"><i data-lucide="store"></i></span>
+        <span>
+          <strong>Boutique artistes</strong>
+          <small>Artistes / producteurs</small>
+        </span>
+      </section>`}
+
       <div class="upload-section">
         <div class="upload-heading">
           <div>
@@ -444,6 +653,47 @@ function renderIdentity() {
   const titleInput = document.querySelector(".pack-title");
   const categoryInput = document.querySelector(".pack-category");
   const coverInput = document.querySelector("#pack-cover-input");
+
+  document.querySelectorAll("[data-visibility-group]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const group = button.dataset.visibilityGroup;
+      const value = button.dataset.visibilityValue;
+      if (!group || !value) return;
+      if (group === "primaryAudience") {
+        packData.identity.primaryAudience = value;
+        clearFieldError("identity-audience");
+      }
+
+      if (group === "contentType") {
+        const previousType = String(packData.identity.contentType || "audio");
+        if (previousType === value) return;
+
+        if (["midi", "daw"].includes(previousType)) {
+          resourceDraftsByType[previousType] = packData.resources;
+        }
+
+        packData.identity.contentType = value;
+
+        if (value === "audio") {
+          if (!packData.tracks.length) {
+            packData.tracks = [createEmptyTrack({
+              coverFile: packData.identity.coverFile,
+              coverMode: "pack"
+            })];
+          }
+          syncGlobalPriceFromTracks();
+        } else {
+          packData.identity.primaryAudience = "artists";
+          packData.resources = resourceDraftsByType[value] || [];
+          syncInheritedResourceCovers();
+          syncGlobalPriceFromResources();
+        }
+      }
+      renderIdentity();
+    });
+  });
+
+  if (window.lucide) lucide.createIcons();
 
   /*
     Un ancien brouillon peut encore contenir une ambiance V1.
@@ -476,6 +726,7 @@ function renderIdentity() {
 
     packData.identity.coverFile = file;
     syncInheritedTrackCovers();
+    syncInheritedResourceCovers();
     clearFieldError("identity-cover");
     renderIdentity();
   });
@@ -489,9 +740,347 @@ function renderIdentity() {
   });
 }
 
+function createResourceId() {
+  return crypto.randomUUID ? crypto.randomUUID() : `resource_${Date.now()}_${Math.random()}`;
+}
+
+function getFileExtension(fileName = "") {
+  const match = String(fileName || "").trim().toLowerCase().match(/(\.[a-z0-9]+)$/i);
+  return match ? match[1] : "";
+}
+
+function titleFromResourceFile(file) {
+  return String(file?.name || "")
+    .replace(/\.[^.]+$/, "")
+    .replace(/_+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 70);
+}
+
+function createResourceFromFile(file = null) {
+  return {
+    id: createResourceId(),
+    title: titleFromResourceFile(file) || "",
+    price: "",
+    isFree: false,
+    coverMode: "pack",
+    coverFile: packData?.identity?.coverFile || null,
+    file,
+    originalName: String(file?.name || ""),
+    size: Number(file?.size || 0),
+    extension: getFileExtension(file?.name || "")
+  };
+}
+
+function resourceUsesPackCover(resource) {
+  if (resource?.coverMode !== "custom") return true;
+  if (!resource?.coverFile) return true;
+  return sameFileIdentity(resource.coverFile, packData.identity.coverFile);
+}
+
+function getEffectiveResourceCover(resource) {
+  return resourceUsesPackCover(resource)
+    ? (packData.identity.coverFile || resource?.coverFile || null)
+    : (resource?.coverFile || packData.identity.coverFile || null);
+}
+
+function syncInheritedResourceCovers() {
+  packData.resources.forEach((resource) => {
+    if (!resourceUsesPackCover(resource)) return;
+    resource.coverMode = "pack";
+    resource.coverFile = packData.identity.coverFile || null;
+  });
+}
+
+function validateResourceFile(file) {
+  if (!(file instanceof File)) return "Ajoute un fichier de ressource.";
+  if (file.size > MAX_RESOURCE_SIZE) return "Le fichier dépasse 250 Mo.";
+  const extension = getFileExtension(file.name);
+
+  if (isMidiContent() && !ALLOWED_MIDI_EXTENSIONS.has(extension)) {
+    return "Utilise un fichier MIDI .mid ou .midi.";
+  }
+
+  if (isDawContent() && !ALLOWED_DAW_EXTENSIONS.has(extension)) {
+    return "Le fichier du projet DAW doit conserver son extension d’origine.";
+  }
+
+  return "";
+}
+
+function renderContent() {
+  if (isAudioContent()) {
+    renderTracks();
+    return;
+  }
+  renderResources();
+}
+
+function renderResources() {
+  const contentLabel = isMidiContent() ? "MIDI" : "Projet DAW";
+  const accept = isMidiContent()
+    ? ".mid,.midi,audio/midi,audio/x-midi"
+    : ".flp,.als,.rpp,.logicx,.cpr,.ptx,.song";
+
+  missionCard.innerHTML = `
+    <section class="step-panel visibility-v2-resources-step">
+      <button type="button" class="content-type-back" data-return-to-pack>
+        <span aria-hidden="true">‹</span>
+        <span>Pack</span>
+      </button>
+      <header class="step-header">
+        <p class="step-number">ÉTAPE 2 SUR 4</p>
+        <h2>${contentLabel}</h2>
+        <p>${isMidiContent()
+          ? "Ajoute les fichiers MIDI que l’acheteur recevra dans leur format d’origine."
+          : "Le nom du DAW aide l’artiste à savoir avec quel logiciel ouvrir le projet."}</p>
+      </header>
+
+      ${isDawContent() ? `
+        <section class="visibility-v2-daw-meta">
+          <label class="field visibility-v2-daw-field">
+            <span>Logiciel DAW</span>
+            <select class="visibility-v2-daw-select">
+              <option value="">Choisir le DAW</option>
+              ${DAW_OPTIONS.map(([value, label]) => `<option value="${value}" ${packData.identity.dawName === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select>
+            <small class="field-error" data-error="resource-daw"></small>
+          </label>
+          <label class="field">
+            <span>Version du DAW</span>
+            <input class="visibility-v2-daw-version" maxlength="40" placeholder="Ex. 7.33, 12.1, 2026" value="${escapeHtml(packData.identity.dawVersion || "")}">
+            
+          </label>
+          <label class="field visibility-v2-daw-plugins-field">
+            <span>Plugins externes requis</span>
+            <input class="visibility-v2-daw-plugins" maxlength="220" placeholder="Ex. Serum, Kontakt — ou Aucun" value="${escapeHtml(packData.identity.dawPlugins || "")}">
+            
+          </label>
+          <p class="visibility-v2-daw-explainer"><i data-lucide="info"></i><span>Le nom du DAW aide l’artiste à savoir avec quel logiciel ouvrir le projet.</span></p>
+        </section>
+      ` : ""}
+
+      <section class="visibility-v2-resource-list">
+        ${packData.resources.length ? packData.resources.map((resource, index) => {
+          const usesPackCover = resourceUsesPackCover(resource);
+          const coverFile = getEffectiveResourceCover(resource);
+          const fileLabel = isMidiContent() ? "Fichier MIDI" : "Fichier projet DAW";
+          return `
+          <article class="visibility-v2-resource-card visibility-v2-resource-editor" data-resource-index="${index}">
+            <header class="visibility-v2-resource-card-head">
+              <span class="visibility-v2-resource-icon"><i data-lucide="${isMidiContent() ? "piano" : "panels-top-left"}"></i></span>
+              <span><small>${contentLabel.toUpperCase()} ${index + 1}</small><strong>${escapeHtml(resource.title || `Nouveau ${contentLabel}`)}</strong></span>
+              <button type="button" class="visibility-v2-resource-remove" aria-label="Supprimer la ressource">Supprimer</button>
+            </header>
+
+            <div class="visibility-v2-resource-fields">
+              <label class="field">
+                <span>Titre</span>
+                <input class="visibility-v2-resource-title" maxlength="70" placeholder="Titre" value="${escapeHtml(resource.title || "")}">
+                <small class="field-error" data-resource-error="title"></small>
+              </label>
+
+              <div class="field">
+                <span>Accès</span>
+                <div class="price-mode">
+                  <button type="button" class="price-mode-btn ${!resource.isFree ? "active" : ""}" data-resource-price-mode="paid">Payant</button>
+                  <button type="button" class="price-mode-btn ${resource.isFree ? "active" : ""}" data-resource-price-mode="free">Gratuit</button>
+                </div>
+                <div class="price-input ${resource.isFree ? "is-hidden" : ""}">
+                  <input class="visibility-v2-resource-price" type="text" inputmode="decimal" autocomplete="off" placeholder="Entre 1 et 100" value="${resource.isFree ? "" : escapeHtml(resource.price || "")}" ${resource.isFree ? "disabled" : ""}>
+                  <span>€</span>
+                </div>
+                <small class="field-error" data-resource-error="price"></small>
+              </div>
+            </div>
+
+            <div class="visibility-v2-resource-upload-grid">
+              <div class="upload-section compact">
+                <div class="upload-heading track-cover-heading">
+                  <div><h3>${usesPackCover ? "Cover du pack" : `Cover du ${contentLabel}`}</h3></div>
+                  ${!usesPackCover ? `<button type="button" class="visibility-v2-use-pack-cover">Cover du pack</button>` : ""}
+                </div>
+                ${renderImageDropzone(
+                  `resource-cover-${index}`,
+                  coverFile,
+                  "Dépose la cover",
+                  "Image carrée · JPG, PNG ou WEBP"
+                )}
+                <small class="field-error" data-resource-error="cover"></small>
+              </div>
+
+              <div class="upload-section compact">
+                <div class="upload-heading"><div><h3>${fileLabel}</h3></div></div>
+                <label class="visibility-v2-resource-file-picker ${resource.file ? "has-file" : ""}" for="resource-file-${index}">
+                  <input id="resource-file-${index}" class="visibility-v2-resource-file" type="file" accept="${accept}">
+                  <span class="visibility-v2-resource-file-mark"><i data-lucide="${isMidiContent() ? "piano" : "file-cog"}"></i></span>
+                  <span>
+                    <strong>${resource.file ? "Changer le fichier" : `Ajouter ${fileLabel.toLowerCase()}`}</strong>
+                    <small>${escapeHtml(resource.file?.name || resource.originalName || (isMidiContent() ? ".mid / .midi" : ".flp / .als / .rpp / .logicx / .cpr / .ptx / .song"))}</small>
+                  </span>
+                </label>
+                <small class="field-error" data-resource-error="file"></small>
+              </div>
+            </div>
+          </article>`;
+        }).join("") : `
+          <div class="visibility-v2-resource-empty">
+            <i data-lucide="file-plus-2"></i>
+            <strong>Aucune ressource ajoutée</strong>
+            <small>Ajoute un ou plusieurs fichiers pour commencer.</small>
+          </div>
+        `}
+      </section>
+
+      <label class="add-track-btn visibility-v2-resource-add ${packData.resources.length >= MAX_RESOURCES ? "is-disabled" : ""}">
+        <input class="visibility-v2-resource-input" type="file" multiple accept="${accept}" ${packData.resources.length >= MAX_RESOURCES ? "disabled" : ""}>
+        <span>+</span>
+        ${isMidiContent() ? "Ajouter plusieurs MIDI" : "Ajouter plusieurs projets DAW"}
+      </label>
+      <small class="field-error visibility-v2-resource-error" data-error="resources"></small>
+
+      <div class="actions">
+        <button type="button" class="prev-btn">Retour</button>
+        <button type="button" class="next-btn">Continuer</button>
+      </div>
+    </section>
+  `;
+
+  if (window.lucide) lucide.createIcons();
+
+  document.querySelector("[data-return-to-pack]")?.addEventListener("click", () => {
+    currentStep = 0;
+    render();
+  });
+
+  document.querySelector(".visibility-v2-daw-select")?.addEventListener("change", (event) => {
+    packData.identity.dawName = event.currentTarget.value;
+    clearFieldError("resource-daw");
+  });
+  document.querySelector(".visibility-v2-daw-version")?.addEventListener("input", (event) => {
+    packData.identity.dawVersion = event.currentTarget.value;
+  });
+  document.querySelector(".visibility-v2-daw-plugins")?.addEventListener("input", (event) => {
+    packData.identity.dawPlugins = event.currentTarget.value;
+  });
+
+  document.querySelector(".visibility-v2-resource-input")?.addEventListener("change", (event) => {
+    const files = Array.from(event.currentTarget.files || []);
+    if (!files.length) return;
+    const available = Math.max(0, MAX_RESOURCES - packData.resources.length);
+    const selected = files.slice(0, available);
+    const error = selected.map(validateResourceFile).find(Boolean);
+    if (error) {
+      showFieldError("resources", error);
+      event.currentTarget.value = "";
+      return;
+    }
+    selected.forEach((file) => packData.resources.push(createResourceFromFile(file)));
+    syncGlobalPriceFromResources();
+    clearFieldError("resources");
+    renderResources();
+  });
+
+  document.querySelectorAll(".visibility-v2-resource-editor").forEach((card) => {
+    const index = Number(card.dataset.resourceIndex);
+    const resource = packData.resources[index];
+    if (!resource) return;
+
+    card.querySelector(".visibility-v2-resource-title")?.addEventListener("input", (event) => {
+      resource.title = event.currentTarget.value;
+      card.querySelector(".visibility-v2-resource-card-head strong").textContent = resource.title.trim() || `Nouveau ${contentLabel}`;
+      card.querySelector('[data-resource-error="title"]')?.replaceChildren();
+    });
+
+    card.querySelectorAll("[data-resource-price-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        resource.isFree = button.dataset.resourcePriceMode === "free";
+        resource.price = resource.isFree ? "0.00" : "";
+        syncGlobalPriceFromResources();
+        renderResources();
+      });
+    });
+
+    const priceInput = card.querySelector(".visibility-v2-resource-price");
+    priceInput?.addEventListener("input", () => {
+      resource.price = normalizePriceInput(priceInput.value);
+      syncGlobalPriceFromResources();
+    });
+    priceInput?.addEventListener("blur", () => {
+      const numeric = normalizePrice(priceInput.value);
+      if (priceInput.value.trim() && Number.isFinite(numeric)) {
+        resource.price = numeric.toFixed(2);
+        priceInput.value = resource.price;
+        syncGlobalPriceFromResources();
+      }
+    });
+
+    card.querySelector(`#resource-cover-${index}`)?.addEventListener("change", async (event) => {
+      const file = event.currentTarget.files?.[0];
+      if (!file) return;
+      const error = await validateCoverImage(file);
+      if (error) {
+        const errorRoot = card.querySelector('[data-resource-error="cover"]');
+        if (errorRoot) errorRoot.textContent = error;
+        event.currentTarget.value = "";
+        return;
+      }
+      resource.coverMode = "custom";
+      resource.coverFile = file;
+      renderResources();
+    });
+
+    card.querySelector(".visibility-v2-use-pack-cover")?.addEventListener("click", () => {
+      resource.coverMode = "pack";
+      resource.coverFile = packData.identity.coverFile;
+      renderResources();
+    });
+
+    card.querySelector(".visibility-v2-resource-file")?.addEventListener("change", (event) => {
+      const file = event.currentTarget.files?.[0];
+      if (!file) return;
+      const error = validateResourceFile(file);
+      if (error) {
+        const errorRoot = card.querySelector('[data-resource-error="file"]');
+        if (errorRoot) errorRoot.textContent = error;
+        event.currentTarget.value = "";
+        return;
+      }
+      resource.file = file;
+      resource.originalName = file.name;
+      resource.size = Number(file.size || 0);
+      resource.extension = getFileExtension(file.name);
+      if (!resource.title.trim()) resource.title = titleFromResourceFile(file);
+      renderResources();
+    });
+
+    card.querySelector(".visibility-v2-resource-remove")?.addEventListener("click", () => {
+      packData.resources.splice(index, 1);
+      syncGlobalPriceFromResources();
+      renderResources();
+    });
+  });
+
+  document.querySelector(".prev-btn")?.addEventListener("click", () => {
+    currentStep = 0;
+    render();
+  });
+
+  document.querySelector(".next-btn")?.addEventListener("click", () => {
+    if (!validateResources(true)) return;
+    currentStep = 2;
+    render();
+  });
+}
+
 function renderTracks() {
   missionCard.innerHTML = `
     <section class="step-panel">
+      <button type="button" class="content-type-back" data-return-to-pack>
+        <span aria-hidden="true">‹</span>
+        <span>Pack</span>
+      </button>
       <header class="step-header">
         <p class="step-number">ÉTAPE 2 SUR 4</p>
         <h2>Tracks du pack</h2>
@@ -538,6 +1127,11 @@ function renderTracks() {
   `;
 
   bindTrackCards();
+
+  document.querySelector("[data-return-to-pack]")?.addEventListener("click", () => {
+    currentStep = 0;
+    render();
+  });
 
   document.querySelector("button.add-track-btn").addEventListener("click", async () => {
     if (packData.tracks.length >= MAX_TRACKS) return;
@@ -944,7 +1538,7 @@ function bindTrackCards() {
   });
 }
 
-function renderPrice() {
+function renderAudioPrice() {
   syncGlobalPriceFromTracks();
   const tracksTotal = calculateTracksTotal();
   const displayedPrice = packData.globalIsFree
@@ -1058,6 +1652,96 @@ function renderPrice() {
     currentStep = 3;
     render();
   });
+}
+
+
+function renderResourcePrice() {
+  syncGlobalPriceFromResources();
+  const resourceCount = packData.resources.length;
+  const resourcesTotal = calculateResourcesTotal();
+  const displayedPrice = packData.globalIsFree ? 0 : normalizePrice(packData.globalPrice);
+
+  missionCard.innerHTML = `
+    <section class="step-panel">
+      <header class="step-header">
+        <p class="step-number">ÉTAPE 3 SUR 4</p>
+        <h2>Prix du pack</h2>
+      </header>
+
+      <section class="auto-price-card">
+        <span>Prix final du pack</span>
+        <strong class="global-price-preview">${packData.globalIsFree ? "Gratuit" : `${displayedPrice.toFixed(2)} €`}</strong>
+        <small>Base automatique : ${resourcesTotal.toFixed(2)} € · ${resourceCount} ${isMidiContent() ? "MIDI" : "projet"}${resourceCount > 1 ? "s" : ""}</small>
+
+        <div class="global-price-control ${packData.globalIsFree ? "is-free" : ""}">
+          <button type="button" class="global-price-step" data-price-step="-1" aria-label="Baisser le prix de 1 euro">−</button>
+          <div class="global-price-input-wrap">
+            <input class="global-price-input" type="text" inputmode="decimal" autocomplete="off" value="${packData.globalIsFree ? "0.00" : escapeHtml(packData.globalPrice)}" ${packData.globalIsFree ? "disabled" : ""} aria-label="Prix final du pack">
+            <span>€</span>
+          </div>
+          <button type="button" class="global-price-step" data-price-step="1" aria-label="Augmenter le prix de 1 euro">+</button>
+        </div>
+        <button type="button" class="reset-global-price" ${packData.globalIsFree ? "disabled" : ""}>Revenir au total automatique</button>
+      </section>
+
+      <section class="price-summary">
+        <div><span>Type de contenu</span><strong>${isMidiContent() ? "MIDI" : "Projet DAW"}</strong></div>
+        <div><span>Ressources payantes</span><strong>${packData.resources.filter((resource) => !resource.isFree).length}</strong></div>
+        <div><span>Total des ressources</span><strong>${resourcesTotal.toFixed(2)} €</strong></div>
+      </section>
+
+      <small class="field-error" data-error="global-price"></small>
+      <div class="actions">
+        <button type="button" class="prev-btn">Retour</button>
+        <button type="button" class="next-btn">Continuer</button>
+      </div>
+    </section>
+  `;
+
+  const input = document.querySelector(".global-price-input");
+  const updateManualPrice = (nextValue) => {
+    const numeric = Math.min(PACK_MAX_PRICE, Math.max(PACK_MIN_PRICE, nextValue));
+    packData.globalIsFree = false;
+    packData.globalPriceCustomized = true;
+    packData.globalPrice = numeric.toFixed(2);
+    renderResourcePrice();
+  };
+
+  document.querySelectorAll("[data-price-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const current = normalizePrice(packData.globalPrice) || resourcesTotal || PACK_MIN_PRICE;
+      updateManualPrice(current + Number(button.dataset.priceStep));
+    });
+  });
+  input?.addEventListener("input", () => {
+    packData.globalPriceCustomized = true;
+    packData.globalPrice = normalizePriceInput(input.value);
+    clearFieldError("global-price");
+  });
+  input?.addEventListener("blur", () => {
+    const value = normalizePrice(input.value);
+    if (!Number.isFinite(value)) {
+      showFieldError("global-price", "Entre un prix valide.");
+      return;
+    }
+    updateManualPrice(value);
+  });
+  document.querySelector(".reset-global-price")?.addEventListener("click", () => {
+    packData.globalPriceCustomized = false;
+    syncGlobalPriceFromResources();
+    renderResourcePrice();
+  });
+  document.querySelector(".prev-btn")?.addEventListener("click", () => { currentStep = 1; render(); });
+  document.querySelector(".next-btn")?.addEventListener("click", () => {
+    if (!validateGlobalPrice()) return;
+    currentStep = 3;
+    render();
+  });
+}
+
+function renderPrice() {
+  if (isAudioContent()) return renderAudioPrice();
+  return renderResourcePrice();
 }
 
 function createPackLicenseCheckboxGroup(items, values, type) {
@@ -1252,7 +1936,9 @@ function renderLicense() {
 
       <section class="final-summary create-license-final-summary">
         ${renderSummaryRow("Titre", packData.identity.title)}
-        ${renderSummaryRow("Tracks", String(packData.tracks.length))}
+        ${renderSummaryRow("Type de contenu", isAudioContent() ? "Audio" : (isMidiContent() ? "MIDI" : "Projet DAW"))}
+        ${renderSummaryRow(isAudioContent() ? "Tracks" : "Ressources", String(isAudioContent() ? packData.tracks.length : packData.resources.length))}
+        ${renderSummaryRow("Destiné principalement à", primaryAudienceLabel(packData.identity.primaryAudience))}
         ${renderSummaryRow("Prix global", packData.globalIsFree ? "Gratuit" : `${normalizePrice(packData.globalPrice).toFixed(2)} €`)}
         ${renderSummaryRow("Licence", license.name)}
       </section>
@@ -1287,6 +1973,12 @@ function renderLicense() {
     packData.rightsDeclarationAccepted = Boolean(form.elements.rightsDeclarationAccepted?.checked);
     submitPack();
   });
+}
+
+function primaryAudienceLabel(value) {
+  if (value === "artists") return "Artistes / producteurs";
+  if (value === "creators") return "Créateurs & projets";
+  return "Les deux";
 }
 
 function renderSummaryRow(label, value) {
@@ -1328,8 +2020,13 @@ function formatSubmissionElapsed(totalSeconds) {
 function openPackSubmissionLoader(finalPack) {
   document.querySelector(".pack-submission-overlay")?.remove();
 
-  const trackCount = Array.isArray(finalPack?.tracks) ? finalPack.tracks.length : packData.tracks.length;
-  const formatLabel = trackCount > 1 ? "Album" : "Single";
+  const isAudio = String(finalPack?.contentType || "audio") === "audio";
+  const trackCount = isAudio
+    ? (Array.isArray(finalPack?.tracks) ? finalPack.tracks.length : packData.tracks.length)
+    : (Array.isArray(finalPack?.resources) ? finalPack.resources.length : packData.resources.length);
+  const formatLabel = isAudio
+    ? (trackCount > 1 ? "Album" : "Single")
+    : (String(finalPack?.contentType) === "midi" ? "MIDI" : "Projet DAW");
   const overlay = document.createElement("div");
   overlay.className = "pack-submission-overlay sonara-loading-surface";
   overlay.dataset.sonaraLoadingAudience = "artist";
@@ -1345,7 +2042,7 @@ function openPackSubmissionLoader(finalPack) {
 
       <div class="pack-submission-meta">
         <div><span>${escapeHtml(createPackTranslate("Format"))}</span><strong>${escapeHtml(createPackTranslate(formatLabel))}</strong></div>
-        <div><span>${escapeHtml(createPackTranslate("Tracks"))}</span><strong>${trackCount}</strong></div>
+        <div><span>${escapeHtml(createPackTranslate(isAudio ? "Tracks" : "Ressources"))}</span><strong>${trackCount}</strong></div>
         <div><span>${escapeHtml(createPackTranslate("Temps écoulé"))}</span><strong data-submit-elapsed>00:00</strong></div>
       </div>
 
@@ -1525,14 +2222,23 @@ async function submitPack() {
     formData.append("packData", JSON.stringify(finalPack));
     formData.append("coverPack", packData.identity.coverFile);
 
-    packData.tracks.forEach((track, index) => {
-      // N'envoie une cover de track que si elle est réellement personnalisée.
-      // La cover du pack est envoyée une seule fois et sert aux tracks héritées.
-      if (!trackUsesPackCover(track) && track.coverFile) {
-        formData.append(`trackCover_${index}`, track.coverFile);
-      }
-      formData.append(`trackAudio_${index}`, track.audioFile);
-    });
+    if (isAudioContent()) {
+      packData.tracks.forEach((track, index) => {
+        // N'envoie une cover de track que si elle est réellement personnalisée.
+        // La cover du pack est envoyée une seule fois et sert aux tracks héritées.
+        if (!trackUsesPackCover(track) && track.coverFile) {
+          formData.append(`trackCover_${index}`, track.coverFile);
+        }
+        formData.append(`trackAudio_${index}`, track.audioFile);
+      });
+    } else {
+      packData.resources.forEach((resource, index) => {
+        if (!resourceUsesPackCover(resource) && resource.coverFile) {
+          formData.append(`resourceCover_${index}`, resource.coverFile);
+        }
+        formData.append(`resourceFile_${index}`, resource.file);
+      });
+    }
 
     submissionLoader?.setStatus("Tes fichiers sont envoyés à Sonara…");
 
@@ -1648,6 +2354,11 @@ function buildFinalPack() {
     userId: artistProfile.userId || artistProfile.rootUserId || "",
     rootUserId: artistProfile.rootUserId || artistProfile.userId || "",
     imageProfile: artistProfile.imageProfile || null,
+    contentType: packData.identity.contentType || "audio",
+    primaryAudience: packData.identity.primaryAudience || "both",
+    dawName: isDawContent() ? packData.identity.dawName || "" : "",
+    dawVersion: isDawContent() ? packData.identity.dawVersion || "" : "",
+    dawPlugins: isDawContent() ? packData.identity.dawPlugins || "" : "",
     coverPack: packData.identity.coverFile.name,
     packLink: `app/pages/catalog/pack.html?id=${packId}`,
     isFree: packData.globalIsFree,
@@ -1655,7 +2366,7 @@ function buildFinalPack() {
     categorie: getDistributionCategories(packData.identity.categorie),
     downloadPage: `app/pages/catalog/download.html?id=${packId}`,
     paymentReady: false,
-    tracks: packData.tracks.map((track, index) => {
+    tracks: isAudioContent() ? packData.tracks.map((track, index) => {
       const usesPackCover = trackUsesPackCover(track);
       const effectiveCover = getEffectiveTrackCover(track);
 
@@ -1672,6 +2383,28 @@ function buildFinalPack() {
         price: track.isFree ? "Gratuit" : formatPriceForSubmission(track.price),
         previewDuration: 30,
         duration: track.duration || 0
+      };
+    }) : [],
+    resources: isAudioContent() ? [] : packData.resources.map((resource, index) => {
+      const usesPackCover = resourceUsesPackCover(resource);
+      const effectiveCover = getEffectiveResourceCover(resource);
+      const resourceId = `${packId}-resource-${index + 1}`;
+      return {
+        id: resourceId,
+        resourceLink: `app/pages/catalog/pack.html?id=${packId}&resourceId=${resourceId}`,
+        downloadPage: `app/pages/catalog/download.html?id=${packId}&resourceId=${resourceId}`,
+        title: String(resource.title || resource.originalName || `Ressource ${index + 1}`).trim(),
+        coverMode: usesPackCover ? "pack" : "custom",
+        coverPack: effectiveCover?.name || "",
+        isFree: resource.isFree,
+        price: resource.isFree ? "Gratuit" : formatPriceForSubmission(resource.price),
+        originalName: String(resource.originalName || resource.file?.name || ""),
+        extension: String(resource.extension || getFileExtension(resource.file?.name || resource.originalName || "")),
+        size: Number(resource.size || resource.file?.size || 0),
+        resourceType: packData.identity.contentType,
+        dawName: isDawContent() ? packData.identity.dawName || "" : "",
+        dawVersion: isDawContent() ? packData.identity.dawVersion || "" : "",
+        dawPlugins: isDawContent() ? packData.identity.dawPlugins || "" : ""
       };
     }),
     license: {
@@ -1696,6 +2429,13 @@ function validateIdentity() {
 
   if (!packData.identity.categorie) {
     showFieldError("identity-category", "Choisis une catégorie de distribution.");
+    valid = false;
+  }
+
+  if (!isAudioContent()) {
+    packData.identity.primaryAudience = "artists";
+  } else if (!["creators", "artists", "both"].includes(packData.identity.primaryAudience)) {
+    showFieldError("identity-audience", "Choisis à qui ce pack est principalement destiné.");
     valid = false;
   }
 
@@ -1742,8 +2482,42 @@ function validateTrack(index, focus = false) {
   return valid;
 }
 
+function validateResources(focus = false) {
+  let valid = true;
+
+  if (!packData.resources.length) {
+    showFieldError("resources", "Ajoute au moins une ressource.");
+    valid = false;
+  }
+
+  for (let index = 0; index < packData.resources.length; index += 1) {
+    const resource = packData.resources[index];
+    const card = document.querySelector(`[data-resource-index="${index}"]`);
+    const setError = (key, message) => {
+      const root = card?.querySelector(`[data-resource-error="${key}"]`);
+      if (root) root.textContent = message;
+      valid = false;
+    };
+
+    if (!String(resource.title || "").trim()) setError("title", "Le titre est obligatoire.");
+    if (!resource.isFree && !isPaidPrice(resource.price)) setError("price", `Le prix doit être compris entre ${TRACK_MIN_PRICE} € et ${TRACK_MAX_PRICE} €.`);
+    if (!getEffectiveResourceCover(resource)) setError("cover", "Ajoute une cover.");
+    const fileError = validateResourceFile(resource.file);
+    if (fileError) setError("file", fileError);
+  }
+
+  if (isDawContent() && !String(packData.identity.dawName || "").trim()) {
+    showFieldError("resource-daw", "Choisis le logiciel DAW correspondant.");
+    valid = false;
+  }
+
+  if (!valid && focus) scrollToFirstError();
+  return valid;
+}
+
 function validateGlobalPrice() {
-  syncGlobalPriceFromTracks();
+  if (isAudioContent()) syncGlobalPriceFromTracks();
+  else syncGlobalPriceFromResources();
 
   if (!packData.globalIsFree && !isValidGlobalPrice(packData.globalPrice)) {
     showFieldError("global-price", `Le prix global calculé doit rester entre ${PACK_MIN_PRICE} € et ${PACK_MAX_PRICE.toLocaleString("fr-FR")} €.`);
@@ -1758,6 +2532,7 @@ function validateEverything() {
   if (
     !packData.identity.title.trim() ||
     !packData.identity.categorie ||
+    (isAudioContent() && !["creators", "artists", "both"].includes(packData.identity.primaryAudience)) ||
     !packData.identity.coverFile
   ) {
     return {
@@ -1767,18 +2542,26 @@ function validateEverything() {
     };
   }
 
-  const invalidTrackIndex = packData.tracks.findIndex((track) =>
-    !track.title.trim() ||
-    (!track.isFree && !isPaidPrice(track.price)) ||
-    !getEffectiveTrackCover(track) ||
-    !track.audioFile
-  );
+  if (isAudioContent()) {
+    const invalidTrackIndex = packData.tracks.findIndex((track) =>
+      !track.title.trim() ||
+      (!track.isFree && !isPaidPrice(track.price)) ||
+      !getEffectiveTrackCover(track) ||
+      !track.audioFile
+    );
 
-  if (invalidTrackIndex !== -1 || !packData.tracks.length) {
+    if (invalidTrackIndex !== -1 || !packData.tracks.length) {
+      return {
+        valid: false,
+        step: 1,
+        show: () => validateTrack(Math.max(invalidTrackIndex, 0), true)
+      };
+    }
+  } else if (!validateResources(false)) {
     return {
       valid: false,
       step: 1,
-      show: () => validateTrack(Math.max(invalidTrackIndex, 0), true)
+      show: () => validateResources(true)
     };
   }
 
@@ -1913,6 +2696,26 @@ function calculateTracksTotal() {
   }, 0);
 }
 
+function calculateResourcesTotal() {
+  return packData.resources.reduce((total, resource) => {
+    if (resource.isFree) return total;
+    const value = normalizePrice(resource.price);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
+}
+
+function syncGlobalPriceFromResources() {
+  const total = calculateResourcesTotal();
+  if (total === 0) {
+    packData.globalIsFree = true;
+    packData.globalPriceCustomized = false;
+    packData.globalPrice = "0.00";
+    return;
+  }
+  packData.globalIsFree = false;
+  if (!packData.globalPriceCustomized) packData.globalPrice = total.toFixed(2);
+}
+
 function syncGlobalPriceFromTracks() {
   const total = calculateTracksTotal();
 
@@ -2032,7 +2835,7 @@ async function persistCurrentScreen() {
     packData.identity.categorie = document.querySelector(".pack-category")?.value ?? packData.identity.categorie;
   }
 
-  if (currentStep === 2) {
+  if (currentStep === 2 && isAudioContent()) {
     syncGlobalPriceFromTracks();
   }
 

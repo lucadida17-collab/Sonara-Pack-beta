@@ -281,7 +281,8 @@ function createHomeDistribution(rawPacks = []) {
       .filter((pack) =>
         String(pack?.status || "")
           .toLowerCase() === "approved" &&
-        pack?.moderationHidden !== true
+        pack?.moderationHidden !== true &&
+        ["", "audio"].includes(String(pack?.contentType || "").trim().toLowerCase())
       )
       .sort((a, b) => {
         const aDate = Date.parse(

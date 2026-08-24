@@ -884,3 +884,652 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #2f7cff;
 }
+
+
+/* Visibilité V2 — Achats intégré au Dashboard Artist existant. */
+.creator-purchase-categories,
+.creator-purchase-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr));
+  gap: 12px;
+}
+
+.creator-purchase-categories {
+  margin: 22px 0 28px;
+}
+
+.creator-purchase-categories article {
+  min-height: 94px;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(15,23,42,.78), rgba(8,34,55,.46));
+}
+
+.creator-purchase-categories article > svg {
+  width: 24px;
+  height: 24px;
+  color: #6fe8ff;
+}
+
+.creator-purchase-categories article div,
+.creator-purchase-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.creator-purchase-categories strong,
+.creator-purchase-copy strong {
+  color: #fff;
+  font-weight: 780;
+}
+
+.creator-purchase-categories small,
+.creator-purchase-copy small,
+.creator-purchase-copy p {
+  color: rgba(255,255,255,.5);
+  font-size: .78rem;
+  line-height: 1.4;
+}
+
+.creator-purchase-section {
+  margin-top: 24px;
+}
+
+.creator-purchase-card {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  background: rgba(255,255,255,.03);
+}
+
+.creator-purchase-cover {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(56,189,248,.08);
+  color: #6fe8ff;
+}
+
+.creator-purchase-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.creator-purchase-cover > span {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  padding: 3px 5px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(3,8,20,.78);
+  color: #dff9ff;
+  font-size: .56rem;
+  font-weight: 780;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creator-purchase-copy p {
+  margin: 0;
+}
+
+.creator-purchase-open {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(103,232,255,.25);
+  border-radius: 12px;
+  background: rgba(56,189,248,.08);
+  color: #8eeaff;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.creator-purchase-empty {
+  grid-column: 1 / -1;
+  min-height: 90px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.1);
+  border-radius: 18px;
+  color: rgba(255,255,255,.48);
+  text-align: center;
+}
+
+/* ==========================================================
+   BOUTIQUE ARTISTE — PHASE 1 TEST
+   Espace premium intégré au Dashboard, sans reprendre son shell.
+========================================================== */
+body.creator-shop-mode {
+  --artist-shop-bg: #090909;
+  --artist-shop-surface: #111111;
+  --artist-shop-surface-2: #171717;
+  --artist-shop-text: #f7f2e8;
+  --artist-shop-muted: rgba(247, 242, 232, .56);
+  --artist-shop-line: rgba(212, 175, 55, .20);
+  --artist-shop-accent: #d4af37;
+  --artist-shop-accent-2: #f1d77b;
+  margin: 0;
+  background: var(--artist-shop-bg) !important;
+  color: var(--artist-shop-text);
+}
+
+body.creator-shop-mode.creator-shop-theme-midi {
+  --artist-shop-bg: #ffffff;
+  --artist-shop-surface: #ffffff;
+  --artist-shop-surface-2: #f4f4f2;
+  --artist-shop-text: #0b0b0b;
+  --artist-shop-muted: rgba(11, 11, 11, .58);
+  --artist-shop-line: rgba(11, 11, 11, .14);
+  --artist-shop-accent: #0b0b0b;
+  --artist-shop-accent-2: #303030;
+}
+
+body.creator-shop-mode.creator-shop-theme-daw,
+body.creator-shop-mode.creator-shop-theme-audio {
+  --artist-shop-bg: #080807;
+  --artist-shop-surface: #11100d;
+  --artist-shop-surface-2: #17140d;
+  --artist-shop-text: #f8f1df;
+  --artist-shop-muted: rgba(248, 241, 223, .58);
+  --artist-shop-line: rgba(212, 175, 55, .22);
+  --artist-shop-accent: #d4af37;
+  --artist-shop-accent-2: #f1d77b;
+}
+
+body.creator-shop-mode .desktop-side-panel,
+body.creator-shop-mode .header,
+body.creator-shop-mode .mobile-bottom-bar {
+  display: none !important;
+}
+
+body.creator-shop-mode .desktop-shell {
+  display: block !important;
+  width: 100% !important;
+  min-height: 100dvh;
+}
+
+body.creator-shop-mode .desktop-workspace,
+body.creator-shop-mode .app-layout,
+body.creator-shop-mode .main-content,
+body.creator-shop-mode .scroll-zone {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100dvh;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+body.creator-shop-mode .scroll-zone {
+  overflow: auto !important;
+}
+
+/* La barre de défilement fait partie de l’identité de la Boutique. */
+body.creator-shop-mode.creator-shop-theme-midi .scroll-zone {
+  background: #ffffff !important;
+  scrollbar-color: #111111 #ffffff;
+}
+
+body.creator-shop-mode.creator-shop-theme-midi .scroll-zone::-webkit-scrollbar-track {
+  background: #ffffff !important;
+}
+
+body.creator-shop-mode.creator-shop-theme-midi .scroll-zone::-webkit-scrollbar-thumb {
+  border: 2px solid #ffffff !important;
+  background: #111111 !important;
+}
+
+body.creator-shop-mode.creator-shop-theme-daw .scroll-zone,
+body.creator-shop-mode.creator-shop-theme-audio .scroll-zone {
+  background: #080807 !important;
+  scrollbar-color: #d4af37 #080807;
+}
+
+body.creator-shop-mode.creator-shop-theme-daw .scroll-zone::-webkit-scrollbar-track,
+body.creator-shop-mode.creator-shop-theme-audio .scroll-zone::-webkit-scrollbar-track {
+  background: #080807 !important;
+}
+
+body.creator-shop-mode.creator-shop-theme-daw .scroll-zone::-webkit-scrollbar-thumb,
+body.creator-shop-mode.creator-shop-theme-audio .scroll-zone::-webkit-scrollbar-thumb {
+  border: 2px solid #080807 !important;
+  background: #d4af37 !important;
+}
+
+body.creator-shop-mode .creator-page {
+  width: 100%;
+  max-width: none;
+  padding: 0 !important;
+}
+
+.artist-shop-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--artist-shop-accent) 12%, transparent), transparent 27%),
+    var(--artist-shop-bg);
+  color: var(--artist-shop-text);
+  transition: background .24s ease, color .24s ease;
+}
+
+.artist-shop-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 76px;
+  padding: 12px clamp(14px, 3vw, 44px);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--artist-shop-line);
+  background: color-mix(in srgb, var(--artist-shop-bg) 91%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.artist-shop-back,
+.artist-shop-owned,
+.artist-shop-tab,
+.artist-shop-open {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.artist-shop-back {
+  min-height: 42px;
+  padding: 0 11px 0 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--artist-shop-text);
+  font-size: .78rem;
+  font-weight: 760;
+}
+
+.artist-shop-back:hover {
+  background: color-mix(in srgb, var(--artist-shop-text) 7%, transparent);
+}
+
+.artist-shop-back svg {
+  width: 19px;
+  height: 19px;
+}
+
+.artist-shop-brand {
+  min-width: 128px;
+  display: grid;
+  gap: 1px;
+}
+
+.artist-shop-brand small {
+  color: var(--artist-shop-muted);
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.artist-shop-brand strong {
+  font-family: Inter, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -.035em;
+}
+
+.artist-shop-tabs {
+  min-width: 0;
+  margin: 0 auto;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 999px;
+  background: var(--artist-shop-surface);
+  scrollbar-width: none;
+}
+
+.artist-shop-tabs::-webkit-scrollbar { display: none; }
+
+.artist-shop-tab {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--artist-shop-muted);
+  font-size: .73rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.artist-shop-tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.artist-shop-tab.is-active {
+  background: var(--artist-shop-text);
+  color: var(--artist-shop-bg);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--artist-shop-text) 14%, transparent);
+}
+
+.artist-shop-owned {
+  min-height: 40px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 12px;
+  background: var(--artist-shop-surface);
+  color: var(--artist-shop-text);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.artist-shop-owned.is-active {
+  background: var(--artist-shop-accent);
+  color: var(--artist-shop-bg);
+}
+
+.artist-shop-owned svg { width: 16px; height: 16px; }
+
+.artist-shop-hero,
+.artist-shop-content {
+  width: min(1480px, calc(100% - 28px));
+  margin-inline: auto;
+}
+
+.artist-shop-hero {
+  min-height: 300px;
+  padding: clamp(38px, 7vw, 92px) clamp(22px, 5vw, 72px);
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 4vw, 44px);
+  box-sizing: border-box;
+}
+
+.artist-shop-hero-icon {
+  width: clamp(76px, 10vw, 132px);
+  height: clamp(76px, 10vw, 132px);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 30px;
+  background: var(--artist-shop-surface);
+  box-shadow: 0 26px 80px color-mix(in srgb, var(--artist-shop-accent) 15%, transparent);
+}
+
+.artist-shop-hero-icon svg {
+  width: 42%;
+  height: 42%;
+  color: var(--artist-shop-accent);
+}
+
+.artist-shop-hero p,
+.artist-shop-content-head small {
+  margin: 0 0 8px;
+  color: var(--artist-shop-accent);
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+.artist-shop-hero h1 {
+  margin: 0;
+  color: var(--artist-shop-text);
+  font-size: clamp(2.55rem, 6vw, 6.4rem);
+  font-weight: 900;
+  letter-spacing: -.07em;
+  line-height: .94;
+}
+
+.artist-shop-hero div > span {
+  display: block;
+  max-width: 680px;
+  margin-top: 14px;
+  color: var(--artist-shop-muted);
+  font-size: clamp(.86rem, 1.2vw, 1.05rem);
+  line-height: 1.55;
+}
+
+.artist-shop-content {
+  padding: 0 0 70px;
+}
+
+.artist-shop-content-head {
+  min-height: 76px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--artist-shop-line);
+  padding-bottom: 18px;
+}
+
+.artist-shop-content-head h2 {
+  margin: 0;
+  color: var(--artist-shop-text);
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.artist-shop-content-head > span {
+  color: var(--artist-shop-muted);
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+.artist-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 22px);
+  margin-top: 22px;
+}
+
+.artist-shop-product {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 22px;
+  background: var(--artist-shop-surface);
+  box-shadow: 0 18px 50px rgba(0,0,0,.08);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.artist-shop-product:hover,
+.artist-shop-product:focus-visible {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--artist-shop-accent) 48%, var(--artist-shop-line));
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--artist-shop-accent) 12%, transparent);
+}
+
+.artist-shop-product-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--artist-shop-surface-2);
+}
+
+.artist-shop-product-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.artist-shop-product-media > span:not(.artist-shop-product-type) {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 20px;
+  color: var(--artist-shop-accent);
+  background: var(--artist-shop-surface);
+}
+
+
+.artist-shop-product-owned {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--artist-shop-bg) 86%, transparent);
+  color: var(--artist-shop-text);
+  font-size: .58rem;
+  font-weight: 850;
+  backdrop-filter: blur(12px);
+}
+
+.artist-shop-product-owned svg {
+  width: 13px;
+  height: 13px;
+}
+.artist-shop-product-type {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 9px;
+  border: 1px solid var(--artist-shop-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--artist-shop-bg) 82%, transparent);
+  color: var(--artist-shop-text);
+  font-size: .58rem;
+  font-weight: 850;
+  backdrop-filter: blur(12px);
+}
+
+.artist-shop-product-copy {
+  padding: 15px;
+  display: grid;
+  gap: 5px;
+}
+
+.artist-shop-product-copy > small {
+  overflow: hidden;
+  color: var(--artist-shop-muted);
+  font-size: .66rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-shop-product-copy > strong {
+  overflow: hidden;
+  color: var(--artist-shop-text);
+  font-size: .93rem;
+  font-weight: 880;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-shop-product-copy > p {
+  margin: 0;
+  color: var(--artist-shop-muted);
+  font-size: .68rem;
+}
+
+.artist-shop-product-footer {
+  margin-top: 9px;
+  padding-top: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--artist-shop-line);
+}
+
+.artist-shop-product-footer b {
+  color: var(--artist-shop-text);
+  font-size: .86rem;
+}
+
+.artist-shop-open {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--artist-shop-accent);
+  color: var(--artist-shop-bg);
+  font-size: .7rem;
+  font-weight: 850;
+}
+
+.artist-shop-loading,
+.artist-shop-empty {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  border: 1px dashed var(--artist-shop-line);
+  border-radius: 22px;
+  color: var(--artist-shop-muted);
+  text-align: center;
+}
+
+.artist-shop-empty svg {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  color: var(--artist-shop-accent);
+}
+
+.artist-shop-empty strong { color: var(--artist-shop-text); }
+.artist-shop-empty small { max-width: 360px; }
+
+/* Le thème DAW assume volontairement le noir / or premium. */
+body.creator-shop-theme-daw .artist-shop-product,
+body.creator-shop-theme-audio .artist-shop-product {
+  background: linear-gradient(155deg, #15130e, #0c0c0b 72%);
+}
+
+/* MIDI : surface claire, typographie noire, lecture immédiate des covers. */
+body.creator-shop-theme-midi .artist-shop-product {
+  box-shadow: 0 18px 50px rgba(20,20,20,.08);
+}
+
+body.creator-shop-theme-midi .artist-shop-product-type {
+  background: rgba(255,255,255,.84);
+}

@@ -763,6 +763,7 @@ if (!window.__sonaraPackPreviewPlayerAlignBound) {
 }
 
 function setupPackPreviewPlayer() {
+  if (String(packData?.contentType || "audio").toLowerCase() !== "audio") return;
   const tracks = Array.isArray(packData?.tracks) ? packData.tracks : [];
   if (!tracks.length) return;
 
@@ -1179,7 +1180,141 @@ function setupPackPreviewPlayer() {
   preparePackPreviewIntelligence();
 }
 
+function isResourcePack(pack = {}) {
+  return ["midi", "daw"].includes(String(pack.contentType || "audio").trim().toLowerCase());
+}
+
+function resourcePackTypeLabel(pack = {}) {
+  return String(pack.contentType || "").toLowerCase() === "midi" ? "MIDI" : "Projet DAW";
+}
+
+function resourcePackAudienceLabel(pack = {}) {
+  const audience = String(pack.primaryAudience || "both").toLowerCase();
+  if (audience === "artists") return "Artistes / producteurs";
+  if (audience === "creators") return "Créateurs & projets";
+  return "Les deux";
+}
+
+function formatResourceBytes(value) {
+  const bytes = Math.max(0, Number(value || 0));
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} Mo`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} Ko`;
+  return bytes ? `${bytes} o` : "Taille inconnue";
+}
+
+function renderResourcePack() {
+  const preV1 = isPreV1CommercialMode();
+  const futurePackPrice = displayPriceWithEuro(packData.price || packData.packPrice || packData.totalPrice);
+  const packActionLabel = preV1 ? "Télécharger gratuitement" : futurePackPrice;
+  const resources = Array.isArray(packData.resources) ? packData.resources : [];
+  const dawLabel = String(packData.dawName || "").replaceAll("-", " ");
+  const dawVersion = String(packData.dawVersion || "").trim();
+  const dawPlugins = String(packData.dawPlugins || "").trim();
+  const requestedResourceId = new URLSearchParams(window.location.search).get("resourceId") || "";
+
+  packList.innerHTML = `
+    <button class="retour"><i data-lucide="chevron-left"></i></button>
+    <section class="body-pack resource-pack-body">
+      <div class="pack-hero resource-pack-hero">
+        <div class="left-side">
+          <div class="card resource-pack-cover-card">
+            <img src="${getFilePath(packData.coverPack)}" class="cover" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">
+          </div>
+        </div>
+        <div class="pack-info">
+          <div class="resource-pack-badges">
+            <span>${resourcePackTypeLabel(packData)}</span>
+            <span>${resourcePackAudienceLabel(packData)}</span>
+          </div>
+          <h1 class="title">${escapePackLicenseHtml(packData.title || "Pack Sonara")}</h1>
+          <div class="artist-info">
+            <img src="${getFilePath(packData.artistProfile?.avatar || packData.artistProfile?.imageArtist || packData.artistProfile?.imageProfile || packData.imageProfile)}" class="artist-image" alt="">
+            ${packArtistRewardBadgeMarkup(packData.artistProfile)}
+            <p class="artist">${escapePackLicenseHtml(packData.artistProfile?.name || packData.artist || "Artiste Sonara")}</p>
+            <button class="btn-acheter">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
+          </div>
+          <button class="btn-acheter-desktop">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
+          ${preV1 && futurePackPrice && futurePackPrice !== "Gratuit" ? `<small class="pre-v1-price-note">Prix prévu : ${escapePackLicenseHtml(futurePackPrice)}</small>` : ""}
+        </div>
+      </div>
+
+      <section class="resource-pack-section">
+        <header>
+          <div><p>RESSOURCES</p><h2>${resourcePackTypeLabel(packData)}</h2></div>
+          ${packData.contentType === "daw" && dawLabel ? `<span class="resource-pack-daw">${escapePackLicenseHtml(dawLabel)}</span>` : ""}
+        </header>
+        ${packData.contentType === "daw" && (dawVersion || dawPlugins) ? `<div class="resource-pack-compatibility">${dawVersion ? `<span><b>Version du DAW</b>${escapePackLicenseHtml(dawVersion)}</span>` : ""}${dawPlugins ? `<span><b>Plugins externes requis</b>${escapePackLicenseHtml(dawPlugins)}</span>` : ""}</div>` : ""}
+        <div class="resource-pack-list">
+          ${resources.map((resource, index) => {
+            const resourceId = String(resource.id || `${packData.id}-resource-${index + 1}`);
+            const selected = requestedResourceId && requestedResourceId === resourceId;
+            const resourceCover = getFilePath(resource.coverPack || packData.coverPack);
+            const resourcePrice = displayPriceWithEuro(resource.price || packData.price || "Gratuit") || "Gratuit";
+            return `
+            <article class="resource-pack-row ${selected ? "is-selected" : ""}" data-resource-id="${escapePackLicenseHtml(resourceId)}">
+              <span class="resource-pack-index">${String(index + 1).padStart(2, "0")}</span>
+              <span class="resource-pack-thumb">${resourceCover ? `<img src="${escapePackLicenseHtml(resourceCover)}" alt="">` : `<i data-lucide="${packData.contentType === "midi" ? "piano" : "file-cog"}"></i>`}</span>
+              <div>
+                <strong>${escapePackLicenseHtml(resource.title || resource.originalName || `Ressource ${index + 1}`)}</strong>
+                <small>${escapePackLicenseHtml(resource.originalName || resource.extension || "Fichier d’origine")} · ${formatResourceBytes(resource.size)}</small>
+              </div>
+              <strong class="resource-pack-item-price">${escapePackLicenseHtml(resourcePrice)}</strong>
+            </article>`;
+          }).join("")}
+        </div>
+        <p class="resource-pack-note">Ces fichiers sont fournis dans leur format d’origine. Aucun player audio ni waveform artificiel n’est utilisé.</p>
+      </section>
+    </section>`;
+
+  schedulePackPageTitleFit();
+  if (window.lucide) lucide.createIcons();
+
+  document.querySelector(".retour")?.addEventListener("click", () => {
+    if (document.referrer && document.referrer.startsWith(window.location.origin)) window.history.back();
+    else window.location.href = "/app/pages/creator/dashboard.html?mode=shop";
+  });
+
+  const publicArtistId = String(packData.artistProfile?.accountId || packData.accountId || packData.artistAccountId || packData.artistId || "").trim();
+  if (publicArtistId) {
+    const destination = `/app/pages/catalog/artist.html?id=${encodeURIComponent(publicArtistId)}`;
+    document.querySelectorAll('.artist-image, .artist-info > .artist').forEach((element) => {
+      element.classList.add('pack-artist-profile-link');
+      element.setAttribute('role', 'link');
+      element.setAttribute('tabindex', '0');
+      element.addEventListener('click', () => { window.location.href = destination; });
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') window.location.href = destination;
+      });
+    });
+  }
+
+  document.querySelectorAll('.btn-acheter, .btn-acheter-desktop').forEach((button) => {
+    button.addEventListener('click', () => {
+      selectedPackId = packData.id;
+      selectedTrackId = null;
+      selectedPurchaseType = "pack";
+      openPackLicenseNotice(packData);
+    });
+  });
+
+  const noticeOverlay = document.querySelector('.notice-overlay');
+  const noticeClose = document.querySelector('.notice-close');
+  const noticeRefuse = document.querySelector('.notice-refuse');
+  const noticeAccept = document.querySelector('.notice-accept');
+  noticeClose?.addEventListener('click', closePackLicenseNotice);
+  noticeRefuse?.addEventListener('click', closePackLicenseNotice);
+  noticeOverlay?.addEventListener('click', (event) => {
+    if (event.target === noticeOverlay) closePackLicenseNotice();
+  });
+  noticeAccept?.addEventListener('click', startStripePayment);
+  requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
+}
+
 function renderPack() {
+  if (packData && packList && isResourcePack(packData)) {
+    renderResourcePack();
+    return;
+  }
 
   if (packData && packList) {
     const preV1 = isPreV1CommercialMode();

@@ -22,7 +22,7 @@ function getDistributionCategories(mainMood) {
 }
 
 (function attachSonaraDistribution(globalScope) {
-  const DISTRIBUTION_VERSION = "2.1.0";
+  const DISTRIBUTION_VERSION = "2.2.0";
   const DEFAULT_MAX_SECTION_ITEMS = 10;
 
   /*
@@ -90,6 +90,14 @@ function getDistributionCategories(mainMood) {
       evidenceScale: 8,
       breadthSaturation: 3,
       tenureFullDays: 365
+    }),
+    audience: Object.freeze({
+      smallCatalogueThreshold: 24,
+      smallCatalogueMaxBonus: 4,
+      denseCatalogueMaxBonus: 8,
+      matchScore: 100,
+      bothScore: 88,
+      neutralScore: 70
     }),
     diversity: Object.freeze({
       repetitionPenalty: 12,
@@ -196,6 +204,11 @@ function getDistributionCategories(mainMood) {
       .join(" ");
   }
 
+  function getContentType(pack = {}) {
+    const value = normalizeText(pack.contentType || pack.resourceType || "audio").toLowerCase();
+    return ["audio", "midi", "daw"].includes(value) ? value : "audio";
+  }
+
   function isEligiblePack(pack = {}) {
     const status = normalizeText(pack.status).toLowerCase();
 
@@ -203,7 +216,8 @@ function getDistributionCategories(mainMood) {
       pack &&
       normalizeText(pack.id) &&
       status === "approved" &&
-      pack.moderationHidden !== true
+      pack.moderationHidden !== true &&
+      getContentType(pack) === "audio"
     );
   }
 
@@ -1147,6 +1161,40 @@ function getDistributionCategories(mainMood) {
     return weights;
   }
 
+  function userIsArtist(userContext = null) {
+    const role = normalizeText(userContext?.role).toLowerCase();
+    return role === "artist" || role === "both";
+  }
+
+  function audienceRelevanceScore(pack = {}, context = {}) {
+    const target = normalizeText(pack.primaryAudience || "both").toLowerCase();
+    const config = DISTRIBUTION_CONFIG.audience;
+
+    if (!["creators", "artists", "both"].includes(target)) {
+      return config.neutralScore;
+    }
+
+    if (target === "both") return config.bothScore;
+    const artistViewer = userIsArtist(context.userContext);
+    if ((target === "artists" && artistViewer) || (target === "creators" && !artistViewer)) {
+      return config.matchScore;
+    }
+
+    return config.neutralScore;
+  }
+
+  function audienceVisibilityBonus(pack = {}, context = {}) {
+    const config = DISTRIBUTION_CONFIG.audience;
+    const relevance = audienceRelevanceScore(pack, context);
+    const packCount = safeNumber(context.catalogueProfile?.packCount, 0);
+    const maxBonus = packCount <= safeNumber(config.smallCatalogueThreshold, 24)
+      ? safeNumber(config.smallCatalogueMaxBonus, 4)
+      : safeNumber(config.denseCatalogueMaxBonus, 8);
+    const neutral = safeNumber(config.neutralScore, 70);
+    const normalized = clamp((relevance - neutral) / Math.max(1, 100 - neutral), 0, 1);
+    return clamp(normalized * maxBonus, 0, maxBonus);
+  }
+
   function scorePack(pack = {}, context = {}) {
     const reputation = calculateArtistReputation(pack, context);
     const consistency = calculateArtistConsistency(pack, context);
@@ -1188,11 +1236,15 @@ function getDistributionCategories(mainMood) {
       0,
       15
     );
+    const audienceRelevance = audienceRelevanceScore(pack, context);
+    const audienceVisibilityBoost = audienceVisibilityBonus(pack, context);
 
     return {
-      total: clamp(baseTotal + missionVisibilityBoost, 0, 100),
+      total: clamp(baseTotal + missionVisibilityBoost + audienceVisibilityBoost, 0, 100),
       baseTotal: clamp(baseTotal, 0, 100),
       missionVisibilityBoost,
+      audienceVisibilityBoost,
+      audienceRelevance,
       signals,
       contributions,
       weights,
@@ -2033,7 +2085,10 @@ function getDistributionCategories(mainMood) {
         ),
         format: getPackFormat(item.pack),
         trackCount: getPackTrackCount(item.pack),
-        recencyBand: getRecencyBand(item.pack, context)
+        recencyBand: getRecencyBand(item.pack, context),
+        primaryAudience: normalizeText(item.pack?.primaryAudience || "both") || "both",
+        audienceRelevance: Number(safeNumber(item.score?.audienceRelevance, 70).toFixed(3)),
+        audienceVisibilityBoost: Number(safeNumber(item.score?.audienceVisibilityBoost, 0).toFixed(3))
       }
     };
   }
@@ -2211,6 +2266,8 @@ function getDistributionCategories(mainMood) {
         recency: Number(safeNumber(item.score?.signals?.recency, 0).toFixed(2)),
         affinity: Number(safeNumber(item.score?.signals?.affinity, 0).toFixed(2)),
         missionVisibilityBoost: Number(safeNumber(item.score?.missionVisibilityBoost, 0).toFixed(2)),
+        audienceRelevance: Number(safeNumber(item.score?.audienceRelevance, 70).toFixed(2)),
+        audienceVisibilityBoost: Number(safeNumber(item.score?.audienceVisibilityBoost, 0).toFixed(2)),
         baseScore: Number(safeNumber(item.score?.baseTotal, 0).toFixed(2)),
         finalScore: Number(safeNumber(item.score?.total, 0).toFixed(2)),
         weights: { ...item.score.weights },
@@ -2219,6 +2276,68 @@ function getDistributionCategories(mainMood) {
     }
 
     return result;
+  }
+
+  function isStoreEligiblePack(pack = {}, contentType = "midi") {
+    const status = normalizeText(pack?.status).toLowerCase();
+    const requestedType = normalizeText(contentType || "midi").toLowerCase();
+    return Boolean(
+      pack &&
+      normalizeText(pack.id) &&
+      status === "approved" &&
+      pack.moderationHidden !== true &&
+      getContentType(pack) === requestedType
+    );
+  }
+
+  function createStoreDistribution(rawPacks = [], options = {}) {
+    const now = safeNumber(options.now, Date.now());
+    const contentType = normalizeText(options.contentType || "midi").toLowerCase();
+    const eligiblePacks = Array.isArray(rawPacks)
+      ? rawPacks.filter((pack) => isStoreEligiblePack(pack, contentType))
+      : [];
+
+    const catalogueProfile = buildCatalogueProfile(eligiblePacks, now);
+    const performanceProfile = buildPerformanceProfile(eligiblePacks);
+    const artistAnalytics = buildArtistAnalytics(eligiblePacks, now);
+    const reputationProfile = buildReputationProfile(artistAnalytics);
+    const context = {
+      now,
+      editionKey: getMonthlyEditionKey(now),
+      userContext: options.userContext || { role: "artist" },
+      catalogueProfile,
+      performanceProfile,
+      artistAnalytics,
+      reputationProfile
+    };
+    context.distributionWeights = resolveDistributionWeights(context);
+
+    const artistPenalties = resolveArtistPenalties(catalogueProfile);
+    const scoredItems = eligiblePacks
+      .map((pack) => ({
+        pack,
+        artistKey: getArtistKey(pack),
+        score: scorePack(pack, context)
+      }))
+      .sort((a, b) => compareSectionPriority(a, b, context));
+
+    const diversifiedItems = diversifyArtists(scoredItems, {
+      repetitionPenalty: artistPenalties.repetition,
+      consecutivePenalty: artistPenalties.consecutive
+    });
+    const recencyPrioritizedItems = prioritizeRecencyBands(diversifiedItems, context);
+    const rankedItems = ensureInitialDiscoveryExposure(recencyPrioritizedItems, context);
+
+    return {
+      version: DISTRIBUTION_VERSION,
+      generatedAt: new Date(now).toISOString(),
+      contentType,
+      items: rankedItems.map((item, index) => decorateItem(item, index, context, "store")),
+      catalogue: {
+        packCount: catalogueProfile.packCount,
+        uniqueArtistCount: catalogueProfile.uniqueArtistCount
+      }
+    };
   }
 
   function createDistributionDebug(rawPacks = [], options = {}) {
@@ -2232,6 +2351,7 @@ function getDistributionCategories(mainMood) {
     version: DISTRIBUTION_VERSION,
     config: DISTRIBUTION_CONFIG,
     createHomeDistribution,
+    createStoreDistribution,
     createDistributionDebug,
     scorePack,
     artistReputationScore,
@@ -2240,6 +2360,8 @@ function getDistributionCategories(mainMood) {
     discoveryScore,
     recencyScore,
     userAffinityScore,
+    audienceRelevanceScore,
+    audienceVisibilityBonus,
     freshnessScore,
     popularityScore,
     diversifyArtists,

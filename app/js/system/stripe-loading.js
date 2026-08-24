@@ -54,7 +54,8 @@ function readPurchase() {
   const userId = String(parsedPurchase.userId || "").trim();
   const packId = String(parsedPurchase.packId || "").trim();
   const trackId = String(parsedPurchase.trackId || "").trim();
-  const purchaseType = trackId ? "track" : "pack";
+  const resourceId = String(parsedPurchase.resourceId || "").trim();
+  const purchaseType = trackId ? "track" : resourceId ? "resource" : "pack";
 
   if (!userId || !packId) {
     throw new Error("Le compte acheteur ou le pack est introuvable.");
@@ -65,6 +66,7 @@ function readPurchase() {
     userId,
     packId,
     trackId: trackId || null,
+    resourceId: resourceId || null,
     purchaseType
   };
 }
@@ -131,6 +133,7 @@ async function createCheckoutSession() {
           userId: purchase.userId,
           packId: purchase.packId,
           trackId: purchase.trackId,
+          resourceId: purchase.resourceId,
           purchaseType: purchase.purchaseType,
           licenseVersion: purchase.licenseVersion,
           licenseId: purchase.licenseId
