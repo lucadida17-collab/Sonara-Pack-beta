@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "MIDI 预览",
   "Aperçu du projet": "项目预览",
   "Aperçu indisponible": "预览不可用",
-  "Préparation…": "正在准备…"
+  "Préparation…": "正在准备…",
+  "Zoom de l’aperçu": "预览缩放",
+  "Dézoomer": "缩小",
+  "Adapter à l’écran": "适应屏幕",
+  "Zoomer": "放大",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "此功能将在 V1 发布时开放。",
+  "Cette ressource sera disponible lors du lancement de la V1.": "此资源将在 V1 发布时开放。",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "MIDI 包和 DAW 工程将在 V1 发布时开放。",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "发布你的曲目、制作、伴奏、采样和其他音频文件。",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "你已经购买过此内容。可在“我的购买”中找到。",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "你已经拥有此内容。可在你的“资源库”中找到。",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "跟踪你的音频包下载量、销售量和收入。",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "在 Pre-V1 期间跟踪你的音频包下载量和受众。",
+  "Suivi du moteur de vente Sonara.": "Sonara 销售系统监控。"
 }

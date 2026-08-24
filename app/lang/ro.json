@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "Previzualizare MIDI",
   "Aperçu du projet": "Previzualizarea proiectului",
   "Aperçu indisponible": "Previzualizare indisponibilă",
-  "Préparation…": "Se pregătește…"
+  "Préparation…": "Se pregătește…",
+  "Zoom de l’aperçu": "Zoom previzualizare",
+  "Dézoomer": "Micșorează",
+  "Adapter à l’écran": "Potrivește pe ecran",
+  "Zoomer": "Mărește",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Această funcționalitate va fi disponibilă la lansarea V1.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Această resursă va fi disponibilă la lansarea V1.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "Pachetele MIDI și proiectele DAW vor fi disponibile la lansarea V1.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Publică piesele, producțiile, instrumentalele, sample-urile și alte fișiere audio.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "Ai cumpărat deja acest conținut. Îl găsești în Achizițiile mele.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "Ai deja acest conținut. Îl găsești în Biblioteca ta.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Urmărește descărcările, vânzările și veniturile pack-urilor tale.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Urmărește descărcările și audiența pack-urilor tale în perioada Pre-V1.",
+  "Suivi du moteur de vente Sonara.": "Monitorizarea motorului de vânzări Sonara."
 }

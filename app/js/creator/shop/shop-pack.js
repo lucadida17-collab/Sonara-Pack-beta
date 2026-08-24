@@ -127,36 +127,171 @@ function isShopResourceOwned(resourceId) {
   return shopOwnership.ownsPack || shopOwnership.resourceIds.has(String(resourceId || ""));
 }
 
-function renderMidiPreview(preview = {}) {
+function midiNoteName(value) {
+  const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+  const note = Math.max(0, Math.min(127, Number(value) || 0));
+  return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
+}
+
+function isMidiBlackKey(value) {
+  return [1, 3, 6, 8, 10].includes((Number(value) || 0) % 12);
+}
+
+function midiPreviewPanelId(resourceId) {
+  const safeId = String(resourceId || "resource").replace(/[^a-zA-Z0-9_-]/g, "-");
+  return `artist-midi-preview-${safeId}`;
+}
+
+function midiWhitePitches(low, high) {
+  const result = [];
+  for (let pitch = low; pitch <= high; pitch += 1) {
+    if (!isMidiBlackKey(pitch)) result.push(pitch);
+  }
+  return result;
+}
+
+function midiNaturalBounds(low, high) {
+  let safeLow = Math.max(0, Math.min(127, Number(low) || 0));
+  let safeHigh = Math.max(safeLow, Math.min(127, Number(high) || safeLow));
+  while (safeLow > 0 && isMidiBlackKey(safeLow)) safeLow -= 1;
+  while (safeHigh < 127 && isMidiBlackKey(safeHigh)) safeHigh += 1;
+  return { low: safeLow, high: safeHigh };
+}
+
+function midiPitchY(pitch, whitePitches, whiteKeyHeight) {
+  const value = Math.max(0, Math.min(127, Number(pitch) || 0));
+  const whiteCount = whitePitches.length;
+  const exactIndex = whitePitches.indexOf(value);
+  if (exactIndex >= 0) {
+    const top = (whiteCount - 1 - exactIndex) * whiteKeyHeight;
+    return top + whiteKeyHeight / 2;
+  }
+
+  let lowerWhite = value - 1;
+  while (lowerWhite >= 0 && isMidiBlackKey(lowerWhite)) lowerWhite -= 1;
+  const lowerIndex = whitePitches.indexOf(lowerWhite);
+  if (lowerIndex < 0) return whiteKeyHeight / 2;
+  return (whiteCount - 1 - lowerIndex) * whiteKeyHeight;
+}
+
+function renderMidiPreview(preview = {}, zoomScale = null) {
   const notes = Array.isArray(preview.notes) ? preview.notes : [];
   if (!notes.length) {
     return `<div class="artist-store-preview-empty"><i data-lucide="piano"></i><span>${shopEscape(shopT("Aperçu indisponible"))}</span></div>`;
   }
-  const totalTicks = Math.max(1, Number(preview.totalTicks || 1));
-  const low = Number.isFinite(Number(preview.lowestNote)) ? Number(preview.lowestNote) : Math.min(...notes.map((note) => Number(note.note || 60)));
-  const high = Number.isFinite(Number(preview.highestNote)) ? Number(preview.highestNote) : Math.max(...notes.map((note) => Number(note.note || 60)));
-  const noteRange = Math.max(1, high - low + 1);
-  const rects = notes.slice(0, 96).map((note) => {
-    const x = Math.max(0, Math.min(996, (Number(note.start || 0) / totalTicks) * 996));
-    const width = Math.max(3, Math.min(996 - x, (Number(note.duration || 1) / totalTicks) * 996));
-    const y = Math.max(2, Math.min(232, ((high - Number(note.note || low)) / noteRange) * 230 + 3));
-    const velocity = Math.max(.36, Math.min(1, Number(note.velocity || 80) / 127));
-    return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${width.toFixed(2)}" height="${Math.max(3, 220 / noteRange).toFixed(2)}" rx="2" opacity="${velocity.toFixed(2)}"></rect>`;
+
+  const visibleNotes = notes.map((note) => ({
+    note: Math.max(0, Math.min(127, Number(note.note || 60))),
+    start: Math.max(0, Number(note.start || 0)),
+    duration: Math.max(1, Number(note.duration || 1)),
+    velocity: Math.max(1, Math.min(127, Number(note.velocity || 80)))
+  }));
+  const ticksPerQuarter = Math.max(1, Number(preview.ticksPerQuarter || 480));
+  const totalTicks = Math.max(
+    ticksPerQuarter * 4,
+    Number(preview.totalTicks || 0),
+    ...visibleNotes.map((note) => note.start + note.duration)
+  );
+  const rawLow = Number.isFinite(Number(preview.lowestNote))
+    ? Number(preview.lowestNote)
+    : Math.min(...visibleNotes.map((note) => note.note));
+  const rawHigh = Number.isFinite(Number(preview.highestNote))
+    ? Number(preview.highestNote)
+    : Math.max(...visibleNotes.map((note) => note.note));
+  const bounds = midiNaturalBounds(Math.max(0, rawLow - 2), Math.min(127, rawHigh + 2));
+  const whitePitches = midiWhitePitches(bounds.low, bounds.high);
+  const whiteKeyHeight = 28;
+  const rollHeight = Math.max(280, whitePitches.length * whiteKeyHeight);
+  const headerHeight = window.matchMedia?.("(max-width: 767px)")?.matches ? 70 : 84;
+  const availableHeight = Math.max(220, (window.innerHeight || 800) - headerHeight - 2);
+  const fitScale = Math.max(.22, Math.min(1, availableHeight / rollHeight));
+  const appliedScale = Math.max(.22, Math.min(1.8, Number.isFinite(Number(zoomScale)) ? Number(zoomScale) : fitScale));
+  const scaledRollHeight = Math.max(1, rollHeight * appliedScale);
+  const quarterCount = Math.max(4, totalTicks / ticksPerQuarter);
+  const timelineWidth = Math.max(1280, Math.min(48000, Math.ceil(quarterCount * 76)));
+  const noteHeight = Math.max(8, Math.min(15, whiteKeyHeight * .48));
+
+  const whiteKeys = whitePitches.map((pitch, index) => {
+    const top = (whitePitches.length - 1 - index) * whiteKeyHeight;
+    const label = pitch % 12 === 0 ? midiNoteName(pitch) : "";
+    return `<span class="artist-store-midi-white-key" style="top:${top}px;height:${whiteKeyHeight}px">${label ? `<b>${shopEscape(label)}</b>` : ""}</span>`;
   }).join("");
-  return `<svg class="artist-store-midi-roll" viewBox="0 0 1000 240" preserveAspectRatio="none" aria-label="${shopEscape(shopT("Aperçu MIDI"))}">
-    <g class="artist-store-midi-grid">${Array.from({ length: 9 }, (_, index) => `<line x1="${index * 125}" y1="0" x2="${index * 125}" y2="240"></line>`).join("")}</g>
-    <g class="artist-store-midi-notes">${rects}</g>
-  </svg>`;
+
+  const blackKeys = [];
+  for (let pitch = bounds.low; pitch <= bounds.high; pitch += 1) {
+    if (!isMidiBlackKey(pitch)) continue;
+    const center = midiPitchY(pitch, whitePitches, whiteKeyHeight);
+    blackKeys.push(`<span class="artist-store-midi-black-key" style="top:${(center - whiteKeyHeight * .29).toFixed(2)}px;height:${(whiteKeyHeight * .58).toFixed(2)}px"></span>`);
+  }
+
+  const horizontalGrid = Array.from({ length: whitePitches.length + 1 }, (_, index) => {
+    const y = index * whiteKeyHeight;
+    return `<line x1="0" y1="${y}" x2="${timelineWidth}" y2="${y}"></line>`;
+  }).join("");
+
+  const maxBeatLines = 520;
+  const rawBeatCount = Math.max(1, Math.ceil(totalTicks / ticksPerQuarter));
+  const beatStride = Math.max(1, Math.ceil(rawBeatCount / maxBeatLines));
+  const verticalGrid = [];
+  const barLabels = [];
+  for (let beat = 0; beat <= rawBeatCount; beat += beatStride) {
+    const tick = beat * ticksPerQuarter;
+    const x = Math.min(timelineWidth, (tick / totalTicks) * timelineWidth);
+    const isBar = beat % 4 === 0;
+    verticalGrid.push(`<line class="${isBar ? "is-bar" : ""}" x1="${x.toFixed(2)}" y1="0" x2="${x.toFixed(2)}" y2="${rollHeight}"></line>`);
+    if (isBar) barLabels.push(`<text x="${Math.min(timelineWidth - 10, x + 7).toFixed(2)}" y="17">${Math.floor(beat / 4) + 1}</text>`);
+  }
+
+  const rects = visibleNotes.map((note) => {
+    const x = Math.max(0, Math.min(timelineWidth - 2, (note.start / totalTicks) * timelineWidth));
+    const width = Math.max(5, Math.min(timelineWidth - x, (note.duration / totalTicks) * timelineWidth));
+    const centerY = midiPitchY(note.note, whitePitches, whiteKeyHeight);
+    const y = Math.max(1, Math.min(rollHeight - noteHeight - 1, centerY - noteHeight / 2));
+    const opacity = Math.max(.58, Math.min(1, note.velocity / 127));
+    return `<rect class="${isMidiBlackKey(note.note) ? "is-sharp" : ""}" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${width.toFixed(2)}" height="${noteHeight.toFixed(2)}" rx="3" opacity="${opacity.toFixed(2)}"></rect>`;
+  }).join("");
+
+  return `<section class="artist-store-midi-preview-shell" role="dialog" aria-modal="true" aria-label="${shopEscape(shopT("Aperçu MIDI"))}">
+    <header class="artist-store-midi-preview-header">
+      <div>
+        <small>SONARA ARTIST · MIDI</small>
+        <strong>${shopEscape(shopT("Aperçu MIDI"))}</strong>
+      </div>
+      <span>${visibleNotes.length} ♪ · ${shopEscape(midiNoteName(rawLow))} → ${shopEscape(midiNoteName(rawHigh))}</span>
+      <div class="artist-store-midi-preview-actions">
+        <div class="artist-store-midi-zoom" role="group" aria-label="${shopEscape(shopT("Zoom de l’aperçu"))}">
+          <button type="button" data-midi-zoom-out aria-label="${shopEscape(shopT("Dézoomer"))}" title="${shopEscape(shopT("Dézoomer"))}"><i data-lucide="minus"></i></button>
+          <button type="button" class="artist-store-midi-zoom-fit" data-midi-zoom-fit data-fit-scale="${fitScale.toFixed(4)}" aria-label="${shopEscape(shopT("Adapter à l’écran"))}" title="${shopEscape(shopT("Adapter à l’écran"))}"><span data-midi-zoom-value>${Math.round(appliedScale * 100)}%</span></button>
+          <button type="button" data-midi-zoom-in aria-label="${shopEscape(shopT("Zoomer"))}" title="${shopEscape(shopT("Zoomer"))}"><i data-lucide="plus"></i></button>
+        </div>
+        <button type="button" class="artist-store-midi-preview-close" data-midi-preview-close aria-label="${shopEscape(shopT("Fermer"))}"><i data-lucide="chevron-down"></i></button>
+      </div>
+    </header>
+    <div class="artist-store-midi-scroll" data-midi-preview-scroll>
+      <div class="artist-store-midi-stage" data-midi-zoom-stage data-base-height="${rollHeight}" style="width:${timelineWidth + 96}px;height:${scaledRollHeight.toFixed(2)}px">
+        <div class="artist-store-midi-canvas" data-midi-zoom-canvas style="width:${timelineWidth + 96}px;height:${rollHeight}px;--midi-preview-zoom:${appliedScale.toFixed(4)}">
+          <div class="artist-store-midi-keyboard" style="height:${rollHeight}px">
+          ${whiteKeys}${blackKeys.join("")}
+        </div>
+        <svg class="artist-store-midi-roll" width="${timelineWidth}" height="${rollHeight}" viewBox="0 0 ${timelineWidth} ${rollHeight}" role="img" aria-label="${shopEscape(shopT("Aperçu MIDI"))}">
+          <rect class="artist-store-midi-roll-bg" x="0" y="0" width="${timelineWidth}" height="${rollHeight}"></rect>
+          <g class="artist-store-midi-grid-horizontal">${horizontalGrid}</g>
+          <g class="artist-store-midi-grid-vertical">${verticalGrid.join("")}</g>
+          <g class="artist-store-midi-bar-labels">${barLabels.join("")}</g>
+          <g class="artist-store-midi-notes">${rects}</g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>`;
 }
 
 function renderResourcePreview(resource = {}) {
   const resourceId = String(resource.id || "");
   const preview = shopResourcePreviews.get(resourceId) || resource.preview || {};
   if (shopPackType === "midi") {
-    return `<div class="artist-store-resource-preview">
-      <div class="artist-store-preview-label"><i data-lucide="scan-eye"></i><span>${shopEscape(shopT("Aperçu MIDI"))}</span></div>
-      ${renderMidiPreview(preview)}
-    </div>`;
+    const panelId = midiPreviewPanelId(resourceId);
+    return `<div class="artist-store-resource-preview is-midi" id="${shopEscape(panelId)}" data-midi-preview-panel data-midi-preview-resource-id="${shopEscape(resourceId)}" hidden aria-hidden="true"></div>`;
   }
   const daw = shopDawLabel(preview.dawName || resource.dawName || shopPackData?.dawName);
   const version = String(preview.dawVersion || resource.dawVersion || shopPackData?.dawVersion || "").trim();
@@ -244,7 +379,10 @@ function renderShopPack() {
                 <span class="artist-store-resource-number">${String(index + 1).padStart(2, "0")}</span>
                 <div class="artist-store-resource-cover">${resourceCover ? `<img src="${shopEscape(resourceCover)}" alt="">` : `<i data-lucide="${shopTypeIcon()}"></i>`}</div>
                 <div class="artist-store-resource-copy">
-                  <strong>${shopEscape(resource.title || resource.originalName || `${shopTypeLabel()} ${index + 1}`)}</strong>
+                  <div class="artist-store-resource-copy-title">
+                    <strong>${shopEscape(resource.title || resource.originalName || `${shopTypeLabel()} ${index + 1}`)}</strong>
+                    ${shopPackType === "midi" ? `<button type="button" class="artist-store-preview-toggle" data-midi-preview-toggle aria-expanded="false" aria-controls="${shopEscape(midiPreviewPanelId(resourceId))}" aria-label="${shopEscape(shopT("Aperçu MIDI"))}"><i data-lucide="eye"></i></button>` : ""}
+                  </div>
                   <small>${shopEscape(meta)}</small>
                 </div>
                 ${ownedResourceView ? `<span class="artist-store-resource-owned"><i data-lucide="circle-check"></i>${shopEscape(shopT("Déjà téléchargé"))}</span>` : `<strong class="artist-store-resource-price">${shopEscape(shopPrice(resource.price || shopPackData.price))}</strong>`}
@@ -322,12 +460,46 @@ async function loadShopResourcePreviews() {
   });
 }
 
+function shopDownloadUrl(fileUrl) {
+  const raw = String(fileUrl || "").trim();
+  if (!raw) return "";
+  if (/^(https?:|blob:|data:)/i.test(raw)) return raw;
+  return `${API_URL}${raw.startsWith("/") ? "" : "/"}${raw}`;
+}
+
+function markShopDownloadComplete(button) {
+  if (!button) return;
+  button.disabled = true;
+  button.classList.remove("is-preparing");
+  button.classList.add("is-download-complete");
+  button.removeAttribute("aria-busy");
+  button.setAttribute("aria-label", shopT("Déjà téléchargé"));
+  button.innerHTML = '<i data-lucide="circle-check-big"></i>';
+  window.lucide?.createIcons?.();
+}
+
+function startShopProtectedDownload(fileUrl) {
+  const finalUrl = shopDownloadUrl(fileUrl);
+  if (!finalUrl) throw new Error(shopT("Téléchargement impossible"));
+  const frame = document.createElement("iframe");
+  frame.hidden = true;
+  frame.setAttribute("aria-hidden", "true");
+  frame.src = finalUrl;
+  document.body.appendChild(frame);
+  window.setTimeout(() => frame.remove(), 30000);
+}
+
 async function redownloadShopContent(resourceId = null, button = null) {
   const profile = currentProfile();
   const userId = profile?.accountId || profile?.id;
   if (!userId) return;
-  const previousText = button?.textContent || "";
-  if (button) { button.disabled = true; button.textContent = shopT("Préparation…"); }
+  const previousHtml = button?.innerHTML || "";
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-preparing");
+    button.setAttribute("aria-busy", "true");
+    button.textContent = shopT("Préparation…");
+  }
   try {
     const response = await fetch(`${API_URL}/api/downloads/prepare`, {
       method: "POST",
@@ -336,10 +508,17 @@ async function redownloadShopContent(resourceId = null, button = null) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.fileUrl) throw new Error(data.message || shopT("Téléchargement impossible"));
-    window.location.href = `${API_URL}${data.fileUrl}`;
+    startShopProtectedDownload(data.fileUrl);
+    window.setTimeout(() => markShopDownloadComplete(button), 320);
   } catch (error) {
-    if (button) button.textContent = error.message || shopT("Téléchargement impossible");
-    window.setTimeout(() => { if (button) { button.disabled = false; button.textContent = previousText; } }, 1800);
+    if (button) {
+      button.classList.remove("is-preparing");
+      button.removeAttribute("aria-busy");
+      button.innerHTML = previousHtml;
+      button.disabled = false;
+      window.lucide?.createIcons?.();
+    }
+    console.error("Retéléchargement Boutique impossible :", error);
   }
 }
 
@@ -473,6 +652,109 @@ function wireShopPack() {
   document.querySelectorAll("[data-buy-resource]").forEach((button) => {
     button.addEventListener("click", () => openLicense("resource", button.dataset.buyResource));
   });
+  const closeMidiPreview = (panel, button) => {
+    if (!panel || panel.hidden || panel.classList.contains("is-closing")) return;
+    panel.classList.add("is-closing");
+    button?.setAttribute("aria-expanded", "false");
+    button?.classList.remove("is-open");
+    window.setTimeout(() => {
+      panel.hidden = true;
+      panel.classList.remove("is-closing");
+      panel.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("artist-store-midi-preview-open");
+      button?.focus({ preventScroll: true });
+    }, 240);
+  };
+
+  const bindMidiPreviewClose = (panel, button) => {
+    panel.querySelector("[data-midi-preview-close]")?.addEventListener("click", () => closeMidiPreview(panel, button), { once: true });
+  };
+
+  const bindMidiPreviewZoom = (panel) => {
+    const canvas = panel?.querySelector("[data-midi-zoom-canvas]");
+    const stage = panel?.querySelector("[data-midi-zoom-stage]");
+    const value = panel?.querySelector("[data-midi-zoom-value]");
+    const fitButton = panel?.querySelector("[data-midi-zoom-fit]");
+    if (!canvas || !stage || !value || !fitButton) return;
+
+    const baseHeight = Math.max(1, Number(stage.dataset.baseHeight || 1));
+    const fitScale = Math.max(.22, Math.min(1.8, Number(fitButton.dataset.fitScale || 1)));
+    let scale = Math.max(.22, Math.min(1.8, Number.parseFloat(canvas.style.getPropertyValue("--midi-preview-zoom")) || fitScale));
+
+    const applyZoom = (nextScale, preserveCenter = true) => {
+      const scroll = panel.querySelector("[data-midi-preview-scroll]");
+      const previousScale = scale;
+      const previousScrollTop = scroll?.scrollTop || 0;
+      const viewportCenter = previousScrollTop + ((scroll?.clientHeight || 0) / 2);
+
+      scale = Math.max(.22, Math.min(1.8, nextScale));
+      canvas.style.setProperty("--midi-preview-zoom", scale.toFixed(4));
+      stage.style.height = `${Math.max(1, baseHeight * scale).toFixed(2)}px`;
+      value.textContent = `${Math.round(scale * 100)}%`;
+
+      if (scroll && preserveCenter && previousScale > 0) {
+        const logicalCenter = viewportCenter / previousScale;
+        window.requestAnimationFrame(() => {
+          scroll.scrollTop = Math.max(0, (logicalCenter * scale) - (scroll.clientHeight / 2));
+        });
+      } else if (scroll) {
+        window.requestAnimationFrame(() => { scroll.scrollTop = 0; });
+      }
+    };
+
+    panel.querySelector("[data-midi-zoom-out]")?.addEventListener("click", () => applyZoom(scale - .12));
+    panel.querySelector("[data-midi-zoom-in]")?.addEventListener("click", () => applyZoom(scale + .12));
+    fitButton.addEventListener("click", () => applyZoom(fitScale, false));
+  };
+
+  document.querySelectorAll("[data-midi-preview-toggle]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const panelId = button.getAttribute("aria-controls");
+      const panel = panelId ? document.getElementById(panelId) : null;
+      const resourceId = String(panel?.dataset.midiPreviewResourceId || "");
+      if (!panel || !resourceId || button.dataset.previewLoading === "1") return;
+
+      let preview = shopResourcePreviews.get(resourceId) || {};
+      if (preview.fullPreview !== true) {
+        button.dataset.previewLoading = "1";
+        button.disabled = true;
+        button.innerHTML = '<i data-lucide="loader-circle"></i>';
+        button.classList.add("is-loading");
+        window.lucide?.createIcons?.();
+        try {
+          const response = await fetch(`${API_URL}/api/packs/${encodeURIComponent(shopPackData.id)}/resources/${encodeURIComponent(resourceId)}/midi-preview`, { cache: "no-store" });
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.preview && typeof data.preview === "object") {
+            preview = data.preview;
+            shopResourcePreviews.set(resourceId, preview);
+          }
+        } catch {}
+        button.dataset.previewLoading = "0";
+        button.disabled = false;
+        button.classList.remove("is-loading");
+        button.innerHTML = '<i data-lucide="eye"></i>';
+      }
+
+      panel.innerHTML = renderMidiPreview(preview);
+      panel.hidden = false;
+      panel.setAttribute("aria-hidden", "false");
+      button.setAttribute("aria-expanded", "true");
+      button.classList.add("is-open");
+      document.body.classList.add("artist-store-midi-preview-open");
+      bindMidiPreviewClose(panel, button);
+      bindMidiPreviewZoom(panel);
+      panel.querySelector("[data-midi-preview-close]")?.focus({ preventScroll: true });
+      window.lucide?.createIcons?.();
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const panel = document.querySelector("[data-midi-preview-panel]:not([hidden])");
+    if (!panel) return;
+    const button = document.querySelector(`[data-midi-preview-toggle][aria-controls="${CSS.escape(panel.id)}"]`);
+    closeMidiPreview(panel, button);
+  });
   document.querySelector("[data-license-close]")?.addEventListener("click", closeLicense);
   document.querySelector("[data-license-cancel]")?.addEventListener("click", closeLicense);
   document.querySelector("[data-license-overlay]")?.addEventListener("click", (event) => {
@@ -487,6 +769,15 @@ function wireShopPack() {
 }
 
 async function loadShopPack() {
+  const commercialState = await window.SonaraCommercial?.ready?.()
+    || window.SonaraCommercial?.getState?.()
+    || { paymentsActive: false };
+
+  if (commercialState.paymentsActive !== true) {
+    window.location.replace("/app/pages/creator/dashboard.html");
+    return;
+  }
+
   if (!shopPackId) {
     shopPackRoot.innerHTML = `<div class="artist-store-pack-error">${shopEscape(shopT("Pack introuvable."))}</div>`;
     return;

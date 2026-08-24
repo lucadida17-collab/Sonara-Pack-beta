@@ -426,7 +426,7 @@ function readMidiVariableLength(buffer, offset) {
   return { value, offset: cursor };
 }
 
-function buildMidiPreviewFromFile(filePath) {
+function buildMidiPreviewFromFile(filePath, options = {}) {
   try {
     if (!filePath || !fs.existsSync(filePath)) return null;
     const buffer = fs.readFileSync(filePath);
@@ -435,10 +435,13 @@ function buildMidiPreviewFromFile(filePath) {
     const trackCount = buffer.readUInt16BE(10);
     const divisionRaw = buffer.readUInt16BE(12);
     const ticksPerQuarter = (divisionRaw & 0x8000) === 0 ? Math.max(1, divisionRaw) : 480;
-    const previewTickLimit = ticksPerQuarter * 32;
+    const full = options.full === true;
+    const previewTickLimit = full ? Number.POSITIVE_INFINITY : ticksPerQuarter * 32;
+    const maxPreviewNotes = full ? 12000 : 96;
     const notes = [];
     let cursor = 8 + headerLength;
     let totalTicks = 0;
+    let truncated = false;
 
     for (let trackIndex = 0; trackIndex < trackCount && cursor + 8 <= buffer.length; trackIndex += 1) {
       if (buffer.toString("ascii", cursor, cursor + 4) !== "MTrk") break;
@@ -489,37 +492,77 @@ function buildMidiPreviewFromFile(filePath) {
 
         if (command === 0x90 && data2 > 0) {
           const key = `${channel}:${data1}`;
-          if (!activeNotes.has(key)) activeNotes.set(key, { start: tick, velocity: data2, note: data1 });
+          const active = activeNotes.get(key) || [];
+          active.push({ start: tick, velocity: data2, note: data1 });
+          activeNotes.set(key, active);
         } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
           const key = `${channel}:${data1}`;
-          const active = activeNotes.get(key);
-          if (active) {
-            if (active.start <= previewTickLimit && notes.length < 96) {
+          const active = activeNotes.get(key) || [];
+          const started = active.shift();
+          if (started && started.start <= previewTickLimit) {
+            if (notes.length < maxPreviewNotes) {
               notes.push({
-                note: active.note,
-                start: active.start,
-                duration: Math.max(1, tick - active.start),
-                velocity: active.velocity
+                note: started.note,
+                start: started.start,
+                duration: Math.max(1, tick - started.start),
+                velocity: started.velocity
               });
+            } else {
+              truncated = true;
             }
-            activeNotes.delete(key);
+          }
+          if (active.length) activeNotes.set(key, active);
+          else activeNotes.delete(key);
+        }
+      }
+
+      for (const active of activeNotes.values()) {
+        for (const started of active) {
+          if (started.start > previewTickLimit) continue;
+          if (notes.length < maxPreviewNotes) {
+            notes.push({
+              note: started.note,
+              start: started.start,
+              duration: Math.max(1, tick - started.start),
+              velocity: started.velocity
+            });
+          } else {
+            truncated = true;
           }
         }
       }
       cursor = trackEnd;
     }
 
-    if (!notes.length) return { kind: "midi", ticksPerQuarter, totalTicks: Math.max(totalTicks, ticksPerQuarter * 4), notes: [] };
+    const previewTotal = full
+      ? Math.max(totalTicks, ticksPerQuarter * 4)
+      : Math.max(ticksPerQuarter * 4, Math.min(previewTickLimit, totalTicks || ticksPerQuarter * 4));
+
+    if (!notes.length) {
+      return {
+        kind: "midi",
+        previewVersion: 2,
+        fullPreview: full,
+        ticksPerQuarter,
+        totalTicks: previewTotal,
+        notes: [],
+        truncated
+      };
+    }
+
     const lowestNote = Math.min(...notes.map((note) => note.note));
     const highestNote = Math.max(...notes.map((note) => note.note));
-    const visibleTotal = Math.max(ticksPerQuarter * 4, Math.min(previewTickLimit, Math.max(...notes.map((note) => note.start + note.duration))));
+    const notesTotal = Math.max(...notes.map((note) => note.start + note.duration));
     return {
       kind: "midi",
+      previewVersion: 2,
+      fullPreview: full,
       ticksPerQuarter,
-      totalTicks: visibleTotal,
+      totalTicks: full ? Math.max(previewTotal, notesTotal) : Math.max(ticksPerQuarter * 4, Math.min(previewTickLimit, notesTotal)),
       lowestNote,
       highestNote,
-      notes
+      notes,
+      truncated
     };
   } catch (error) {
     console.warn("Aperçu MIDI indisponible :", error.message);
@@ -3432,7 +3475,9 @@ async function fetchCreatorStripeSales(artistIds) {
 async function buildCreatorPackOverviewLocal(accountId, artistIds = [accountId]) {
   const packs = readJsonArray(packsPath);
   const creatorPacks = packs.filter((pack) =>
-    creatorPackBelongsTo(pack, accountId) && !isPackHiddenByModeration(pack)
+    creatorPackBelongsTo(pack, accountId) &&
+    !isPackHiddenByModeration(pack) &&
+    commercialPolicy.canAccessContentType(pack?.contentType)
   );
   const acquisitionAnalytics = buildCreatorAcquisitionAnalytics(
     readJsonArray(usersPath),
@@ -3560,6 +3605,14 @@ app.patch("/api/creator/packs/:id/license", async (req, res) => {
       });
     }
 
+    if (!commercialPolicy.canAccessContentType(pack?.contentType)) {
+      return res.status(403).json({
+        success: false,
+        code: "V1_FEATURE_LOCKED",
+        message: "Cette ressource sera disponible lors du lancement de la V1."
+      });
+    }
+
     const now = new Date().toISOString();
     const hadStoredLicense = Boolean(pack.license && typeof pack.license === "object");
     const update = buildUpdatedPackLicense(pack.license, submittedLicense, {
@@ -3657,6 +3710,14 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
     }
 
     const pack = packs[index];
+
+    if (!commercialPolicy.canAccessContentType(pack?.contentType)) {
+      return res.status(403).json({
+        success: false,
+        code: "V1_FEATURE_LOCKED",
+        message: "Cette ressource sera disponible lors du lancement de la V1."
+      });
+    }
     const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
     const now = new Date().toISOString();
     let contentChanged = false;
@@ -3889,6 +3950,14 @@ app.post("/api/creator/packs/bulk", (req, res) => {
       return res.status(403).json({ success: false, message: "Un ou plusieurs packs ne vous appartiennent pas." });
     }
 
+    if (action !== "delete" && targets.some((pack) => !commercialPolicy.canAccessContentType(pack?.contentType))) {
+      return res.status(403).json({
+        success: false,
+        code: "V1_FEATURE_LOCKED",
+        message: "Les contenus MIDI et DAW restent verrouillés jusqu’au lancement de la V1."
+      });
+    }
+
     const now = new Date().toISOString();
 
     if (action === "draft") {
@@ -4062,10 +4131,14 @@ function enrichLocalPublicCataloguePack(pack, context) {
   const publicResources = (Array.isArray(pack?.resources) ? pack.resources : []).map((resource) => {
     const { fileKey, downloadZip, originalFileHash, originalFileHashAlgorithm, originalFileHashComputedAt, ...publicResource } = resource || {};
     const contentType = String(pack?.contentType || "audio").toLowerCase();
-    if (!publicResource.preview && contentType === "midi" && fileKey) {
-      publicResource.preview = buildMidiPreviewFromFile(
+    if (contentType === "midi" && fileKey && Number(publicResource.preview?.previewVersion || 0) < 2) {
+      const rebuiltPreview = buildMidiPreviewFromFile(
         path.join(__dirname, "uploads", path.basename(String(fileKey)))
       );
+      if (rebuiltPreview) {
+        publicResource.preview = rebuiltPreview;
+        if (resource && typeof resource === "object") resource.preview = rebuiltPreview;
+      }
     } else if (!publicResource.preview && contentType === "daw") {
       publicResource.preview = buildDawResourcePreview(resource, pack);
     }
@@ -4099,6 +4172,10 @@ app.get("/api/packs", (req, res) => {
       String(pack?.status || "").toLowerCase() === "approved" &&
       !isPackHiddenByModeration(pack)
     )
+    .filter((pack) =>
+      commercialPolicy.paymentsActive ||
+      String(pack?.contentType || "audio").toLowerCase() === "audio"
+    )
     .map((pack) =>
       enrichLocalPublicCataloguePack(pack, catalogueContext)
     );
@@ -4106,6 +4183,41 @@ app.get("/api/packs", (req, res) => {
   res.json(approvedPacks);
 });
 
+
+app.get("/api/packs/:id/resources/:resourceId/midi-preview", (req, res) => {
+  if (!commercialPolicy.paymentsActive) {
+    return res.status(403).json({
+      success: false,
+      code: "V1_FEATURE_LOCKED",
+      message: "Cette fonctionnalité sera disponible lors du lancement de la V1."
+    });
+  }
+
+  try {
+    const packId = String(req.params.id || "").trim();
+    const resourceId = String(req.params.resourceId || "").trim();
+    const pack = readJsonArray(packsPath).find((item) =>
+      String(item?.id || "") === packId &&
+      String(item?.status || "").toLowerCase() === "approved" &&
+      !isPackHiddenByModeration(item)
+    );
+    if (!pack || String(pack.contentType || "").toLowerCase() !== "midi") {
+      return res.status(404).json({ success: false, message: "Pack MIDI introuvable." });
+    }
+    const resource = (Array.isArray(pack.resources) ? pack.resources : []).find((item) => String(item?.id || "") === resourceId);
+    if (!resource?.fileKey) {
+      return res.status(404).json({ success: false, message: "Fichier MIDI introuvable." });
+    }
+    const filePath = path.join(__dirname, "uploads", path.basename(String(resource.fileKey)));
+    const preview = buildMidiPreviewFromFile(filePath, { full: true });
+    if (!preview) return res.status(404).json({ success: false, message: "Aperçu MIDI indisponible." });
+    res.setHeader("Cache-Control", "private, max-age=300");
+    return res.json({ success: true, packId, resourceId, preview });
+  } catch (error) {
+    console.error("Aperçu MIDI complet Local :", error);
+    return res.status(500).json({ success: false, message: "Aperçu MIDI indisponible." });
+  }
+});
 
 app.post("/api/packs/:id/preview-analysis", async (req, res) => {
   try {
@@ -4211,6 +4323,17 @@ app.post(
 
       const receivedPack = validation.pack;
       const fileByField = validation.fileByField;
+
+      if (
+        !commercialPolicy.paymentsActive &&
+        ["midi", "daw"].includes(String(receivedPack.contentType || "audio").toLowerCase())
+      ) {
+        return res.status(403).json({
+          success: false,
+          code: "V1_FEATURE_LOCKED",
+          message: "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1."
+        });
+      }
 
       const users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
       let packArtist = null;
@@ -4473,6 +4596,17 @@ app.post("/api/free-download-access", async (req, res) => {
       });
     }
 
+    if (
+      !commercialPolicy.paymentsActive &&
+      ["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase())
+    ) {
+      return res.status(403).json({
+        success: false,
+        code: "V1_FEATURE_LOCKED",
+        message: "Cette ressource sera disponible lors du lancement de la V1."
+      });
+    }
+
     const currentLicenseMetadata = licenseMetadata(pack);
     const acceptedLicenseVersion = String(licenseVersion || "").trim();
     const acceptedLicenseId = String(licenseId || "").trim();
@@ -4727,6 +4861,17 @@ app.get("/api/downloads/file/:token", async (req, res) => {
     const receipt = inspected.receipt;
     const pack = readJsonArray(packsPath).find((item) => String(item?.id || "") === String(receipt.packId || ""));
     if (!pack) return res.status(404).json({ success: false, message: "Pack introuvable." });
+    if (
+      !commercialPolicy.paymentsActive &&
+      ["midi", "daw"].includes(String(pack.contentType || "audio").toLowerCase())
+    ) {
+      return res.status(403).json({
+        success: false,
+        code: "V1_FEATURE_LOCKED",
+        message: "Cette ressource sera disponible lors du lancement de la V1."
+      });
+    }
+
     const item = receipt.trackId
       ? (pack.tracks || []).find((track) => String(track?.id || "") === String(receipt.trackId))
       : receipt.resourceId
@@ -4998,21 +5143,24 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
           )
         : Array.isArray(buyer.downloadedPacks) && buyer.downloadedPacks.some((id) => String(id) === String(packId));
 
-    // Phase 1 Boutique : en LOCAL / TEST commercial, autoriser un nouveau passage
-    // Stripe Test même si ce contenu avait déjà été ajouté gratuitement pendant la Pre-V1.
-    // MAIN conserve son blocage anti-double achat strict.
-    if (alreadyOwned && !commercialPolicy.checkoutEnabled) {
+    if (alreadyOwned) {
+      const ownedContentType = String(pack.contentType || "audio").trim().toLowerCase();
+      const ownedInArtistPurchases = ["midi", "daw"].includes(ownedContentType);
+
       return res.status(409).json({
         success: false,
         code: "ALREADY_OWNED",
-        error: "Ce contenu est déjà dans votre bibliothèque."
+        destination: ownedInArtistPurchases ? "purchases" : "library",
+        redirectUrl: ownedInArtistPurchases
+          ? `/app/pages/creator/dashboard.html?mode=shop&library=1&shopType=${encodeURIComponent(ownedContentType)}`
+          : "/app/pages/catalog/library.html",
+        error: ownedInArtistPurchases
+          ? "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats."
+          : "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque."
       });
     }
 
-    // En LOCAL / TEST, le mode COMMERCIAL existant sert aussi à tester le parcours V1
-    // avec des packs créés pendant la PRE_V1, donc leur ancien paymentReady=false
-    // ne doit pas bloquer Stripe TEST. Le contrôle reste strict sur MAIN.
-    if (pack.paymentReady !== true && !commercialPolicy.checkoutEnabled) {
+    if (pack.paymentReady !== true) {
       return res.status(409).json({
         success: false,
         code: "PACK_PAYMENT_NOT_READY",
@@ -5073,12 +5221,11 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     console.log("Artist stripeStatus :", artist.stripeStatus);
 
     if (!artist.stripeAccountId) {
-      console.log("🔴 [STOP] Artiste Stripe non connecté");
       return res.status(400).json({
         error: "Artiste Stripe non connecté.",
-        artistId: artist.id,
+        artistId: artist.id || artist.accountId,
         pseudo: artist.pseudo,
-        stripeAccountId: artist.stripeAccountId || null,
+        stripeAccountId: null
       });
     }
 
@@ -5112,8 +5259,6 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         error: "Le compte Stripe de l’artiste n’est pas encore vérifié."
       });
     }
-
-    console.log("🟢 [6] Stripe connecté OK");
 
     let item;
     let finalPurchaseType;
@@ -5278,6 +5423,9 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
         payment_intent_data: {
           application_fee_amount: commissionCents,
+          transfer_data: {
+            destination: artist.stripeAccountId
+          },
           metadata: {
             packId: String(pack.id),
             trackId: trackId ? String(trackId) : "",
@@ -5296,9 +5444,6 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
             resourceTitleSnapshot: finalPurchaseType === "resource" ? String(item.title || item.originalName || "Ressource").slice(0, 450) : "",
             artistNameSnapshot: String(artist.username || artist.pseudo || artist.name || artist.firstname || "Artiste").slice(0, 450),
             ...licenseMetadata(pack)
-          },
-          transfer_data: {
-            destination: artist.stripeAccountId
           }
         },
 

@@ -315,6 +315,8 @@ function renderPostDownloadAssistant() {
   const platform = getPlatformContext();
   const choices = getProjectChoices();
   const itemTitle = selectedDownload?.title || selectedPack?.title || downloadTranslate("Votre fichier Sonara");
+  const contentType = String(selectedPack?.contentType || "audio").toLowerCase();
+  const supportsSonaraSync = !["midi", "daw"].includes(contentType);
 
   downloadPage.innerHTML = `
     <section class="download-after">
@@ -338,7 +340,7 @@ function renderPostDownloadAssistant() {
         <section class="download-integration-guide"></section>
 
         <div class="download-after-actions">
-          <button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>${escapeDownloadHtml(downloadTranslate("Ouvrir Sonara Sync"))}</button>
+          ${supportsSonaraSync ? `<button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>${escapeDownloadHtml(downloadTranslate("Ouvrir Sonara Sync"))}</button>` : ""}
           <button class="download-library-button" type="button">${escapeDownloadHtml(downloadTranslate("Bibliothèque"))}</button>
           <button class="download-home-button" type="button">${escapeDownloadHtml(downloadTranslate("Accueil"))}</button>
         </div>

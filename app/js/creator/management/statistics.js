@@ -90,8 +90,9 @@ function renderCreatorStatistics(data) {
         </div>
         <div class="creator-stat-pack-metric"><span>Téléchargements</span><strong>${Number(pack.downloadCount || 0)}</strong></div>
         <div class="creator-stat-pack-metric"><span>Utilisateurs</span><strong>${Number(pack.uniqueDownloaders || 0)}</strong></div>
-        <div class="creator-stat-pack-metric"><span>Ventes</span><strong>${commercialActive ? Number(pack.salesCount || 0) : "V1"}</strong></div>
-        <div class="creator-stat-pack-metric"><span>Revenus</span><strong>${commercialActive ? formatCreatorStatisticsMoney(pack.revenue || 0) : "V1"}</strong></div>
+        ${commercialActive ? `
+        <div class="creator-stat-pack-metric"><span>Ventes</span><strong>${Number(pack.salesCount || 0)}</strong></div>
+        <div class="creator-stat-pack-metric"><span>Revenus</span><strong>${formatCreatorStatisticsMoney(pack.revenue || 0)}</strong></div>` : ""}
       </article>
     `).join("");
 
@@ -120,7 +121,9 @@ function renderCreatorStatistics(data) {
     <header class="creator-statistics-header">
       <p class="creator-statistics-label">SONARA CREATOR · STATISTIQUES</p>
       <h1>Performance artiste</h1>
-      <p>Les téléchargements sont actifs dès la Pre-V1. Les ventes et revenus utilisent le système commercial déjà préparé et s’activent uniquement avec le Commercial Mode.</p>
+      <p>${commercialActive
+        ? "Suivez les téléchargements, les ventes et les revenus de vos packs."
+        : "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1."}</p>
     </header>
 
     <section class="creator-statistics-grid">
@@ -128,8 +131,9 @@ function renderCreatorStatistics(data) {
       <article class="creator-stat-card"><span>Packs téléchargés</span><strong>${Number(stats.packDownloadCount || 0)}</strong><small>Acquisitions du pack complet</small></article>
       <article class="creator-stat-card"><span>Tracks téléchargées</span><strong>${Number(stats.trackDownloadCount || 0)}</strong><small>Acquisitions individuelles</small></article>
       <article class="creator-stat-card"><span>Utilisateurs acquis</span><strong>${Number(stats.uniqueAudienceCount || 0)}</strong><small>Utilisateurs uniques touchés</small></article>
-      <article class="creator-stat-card"><span>Ventes</span><strong>${commercialActive ? Number(stats.salesCount || 0) : "V1"}</strong><small>${commercialActive ? "Paiements confirmés" : "Commercial Mode inactif"}</small></article>
-      <article class="creator-stat-card"><span>Revenus</span><strong>${commercialActive ? formatCreatorStatisticsMoney(stats.revenue || 0) : "V1"}</strong><small>${commercialActive ? "Revenus artiste Stripe" : "Préparé pour la V1"}</small></article>
+      ${commercialActive ? `
+      <article class="creator-stat-card"><span>Ventes</span><strong>${Number(stats.salesCount || 0)}</strong><small>Paiements confirmés</small></article>
+      <article class="creator-stat-card"><span>Revenus</span><strong>${formatCreatorStatisticsMoney(stats.revenue || 0)}</strong><small>Revenus artiste Stripe</small></article>` : ""}
     </section>
 
     <section class="creator-statistics-panel">
@@ -144,17 +148,16 @@ function renderCreatorStatistics(data) {
       </div>
     </section>
 
+    ${commercialActive ? `
     <section class="creator-statistics-panel">
       <div class="creator-statistics-panel-heading">
         <div>
           <h2>Commercial</h2>
-          <p>Le moteur de vente reste séparé de la Pre-V1 gratuite.</p>
+          <p>Suivi du moteur de vente Sonara.</p>
         </div>
       </div>
-      ${commercialActive
-        ? `<div class="creator-commercial-lock"><i data-lucide="badge-check"></i><span>Commercial Mode actif : les ventes et revenus Stripe sont comptabilisés.</span></div>`
-        : `<div class="creator-commercial-lock"><i data-lucide="lock-keyhole"></i><span>Commercial Mode OFF : aucun paiement réel. Le système est prêt pour la V1.</span></div>`}
-    </section>
+      <div class="creator-commercial-lock"><i data-lucide="badge-check"></i><span>Commercial Mode actif : les ventes et revenus Stripe sont comptabilisés.</span></div>
+    </section>` : ""}
 
     <section class="creator-statistics-panel">
       <div class="creator-statistics-panel-heading">

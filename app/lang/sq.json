@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "Pamje paraprake MIDI",
   "Aperçu du projet": "Pamje paraprake e projektit",
   "Aperçu indisponible": "Pamja paraprake nuk është e disponueshme",
-  "Préparation…": "Duke u përgatitur…"
+  "Préparation…": "Duke u përgatitur…",
+  "Zoom de l’aperçu": "Zmadhimi i pamjes paraprake",
+  "Dézoomer": "Zvogëlo",
+  "Adapter à l’écran": "Përshtat në ekran",
+  "Zoomer": "Zmadho",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Ky funksion do të jetë i disponueshëm me lançimin e V1.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Ky burim do të jetë i disponueshëm me lançimin e V1.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "Paketat MIDI dhe projektet DAW do të jenë të disponueshme me lançimin e V1.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Publiko këngët, produksionet, instrumentalët, sample-t dhe skedarët e tjerë audio.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "E keni blerë tashmë këtë përmbajtje. E gjeni te Blerjet e mia.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "E keni tashmë këtë përmbajtje. E gjeni te Biblioteka juaj.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Ndiqni shkarkimet, shitjet dhe të ardhurat e paketave tuaja.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Ndiqni shkarkimet dhe audiencën e paketave tuaja gjatë Pre-V1.",
+  "Suivi du moteur de vente Sonara.": "Monitorimi i motorit të shitjeve Sonara."
 }

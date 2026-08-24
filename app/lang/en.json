@@ -2730,5 +2730,18 @@
   "Aperçu MIDI": "MIDI preview",
   "Aperçu du projet": "Project preview",
   "Aperçu indisponible": "Preview unavailable",
-  "Préparation…": "Preparing…"
+  "Préparation…": "Preparing…",
+  "Zoom de l’aperçu": "Preview zoom",
+  "Dézoomer": "Zoom out",
+  "Adapter à l’écran": "Fit to screen",
+  "Zoomer": "Zoom in",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "This feature will be available when V1 launches.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "This resource will be available when V1 launches.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "MIDI packs and DAW projects will be available when V1 launches.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Publish your tracks, productions, instrumentals, samples and other audio files.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "You have already purchased this content. Find it in My purchases.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "You already have this content. Find it in your Library.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Track downloads, sales, and revenue for your packs.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Track downloads and your packs’ audience during Pre-V1.",
+  "Suivi du moteur de vente Sonara.": "Sonara sales engine tracking."
 }

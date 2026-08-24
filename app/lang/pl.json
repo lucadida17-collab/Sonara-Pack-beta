@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "Podgląd MIDI",
   "Aperçu du projet": "Podgląd projektu",
   "Aperçu indisponible": "Podgląd niedostępny",
-  "Préparation…": "Przygotowywanie…"
+  "Préparation…": "Przygotowywanie…",
+  "Zoom de l’aperçu": "Powiększenie podglądu",
+  "Dézoomer": "Oddal",
+  "Adapter à l’écran": "Dopasuj do ekranu",
+  "Zoomer": "Przybliż",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Ta funkcja będzie dostępna wraz z premierą V1.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Ten zasób będzie dostępny wraz z premierą V1.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "Paczki MIDI i projekty DAW będą dostępne wraz z premierą V1.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Publikuj swoje utwory, produkcje, instrumentale, sample i inne pliki audio.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "Ta zawartość została już przez Ciebie kupiona. Znajdziesz ją w Moje zakupy.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "Masz już tę zawartość. Znajdziesz ją w swojej Bibliotece.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Śledź pobrania, sprzedaż i przychody swoich packów.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Śledź pobrania i odbiorców swoich packów podczas Pre-V1.",
+  "Suivi du moteur de vente Sonara.": "Monitorowanie silnika sprzedaży Sonara."
 }

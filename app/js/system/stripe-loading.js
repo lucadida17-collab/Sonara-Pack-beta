@@ -18,6 +18,11 @@ const returnButton = document.getElementById("stripeReturnButton");
 
 let purchase = null;
 let requestRunning = false;
+let errorRedirectUrl = "";
+
+function stripeT(value) {
+  return window.SonaraI18n?.t?.(value) || value;
+}
 
 function setProgress(value, step, message) {
   const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
@@ -79,23 +84,45 @@ async function readResponse(response) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || data.message || "Le paiement ne peut pas être préparé.");
+    const error = new Error(data.error || data.message || "Le paiement ne peut pas être préparé.");
+    error.code = String(data.code || "");
+    error.destination = String(data.destination || "");
+    error.redirectUrl = String(data.redirectUrl || "");
+    throw error;
   }
 
   return data;
 }
 
 function showError(error) {
+  const alreadyOwned = error?.code === "ALREADY_OWNED";
+  const destination = String(error?.destination || "");
+  const translatedAlreadyOwnedMessage = destination === "purchases"
+    ? stripeT("Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.")
+    : stripeT("Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.");
   const message = error?.name === "AbortError"
-    ? "Le serveur met trop de temps à répondre. Réessaie dans un instant."
-    : error?.message || "Impossible de préparer le paiement Stripe.";
+    ? stripeT("Le serveur met trop de temps à répondre. Réessaie dans un instant.")
+    : alreadyOwned
+      ? translatedAlreadyOwnedMessage
+      : error?.message || stripeT("Impossible de préparer le paiement Stripe.");
 
-  setProgress(0, "Redirection interrompue", message);
+  errorRedirectUrl = alreadyOwned ? String(error?.redirectUrl || "") : "";
+  retryButton.hidden = alreadyOwned;
+  returnButton.textContent = alreadyOwned
+    ? (destination === "purchases" ? stripeT("Mes achats") : stripeT("Bibliothèque"))
+    : stripeT("Retour au pack");
+
+  setProgress(0, stripeT("Redirection interrompue"), message);
   errorMessage.textContent = message;
   errorBox.hidden = false;
 }
 
 function returnToPack() {
+  if (errorRedirectUrl) {
+    window.location.href = errorRedirectUrl;
+    return;
+  }
+
   const fallback = purchase?.returnUrl || `/app/pages/catalog/pack.html?id=${encodeURIComponent(purchase?.packId || "")}`;
   window.location.href = fallback;
 }
@@ -110,8 +137,11 @@ async function createCheckoutSession() {
   }
 
   requestRunning = true;
+  errorRedirectUrl = "";
   errorBox.hidden = true;
+  retryButton.hidden = false;
   retryButton.disabled = true;
+  returnButton.textContent = stripeT("Retour au pack");
 
   try {
     setProgress(12, "Commande vérifiée", "Vérification du compte acheteur et du contenu sélectionné…");

@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "Предпросмотр MIDI",
   "Aperçu du projet": "Предпросмотр проекта",
   "Aperçu indisponible": "Предпросмотр недоступен",
-  "Préparation…": "Подготовка…"
+  "Préparation…": "Подготовка…",
+  "Zoom de l’aperçu": "Масштаб предпросмотра",
+  "Dézoomer": "Уменьшить",
+  "Adapter à l’écran": "Вписать в экран",
+  "Zoomer": "Увеличить",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Эта функция станет доступна с запуском V1.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Этот ресурс станет доступен с запуском V1.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "MIDI-паки и DAW-проекты станут доступны с запуском V1.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Публикуй свои треки, продакшены, инструменталы, сэмплы и другие аудиофайлы.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "Вы уже купили этот контент. Он находится в разделе «Мои покупки».",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "Этот контент у вас уже есть. Он находится в вашей Библиотеке.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Отслеживайте скачивания, продажи и доход от ваших паков.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Отслеживайте скачивания и аудиторию ваших паков в период Pre-V1.",
+  "Suivi du moteur de vente Sonara.": "Мониторинг системы продаж Sonara."
 }

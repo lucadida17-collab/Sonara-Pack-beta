@@ -17,6 +17,22 @@ const TEMP_ROOT = path.join(os.tmpdir(), "sonara-sync-engine");
 const RESULT_ROOT = path.join(TEMP_ROOT, "results");
 const RESULT_TTL_MS = 30 * 60 * 1000;
 const MAX_SYNC_FILE_SIZE = Number(process.env.SYNC_MAX_FILE_SIZE || 20 * 1024 * 1024 * 1024);
+const SYNC_BLOCKED_RESOURCE_EXTENSIONS = new Set([
+  ".mid", ".midi",
+  ".flp", ".als", ".rpp", ".logicx", ".cpr", ".ptx", ".song"
+]);
+
+function isSonaraSyncAudioTrack(track = {}) {
+  const contentType = String(track.contentType || track.resourceType || "audio").trim().toLowerCase();
+  if (["midi", "daw"].includes(contentType)) return false;
+
+  const extension = path.extname(String(track.file?.originalname || "")).trim().toLowerCase();
+  if (SYNC_BLOCKED_RESOURCE_EXTENSIONS.has(extension)) return false;
+
+  const mimeType = String(track.file?.mimetype || "").trim().toLowerCase();
+  if (["audio/midi", "audio/x-midi", "application/x-midi"].includes(mimeType)) return false;
+  return mimeType.startsWith("audio/");
+}
 
 fs.mkdirSync(RESULT_ROOT, { recursive: true });
 
@@ -215,6 +231,14 @@ function registerSonaraSyncEngine(app) {
 
       if (!tracks.length) {
         return res.status(400).json({ success: false, message: "Aucun son Sonara à intégrer." });
+      }
+
+      if (tracks.some((track) => !isSonaraSyncAudioTrack(track))) {
+        return res.status(415).json({
+          success: false,
+          code: "SONARA_SYNC_AUDIO_ONLY",
+          message: "Sonara Sync accepte uniquement des contenus audio. Les fichiers MIDI et projets DAW restent séparés."
+        });
       }
 
       const originalAudio = await videoHasAudio(video.path);

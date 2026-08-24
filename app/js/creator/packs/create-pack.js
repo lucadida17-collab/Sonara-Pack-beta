@@ -141,6 +141,7 @@ function cloneCreatePackLicense(value) {
 }
 
 let currentStep = 0;
+let createPackV1FeaturesEnabled = false;
 let saveTimer = null;
 let isSubmitting = false;
 let objectUrls = new Set();
@@ -243,8 +244,20 @@ async function verifyStripeBeforeCreatePack() {
 
 async function init() {
   // L'accès à Create Pack est décidé depuis le dashboard Creator.
-  // Aucune redirection automatique vers bank.html ne doit se produire ici :
-  // un compte déjà vérifié doit conserver définitivement son accès.
+  // Les formats Boutique (MIDI / DAW) restent invisibles et bloqués jusqu'à la V1.
+  const commercialState = await window.SonaraCommercial?.ready?.()
+    || window.SonaraCommercial?.getState?.()
+    || { paymentsActive: false };
+  createPackV1FeaturesEnabled = commercialState.paymentsActive === true;
+
+  if (commercialState.bankRequiredForPackCreation === true) {
+    const stripeVerified = await verifyStripeBeforeCreatePack();
+    if (!stripeVerified) {
+      window.location.replace("/app/pages/creator/management/bank.html");
+      return;
+    }
+  }
+
   const params = new URLSearchParams(window.location.search);
   const forceNewPack = sessionStorage.getItem(FORCE_NEW_PACK_KEY) === "true";
 
@@ -255,7 +268,21 @@ async function init() {
     await deleteDraftSafely(draftKey);
   } else {
     const saved = await readDraft(draftKey);
-    if (saved) hydratePackData(saved);
+    const savedType = String(saved?.identity?.contentType || "audio").toLowerCase();
+    if (saved && (createPackV1FeaturesEnabled || savedType === "audio")) {
+      hydratePackData(saved);
+    }
+  }
+
+  if (!createPackV1FeaturesEnabled) {
+    // PRE_V1 = Create Pack historique : audio uniquement.
+    // Les nouveaux choix Boutique / MIDI / DAW / audience restent invisibles jusqu'à COMMERCIAL.
+    packData.identity.contentType = "audio";
+    packData.identity.primaryAudience = "both";
+    packData.identity.dawName = "";
+    packData.identity.dawVersion = "";
+    packData.identity.dawPlugins = "";
+    packData.resources = [];
   }
 
   updateDraftState("Brouillon prêt", "ready");
@@ -593,6 +620,7 @@ function renderIdentity() {
         </label>
       </div>
 
+      ${createPackV1FeaturesEnabled ? `
       <section class="visibility-v2-block" aria-labelledby="content-type-title">
         <div class="visibility-v2-heading">
           <h3 id="content-type-title">Type de contenu</h3>
@@ -625,6 +653,7 @@ function renderIdentity() {
           <small>Artistes / producteurs</small>
         </span>
       </section>`}
+      ` : ""}
 
       <div class="upload-section">
         <div class="upload-heading">
@@ -665,6 +694,7 @@ function renderIdentity() {
       }
 
       if (group === "contentType") {
+        if (!createPackV1FeaturesEnabled && ["midi", "daw"].includes(value)) return;
         const previousType = String(packData.identity.contentType || "audio");
         if (previousType === value) return;
 
@@ -1936,9 +1966,9 @@ function renderLicense() {
 
       <section class="final-summary create-license-final-summary">
         ${renderSummaryRow("Titre", packData.identity.title)}
-        ${renderSummaryRow("Type de contenu", isAudioContent() ? "Audio" : (isMidiContent() ? "MIDI" : "Projet DAW"))}
+        ${createPackV1FeaturesEnabled ? renderSummaryRow("Type de contenu", isAudioContent() ? "Audio" : (isMidiContent() ? "MIDI" : "Projet DAW")) : ""}
         ${renderSummaryRow(isAudioContent() ? "Tracks" : "Ressources", String(isAudioContent() ? packData.tracks.length : packData.resources.length))}
-        ${renderSummaryRow("Destiné principalement à", primaryAudienceLabel(packData.identity.primaryAudience))}
+        ${createPackV1FeaturesEnabled ? renderSummaryRow("Destiné principalement à", primaryAudienceLabel(packData.identity.primaryAudience)) : ""}
         ${renderSummaryRow("Prix global", packData.globalIsFree ? "Gratuit" : `${normalizePrice(packData.globalPrice).toFixed(2)} €`)}
         ${renderSummaryRow("Licence", license.name)}
       </section>
@@ -2432,7 +2462,10 @@ function validateIdentity() {
     valid = false;
   }
 
-  if (!isAudioContent()) {
+  if (!createPackV1FeaturesEnabled) {
+    packData.identity.contentType = "audio";
+    packData.identity.primaryAudience = "both";
+  } else if (!isAudioContent()) {
     packData.identity.primaryAudience = "artists";
   } else if (!["creators", "artists", "both"].includes(packData.identity.primaryAudience)) {
     showFieldError("identity-audience", "Choisis à qui ce pack est principalement destiné.");
@@ -2532,7 +2565,7 @@ function validateEverything() {
   if (
     !packData.identity.title.trim() ||
     !packData.identity.categorie ||
-    (isAudioContent() && !["creators", "artists", "both"].includes(packData.identity.primaryAudience)) ||
+    (createPackV1FeaturesEnabled && isAudioContent() && !["creators", "artists", "both"].includes(packData.identity.primaryAudience)) ||
     !packData.identity.coverFile
   ) {
     return {

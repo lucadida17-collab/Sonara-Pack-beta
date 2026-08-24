@@ -467,19 +467,7 @@ async function initBankPage() {
   const commercialState = await window.SonaraCommercial?.ready?.();
 
   if (!commercialState?.bankAccessible) {
-    bankPage.innerHTML = `
-      <section class="bank-status-card bank-pre-v1-locked">
-        <h2>Compte bancaire</h2>
-        <p>Les paiements seront disponibles lors du lancement commercial.</p>
-        <button type="button" class="back-dashboard">Retour</button>
-      </section>
-    `;
-
-    document.querySelector(".back-dashboard")?.addEventListener("click", () => {
-      window.location.href = "/app/pages/creator/dashboard.html?mode=management";
-    });
-
-    stripeIcons();
+    window.location.replace("/app/pages/creator/dashboard.html?mode=management");
     return;
   }
 

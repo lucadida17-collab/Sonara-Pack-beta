@@ -512,7 +512,13 @@ function renderMyPacksStructure() {
 
     <button class="my-pack-back" type="button">Retourner au dashboard</button>
 
-    <section class="my-pack-stats" aria-live="polite"></section>
+    <section class="my-pack-stats" aria-live="polite">
+      <article><span>Packs créés</span><strong data-my-pack-stat="packs">—</strong></article>
+      <article><span>Téléchargements</span><strong data-my-pack-stat="downloads">—</strong><small>Packs + tracks acquis</small></article>
+      <article><span>Utilisateurs</span><strong data-my-pack-stat="users">—</strong><small>Audience unique générée</small></article>
+      <article><span>Ventes</span><strong data-my-pack-stat="sales">V1</strong><small data-my-pack-stat-note="sales">Commercial Mode inactif</small></article>
+      <article><span>Revenus Stripe</span><strong data-my-pack-stat="revenue">V1</strong><small data-my-pack-stat-note="revenue">Prêt pour le lancement commercial</small></article>
+    </section>
 
     <section class="my-pack-toolbar">
       <button type="button" class="my-pack-selection-toggle" aria-expanded="false">
@@ -639,12 +645,17 @@ async function initializeMyPacks() {
 
     const commercialActive = data.commercialState?.paymentsActive === true;
 
-    statsZone.innerHTML = `
-      <article><span>Packs créés</span><strong>${data.stats?.packCount || 0}</strong></article>
-      <article><span>Téléchargements</span><strong>${data.stats?.downloadCount || 0}</strong><small>Packs + tracks acquis</small></article>
-      <article><span>Utilisateurs</span><strong>${data.stats?.uniqueAudienceCount || 0}</strong><small>Audience unique générée</small></article>
-      <article><span>Ventes</span><strong>${commercialActive ? (data.stats?.salesCount || 0) : "V1"}</strong><small>${commercialActive ? "Paiements confirmés" : "Commercial Mode inactif"}</small></article>
-      <article><span>Revenus Stripe</span><strong>${commercialActive ? (data.stats?.stripeStatsAvailable === false ? "—" : formatMyPackMoney(data.stats?.revenue || 0)) : "V1"}</strong><small>${commercialActive ? (data.stats?.stripeStatsAvailable === false ? "Synchronisation Stripe indisponible" : "Calculés depuis les paiements Stripe confirmés") : "Prêt pour le lancement commercial"}</small></article>`;
+    statsZone.querySelector('[data-my-pack-stat="packs"]').textContent = String(data.stats?.packCount || 0);
+    statsZone.querySelector('[data-my-pack-stat="downloads"]').textContent = String(data.stats?.downloadCount || 0);
+    statsZone.querySelector('[data-my-pack-stat="users"]').textContent = String(data.stats?.uniqueAudienceCount || 0);
+    statsZone.querySelector('[data-my-pack-stat="sales"]').textContent = commercialActive ? String(data.stats?.salesCount || 0) : "V1";
+    statsZone.querySelector('[data-my-pack-stat-note="sales"]').textContent = commercialActive ? "Paiements confirmés" : "Commercial Mode inactif";
+    statsZone.querySelector('[data-my-pack-stat="revenue"]').textContent = commercialActive
+      ? (data.stats?.stripeStatsAvailable === false ? "—" : formatMyPackMoney(data.stats?.revenue || 0))
+      : "V1";
+    statsZone.querySelector('[data-my-pack-stat-note="revenue"]').textContent = commercialActive
+      ? (data.stats?.stripeStatsAvailable === false ? "Synchronisation Stripe indisponible" : "Calculés depuis les paiements Stripe confirmés")
+      : "Prêt pour le lancement commercial";
 
     if (!currentPacks.length) {
       list.innerHTML = `

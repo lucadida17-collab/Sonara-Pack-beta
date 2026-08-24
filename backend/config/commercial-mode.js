@@ -5,6 +5,8 @@ const COMMERCIAL_MODES = Object.freeze({
   COMMERCIAL: "COMMERCIAL"
 });
 
+const V1_CONTENT_TYPES = Object.freeze(new Set(["midi", "daw"]));
+
 function normalizeCommercialMode(value) {
   const normalized = String(value || "").trim().toUpperCase();
   return normalized === COMMERCIAL_MODES.COMMERCIAL
@@ -29,6 +31,14 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
     bankRequiredForPackCreation: paymentsActive
   });
 
+  function isV1ContentType(contentType) {
+    return V1_CONTENT_TYPES.has(String(contentType || "audio").trim().toLowerCase());
+  }
+
+  function canAccessContentType(contentType) {
+    return state.paymentsActive || !isV1ContentType(contentType);
+  }
+
   function publicState() {
     return {
       ...state,
@@ -49,12 +59,15 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
   return Object.freeze({
     ...state,
     publicState,
-    blockStripeApi
+    blockStripeApi,
+    isV1ContentType,
+    canAccessContentType
   });
 }
 
 module.exports = {
   COMMERCIAL_MODES,
+  V1_CONTENT_TYPES,
   normalizeCommercialMode,
   createCommercialPolicy
 };

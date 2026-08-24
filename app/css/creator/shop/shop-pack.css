@@ -118,60 +118,6 @@ button { font: inherit; }
 .artist-store-license-actions button:first-child { border: 1px solid var(--shop-line); border-radius: 13px; background: var(--shop-surface); color: var(--shop-text); font-weight: 900; cursor: pointer; }
 .artist-store-pack-error { min-height: 100vh; display: grid; place-items: center; color: var(--shop-muted); }
 
-/* Tablette */
-@media (max-width: 1199px) {
-  .artist-store-pack-main { width: min(100% - 36px, 980px); padding-top: 42px; }
-  .artist-store-pack-hero { grid-template-columns: minmax(240px, 360px) 1fr; gap: 40px; }
-  .artist-store-resource { grid-template-columns: 40px 68px minmax(0,1fr) auto auto; gap: 13px; }
-  .artist-store-resource-cover { width: 68px; height: 68px; }
-}
-
-/* Mobile */
-@media (max-width: 767px) {
-  .artist-store-pack-header { min-height: 66px; padding: 10px 12px; grid-template-columns: auto 1fr auto; gap: 8px; }
-  .artist-store-pack-back span, .artist-store-pack-dashboard span { display: none; }
-  .artist-store-pack-back, .artist-store-pack-dashboard { width: 42px; height: 42px; padding: 0; justify-content: center; border: 1px solid var(--shop-line); }
-  .artist-store-pack-main { width: calc(100% - 24px); padding: 26px 0 52px; }
-  .artist-store-pack-hero { grid-template-columns: 1fr; gap: 24px; }
-  .artist-store-pack-cover { width: min(100%, 420px); justify-self: center; border-radius: 22px; }
-  .artist-store-pack-intro h1 { font-size: clamp(34px, 12vw, 52px); }
-  .artist-store-pack-buybox { max-width: none; }
-  .artist-store-pack-compatibility { grid-template-columns: 1fr; margin-top: 32px; }
-  .artist-store-pack-compatibility .is-wide { grid-column: auto; }
-  .artist-store-pack-resources { margin-top: 48px; }
-  .artist-store-resource { grid-template-columns: 58px minmax(0,1fr) auto; grid-template-areas: "cover copy price" "cover copy buy" "preview preview preview"; min-height: 96px; padding: 13px 0; gap: 8px 12px; }
-  .artist-store-resource-number { display: none; }
-  .artist-store-resource-cover { grid-area: cover; width: 58px; height: 58px; border-radius: 12px; }
-  .artist-store-resource-copy { grid-area: copy; }
-  .artist-store-resource-price { grid-area: price; min-width: 0; align-self: end; font-size: 13px; }
-  .artist-store-resource-buy { grid-area: buy; min-width: 74px; padding: 8px 11px; align-self: start; font-size: 12px; }
-  .artist-store-resource-owned { grid-area: price; min-width: 0; font-size: 0; }
-  .artist-store-resource-owned svg { width: 18px; height: 18px; }
-  .artist-store-resource-preview { grid-area: preview; grid-column: auto; margin-top: 6px; }
-  .artist-store-midi-roll { height: 76px; }
-  .artist-store-license { padding: 12px; align-items: end; }
-  .artist-store-license-card { width: 100%; max-height: 92vh; padding: 24px 18px 18px; border-radius: 22px 22px 16px 16px; }
-  .artist-store-license-header { grid-template-columns: 44px minmax(0,1fr); gap: 12px; padding-right: 36px; }
-  .artist-store-license-icon { width: 44px; height: 44px; border-radius: 13px; }
-  .artist-store-license-price { grid-column: 2; justify-self: start; font-size: 18px; }
-  .artist-store-license-grid { grid-template-columns: 1fr; }
-  .artist-store-license-actions { grid-template-columns: 1fr; }
-  .artist-store-license-actions button { min-height: 46px; }
-}
-
-/* Grand PC */
-@media (min-width: 1600px) {
-  .artist-store-pack-main { width: min(1440px, calc(100% - 80px)); }
-  .artist-store-pack-hero { grid-template-columns: 470px 1fr; }
-}
-
-/* Très grand écran */
-@media (min-width: 2000px) {
-  .artist-store-pack-main { width: min(1640px, calc(100% - 120px)); padding-top: 72px; }
-  .artist-store-pack-hero { grid-template-columns: 540px 1fr; gap: 110px; }
-  .artist-store-resource { min-height: 126px; }
-}
-
 /* Boutique artiste — aperçu non éditable + état acheté. */
 .artist-store-pack-buybox.is-owned {
   border-color: color-mix(in srgb, var(--shop-accent) 34%, var(--shop-line));
@@ -183,6 +129,45 @@ button { font: inherit; }
   vertical-align: -3px;
   margin-right: 7px;
 }
+
+.artist-store-resource-copy-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.artist-store-resource-copy-title > strong {
+  min-width: 0;
+  flex: 1;
+}
+
+.artist-store-preview-toggle {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--shop-line);
+  border-radius: 11px;
+  background: var(--shop-surface);
+  color: var(--shop-muted);
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.artist-store-preview-toggle:hover,
+.artist-store-preview-toggle.is-open {
+  border-color: color-mix(in srgb, var(--shop-accent) 35%, var(--shop-line));
+  background: var(--shop-accent);
+  color: var(--shop-on-accent);
+}
+
+.artist-store-preview-toggle:active { transform: scale(.94); }
+.artist-store-preview-toggle svg { width: 17px; height: 17px; }
+.artist-store-preview-toggle.is-loading svg { animation: artistStorePreviewSpin .8s linear infinite; }
+
+@keyframes artistStorePreviewSpin { to { transform: rotate(360deg); } }
 
 .artist-store-resource-owned {
   min-width: 118px;
@@ -206,8 +191,46 @@ button { font: inherit; }
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--shop-line);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--shop-surface);
+}
+
+.artist-store-resource-preview[hidden] { display: none; }
+
+.artist-store-resource-preview.is-midi {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #08090c;
+  color: #f7f7f4;
+  animation: artistStoreMidiPreviewIn .28s cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* Le grand aperçu MIDI ne doit exister visuellement qu'après clic sur l’œil.
+   Cette règle volontairement plus spécifique empêche le display:block du mode plein écran
+   de neutraliser l’attribut HTML hidden au chargement du pack. */
+.artist-store-resource-preview.is-midi[hidden] { display: none; }
+
+.artist-store-resource-preview.is-midi.is-closing {
+  pointer-events: none;
+  animation: artistStoreMidiPreviewOut .24s cubic-bezier(.4,0,1,1) both;
+}
+
+.artist-store-midi-preview-open { overflow: hidden; }
+
+@keyframes artistStoreMidiPreviewIn {
+  from { transform: translateY(100%); opacity: .96; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes artistStoreMidiPreviewOut {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: .96; }
 }
 
 .artist-store-preview-label {
@@ -228,42 +251,223 @@ button { font: inherit; }
   color: var(--shop-accent);
 }
 
-.artist-store-midi-roll {
+.artist-store-midi-preview-shell {
   width: 100%;
-  height: 92px;
-  display: block;
-  overflow: hidden;
-  border-radius: 10px;
-  background: var(--shop-bg);
-  color: var(--shop-text);
+  height: 100%;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 84px minmax(0, 1fr);
+  background:
+    radial-gradient(circle at 55% 0%, rgba(255,255,255,.055), transparent 34%),
+    #08090c;
 }
 
-.artist-store-midi-grid line {
-  stroke: var(--shop-line);
-  stroke-width: 1;
+.artist-store-midi-preview-header {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  background: rgba(10,11,14,.92);
+  backdrop-filter: blur(20px);
 }
+
+.artist-store-midi-preview-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.artist-store-midi-preview-header small {
+  color: rgba(255,255,255,.42);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.artist-store-midi-preview-header strong {
+  color: #fff;
+  font-size: 19px;
+  letter-spacing: -.025em;
+}
+
+.artist-store-midi-preview-header > span {
+  color: rgba(255,255,255,.58);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.artist-store-midi-preview-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.artist-store-midi-zoom {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,.055);
+}
+
+.artist-store-midi-zoom button {
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255,255,255,.78);
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.artist-store-midi-zoom button:hover { background: rgba(255,255,255,.09); color: #fff; }
+.artist-store-midi-zoom button:active { transform: scale(.94); }
+.artist-store-midi-zoom button svg { width: 15px; height: 15px; }
+.artist-store-midi-zoom .artist-store-midi-zoom-fit { min-width: 54px; padding: 0 8px; }
+.artist-store-midi-zoom-fit span { font-size: 10px; font-weight: 900; letter-spacing: .02em; }
+
+.artist-store-midi-preview-close {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 15px;
+  background: rgba(255,255,255,.06);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.artist-store-midi-preview-close:hover { background: rgba(255,255,255,.11); transform: translateY(2px); }
+.artist-store-midi-preview-close:active { transform: translateY(4px) scale(.96); }
+.artist-store-midi-preview-close svg { width: 23px; height: 23px; }
+
+.artist-store-midi-scroll {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.3) rgba(255,255,255,.05);
+  background: #0c0d11;
+}
+
+.artist-store-midi-scroll::-webkit-scrollbar { width: 11px; height: 11px; }
+.artist-store-midi-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,.04); }
+.artist-store-midi-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border: 3px solid #0c0d11; border-radius: 999px; }
+
+.artist-store-midi-stage {
+  position: relative;
+  min-width: max-content;
+  overflow: visible;
+}
+
+.artist-store-midi-canvas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px auto;
+  align-items: start;
+  min-width: max-content;
+  background: #0d0e12;
+  transform-origin: top left;
+  transform: scaleY(var(--midi-preview-zoom, 1));
+}
+
+.artist-store-midi-keyboard {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  width: 96px;
+  overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,.16);
+  background: #d9d9d6;
+  box-shadow: 9px 0 20px rgba(0,0,0,.26);
+}
+
+.artist-store-midi-white-key,
+.artist-store-midi-black-key {
+  position: absolute;
+  left: 0;
+  display: block;
+}
+
+.artist-store-midi-white-key {
+  width: 100%;
+  border-bottom: 1px solid #b8b8b4;
+  background: linear-gradient(90deg, #f7f7f4 0%, #eeeeea 78%, #dcdcd8 100%);
+  color: #66676d;
+}
+
+.artist-store-midi-white-key b {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  font-weight: 850;
+  pointer-events: none;
+}
+
+.artist-store-midi-black-key {
+  z-index: 3;
+  width: 61%;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(90deg, #101115 0%, #202126 72%, #090a0c 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,.75), inset -1px 0 rgba(255,255,255,.08);
+  pointer-events: none;
+}
+
+.artist-store-midi-roll {
+  width: auto;
+  max-width: none;
+  display: block;
+  overflow: visible;
+  background: #0e0f13;
+}
+
+.artist-store-midi-roll-bg { fill: #0e0f13; }
+.artist-store-midi-grid-horizontal line { stroke: rgba(255,255,255,.055); stroke-width: 1; }
+.artist-store-midi-grid-vertical line { stroke: rgba(255,255,255,.05); stroke-width: 1; }
+.artist-store-midi-grid-vertical line.is-bar { stroke: rgba(255,255,255,.14); }
+.artist-store-midi-bar-labels text { fill: rgba(255,255,255,.28); font-size: 10px; font-weight: 800; font-family: Inter, system-ui, sans-serif; }
 
 .artist-store-midi-notes rect {
-  fill: currentColor;
+  fill: #f3f3ef;
+  stroke: rgba(255,255,255,.28);
+  stroke-width: .8;
+}
+
+.artist-store-midi-notes rect.is-sharp {
+  fill: #aeb0b8;
+  stroke: rgba(255,255,255,.18);
 }
 
 .artist-store-preview-empty {
-  min-height: 78px;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 10px;
-  background: var(--shop-bg);
-  color: var(--shop-muted);
+  background: #0c0d11;
+  color: rgba(255,255,255,.6);
   font-size: 12px;
   font-weight: 750;
 }
 
-.artist-store-preview-empty svg {
-  width: 18px;
-  height: 18px;
-}
+.artist-store-preview-empty svg { width: 18px; height: 18px; }
 
 .artist-store-daw-preview {
   min-height: 92px;
@@ -300,5 +504,102 @@ button { font: inherit; }
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.artist-store-pack-buybox button.is-download-complete,
+.artist-store-resource-buy.is-download-complete {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #16a765;
+  color: #ffffff;
+  cursor: default;
+  box-shadow: 0 8px 22px rgba(22,167,101,.2);
+}
+
+.artist-store-resource-buy.is-download-complete {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+}
+
+.artist-store-pack-buybox button.is-download-complete svg,
+.artist-store-resource-buy.is-download-complete svg {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.artist-store-pack-buybox button.is-preparing,
+.artist-store-resource-buy.is-preparing {
+  opacity: .72;
+  cursor: progress;
+}
+
+/* Tablette */
+@media (max-width: 1199px) {
+  .artist-store-pack-main { width: min(100% - 36px, 980px); padding-top: 42px; }
+  .artist-store-pack-hero { grid-template-columns: minmax(240px, 360px) 1fr; gap: 40px; }
+  .artist-store-resource { grid-template-columns: 40px 68px minmax(0,1fr) auto auto; gap: 13px; }
+  .artist-store-resource-cover { width: 68px; height: 68px; }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .artist-store-pack-header { min-height: 66px; padding: 10px 12px; grid-template-columns: auto 1fr auto; gap: 8px; }
+  .artist-store-pack-back span, .artist-store-pack-dashboard span { display: none; }
+  .artist-store-pack-back, .artist-store-pack-dashboard { width: 42px; height: 42px; padding: 0; justify-content: center; border: 1px solid var(--shop-line); }
+  .artist-store-pack-main { width: calc(100% - 24px); padding: 26px 0 52px; }
+  .artist-store-pack-hero { grid-template-columns: 1fr; gap: 24px; }
+  .artist-store-pack-cover { width: min(100%, 420px); justify-self: center; border-radius: 22px; }
+  .artist-store-pack-intro h1 { font-size: clamp(34px, 12vw, 52px); }
+  .artist-store-pack-buybox { max-width: none; }
+  .artist-store-pack-compatibility { grid-template-columns: 1fr; margin-top: 32px; }
+  .artist-store-pack-compatibility .is-wide { grid-column: auto; }
+  .artist-store-pack-resources { margin-top: 48px; }
+  .artist-store-resource { grid-template-columns: 58px minmax(0,1fr) auto; grid-template-areas: "cover copy price" "cover copy buy" "preview preview preview"; min-height: 96px; padding: 13px 0; gap: 8px 12px; }
+  .artist-store-resource-number { display: none; }
+  .artist-store-resource-cover { grid-area: cover; width: 58px; height: 58px; border-radius: 12px; }
+  .artist-store-resource-copy { grid-area: copy; }
+  .artist-store-resource-price { grid-area: price; min-width: 0; align-self: end; font-size: 13px; }
+  .artist-store-resource-buy { grid-area: buy; min-width: 74px; padding: 8px 11px; align-self: start; font-size: 12px; }
+  .artist-store-resource-owned { grid-area: price; min-width: 0; font-size: 0; }
+  .artist-store-resource-owned svg { width: 18px; height: 18px; }
+  .artist-store-resource-preview.is-daw { grid-area: preview; grid-column: auto; margin-top: 6px; }
+  .artist-store-midi-preview-header { min-height: 70px; padding: 0 12px; grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
+  .artist-store-midi-preview-header > span { display: none; }
+  .artist-store-midi-preview-actions { gap: 6px; }
+  .artist-store-midi-zoom { height: 38px; border-radius: 12px; }
+  .artist-store-midi-zoom button { min-width: 30px; height: 30px; border-radius: 9px; }
+  .artist-store-midi-zoom .artist-store-midi-zoom-fit { min-width: 46px; padding: 0 5px; }
+  .artist-store-midi-preview-close { width: 44px; height: 44px; border-radius: 13px; }
+  .artist-store-midi-preview-shell { grid-template-rows: 70px minmax(0,1fr); }
+  .artist-store-midi-canvas { grid-template-columns: 78px auto; }
+  .artist-store-midi-keyboard { width: 78px; }
+  .artist-store-license { padding: 12px; align-items: end; }
+  .artist-store-license-card { width: 100%; max-height: 92vh; padding: 24px 18px 18px; border-radius: 22px 22px 16px 16px; }
+  .artist-store-license-header { grid-template-columns: 44px minmax(0,1fr); gap: 12px; padding-right: 36px; }
+  .artist-store-license-icon { width: 44px; height: 44px; border-radius: 13px; }
+  .artist-store-license-price { grid-column: 2; justify-self: start; font-size: 18px; }
+  .artist-store-license-grid { grid-template-columns: 1fr; }
+  .artist-store-license-actions { grid-template-columns: 1fr; }
+  .artist-store-license-actions button { min-height: 46px; }
+}
+
+/* Grand PC */
+@media (min-width: 1600px) {
+  .artist-store-pack-main { width: min(1440px, calc(100% - 80px)); }
+  .artist-store-pack-hero { grid-template-columns: 470px 1fr; }
+}
+
+/* Très grand écran */
+@media (min-width: 2000px) {
+  .artist-store-pack-main { width: min(1640px, calc(100% - 120px)); padding-top: 72px; }
+  .artist-store-pack-hero { grid-template-columns: 540px 1fr; gap: 110px; }
+  .artist-store-resource { min-height: 126px; }
 }
 

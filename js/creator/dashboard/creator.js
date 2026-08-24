@@ -1,8 +1,8 @@
 const creatorPage = document.querySelector(".creator-page");
 const creatorParams = new URLSearchParams(window.location.search);
 const creatorShopMode = ["shop", "purchases"].includes(creatorParams.get("mode"));
+if (creatorShopMode) document.body.classList.add("creator-shop-mode");
 const initialCreatorPreV1 = window.SonaraCommercial?.getState?.().mode === "PRE_V1";
-const initialCreatorV1Features = window.SonaraCommercial?.getState?.().paymentsActive === true;
 
 creatorPage.innerHTML = `
   <section class="creator-header">
@@ -55,6 +55,15 @@ creatorPage.innerHTML = `
 
     </button>
 
+    <button class="creator-action creator-purchases" type="button">
+      <span class="creator-action-icon">
+        <i data-lucide="shopping-bag"></i>
+      </span>
+      <span class="creator-action-copy">
+        <strong>Boutique</strong>
+        <small>Découvrir MIDI, projets DAW et ressources pour créer</small>
+      </span>
+    </button>
   </section>
 
   <section class="creator-missions" aria-labelledby="creator-missions-title">
@@ -153,14 +162,6 @@ mountCreatorHeaderManagementButton();
 
 const profile = JSON.parse(localStorage.getItem("sonaraProfile"));
 
-function getCurrentCreatorProfile() {
-  try {
-    return JSON.parse(localStorage.getItem("sonaraProfile") || "null") || profile || {};
-  } catch {
-    return profile || {};
-  }
-}
-
 if (!profile) {
   window.location.href = "/app/pages/auth/inscription.html";
 }
@@ -183,6 +184,7 @@ if (profile.status === "rejected") {
 
 const createPackBtn = document.querySelector(".crée-un-pack");
 const creatorAccountKey = profile.accountId || profile.id || "unknown";
+const creatorStripeUnlockedKey = `sonaraCreatorStripeUnlocked:${creatorAccountKey}`;
 const creatorStripeAnimationKey = `sonaraCreatorStripeAnimationV5355:${creatorAccountKey}`;
 let creatorCanCreatePack = false;
 let creatorStripeVerificationPromise = null;
@@ -191,8 +193,12 @@ function isCreatorPreV1() {
   return window.SonaraCommercial?.getState?.().mode === "PRE_V1";
 }
 
+function isCreatorLocalTesting() {
+  return window.SonaraCommercial?.getState?.().environment === "local";
+}
+
 function canOpenCreatePackWithoutStripe() {
-  return isCreatorPreV1();
+  return isCreatorPreV1() || isCreatorLocalTesting();
 }
 
 function enableCreatePackForPreV1() {
@@ -214,6 +220,27 @@ function hasVerifiedStripeAccess(data = {}) {
     data.stripeVerified === true ||
     isStripeVerifiedState(data.stripeStatus) ||
     (data.chargesEnabled === true && data.payoutsEnabled === true)
+  );
+}
+
+function hasPermanentStripeUnlock() {
+  return localStorage.getItem(creatorStripeUnlockedKey) === "true";
+}
+
+function getCurrentCreatorProfile() {
+  try {
+    return JSON.parse(localStorage.getItem("sonaraProfile") || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function hasLocalVerifiedStripeAccess() {
+  const currentProfile = getCurrentCreatorProfile();
+  return (
+    hasPermanentStripeUnlock() ||
+    hasVerifiedStripeAccess(profile) ||
+    hasVerifiedStripeAccess(currentProfile)
   );
 }
 
@@ -261,6 +288,8 @@ async function refreshCreatorProfileFromServer() {
 }
 
 function persistPermanentStripeUnlock(data = {}) {
+  localStorage.setItem(creatorStripeUnlockedKey, "true");
+
   const currentProfile = JSON.parse(
     localStorage.getItem("sonaraProfile") || "{}"
   );
@@ -384,6 +413,11 @@ function removeCreatePackLockPermanently({ animate = false } = {}) {
 }
 
 function keepCreatePackLocked() {
+  if (hasPermanentStripeUnlock()) {
+    removeCreatePackLockPermanently();
+    return;
+  }
+
   creatorCanCreatePack = false;
   createPackBtn.classList.add("is-locked");
   createPackBtn.setAttribute("aria-disabled", "true");
@@ -402,12 +436,39 @@ async function verifyCreatorStripeAccess() {
   }
 
   creatorStripeVerificationPromise = (async () => {
+    if (hasLocalVerifiedStripeAccess()) {
+      const currentProfile = getCurrentCreatorProfile();
+      persistPermanentStripeUnlock(currentProfile);
+
+      const animationAlreadyPlayed =
+        localStorage.getItem(creatorStripeAnimationKey) === "true";
+
+      removeCreatePackLockPermanently({
+        animate: !animationAlreadyPlayed
+      });
+
+      return true;
+    }
+
     let latestProfile = getCurrentCreatorProfile();
 
     try {
       latestProfile = await refreshCreatorProfileFromServer();
     } catch (error) {
       console.warn("Actualisation du profil Creator impossible :", error);
+    }
+
+    if (hasVerifiedStripeAccess(latestProfile)) {
+      persistPermanentStripeUnlock(latestProfile);
+
+      const animationAlreadyPlayed =
+        localStorage.getItem(creatorStripeAnimationKey) === "true";
+
+      removeCreatePackLockPermanently({
+        animate: !animationAlreadyPlayed
+      });
+
+      return true;
     }
 
     const identifiers = [
@@ -461,8 +522,12 @@ async function verifyCreatorStripeAccess() {
       console.warn("Vérification Stripe Creator impossible :", error);
     }
 
-    // En V1, une erreur réseau ne doit jamais transformer un ancien cache local
-    // en autorisation Stripe. Le serveur reste la source de vérité.
+    // Un accès déjà validé n'est jamais révoqué par une erreur réseau.
+    if (hasLocalVerifiedStripeAccess()) {
+      removeCreatePackLockPermanently();
+      return true;
+    }
+
     keepCreatePackLocked();
     return false;
   })();
@@ -483,9 +548,9 @@ createPackBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Pendant cette session, creatorCanCreatePack n'est activé qu'après
-  // une vérification Stripe serveur réussie.
-  if (creatorCanCreatePack) {
+  // Dès qu'un compte a déjà été validé, le clic mène définitivement à Create Pack.
+  if (creatorCanCreatePack || hasLocalVerifiedStripeAccess()) {
+    removeCreatePackLockPermanently();
     window.location.href = "/app/pages/creator/packs/create-pack.html";
     return;
   }
@@ -522,58 +587,7 @@ verifyCreatorStripeAccess();
 const creatorPackCountElement = document.querySelector("#creator-pack-count");
 const creatorRevenueElement = document.querySelector("#creator-revenue");
 const mesPacksButton = document.querySelector(".mes-pack");
-let creatorPurchasesButton = null;
-
-function mountCreatorBoutiqueButton() {
-  if (creatorPurchasesButton?.isConnected) return creatorPurchasesButton;
-  const actions = document.querySelector(".creator-actions");
-  if (!actions || actions.querySelector(".creator-purchases")) {
-    creatorPurchasesButton = actions?.querySelector(".creator-purchases") || null;
-    return creatorPurchasesButton;
-  }
-
-  const button = document.createElement("button");
-  button.className = "creator-action creator-purchases";
-  button.type = "button";
-  button.innerHTML = `
-    <span class="creator-action-icon"><i data-lucide="shopping-bag"></i></span>
-    <span class="creator-action-copy">
-      <strong>Boutique</strong>
-      <small>Découvrir MIDI, projets DAW et ressources pour créer</small>
-    </span>`;
-  actions.appendChild(button);
-  creatorPurchasesButton = button;
-  if (window.lucide) lucide.createIcons();
-  requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
-  return button;
-}
-
-async function syncCreatorV1FeatureVisibility() {
-  const state = await window.SonaraCommercial?.ready?.()
-    || window.SonaraCommercial?.getState?.()
-    || { mode: "PRE_V1", paymentsActive: false };
-  const enabled = state.mode === "COMMERCIAL" && state.paymentsActive === true;
-
-  if (!enabled) {
-    document.querySelector(".creator-purchases")?.remove();
-    creatorPurchasesButton = null;
-    return false;
-  }
-
-  const button = mountCreatorBoutiqueButton();
-  if (button && !button.dataset.bound) {
-    button.dataset.bound = "true";
-    button.addEventListener("click", async () => {
-      if (!(await syncCreatorV1FeatureVisibility())) return;
-      const url = new URL(window.location.href);
-      url.searchParams.set("mode", "shop");
-      window.location.href = url.href;
-    });
-  }
-  return true;
-}
-
-syncCreatorV1FeatureVisibility();
+const creatorPurchasesButton = document.querySelector(".creator-purchases");
 
 function getCreatorAccountId() {
   const current = getCurrentCreatorProfile();
@@ -650,33 +664,16 @@ function renderCreatorMissionCard(mission = {}) {
   `;
 }
 
-async function refreshCreatorMissions(attempt = 0) {
+async function refreshCreatorMissions() {
   const missionsList = document.querySelector("#creator-missions-list");
-  if (!missionsList) return;
-
   const accountId = getCreatorAccountId();
-  if (!accountId) {
-    if (attempt < 8) {
-      window.setTimeout(() => refreshCreatorMissions(attempt + 1), 250);
-      return;
-    }
-    missionsList.innerHTML = `<div class="creator-mission-empty">Missions indisponibles.</div>`;
-    return;
-  }
+  if (!missionsList || !accountId) return;
 
   try {
     const apiUrl = await waitForApiUrl();
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-    let response;
-    try {
-      response = await fetch(
-        `${apiUrl}/api/creator/missions/${encodeURIComponent(accountId)}`,
-        { cache: "no-store", signal: controller.signal }
-      );
-    } finally {
-      window.clearTimeout(timeoutId);
-    }
+    const response = await fetch(
+      `${apiUrl}/api/creator/missions/${encodeURIComponent(accountId)}`
+    );
     const data = await readCreatorJson(response);
 
     if (!response.ok) {
@@ -684,17 +681,13 @@ async function refreshCreatorMissions(attempt = 0) {
     }
 
     const missions = Array.isArray(data.missions) ? data.missions : [];
+
+    // Pendant PRE_V1_MANUAL, le serveur est la source de vérité et doit fournir exactement 2 missions.
     missionsList.innerHTML = missions.length
       ? missions.map(renderCreatorMissionCard).join("")
       : `<div class="creator-mission-empty">Aucune mission disponible.</div>`;
-    if (window.lucide) lucide.createIcons();
   } catch (error) {
     console.warn("Missions Creator indisponibles :", error);
-    if (attempt < 1) {
-      missionsList.innerHTML = `<div class="creator-mission-loading">Chargement…</div>`;
-      window.setTimeout(() => refreshCreatorMissions(attempt + 1), 600);
-      return;
-    }
     missionsList.innerHTML = `<div class="creator-mission-empty">Missions indisponibles.</div>`;
   }
 }
@@ -728,6 +721,12 @@ async function refreshCreatorDashboardStats() {
 
 mesPacksButton?.addEventListener("click", () => {
   window.location.href = "/app/pages/creator/packs/my-pack.html";
+});
+
+creatorPurchasesButton?.addEventListener("click", () => {
+  const url = new URL(window.location.href);
+  url.searchParams.set("mode", "shop");
+  window.location.href = url.href;
 });
 
 const requestedCreatorShopFilter = creatorParams.get("shopType");
@@ -843,12 +842,6 @@ function setCreatorShopTheme(type) {
 }
 
 async function renderCreatorShop() {
-  if (!(await syncCreatorV1FeatureVisibility())) {
-    window.location.replace("/app/pages/creator/dashboard.html");
-    return;
-  }
-
-  document.body.classList.add("creator-shop-mode");
   const intro = creatorShopIntro(creatorShopFilter);
   setCreatorShopTheme(creatorShopFilter);
   creatorPage.innerHTML = `

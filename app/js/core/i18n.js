@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-23-artist-shop-owned-preview-v1";
+    "2026-08-24-phase2-commercial-lock-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;

@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "MIDI önizlemesi",
   "Aperçu du projet": "Proje önizlemesi",
   "Aperçu indisponible": "Önizleme kullanılamıyor",
-  "Préparation…": "Hazırlanıyor…"
+  "Préparation…": "Hazırlanıyor…",
+  "Zoom de l’aperçu": "Önizleme yakınlaştırması",
+  "Dézoomer": "Uzaklaştır",
+  "Adapter à l’écran": "Ekrana sığdır",
+  "Zoomer": "Yakınlaştır",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Bu özellik V1 yayınlandığında kullanılabilir olacak.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Bu kaynak V1 yayınlandığında kullanılabilir olacak.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "MIDI paketleri ve DAW projeleri V1 yayınlandığında kullanılabilir olacak.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Parçalarını, prodüksiyonlarını, enstrümantallerini, sample’larını ve diğer ses dosyalarını yayınla.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "Bu içeriği zaten satın aldınız. Satın aldıklarım bölümünde bulabilirsiniz.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "Bu içerik zaten sizde. Kütüphanenizde bulabilirsiniz.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Paketlerinizin indirmelerini, satışlarını ve gelirlerini takip edin.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Pre-V1 sırasında paketlerinizin indirmelerini ve kitlesini takip edin.",
+  "Suivi du moteur de vente Sonara.": "Sonara satış motoru takibi."
 }

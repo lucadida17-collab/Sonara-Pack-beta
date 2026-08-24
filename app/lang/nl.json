@@ -2691,5 +2691,18 @@
   "Aperçu MIDI": "MIDI-voorbeeld",
   "Aperçu du projet": "Projectvoorbeeld",
   "Aperçu indisponible": "Voorbeeld niet beschikbaar",
-  "Préparation…": "Voorbereiden…"
+  "Préparation…": "Voorbereiden…",
+  "Zoom de l’aperçu": "Voorbeeldzoom",
+  "Dézoomer": "Uitzoomen",
+  "Adapter à l’écran": "Aan scherm aanpassen",
+  "Zoomer": "Inzoomen",
+  "Cette fonctionnalité sera disponible lors du lancement de la V1.": "Deze functie wordt beschikbaar bij de lancering van V1.",
+  "Cette ressource sera disponible lors du lancement de la V1.": "Deze resource wordt beschikbaar bij de lancering van V1.",
+  "Les packs MIDI et projets DAW seront disponibles lors du lancement de la V1.": "MIDI-packs en DAW-projecten worden beschikbaar bij de lancering van V1.",
+  "Publie tes morceaux, prods, instrumentales, samples et autres fichiers audio.": "Publiceer je tracks, producties, instrumentals, samples en andere audiobestanden.",
+  "Vous avez déjà acheté ce contenu. Retrouvez-le dans Mes achats.": "Je hebt deze content al gekocht. Je vindt deze bij Mijn aankopen.",
+  "Vous avez déjà obtenu ce contenu. Retrouvez-le dans votre Bibliothèque.": "Je hebt deze content al. Je vindt deze in je Bibliotheek.",
+  "Suivez les téléchargements, les ventes et les revenus de vos packs.": "Volg de downloads, verkopen en inkomsten van je packs.",
+  "Suivez les téléchargements et l’audience de vos packs pendant la Pre-V1.": "Volg tijdens Pre-V1 de downloads en het publiek van je packs.",
+  "Suivi du moteur de vente Sonara.": "Monitoring van de Sonara-verkoopengine."
 }
