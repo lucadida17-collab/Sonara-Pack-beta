@@ -1,3 +1,7 @@
+# SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
+/robots.txt             /.netlify/functions/seo-robots   200
+/sitemap.xml            /.netlify/functions/seo-sitemap 200
+
 # SONARA — fichiers serveur / secrets jamais publiables par Netlify
 /.env                 /index.html 404!
 /.env.local           /index.html 404!

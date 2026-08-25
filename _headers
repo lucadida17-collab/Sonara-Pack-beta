@@ -14,3 +14,23 @@
 
 /app/js/core/config.js
   Cache-Control: no-store, max-age=0
+
+# SONARA SEO — pages privées / compte jamais indexables
+/app/pages/creator/*
+  X-Robots-Tag: noindex, nofollow
+/app/pages/account/*
+  X-Robots-Tag: noindex, nofollow
+/app/pages/auth/*
+  X-Robots-Tag: noindex, nofollow
+/app/pages/user/*
+  X-Robots-Tag: noindex, nofollow
+/app/pages/system/*
+  X-Robots-Tag: noindex, nofollow
+/app/pages/catalog/library.html
+  X-Robots-Tag: noindex, nofollow
+/app/pages/catalog/download.html
+  X-Robots-Tag: noindex, nofollow
+/app/pages/catalog/montage.html
+  X-Robots-Tag: noindex, nofollow
+/app/pages/catalog/sync-saves.html
+  X-Robots-Tag: noindex, nofollow

@@ -535,6 +535,20 @@ const trackId = params.get("trackId");
 
 let packData = null;
 
+
+function updatePackSeo(pack = {}) {
+  if (!pack?.id) return;
+  const title = String(pack.title || 'Pack').trim();
+  const artist = String(pack.artistProfile?.name || pack.artist || 'Artiste Sonara').trim();
+  document.title = `${title} - ${artist} | Sonara Pack`;
+  const description = `Découvrez ${title} par ${artist} sur Sonara Pack.`.slice(0, 160);
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.content = description;
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+  canonical.href = `https://sonarapack.com/app/pages/catalog/pack.html?id=${encodeURIComponent(String(pack.id))}`;
+}
+
 async function loadPack() {
 
   const controller = new AbortController();
@@ -569,6 +583,7 @@ async function loadPack() {
     throw new Error("Pack introuvable.");
   }
 
+  updatePackSeo(packData);
   renderPack();
   return packData;
 

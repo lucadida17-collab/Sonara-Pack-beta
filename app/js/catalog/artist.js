@@ -10,6 +10,18 @@ const ARTIST_PUBLIC_MIN_LOADING_MS = 6000;
 const ARTIST_PUBLIC_REQUEST_TIMEOUT = 60000;
 const artistPublicLoadingStartedAt = Date.now();
 
+
+function updateArtistSeo(profile = {}) {
+  if (!profile?.name || !requestedArtistId) return;
+  document.title = `${profile.name} | Sonara Pack`;
+  const description = String(profile.biography || `Découvrez ${profile.name} et ses packs publics sur Sonara Pack.`).trim().slice(0, 160);
+  let meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.content = description;
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+  canonical.href = `https://sonarapack.com/app/pages/catalog/artist.html?id=${encodeURIComponent(requestedArtistId)}`;
+}
+
 function artistSafeNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -629,6 +641,7 @@ async function loadPublicArtist() {
     }
 
     publicArtist = getPackArtist(artistPacks[0]);
+    updateArtistSeo(publicArtist);
 
     await window.SonaraLoadingExperience?.waitMinimum?.(artistPublicLoadingStartedAt, ARTIST_PUBLIC_MIN_LOADING_MS);
     renderArtistPage();
