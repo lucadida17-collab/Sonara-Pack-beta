@@ -715,7 +715,9 @@ async function verifySonaraSession(options = {}) {
   } catch (error) {
     console.error("Impossible de vérifier la session :", error);
 
-    if (mode === "required") {
+    const entryLoaderOwnsServerError = /^\/(?:index\.html)?$/.test(window.location.pathname);
+
+    if (mode === "required" && !entryLoaderOwnsServerError) {
       showSonaraAuthServerError();
     }
 
