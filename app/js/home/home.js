@@ -338,50 +338,16 @@ async function loadHome() {
     ? distribution.items
     : [];
 
-  const artistSections = Array.isArray(
+  homeSections = Array.isArray(
     distribution?.sections
   )
     ? distribution.sections.filter(
         (section) =>
           section &&
-          section.kind === "artists" &&
           Array.isArray(section.items) &&
           section.items.length > 0
       )
     : [];
-
-  const multiTrackPacks = packs.filter(
-    (pack) => getHomePackTrackCount(pack) >= 2
-  );
-
-  const singlePacks = packs.filter(
-    (pack) => getHomePackTrackCount(pack) === 1
-  );
-
-  const formatSections = [];
-
-  if (multiTrackPacks.length) {
-    formatSections.push({
-      id: "format:albums",
-      kind: "albums",
-      title: "Packs / Albums",
-      items: multiTrackPacks
-    });
-  }
-
-  if (singlePacks.length) {
-    formatSections.push({
-      id: "format:singles",
-      kind: "singles",
-      title: "Singles",
-      items: singlePacks
-    });
-  }
-
-  homeSections = [
-    ...formatSections,
-    ...artistSections
-  ];
 
   if (!homeSections.length && packs.length) {
     homeSections = [{
@@ -585,24 +551,6 @@ function createArtistAvatar(
   return wrapper;
 }
 
-
-function getHomePackTrackCount(pack = {}) {
-  const directCount = Number(
-    pack?.distribution?.trackCount ??
-    pack?.trackCount ??
-    pack?.tracksCount ??
-    pack?.numberOfTracks
-  );
-
-  if (Number.isFinite(directCount) && directCount >= 0) {
-    return Math.floor(directCount);
-  }
-
-  return Array.isArray(pack?.tracks)
-    ? pack.tracks.length
-    : 0;
-}
-
 function createPackCard(pack = {}) {
   const destination =
     getPackDestination(pack);
@@ -770,27 +718,6 @@ function createPackCard(pack = {}) {
     title,
     artistMeta
   );
-
-  const trackCount =
-    getHomePackTrackCount(pack);
-
-  if (trackCount >= 2) {
-    const trackBadge =
-      document.createElement("span");
-
-    trackBadge.className =
-      "home-track-count-badge";
-    trackBadge.setAttribute(
-      "aria-label",
-      `${trackCount} tracks`
-    );
-    trackBadge.innerHTML = `
-      <i data-lucide="list-music" aria-hidden="true"></i>
-      <span>${trackCount}</span>
-    `;
-
-    cover.appendChild(trackBadge);
-  }
 
   card.append(
     cover,
