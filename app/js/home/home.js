@@ -938,11 +938,11 @@ function createPackCard(pack = {}) {
 
   if (pack.isAutoPlaylist === true) {
     artistMeta = document.createElement("div");
-    artistMeta.className = "home-artist-meta home-playlist-meta";
+    artistMeta.className = "home-artist-meta";
 
     const trackCount = Math.max(0, getHomeTrackCount(pack));
     const count = document.createElement("span");
-    count.className = "home-playlist-track-count";
+    count.className = "artist";
     count.textContent = trackCount === 1 ? "1 titre" : `${trackCount} titres`;
 
     artistMeta.append(count);
