@@ -2809,7 +2809,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
 /* =========================
    TRACKS — écoute rapide des singles
-   Jusqu’à 12 éléments. Desktop : 3 colonnes de 4.
+   Jusqu’à 12 éléments. Desktop : 3 tracks par colonne, jusqu’à 4 colonnes.
    Mobile : 3 tracks par colonne, défilement horizontal.
 ========================= */
 body.home .home-distribution-tracks .category-view-all {
@@ -2934,7 +2934,7 @@ body.home .home-track-action {
 
 @media (900px <= width) {
   body.home .home-track-grid {
-    grid-template-rows: repeat(4, auto);
+    grid-template-rows: repeat(3, auto);
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: minmax(320px, calc((100% - 24px) / 3));

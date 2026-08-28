@@ -55,3 +55,27 @@ test("une édition mensuelle est déterministe et change de clé le mois suivant
   assert.equal(augustA.playlists.find((item) => item.category.key === "piano").trackCount, 12);
   assert.equal(augustA.playlists.filter((item) => item.category.key === "piano").length, 2);
 });
+
+
+test("nomme plusieurs playlists d'une même catégorie sans doublon simple", () => {
+  const packs = Array.from({ length: 61 }, (_, index) =>
+    pack(`name-${index}`, "Cinematic", 1, `artist-name-${index}`)
+  );
+  const result = buildAutoPlaylists(packs, { editionKey: "2026-08" });
+  const cinematic = result.playlists.filter((item) =>
+    item.scope === "category" && item.category.key === "cinematic"
+  );
+
+  assert.equal(cinematic.length, 6);
+  assert.deepEqual(
+    cinematic.map((item) => item.title),
+    [
+      "Sélection Cinematic",
+      "Top Cinematic",
+      "Découverte Cinematic",
+      "Cinematic du moment",
+      "Essentiels Cinematic",
+      "Sélection Cinematic · Vol. 2"
+    ]
+  );
+});

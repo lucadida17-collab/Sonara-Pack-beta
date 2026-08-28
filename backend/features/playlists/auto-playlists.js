@@ -153,8 +153,27 @@ function buildAutoPlaylists(rawPacks = [], options = {}) {
     const scope = clean(meta.scope || "category") || "category";
     const baseSlug = scope === "discovery" ? "discovery" : slugify(categoryKey);
     const idSuffix = index > 0 ? `:${index + 1}` : "";
-    const titleBase = scope === "discovery" ? "Sélection découverte" : `Sélection ${categoryDisplay}`;
-    const title = index > 0 ? `${titleBase} ${index + 1}` : titleBase;
+
+    const playlistNameTemplates = scope === "discovery"
+      ? [
+          "Sélection découverte",
+          "Top découverte",
+          "Découvertes du moment",
+          "À découvrir",
+          "Essentiels découverte"
+        ]
+      : [
+          `Sélection ${categoryDisplay}`,
+          `Top ${categoryDisplay}`,
+          `Découverte ${categoryDisplay}`,
+          `${categoryDisplay} du moment`,
+          `Essentiels ${categoryDisplay}`
+        ];
+
+    const templateIndex = index % playlistNameTemplates.length;
+    const volume = Math.floor(index / playlistNameTemplates.length) + 1;
+    const titleBase = playlistNameTemplates[templateIndex];
+    const title = volume > 1 ? `${titleBase} · Vol. ${volume}` : titleBase;
 
     const totalPriceCents = selected.reduce((sum, item) => sum + item.priceCents, 0);
     const sonaraCommissionCents = Math.round(totalPriceCents * AUTO_PLAYLIST_COMMISSION_RATE);
