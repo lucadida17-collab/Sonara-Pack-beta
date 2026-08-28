@@ -429,7 +429,7 @@ function createAutoPlaylistHomeCard(playlist = {}) {
     id: playlist.id,
     title: playlist.title || "Playlist Sonara",
     coverPack: playlist.coverPack || playlist.tracks?.[0]?.coverPack || "",
-    packLink: `/app/pages/catalog/playlist.html?id=${encodeURIComponent(playlist.id || "")}`,
+    packLink: `/app/pages/catalog/pack.html?playlistId=${encodeURIComponent(playlist.id || "")}`,
     artist: "Sonara",
     pseudo: "Sonara",
     contentType: "audio",

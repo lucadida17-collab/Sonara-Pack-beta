@@ -2729,7 +2729,8 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
 /* =========================
    TRACKS — écoute rapide des singles
-   Grille dédiée de 12 éléments, sans modifier les cartes packs existantes.
+   Jusqu’à 12 éléments. Desktop : 3 colonnes de 4.
+   Mobile : 3 tracks par colonne, défilement horizontal.
 ========================= */
 body.home .home-distribution-tracks .scroll-controls,
 body.home .home-distribution-tracks .category-view-all {
@@ -2738,7 +2739,7 @@ body.home .home-distribution-tracks .category-view-all {
 
 body.home .home-track-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -2837,18 +2838,23 @@ body.home .home-track-action {
 
 @media (width < 900px) {
   body.home .home-track-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, auto);
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 86vw);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    padding-bottom: 4px;
+  }
+
+  body.home .home-track-card {
+    scroll-snap-align: start;
   }
 }
 
-@media (900px <= width <= 1199px) {
+@media (900px <= width) {
   body.home .home-track-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (width >= 1200px) {
-  body.home .home-track-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

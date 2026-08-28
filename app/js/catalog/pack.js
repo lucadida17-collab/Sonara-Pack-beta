@@ -345,6 +345,59 @@ function displayPreV1TrackAction(track = {}) {
   return "Gratuit";
 }
 
+async function downloadAutoPlaylistPreparedFiles(downloads = []) {
+  for (const item of downloads) {
+    const response = await fetch(`${API_URL}${item.fileUrl}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("Téléchargement impossible.");
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${String(item.title || "sonara-track").replace(/[^a-z0-9._-]+/gi, "-")}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+}
+
+async function acquireAutoPlaylist(profile, commercialState) {
+  const userId = String(profile?.accountId || profile?.id || "").trim();
+  if (!userId) {
+    showPopup({ type: "error", title: "Compte introuvable", message: "Reconnecte-toi puis réessaie." });
+    return;
+  }
+
+  if (commercialState?.paymentsActive === true) {
+    showPopup({
+      type: "info",
+      title: packData?.title || "Playlist Sonara",
+      message: "Le paiement multi-artistes reste verrouillé tant que le checkout playlist V1 n’est pas activé."
+    });
+    return;
+  }
+
+  const response = await fetch(`${API_URL}/api/auto-playlists/${encodeURIComponent(packData.id)}/acquire`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, licensesAccepted: true })
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.success !== true) {
+    throw new Error(data.message || "Playlist indisponible.");
+  }
+
+  await downloadAutoPlaylistPreparedFiles(Array.isArray(data.downloads) ? data.downloads : []);
+  closePackLicenseNotice();
+  showPopup({
+    type: "info",
+    title: packData?.title || "Playlist Sonara",
+    message: "Playlist ajoutée à votre bibliothèque. Les statistiques ont été attribuées à chaque artiste."
+  });
+}
+
 async function startStripePayment() {
   console.log("====================================");
   console.log("🟢 [FRONT 1] startStripePayment lancé");
@@ -366,6 +419,11 @@ async function startStripePayment() {
     }
 
     const profile = JSON.parse(rawProfile);
+
+    if (packData?.isAutoPlaylist && !selectedTrackId) {
+      await acquireAutoPlaylist(profile, commercialState);
+      return;
+    }
 
     console.log("🟢 [FRONT 3] Profile parsé :", profile);
     console.log("profile.id :", profile?.id);
@@ -531,6 +589,7 @@ function displayPriceWithEuro(value) {
 const params = new URLSearchParams(window.location.search);
 
 const packId = params.get("id");
+const playlistId = params.get("playlistId") || (String(packId || "").startsWith("auto:") ? packId : null);
 const trackId = params.get("trackId");
 
 let packData = null;
@@ -549,7 +608,82 @@ function updatePackSeo(pack = {}) {
   canonical.href = `https://sonarapack.com/app/pages/catalog/pack.html?id=${encodeURIComponent(String(pack.id))}`;
 }
 
+function normalizeAutoPlaylistAsPack(playlist = {}) {
+  const tracks = Array.isArray(playlist.tracks) ? playlist.tracks : [];
+  const artistNames = [...new Set(
+    tracks
+      .map((track) => String(track?.artist?.name || "").trim())
+      .filter(Boolean)
+  )];
+
+  return {
+    id: String(playlist.id || ""),
+    title: String(playlist.title || "Playlist Sonara"),
+    coverPack: playlist.coverPack || tracks[0]?.coverPack || "",
+    artist: artistNames.join(" • ") || "Sonara",
+    artistProfile: {},
+    contentType: "audio",
+    isAutoPlaylist: true,
+    autoPlaylist: playlist,
+    price: playlist?.pricing?.totalPrice || "0.00",
+    packPrice: playlist?.pricing?.totalPrice || "0.00",
+    totalPrice: playlist?.pricing?.totalPrice || "0.00",
+    license: {
+      id: `${String(playlist.id || "playlist")}:licenses`,
+      version: 1,
+      name: "Sonara Pack"
+    },
+    tracks: tracks.map((track, index) => ({
+      id: String(track.trackId || `${playlist.id}:track:${index + 1}`),
+      sourcePackId: String(track.packId || ""),
+      title: String(track.title || "Track Sonara"),
+      artist: String(track?.artist?.name || "Artiste Sonara"),
+      coverPack: track.coverPack || playlist.coverPack || "",
+      audioName: track.audioName || track.audio || "",
+      previewStart: Number(track.previewStart || 0),
+      previewDuration: Math.min(30, Math.max(1, Number(track.previewDuration || 30))),
+      previewAnalysisVersion: 1,
+      price: track.price || "0.00",
+      trackPrice: track.price || "0.00",
+      license: track.license || null
+    }))
+  };
+}
+
+async function loadAutoPlaylist() {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), PACK_REQUEST_TIMEOUT);
+  let response;
+
+  try {
+    response = await fetch(`${API_URL}/api/auto-playlists/${encodeURIComponent(playlistId)}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.playlist) {
+    throw new Error(data.message || "Playlist Sonara introuvable.");
+  }
+
+  packData = normalizeAutoPlaylistAsPack(data.playlist);
+  document.title = `${packData.title} | Sonara Pack`;
+  const meta = document.querySelector('meta[name="robots"]');
+  if (meta) meta.content = "noindex, follow";
+  renderPack();
+  return packData;
+}
+
 async function loadPack() {
+
+  if (playlistId) {
+    return loadAutoPlaylist();
+  }
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), PACK_REQUEST_TIMEOUT);
@@ -607,6 +741,10 @@ function packTrackPreviewReady(track = {}) {
 }
 
 function preparePackPreviewIntelligence() {
+  if (packData?.isAutoPlaylist) {
+    return Promise.resolve();
+  }
+
   if (!packData || !Array.isArray(packData.tracks)) {
     return Promise.resolve();
   }
@@ -1565,6 +1703,16 @@ src="${getFilePath(track.audioName || track.audio)}"
         selectedPurchaseType = "track";
         selectedDownloadUrl = btn.dataset.download;
 
+        if (packData?.isAutoPlaylist) {
+          const playlistTrack = packData.tracks?.find(
+            (track) => String(track.id) === String(selectedTrackId)
+          );
+          if (playlistTrack?.sourcePackId) {
+            window.location.href = `/app/pages/catalog/pack.html?id=${encodeURIComponent(playlistTrack.sourcePackId)}&trackId=${encodeURIComponent(selectedTrackId || "")}`;
+            return;
+          }
+        }
+
         if (!selectedTrackId) {
           showPopup({
             type: "error",
@@ -1658,7 +1806,7 @@ async function initializePackPage() {
   try {
     updatePackLoading(10, "Préparation du pack…");
 
-    if (!packId) {
+    if (!packId && !playlistId) {
       throw new Error("Lien de pack invalide.");
     }
 
