@@ -583,9 +583,13 @@ async function verifySonaraSession(options = {}) {
   const redirectOnFailure = options.redirectOnFailure ?? (mode === "required");
 
   const storedProfile = getStoredSonaraProfile();
-  const profileId = String(storedProfile?.accountId || storedProfile?.id || "");
+  const profileIds = [...new Set([
+    storedProfile?.accountId,
+    storedProfile?.id,
+    storedProfile?.userId
+  ].map((value) => String(value || "").trim()).filter(Boolean))];
 
-  if (!profileId) {
+  if (!profileIds.length) {
     clearSonaraLocalSession();
 
     if (mode === "optional") {
@@ -601,16 +605,29 @@ async function verifySonaraSession(options = {}) {
 
   try {
     const apiUrl = await waitForSonaraApiUrl();
-    const response = await fetch(
-      `${apiUrl}/api/profile/${encodeURIComponent(profileId)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-        headers: { Accept: "application/json" }
-      }
-    );
+    let response = null;
 
-    if ([401, 403, 404].includes(response.status)) {
+    for (const profileId of profileIds) {
+      response = await fetch(
+        `${apiUrl}/api/profile/${encodeURIComponent(profileId)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: { Accept: "application/json" }
+        }
+      );
+
+      // Compatibilité avec les anciennes sessions : certains profils stockés
+      // peuvent encore contenir l'ancien id racine. On essaie tous les ids
+      // connus avant de conclure que le compte n'existe plus.
+      if (response.status === 404) {
+        continue;
+      }
+
+      break;
+    }
+
+    if (!response || [401, 403, 404].includes(response.status)) {
       clearSonaraLocalSession();
 
       if (redirectOnFailure) {

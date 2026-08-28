@@ -25,6 +25,7 @@ path: path.resolve(__dirname, ".env.local")
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
 const { analyzeAudioPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
+const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
   PRE_V1_ACTIVITY_CONFIG,
   buildPreV1ActivityReport,
@@ -262,7 +263,6 @@ app.get("/api/health", (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
@@ -814,6 +814,20 @@ licenseProtection.init()
   .catch((error) => {
     console.error("Initialisation protection licences LOCAL impossible :", error);
   });
+
+registerAutoPlaylistRoutes(app, {
+  getApprovedAudioPacks: async () => readJsonArray(packsPath).filter((pack) =>
+    String(pack?.status || "").toLowerCase() === "approved" &&
+    !isPackHiddenByModeration(pack) &&
+    ["", "audio"].includes(String(pack?.contentType || "audio").toLowerCase())
+  ),
+  findAccount: findRootAndAccountById,
+  saveAccount: saveAccountState,
+  commercialPolicy,
+  licenseProtection,
+  appendAcquisitionHistory
+});
+
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
@@ -1565,6 +1579,22 @@ app.get("/api/profile/:id", (req, res) => {
         account = foundAccount;
 
         break;
+      }
+    }
+
+    if (!account) {
+      const legacyRootUser = users.find(
+        (currentRootUser) => String(currentRootUser.id) === requestedId
+      );
+      const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
+        ? legacyRootUser.accounts
+        : [];
+
+      // Anciennes sessions : l'id racine pouvait être conservé à la place de
+      // l'accountId. On restaure uniquement lorsqu'un seul compte est possible.
+      if (legacyRootUser && legacyAccounts.length === 1) {
+        rootUser = legacyRootUser;
+        account = legacyAccounts[0];
       }
     }
 

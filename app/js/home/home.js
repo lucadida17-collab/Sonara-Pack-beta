@@ -2,6 +2,9 @@
 
 let packs = [];
 let homeSections = [];
+let autoPlaylistPayload = null;
+let homeQuickPreview = null;
+
 
 const HOME_RAIL_ITEM_LIMIT = 12;
 
@@ -312,22 +315,24 @@ function createHomeDistribution(rawPacks = []) {
 }
 
 async function loadHome() {
-  const response = await fetch(
-    `${API_URL}/api/packs`,
-    {
-      cache: "no-store"
-    }
-  );
+  const [packResponse, playlistResponse] = await Promise.all([
+    fetch(`${API_URL}/api/packs`, { cache: "no-store" }),
+    fetch(`${API_URL}/api/auto-playlists`, { cache: "no-store" }).catch(() => null)
+  ]);
 
-  const data = await response.json();
+  const data = await packResponse.json();
 
-  if (!response.ok || !Array.isArray(data)) {
+  if (!packResponse.ok || !Array.isArray(data)) {
     throw new Error(
       data?.message ||
       data?.error ||
       "Catalogue Sonara indisponible."
     );
   }
+
+  autoPlaylistPayload = playlistResponse?.ok
+    ? await playlistResponse.json().catch(() => null)
+    : null;
 
   const distribution =
     createHomeDistribution(data);
@@ -348,6 +353,12 @@ async function loadHome() {
           section.items.length > 0
       )
     : [];
+
+  homeSections = applySingleAndPlaylistPresentation(
+    homeSections,
+    packs,
+    autoPlaylistPayload
+  );
 
   if (!homeSections.length && packs.length) {
     homeSections = [{
@@ -400,6 +411,94 @@ loadHome().catch((error) => {
   }
 });
 
+
+
+function getHomeTrackCount(pack = {}) {
+  if (Array.isArray(pack.tracks)) return pack.tracks.length;
+  const fallback = Number(
+    pack?.distribution?.trackCount ??
+    pack.trackCount ??
+    pack.tracksCount ??
+    pack.numberOfTracks
+  );
+  return Number.isFinite(fallback) && fallback >= 0 ? Math.floor(fallback) : 0;
+}
+
+function createAutoPlaylistHomeCard(playlist = {}) {
+  return {
+    id: playlist.id,
+    title: playlist.title || "Playlist Sonara",
+    coverPack: playlist.coverPack || playlist.tracks?.[0]?.coverPack || "",
+    packLink: `/app/pages/catalog/playlist.html?id=${encodeURIComponent(playlist.id || "")}`,
+    artist: "Sonara",
+    pseudo: "Sonara",
+    contentType: "audio",
+    isAutoPlaylist: true,
+    autoPlaylist: playlist,
+    trackCount: Number(playlist.trackCount || playlist.tracks?.length || 0),
+    distribution: {
+      sectionId: `playlist:${playlist.category?.key || "auto"}`,
+      trackCount: Number(playlist.trackCount || playlist.tracks?.length || 0),
+      format: "playlist"
+    }
+  };
+}
+
+function applySingleAndPlaylistPresentation(sections = [], distributedPacks = [], payload = null) {
+  const singles = (Array.isArray(distributedPacks) ? distributedPacks : [])
+    .filter((pack) => getHomeTrackCount(pack) === 1);
+
+  const playlists = Array.isArray(payload?.playlists) ? payload.playlists : [];
+  const playlistsByCategory = new Map(
+    playlists.map((playlist) => [String(playlist?.category?.key || "").trim(), playlist])
+  );
+
+  const transformed = (Array.isArray(sections) ? sections : [])
+    .map((section) => {
+      if (section?.kind !== "category") return section;
+      const categoryKey = String(section?.signature?.[0]?.key || "").trim();
+      const playlist = playlistsByCategory.get(categoryKey);
+      if (!playlist) return section;
+      const multiTrackItems = (Array.isArray(section.items) ? section.items : [])
+        .filter((item) => getHomeTrackCount(item) >= 2);
+      return {
+        ...section,
+        items: [...multiTrackItems, createAutoPlaylistHomeCard(playlist)]
+      };
+    })
+    .filter((section) => Array.isArray(section?.items) && section.items.length > 0);
+
+  const quickTracks = Array.isArray(payload?.quickTracks) ? payload.quickTracks.slice(0, 12) : [];
+  const specialSections = [];
+
+  if (quickTracks.length) {
+    specialSections.push({
+      id: "format:tracks",
+      kind: "tracks",
+      title: "Track",
+      items: quickTracks
+    });
+  }
+
+  if (singles.length) {
+    specialSections.push({
+      id: "format:single",
+      kind: "single",
+      title: "Single",
+      items: singles.slice(0, HOME_RAIL_ITEM_LIMIT)
+    });
+  }
+
+  if (!specialSections.length) return transformed;
+
+  const discoveryIndex = transformed.findIndex((section) => section?.kind === "discovery");
+  const insertionIndex = discoveryIndex >= 0 ? discoveryIndex + 1 : 0;
+  return [
+    ...transformed.slice(0, insertionIndex),
+    ...specialSections,
+    ...transformed.slice(insertionIndex)
+  ];
+}
 
 function resetAccount() {
   /*
@@ -587,9 +686,9 @@ function createPackCard(pack = {}) {
     card.setAttribute("role", "link");
     card.setAttribute(
       "aria-label",
-      `Ouvrir le pack ${
-        pack.title || "sans titre"
-      } de ${artistProfile.name}`
+      pack.isAutoPlaylist === true
+        ? `Ouvrir la playlist ${pack.title || "Sonara"}`
+        : `Ouvrir le pack ${pack.title || "sans titre"} de ${artistProfile.name}`
     );
   } else {
     card.classList.add(
@@ -623,10 +722,9 @@ function createPackCard(pack = {}) {
     image.className =
       "image-cover";
 
-    image.alt =
-      `Cover du pack ${
-        pack.title || ""
-      }`.trim();
+    image.alt = pack.isAutoPlaylist === true
+      ? `Cover de la playlist ${pack.title || ""}`.trim()
+      : `Cover du pack ${pack.title || ""}`.trim();
 
     image.loading = "lazy";
     image.decoding = "async";
@@ -671,6 +769,9 @@ function createPackCard(pack = {}) {
     document.createElement("p");
 
   title.className = "title";
+  if (pack.isAutoPlaylist === true) {
+    title.setAttribute("data-sonara-system-title", "true");
+  }
   title.textContent =
     pack.title ||
     "Pack sans titre";
@@ -769,6 +870,110 @@ function createPackCard(pack = {}) {
   return card;
 }
 
+
+
+function stopHomeQuickPreview() {
+  if (!homeQuickPreview) return;
+  homeQuickPreview.audio.pause();
+  homeQuickPreview.audio.src = "";
+  homeQuickPreview.button?.classList.remove("is-playing");
+  const timer = homeQuickPreview.button?.querySelector(".home-track-preview-time");
+  if (timer) timer.textContent = String(homeQuickPreview.limit || 30);
+  homeQuickPreview = null;
+}
+
+function createQuickTrackCard(track = {}) {
+  const card = document.createElement("article");
+  card.className = "home-track-card";
+
+  const cover = document.createElement("div");
+  cover.className = "home-track-cover";
+  const imageUrl = getFilePath(track.coverPack || "");
+  if (imageUrl) {
+    const image = document.createElement("img");
+    image.src = imageUrl;
+    image.alt = "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    cover.appendChild(image);
+  }
+
+  const copy = document.createElement("div");
+  copy.className = "home-track-copy";
+  const title = document.createElement("strong");
+  title.setAttribute("data-user-content", "true");
+  title.textContent = track.title || track.packTitle || "Track Sonara";
+  const artist = document.createElement("span");
+  artist.setAttribute("data-user-content", "true");
+  artist.textContent = track.artist?.name || "Artiste Sonara";
+  copy.append(title, artist);
+
+  const previewButton = document.createElement("button");
+  previewButton.type = "button";
+  previewButton.className = "home-track-preview";
+  const limit = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
+  previewButton.innerHTML = `
+    <i data-lucide="play" aria-hidden="true"></i>
+    <span class="home-track-preview-time">${limit}</span>
+  `;
+  previewButton.setAttribute("aria-label", `Écouter ${title.textContent} pendant ${limit} secondes`);
+
+  previewButton.addEventListener("click", async () => {
+    const source = getFilePath(track.audioName || "");
+    if (!source) return;
+    if (homeQuickPreview?.button === previewButton) {
+      stopHomeQuickPreview();
+      window.lucide?.createIcons?.();
+      return;
+    }
+    stopHomeQuickPreview();
+    const audio = new Audio(source);
+    const start = Math.max(0, Number(track.previewStart || 0));
+    homeQuickPreview = { audio, button: previewButton, limit };
+    previewButton.classList.add("is-playing");
+    previewButton.innerHTML = `
+      <i data-lucide="pause" aria-hidden="true"></i>
+      <span class="home-track-preview-time">${limit}</span>
+    `;
+    window.lucide?.createIcons?.();
+    const timer = previewButton.querySelector(".home-track-preview-time");
+    const finish = () => {
+      if (homeQuickPreview?.audio !== audio) return;
+      stopHomeQuickPreview();
+      previewButton.innerHTML = `
+        <i data-lucide="play" aria-hidden="true"></i>
+        <span class="home-track-preview-time">${limit}</span>
+      `;
+      window.lucide?.createIcons?.();
+    };
+    audio.addEventListener("loadedmetadata", () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = Math.min(start, Math.max(0, audio.duration - 0.2));
+      }
+    }, { once: true });
+    audio.addEventListener("timeupdate", () => {
+      const elapsed = Math.max(0, audio.currentTime - start);
+      const remaining = Math.max(0, Math.ceil(limit - elapsed));
+      if (timer) timer.textContent = String(remaining);
+      if (elapsed >= limit) finish();
+    });
+    audio.addEventListener("ended", finish, { once: true });
+    audio.addEventListener("error", finish, { once: true });
+    await audio.play().catch(finish);
+  });
+
+  const action = document.createElement("button");
+  action.type = "button";
+  action.className = "home-track-action";
+  const commercialActive = window.SonaraCommercial?.getState?.().paymentsActive === true;
+  action.textContent = commercialActive ? "Acheter" : "Obtenir";
+  action.addEventListener("click", () => {
+    window.location.href = `/app/pages/catalog/pack.html?id=${encodeURIComponent(track.packId || "")}`;
+  });
+
+  card.append(cover, copy, previewButton, action);
+  return card;
+}
 
 function createArtistSpotlightCard(artistProfile = {}) {
   const accountId =
@@ -874,6 +1079,13 @@ function renderSectionCards(
     return;
   }
 
+  if (section?.kind === "tracks") {
+    items.forEach((track) => {
+      row.appendChild(createQuickTrackCard(track));
+    });
+    return;
+  }
+
   items.forEach((pack) => {
     row.appendChild(
       createPackCard(pack)
@@ -920,7 +1132,9 @@ function createDistributionSectionMarkup(
   const rowClass =
     isArtistSection
       ? "pack-row home-artist-spotlight-row"
-      : "pack-row";
+      : kind === "tracks"
+        ? "home-track-grid"
+        : "pack-row";
 
   return `
     <section
@@ -1052,7 +1266,7 @@ function renderHome() {
 
     const row =
       sectionElement?.querySelector(
-        ".pack-row"
+        ".pack-row, .home-track-grid"
       );
 
     renderSectionCards(

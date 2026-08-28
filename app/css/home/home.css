@@ -2726,3 +2726,129 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
       0 0 0 4px rgba(51, 197, 255, 0.07);
   }
 }
+
+/* =========================
+   TRACKS — écoute rapide des singles
+   Grille dédiée de 12 éléments, sans modifier les cartes packs existantes.
+========================= */
+body.home .home-distribution-tracks .scroll-controls,
+body.home .home-distribution-tracks .category-view-all {
+  display: none;
+}
+
+body.home .home-track-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+body.home .home-track-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+body.home .home-track-cover {
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.home .home-track-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+body.home .home-track-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+body.home .home-track-copy strong,
+body.home .home-track-copy span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+body.home .home-track-copy strong {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+body.home .home-track-copy span {
+  font-size: 11px;
+  opacity: 0.62;
+}
+
+body.home .home-track-preview,
+body.home .home-track-action {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+body.home .home-track-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 46px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+body.home .home-track-preview svg {
+  width: 14px;
+  height: 14px;
+}
+
+body.home .home-track-preview-time {
+  min-width: 15px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+body.home .home-track-action {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (width < 900px) {
+  body.home .home-track-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (900px <= width <= 1199px) {
+  body.home .home-track-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (width >= 1200px) {
+  body.home .home-track-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

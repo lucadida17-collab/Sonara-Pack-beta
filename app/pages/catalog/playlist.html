@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr" translate="yes">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, follow">
+  <title>Playlist Sonara | Sonara Pack</title>
+  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/components/header/header.css?v=cinematic-replay-component-v3">
+  <link rel="stylesheet" href="/app/css/core/catalog-shell.css?v=5.3.8.67">
+  <link rel="stylesheet" href="/app/css/catalog/playlist.css?v=auto-playlist-v1">
+  <link rel="stylesheet" href="/app/css/core/i18n.css">
+</head>
+<body class="playlist-page sonara-shell-page">
+  <div class="desktop-shell">
+    <aside class="desktop-side-panel" aria-label="Navigation principale">
+      <div class="desktop-side-brand">
+        <span class="desktop-brand-logo"><img src="/assets/image/logo-sonara-pack.PNG" alt=""></span>
+        <span class="desktop-brand-copy"><strong>Sonara Pack</strong><small>Playlist automatique</small></span>
+      </div>
+      <nav class="desktop-side-nav">
+        <button class="desktop-nav-btn active" type="button" onclick="window.location.href='/home.html'">
+          <i data-lucide="home"></i><span><strong>Accueil</strong><small>Explorer les packs</small></span>
+        </button>
+        <button class="desktop-nav-btn" type="button" onclick="window.location.href='/app/pages/catalog/library.html'">
+          <i data-lucide="library"></i><span><strong>Bibliothèque</strong><small>Vos téléchargements</small></span>
+        </button>
+      </nav>
+    </aside>
+    <div class="desktop-workspace">
+      <header class="header"></header>
+      <main class="app-layout">
+        <section class="main-content">
+          <section class="scroll-zone">
+            <section class="playlist-content shell-content">
+              <div class="playlist-loading" role="status">Chargement de la playlist…</div>
+              <div class="playlist-view" hidden></div>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="/app/js/core/config.js?v=pre-v1-commercial-1" defer></script>
+  <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/app/js/components/header/header.js?v=cinematic-replay-component-v3"></script>
+  <script src="/app/js/catalog/playlist.js?v=auto-playlist-v1" defer></script>
+  <script src="/app/js/core/i18n.js?v=auto-playlist-v1" defer></script>
+</body>
+</html>

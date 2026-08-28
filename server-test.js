@@ -30,6 +30,7 @@ require("dotenv").config({
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
 const { analyzeAudioPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
+const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
   PRE_V1_ACTIVITY_CONFIG,
   buildPreV1ActivityReport,
@@ -440,6 +441,20 @@ app.get("/api/health", (_req, res) => {
     environment: "test",
     timestamp: new Date().toISOString()
   });
+});
+
+registerAutoPlaylistRoutes(app, {
+  getApprovedAudioPacks: async () => (await packsCollection.find({
+    status: "approved",
+    moderationHidden: { $ne: true }
+  }).toArray()).filter((pack) =>
+    ["", "audio"].includes(String(pack?.contentType || "audio").trim().toLowerCase())
+  ),
+  findAccount: findRootAndAccountById,
+  saveAccount: saveAccountState,
+  commercialPolicy,
+  licenseProtection,
+  appendAcquisitionHistory
 });
 
 
@@ -1162,6 +1177,20 @@ async function findRootAndAccountById(id) {
     }
   }
 
+  // Compatibilité avec les anciennes sessions qui stockaient l'id utilisateur
+  // racine à la place de l'accountId. On ne choisit automatiquement un compte
+  // que lorsqu'il n'y en a qu'un, afin de ne jamais deviner entre plusieurs comptes.
+  const legacyRootUser = await usersCollection.findOne({ id: requestedId });
+  const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
+    ? legacyRootUser.accounts
+    : [];
+
+  if (legacyRootUser && legacyAccounts.length === 1) {
+    return {
+      rootUser: legacyRootUser,
+      account: legacyAccounts[0],
+    };
+  }
 
   return null;
 }

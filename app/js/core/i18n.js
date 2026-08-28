@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-24-phase2-commercial-lock-v1";
+    "2026-08-26-auto-playlists-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;
@@ -57,7 +57,7 @@
   const protectedContentSelector = [
     "[data-i18n-ignore]",
     "[translate='no']",
-    ".card .title",
+    ".card .title:not([data-sonara-system-title])",
     ".pack-info > .title",
     ".library-preview-pack-info > strong",
     ".pack-card > h3",
