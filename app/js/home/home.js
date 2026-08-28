@@ -617,35 +617,43 @@ function applySingleAndPlaylistPresentation(sections = [], distributedPacks = []
     .filter((section) => Array.isArray(section?.items) && section.items.length > 0);
 
   const quickTracks = Array.isArray(payload?.quickTracks) ? payload.quickTracks.slice(0, 12) : [];
-  const specialSections = [];
+  const trackSection = quickTracks.length
+    ? {
+        id: "format:tracks",
+        kind: "tracks",
+        title: "Top Track",
+        items: quickTracks
+      }
+    : null;
 
-  if (quickTracks.length) {
-    specialSections.push({
-      id: "format:tracks",
-      kind: "tracks",
-      title: "Track",
-      items: quickTracks
-    });
+  const singleSection = singles.length
+    ? {
+        id: "format:single",
+        kind: "single",
+        title: "Single",
+        items: singles
+      }
+    : null;
+
+  if (!trackSection && !singleSection) return transformed;
+
+  const result = [...transformed];
+
+  if (trackSection) {
+    const albumIndex = result.findIndex(
+      (section) => section?.kind === "album" || section?.id === "format:album"
+    );
+    const trackInsertionIndex = albumIndex >= 0 ? albumIndex + 1 : result.length;
+    result.splice(trackInsertionIndex, 0, trackSection);
   }
 
-  if (singles.length) {
-    specialSections.push({
-      id: "format:single",
-      kind: "single",
-      title: "Single",
-      items: singles
-    });
+  if (singleSection) {
+    const discoveryIndex = result.findIndex((section) => section?.kind === "discovery");
+    const singleInsertionIndex = discoveryIndex >= 0 ? discoveryIndex + 1 : 0;
+    result.splice(singleInsertionIndex, 0, singleSection);
   }
 
-  if (!specialSections.length) return transformed;
-
-  const discoveryIndex = transformed.findIndex((section) => section?.kind === "discovery");
-  const insertionIndex = discoveryIndex >= 0 ? discoveryIndex + 1 : 0;
-  return [
-    ...transformed.slice(0, insertionIndex),
-    ...specialSections,
-    ...transformed.slice(insertionIndex)
-  ];
+  return result;
 }
 
 function resetAccount() {
