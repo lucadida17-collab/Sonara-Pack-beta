@@ -1583,22 +1583,6 @@ app.get("/api/profile/:id", (req, res) => {
     }
 
     if (!account) {
-      const legacyRootUser = users.find(
-        (currentRootUser) => String(currentRootUser.id) === requestedId
-      );
-      const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
-        ? legacyRootUser.accounts
-        : [];
-
-      // Anciennes sessions : l'id racine pouvait être conservé à la place de
-      // l'accountId. On restaure uniquement lorsqu'un seul compte est possible.
-      if (legacyRootUser && legacyAccounts.length === 1) {
-        rootUser = legacyRootUser;
-        account = legacyAccounts[0];
-      }
-    }
-
-    if (!account) {
       return res.status(404).json({
         success: false,
         error: "Profil introuvable"

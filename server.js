@@ -1186,20 +1186,6 @@ async function findRootAndAccountById(id) {
     }
   }
 
-  // Compatibilité avec les anciennes sessions qui stockaient l'id utilisateur
-  // racine à la place de l'accountId. On ne choisit automatiquement un compte
-  // que lorsqu'il n'y en a qu'un, afin de ne jamais deviner entre plusieurs comptes.
-  const legacyRootUser = await usersCollection.findOne({ id: requestedId });
-  const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
-    ? legacyRootUser.accounts
-    : [];
-
-  if (legacyRootUser && legacyAccounts.length === 1) {
-    return {
-      rootUser: legacyRootUser,
-      account: legacyAccounts[0],
-    };
-  }
 
   return null;
 }
