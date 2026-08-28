@@ -2726,5 +2726,8 @@
   "Sélection {0}": "Подборка {0}",
   "{0} tracks · {1} · édition {2}": "{0} треков · {1} · выпуск {2}",
   "Téléchargement {0}/{1}…": "Загрузка {0}/{1}…",
-  "Track": "Трек"
+  "Track": "Трек",
+  "Playlist faite par Sonara": "Плейлист от Sonara",
+  "1 titre": "1 трек",
+  "{0} titres": "{0} треков"
 }

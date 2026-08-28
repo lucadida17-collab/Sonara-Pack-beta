@@ -4332,3 +4332,64 @@ body.pack-page .pack-preview-player-root .grand-player-artist {
   font-size: .62rem;
   text-transform: uppercase;
 }
+
+
+/* Playlist Sonara : la cover garde exactement l'emplacement album et compose les premières covers. */
+body.pack-page .playlist-cover-mosaic {
+  display: grid;
+  padding: 0;
+  overflow: hidden;
+  background: #15171b;
+}
+
+body.pack-page .playlist-cover-mosaic.is-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+body.pack-page .playlist-cover-mosaic.is-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+}
+
+body.pack-page .playlist-cover-mosaic.is-3,
+body.pack-page .playlist-cover-mosaic.is-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+body.pack-page .playlist-cover-cell {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #202329;
+}
+
+body.pack-page .playlist-cover-cell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+body.pack-page .playlist-cover-cell.is-sonara-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  background: #34373d;
+}
+
+body.pack-page .playlist-cover-cell.is-sonara-placeholder svg {
+  width: 30%;
+  height: 30%;
+  min-width: 28px;
+  min-height: 28px;
+  max-width: 58px;
+  max-height: 58px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

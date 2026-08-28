@@ -2726,5 +2726,8 @@
   "Sélection {0}": "{0} Seçkisi",
   "{0} tracks · {1} · édition {2}": "{0} parça · {1} · sürüm {2}",
   "Téléchargement {0}/{1}…": "İndiriliyor {0}/{1}…",
-  "Track": "Parça"
+  "Track": "Parça",
+  "Playlist faite par Sonara": "Sonara tarafından oluşturulan çalma listesi",
+  "1 titre": "1 parça",
+  "{0} titres": "{0} parça"
 }

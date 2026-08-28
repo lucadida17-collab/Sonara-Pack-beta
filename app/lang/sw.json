@@ -2726,5 +2726,8 @@
   "Sélection {0}": "Uteuzi wa {0}",
   "{0} tracks · {1} · édition {2}": "nyimbo {0} · {1} · toleo {2}",
   "Téléchargement {0}/{1}…": "Inapakua {0}/{1}…",
-  "Track": "Wimbo"
+  "Track": "Wimbo",
+  "Playlist faite par Sonara": "Orodha iliyoundwa na Sonara",
+  "1 titre": "Wimbo 1",
+  "{0} titres": "Nyimbo {0}"
 }

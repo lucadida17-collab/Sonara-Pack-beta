@@ -2726,5 +2726,8 @@
   "Sélection {0}": "Selezione {0}",
   "{0} tracks · {1} · édition {2}": "{0} tracce · {1} · edizione {2}",
   "Téléchargement {0}/{1}…": "Download {0}/{1}…",
-  "Track": "Traccia"
+  "Track": "Traccia",
+  "Playlist faite par Sonara": "Playlist creata da Sonara",
+  "1 titre": "1 brano",
+  "{0} titres": "{0} brani"
 }

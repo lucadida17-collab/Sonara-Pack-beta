@@ -183,6 +183,67 @@ function getPackDestination(pack = {}) {
   return "";
 }
 
+function getAutoPlaylistCoverValues(pack = {}) {
+  const tracks = Array.isArray(pack?.autoPlaylist?.tracks)
+    ? pack.autoPlaylist.tracks
+    : [];
+
+  return tracks
+    .map((track) => track?.coverPack || track?.cover || track?.image || "")
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function createAutoPlaylistCoverMosaic(pack = {}) {
+  const values = getAutoPlaylistCoverValues(pack);
+  const count = values.length;
+  const mosaic = document.createElement("div");
+  mosaic.className = `home-playlist-cover-mosaic is-${Math.max(1, count)}`;
+
+  const appendPlaceholder = () => {
+    const cell = document.createElement("span");
+    cell.className = "home-playlist-cover-cell is-sonara-placeholder";
+    cell.setAttribute("aria-hidden", "true");
+    cell.innerHTML = `
+      <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <path d="M9 18V6l10-2v12"></path>
+        <circle cx="6" cy="18" r="3"></circle>
+        <circle cx="16" cy="16" r="3"></circle>
+      </svg>
+    `;
+    mosaic.appendChild(cell);
+  };
+
+  values.forEach((value) => {
+    const cell = document.createElement("span");
+    cell.className = "home-playlist-cover-cell";
+
+    const image = document.createElement("img");
+    image.src = getFilePath(value);
+    image.alt = "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.draggable = false;
+    image.addEventListener("error", () => {
+      cell.classList.add("is-sonara-placeholder");
+      image.remove();
+      cell.innerHTML = `
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M9 18V6l10-2v12"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="16" cy="16" r="3"></circle>
+        </svg>
+      `;
+    }, { once: true });
+
+    cell.appendChild(image);
+    mosaic.appendChild(cell);
+  });
+
+  if (count === 0 || count === 3) appendPlaceholder();
+  return mosaic;
+}
+
 function createHomeCoverFallback() {
   const fallback =
     document.createElement("div");
@@ -705,59 +766,61 @@ function createPackCard(pack = {}) {
 
   cover.className = "cover";
 
-  const fallback =
-    createHomeCoverFallback();
-
-  cover.appendChild(fallback);
-
-  const imageUrl =
-    getFilePath(
-      getPackCoverValue(pack)
-    );
-
-  if (imageUrl) {
-    const image =
-      document.createElement("img");
-
-    image.className =
-      "image-cover";
-
-    image.alt = pack.isAutoPlaylist === true
-      ? `Cover de la playlist ${pack.title || ""}`.trim()
-      : `Cover du pack ${pack.title || ""}`.trim();
-
-    image.loading = "lazy";
-    image.decoding = "async";
-    image.draggable = false;
-    image.src = imageUrl;
-
-    image.addEventListener(
-      "load",
-      () => {
-        cover.classList.add(
-          "has-image"
-        );
-      },
-      { once: true }
-    );
-
-    image.addEventListener(
-      "error",
-      () => {
-        cover.classList.add(
-          "has-fallback"
-        );
-
-        image.remove();
-      },
-      { once: true }
-    );
-
-    cover.appendChild(image);
+  if (pack.isAutoPlaylist === true) {
+    cover.classList.add("is-auto-playlist");
+    cover.appendChild(createAutoPlaylistCoverMosaic(pack));
   } else {
-    cover.classList.add(
-      "has-fallback"
-    );
+    const fallback =
+      createHomeCoverFallback();
+
+    cover.appendChild(fallback);
+
+    const imageUrl =
+      getFilePath(
+        getPackCoverValue(pack)
+      );
+
+    if (imageUrl) {
+      const image =
+        document.createElement("img");
+
+      image.className =
+        "image-cover";
+
+      image.alt = `Cover du pack ${pack.title || ""}`.trim();
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.draggable = false;
+      image.src = imageUrl;
+
+      image.addEventListener(
+        "load",
+        () => {
+          cover.classList.add(
+            "has-image"
+          );
+        },
+        { once: true }
+      );
+
+      image.addEventListener(
+        "error",
+        () => {
+          cover.classList.add(
+            "has-fallback"
+          );
+
+          image.remove();
+        },
+        { once: true }
+      );
+
+      cover.appendChild(image);
+    } else {
+      cover.classList.add(
+        "has-fallback"
+      );
+    }
   }
 
   const info =
@@ -778,42 +841,58 @@ function createPackCard(pack = {}) {
 
   let artistMeta = null;
 
-  if (artistDestination) {
-    artistMeta =
-      document.createElement("a");
+  if (pack.isAutoPlaylist === true) {
+    artistMeta = document.createElement("div");
+    artistMeta.className = "home-artist-meta home-playlist-meta";
 
-    artistMeta.href =
-      artistDestination;
-    artistMeta.className =
-      "home-artist-meta home-artist-link";
-    artistMeta.setAttribute(
-      "aria-label",
-      `Voir le profil de ${artistProfile.name}`
-    );
+    const trackCount = Math.max(0, getHomeTrackCount(pack));
+    const count = document.createElement("span");
+    count.className = "home-playlist-track-count";
+    count.textContent = trackCount === 1 ? "1 titre" : `${trackCount} titres`;
+
+    const maker = document.createElement("span");
+    maker.className = "home-playlist-maker";
+    maker.textContent = "Playlist faite par Sonara";
+
+    artistMeta.append(count, maker);
   } else {
-    artistMeta =
-      document.createElement("div");
+    if (artistDestination) {
+      artistMeta =
+        document.createElement("a");
 
-    artistMeta.className =
-      "home-artist-meta";
+      artistMeta.href =
+        artistDestination;
+      artistMeta.className =
+        "home-artist-meta home-artist-link";
+      artistMeta.setAttribute(
+        "aria-label",
+        `Voir le profil de ${artistProfile.name}`
+      );
+    } else {
+      artistMeta =
+        document.createElement("div");
+
+      artistMeta.className =
+        "home-artist-meta";
+    }
+
+    const artist =
+      document.createElement("p");
+
+    artist.className = "artist";
+    artist.setAttribute("data-user-content", "true");
+    artist.textContent =
+      artistProfile.name;
+
+    /*
+      Le petit avatar n'est plus collé au nom sur les cartes :
+      l'identité visuelle artiste a maintenant son propre rail dédié.
+      Le nom reste un accès direct au profil.
+    */
+    artistMeta.append(artist);
+    const artistRewardBadge = createArtistBadge(artistProfile);
+    if (artistRewardBadge) artistMeta.append(artistRewardBadge);
   }
-
-  const artist =
-    document.createElement("p");
-
-  artist.className = "artist";
-  artist.setAttribute("data-user-content", "true");
-  artist.textContent =
-    artistProfile.name;
-
-  /*
-    Le petit avatar n'est plus collé au nom sur les cartes :
-    l'identité visuelle artiste a maintenant son propre rail dédié.
-    Le nom reste un accès direct au profil.
-  */
-  artistMeta.append(artist);
-  const artistRewardBadge = createArtistBadge(artistProfile);
-  if (artistRewardBadge) artistMeta.append(artistRewardBadge);
 
   info.append(
     title,

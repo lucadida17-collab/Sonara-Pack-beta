@@ -2726,5 +2726,8 @@
   "Sélection {0}": "{0} 精选",
   "{0} tracks · {1} · édition {2}": "{0} 首曲目 · {1} · {2} 期",
   "Téléchargement {0}/{1}…": "正在下载 {0}/{1}…",
-  "Track": "曲目"
+  "Track": "曲目",
+  "Playlist faite par Sonara": "Sonara 创建的播放列表",
+  "1 titre": "1 首曲目",
+  "{0} titres": "{0} 首曲目"
 }

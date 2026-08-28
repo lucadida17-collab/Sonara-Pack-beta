@@ -2726,5 +2726,8 @@
   "Sélection {0}": "مختارات {0}",
   "{0} tracks · {1} · édition {2}": "{0} مقاطع · {1} · إصدار {2}",
   "Téléchargement {0}/{1}…": "تنزيل {0}/{1}…",
-  "Track": "مقطع"
+  "Track": "مقطع",
+  "Playlist faite par Sonara": "قائمة تشغيل من إعداد Sonara",
+  "1 titre": "عنوان واحد",
+  "{0} titres": "{0} عناوين"
 }

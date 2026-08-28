@@ -1463,6 +1463,42 @@ function renderResourcePack() {
   requestAnimationFrame(() => window.SonaraI18n?.refresh?.());
 }
 
+function autoPlaylistCoverValues(pack = {}) {
+  const tracks = Array.isArray(pack?.autoPlaylist?.tracks) ? pack.autoPlaylist.tracks : [];
+  return tracks
+    .map((track) => track?.coverPack || track?.cover || track?.image || "")
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function autoPlaylistCoverMarkup(pack = {}) {
+  const values = autoPlaylistCoverValues(pack);
+  const count = values.length;
+  const cells = values.map((value) => `
+    <span class="playlist-cover-cell">
+      <img src="${escapePackLicenseHtml(getFilePath(value))}" alt="">
+    </span>
+  `);
+
+  if (count === 0 || count === 3) {
+    cells.push(`
+      <span class="playlist-cover-cell is-sonara-placeholder" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M9 18V6l10-2v12"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="16" cy="16" r="3"></circle>
+        </svg>
+      </span>
+    `);
+  }
+
+  return `
+    <div class="cover playlist-cover-mosaic is-${Math.max(1, count)}" role="img" aria-label="Cover de la playlist ${escapePackLicenseHtml(pack.title || "Sonara")}">
+      ${cells.join("")}
+    </div>
+  `;
+}
+
 function renderPack() {
   if (packData && packList && isResourcePack(packData)) {
     renderResourcePack();
@@ -1492,11 +1528,9 @@ function renderPack() {
     <div class="left-side">
 
     <div class="card">
-      <img 
-      src="${getFilePath(packData.coverPack)}"
-      class="cover">
-      <alt="${packData.title} cover image"
-      >
+      ${packData.isAutoPlaylist
+        ? autoPlaylistCoverMarkup(packData)
+        : `<img src="${getFilePath(packData.coverPack)}" class="cover" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
      
           <button class="playerBtnMob play"></button>
           <audio src="${getFilePath(packData.audio || packData.audioName)}">
@@ -1511,14 +1545,16 @@ function renderPack() {
       <div class="pack-info">
         <h1 class="title">${packData.title}</h1>
         <div class="artist-info">
-          <img src="${getFilePath(
-            packData.artistProfile?.avatar ||
-            packData.artistProfile?.imageArtist ||
-            packData.artistProfile?.imageProfile ||
-            packData.imageProfile
-          )}" class="artist-image">
-          ${packArtistRewardBadgeMarkup(packData.artistProfile)}
-          <p class="artist">${packData.artistProfile?.name || packData.artist}</p>
+          ${packData.isAutoPlaylist
+            ? `<p class="artist">Playlist faite par Sonara</p>`
+            : `<img src="${getFilePath(
+                packData.artistProfile?.avatar ||
+                packData.artistProfile?.imageArtist ||
+                packData.artistProfile?.imageProfile ||
+                packData.imageProfile
+              )}" class="artist-image">
+              ${packArtistRewardBadgeMarkup(packData.artistProfile)}
+              <p class="artist">${packData.artistProfile?.name || packData.artist}</p>`}
 
         <button class="btn-acheter">${packActionLabel}</button>
         </div>

@@ -2726,5 +2726,8 @@
   "Sélection {0}": "Përzgjedhje {0}",
   "{0} tracks · {1} · édition {2}": "{0} këngë · {1} · edicioni {2}",
   "Téléchargement {0}/{1}…": "Shkarkim {0}/{1}…",
-  "Track": "Këngë"
+  "Track": "Këngë",
+  "Playlist faite par Sonara": "Listë e krijuar nga Sonara",
+  "1 titre": "1 këngë",
+  "{0} titres": "{0} këngë"
 }

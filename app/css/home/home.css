@@ -438,6 +438,92 @@ overflow: hidden;
   visibility: hidden;
 }
 
+/* Playlist Sonara : même carte Home, cover composée avec les premières tracks. */
+body.home .cover.is-auto-playlist {
+  position: relative;
+}
+
+body.home .home-playlist-cover-mosaic {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  overflow: hidden;
+  background: #15171b;
+}
+
+body.home .home-playlist-cover-mosaic.is-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+body.home .home-playlist-cover-mosaic.is-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+}
+
+body.home .home-playlist-cover-mosaic.is-3,
+body.home .home-playlist-cover-mosaic.is-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+body.home .home-playlist-cover-cell {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #202329;
+}
+
+body.home .home-playlist-cover-cell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+body.home .home-playlist-cover-cell.is-sonara-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  background: #34373d;
+}
+
+body.home .home-playlist-cover-cell.is-sonara-placeholder svg {
+  width: 30%;
+  height: 30%;
+  min-width: 22px;
+  min-height: 22px;
+  max-width: 44px;
+  max-height: 44px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.home .home-playlist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 7px;
+  margin-top: -8px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+body.home .home-playlist-track-count {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body.home .home-playlist-maker::before {
+  content: "·";
+  margin-right: 7px;
+  opacity: 0.55;
+}
+
 .home-state-card {
   width: min(460px, calc(100% - 40px));
   margin: 80px auto;
