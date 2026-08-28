@@ -518,12 +518,6 @@ body.home .home-playlist-track-count {
   color: rgba(255, 255, 255, 0.72);
 }
 
-body.home .home-playlist-maker::before {
-  content: "·";
-  margin-right: 7px;
-  opacity: 0.55;
-}
-
 .home-state-card {
   width: min(460px, calc(100% - 40px));
   margin: 80px auto;
@@ -2818,7 +2812,6 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
    Jusqu’à 12 éléments. Desktop : 3 colonnes de 4.
    Mobile : 3 tracks par colonne, défilement horizontal.
 ========================= */
-body.home .home-distribution-tracks .scroll-controls,
 body.home .home-distribution-tracks .category-view-all {
   display: none;
 }
@@ -2941,6 +2934,23 @@ body.home .home-track-action {
 
 @media (900px <= width) {
   body.home .home-track-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto);
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(320px, calc((100% - 24px) / 3));
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  body.home .home-track-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.home .home-track-card {
+    scroll-snap-align: start;
   }
 }

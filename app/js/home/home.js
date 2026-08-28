@@ -157,6 +157,30 @@ function getPackCategories(pack = {}) {
     : [];
 }
 
+function normalizeHomeCategoryKey(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function packMatchesHomeCategory(pack = {}, categoryKeys = []) {
+  const wanted = new Set(
+    (Array.isArray(categoryKeys) ? categoryKeys : [])
+      .map(normalizeHomeCategoryKey)
+      .filter(Boolean)
+  );
+  if (!wanted.size) return false;
+
+  return getPackCategories(pack)
+    .map(normalizeHomeCategoryKey)
+    .some((key) => wanted.has(key));
+}
+
 function getPackCoverValue(pack = {}) {
   return (
     pack.coverPack ||
@@ -510,21 +534,84 @@ function applySingleAndPlaylistPresentation(sections = [], distributedPacks = []
     .filter((pack) => getHomeTrackCount(pack) === 1);
 
   const playlists = Array.isArray(payload?.playlists) ? payload.playlists : [];
-  const playlistsByCategory = new Map(
-    playlists.map((playlist) => [String(playlist?.category?.key || "").trim(), playlist])
-  );
+  const playlistDataAvailable = Array.isArray(payload?.playlists);
+  const discoveryPlaylists = playlists.filter((playlist) => playlist?.scope === "discovery");
+  const playlistsByCategory = new Map();
+
+  playlists
+    .filter((playlist) => playlist?.scope !== "discovery")
+    .forEach((playlist) => {
+      const key = String(playlist?.category?.key || "").trim();
+      if (!key) return;
+      if (!playlistsByCategory.has(key)) playlistsByCategory.set(key, []);
+      playlistsByCategory.get(key).push(playlist);
+    });
+
+  const playlistKinds = new Set(["category", "dynamic", "exploration"]);
 
   const transformed = (Array.isArray(sections) ? sections : [])
     .map((section) => {
-      if (section?.kind !== "category") return section;
-      const categoryKey = String(section?.signature?.[0]?.key || "").trim();
-      const playlist = playlistsByCategory.get(categoryKey);
-      if (!playlist) return section;
-      const multiTrackItems = (Array.isArray(section.items) ? section.items : [])
-        .filter((item) => getHomeTrackCount(item) >= 2);
+      if (!playlistDataAvailable || playlists.length === 0) return section;
+      if (section?.kind === "single" || section?.kind === "tracks" || section?.kind === "artists") {
+        return section;
+      }
+
+      const sourceItems = Array.isArray(section?.items) ? section.items : [];
+      const sourceSingles = sourceItems.filter((item) => getHomeTrackCount(item) === 1);
+
+      if (section?.kind === "discovery") {
+        const discoveryAlbums = (Array.isArray(distributedPacks) ? distributedPacks : [])
+          .filter((item) => getHomeTrackCount(item) >= 2);
+
+        if (!discoveryPlaylists.length) {
+          return { ...section, items: discoveryAlbums.length ? discoveryAlbums : sourceItems };
+        }
+
+        return {
+          ...section,
+          items: [
+            ...discoveryAlbums,
+            ...discoveryPlaylists.map(createAutoPlaylistHomeCard)
+          ]
+        };
+      }
+
+      if (!playlistKinds.has(section?.kind)) return section;
+
+      const signatureKeys = (Array.isArray(section?.signature) ? section.signature : [])
+        .map((entry) => String(entry?.key || "").trim())
+        .filter(Boolean);
+
+      const categoryAlbums = signatureKeys.length
+        ? (Array.isArray(distributedPacks) ? distributedPacks : [])
+            .filter((item) =>
+              getHomeTrackCount(item) >= 2 &&
+              packMatchesHomeCategory(item, signatureKeys)
+            )
+        : sourceItems.filter((item) => getHomeTrackCount(item) >= 2);
+
+      const matchedPlaylists = [];
+      const seenPlaylistIds = new Set();
+      signatureKeys.forEach((key) => {
+        (playlistsByCategory.get(key) || []).forEach((playlist) => {
+          if (seenPlaylistIds.has(playlist.id)) return;
+          seenPlaylistIds.add(playlist.id);
+          matchedPlaylists.push(playlist);
+        });
+      });
+
+      if (!matchedPlaylists.length) {
+        return sourceSingles.length
+          ? { ...section, items: categoryAlbums }
+          : { ...section, items: categoryAlbums.length ? categoryAlbums : sourceItems };
+      }
+
       return {
         ...section,
-        items: [...multiTrackItems, createAutoPlaylistHomeCard(playlist)]
+        items: [
+          ...categoryAlbums,
+          ...matchedPlaylists.map(createAutoPlaylistHomeCard)
+        ]
       };
     })
     .filter((section) => Array.isArray(section?.items) && section.items.length > 0);
@@ -546,7 +633,7 @@ function applySingleAndPlaylistPresentation(sections = [], distributedPacks = []
       id: "format:single",
       kind: "single",
       title: "Single",
-      items: singles.slice(0, HOME_RAIL_ITEM_LIMIT)
+      items: singles
     });
   }
 
@@ -850,11 +937,7 @@ function createPackCard(pack = {}) {
     count.className = "home-playlist-track-count";
     count.textContent = trackCount === 1 ? "1 titre" : `${trackCount} titres`;
 
-    const maker = document.createElement("span");
-    maker.className = "home-playlist-maker";
-    maker.textContent = "Playlist faite par Sonara";
-
-    artistMeta.append(count, maker);
+    artistMeta.append(count);
   } else {
     if (artistDestination) {
       artistMeta =
@@ -1507,7 +1590,7 @@ function initializeHomeScrollControls() {
         );
 
       const row =
-        section.querySelector(".pack-row");
+        section.querySelector(".pack-row, .home-track-grid");
 
       if (
         !leftButton ||

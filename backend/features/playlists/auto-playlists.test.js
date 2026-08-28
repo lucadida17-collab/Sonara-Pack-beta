@@ -15,7 +15,7 @@ function pack(id, category, price, artistId) {
   };
 }
 
-test("génère une playlist mensuelle par catégorie avec prix et commission 20%", () => {
+test("génère les playlists de catégorie et découverte, même avec un seul single", () => {
   const result = buildAutoPlaylists([
     pack("a", "Cinematic", 10, "artist-a"),
     pack("b", "Cinematic", 20, "artist-b"),
@@ -23,12 +23,18 @@ test("génère une playlist mensuelle par catégorie avec prix et commission 20%
   ], { editionKey: "2026-08" });
 
   assert.equal(result.quickTracks.length, 3);
-  assert.equal(result.playlists.length, 1);
-  const playlist = result.playlists[0];
-  assert.equal(playlist.trackCount, 2);
-  assert.equal(playlist.pricing.totalPriceCents, 3000);
-  assert.equal(playlist.pricing.sonaraCommissionCents, 600);
-  assert.equal(playlist.pricing.artistPoolCents, 2400);
+  assert.equal(result.playlists.length, 3);
+
+  const cinematic = result.playlists.find((playlist) => playlist.category.key === "cinematic");
+  const piano = result.playlists.find((playlist) => playlist.category.key === "piano");
+  const discovery = result.playlists.find((playlist) => playlist.scope === "discovery");
+
+  assert.equal(cinematic.trackCount, 2);
+  assert.equal(cinematic.pricing.totalPriceCents, 3000);
+  assert.equal(cinematic.pricing.sonaraCommissionCents, 600);
+  assert.equal(cinematic.pricing.artistPoolCents, 2400);
+  assert.equal(piano.trackCount, 1);
+  assert.equal(discovery.trackCount, 3);
 });
 
 test("une édition mensuelle est déterministe et change de clé le mois suivant", () => {
@@ -39,9 +45,13 @@ test("une édition mensuelle est déterministe et change de clé le mois suivant
   const augustB = buildAutoPlaylists(packs, { editionKey: "2026-08" });
   const september = buildAutoPlaylists(packs, { editionKey: "2026-09" });
   assert.deepEqual(
-    augustA.playlists[0].tracks.map((item) => item.trackId),
-    augustB.playlists[0].tracks.map((item) => item.trackId)
+    augustA.playlists.find((item) => item.category.key === "piano").tracks.map((item) => item.trackId),
+    augustB.playlists.find((item) => item.category.key === "piano").tracks.map((item) => item.trackId)
   );
-  assert.notEqual(augustA.playlists[0].id, september.playlists[0].id);
-  assert.equal(augustA.playlists[0].trackCount, 12);
+  assert.notEqual(
+    augustA.playlists.find((item) => item.category.key === "piano").id,
+    september.playlists.find((item) => item.category.key === "piano").id
+  );
+  assert.equal(augustA.playlists.find((item) => item.category.key === "piano").trackCount, 12);
+  assert.equal(augustA.playlists.filter((item) => item.category.key === "piano").length, 2);
 });

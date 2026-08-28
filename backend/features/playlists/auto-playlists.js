@@ -48,14 +48,25 @@ function getTrackCount(pack = {}) {
   return 0;
 }
 
-function getPrimaryCategory(pack = {}) {
+function getCategories(pack = {}) {
   const candidates = [];
   if (Array.isArray(pack.categorie)) candidates.push(...pack.categorie);
   else if (pack.categorie) candidates.push(pack.categorie);
   if (Array.isArray(pack.categories)) candidates.push(...pack.categories);
   if (pack.category) candidates.push(pack.category);
-  const display = candidates.map(clean).find(Boolean) || "Découverte";
-  return { key: normalizeTag(display) || "decouverte", display };
+
+  const unique = new Map();
+  candidates.map(clean).filter(Boolean).forEach((display) => {
+    const key = normalizeTag(display);
+    if (key && !unique.has(key)) unique.set(key, display);
+  });
+
+  if (!unique.size) unique.set("decouverte", "Découverte");
+  return [...unique.entries()].map(([key, display]) => ({ key, display }));
+}
+
+function getPrimaryCategory(pack = {}) {
+  return getCategories(pack)[0] || { key: "decouverte", display: "Découverte" };
 }
 
 function parsePriceCents(value) {
@@ -101,6 +112,7 @@ function publicTrack(pack = {}) {
     track.price || track.trackPrice || track.unitPrice || pack.price || pack.packPrice
   );
   const category = getPrimaryCategory(pack);
+  const categories = getCategories(pack);
 
   return {
     packId: clean(pack.id),
@@ -109,6 +121,7 @@ function publicTrack(pack = {}) {
     packTitle: clean(pack.title || track.title || "Single Sonara") || "Single Sonara",
     artist,
     category,
+    categories,
     coverPack: pack.coverPack || pack.cover || track.coverPack || "",
     audioName: track.audioName || track.audio || "",
     previewStart: Number.isFinite(Number(track.previewStart)) ? Number(track.previewStart) : 0,
@@ -130,28 +143,24 @@ function buildAutoPlaylists(rawPacks = [], options = {}) {
     .filter(isEligibleSingle)
     .map(publicTrack);
 
-  const byCategory = new Map();
-  singles.forEach((track) => {
-    const key = track.category.key || "decouverte";
-    if (!byCategory.has(key)) byCategory.set(key, []);
-    byCategory.get(key).push(track);
-  });
+  function buildPlaylist(selectedTracks, meta = {}) {
+    const selected = Array.isArray(selectedTracks) ? selectedTracks : [];
+    if (!selected.length) return null;
 
-  const playlists = [];
-  for (const [categoryKey, tracks] of byCategory.entries()) {
-    if (tracks.length < 2) continue;
-    const categoryDisplay = tracks[0]?.category?.display || categoryKey;
-    const seed = `${editionKey}:${categoryKey}`;
-    const selected = [...tracks]
-      .sort((a, b) =>
-        deterministicScore(seed, a.trackId) - deterministicScore(seed, b.trackId)
-      )
-      .slice(0, maxTracks);
+    const categoryKey = clean(meta.categoryKey || "decouverte") || "decouverte";
+    const categoryDisplay = clean(meta.categoryDisplay || "Découverte") || "Découverte";
+    const index = Math.max(0, Number(meta.index || 0));
+    const scope = clean(meta.scope || "category") || "category";
+    const baseSlug = scope === "discovery" ? "discovery" : slugify(categoryKey);
+    const idSuffix = index > 0 ? `:${index + 1}` : "";
+    const titleBase = scope === "discovery" ? "Sélection découverte" : `Sélection ${categoryDisplay}`;
+    const title = index > 0 ? `${titleBase} ${index + 1}` : titleBase;
 
     const totalPriceCents = selected.reduce((sum, item) => sum + item.priceCents, 0);
     const sonaraCommissionCents = Math.round(totalPriceCents * AUTO_PLAYLIST_COMMISSION_RATE);
     const artistPoolCents = Math.max(0, totalPriceCents - sonaraCommissionCents);
     const artistsMap = new Map();
+
     selected.forEach((item) => {
       const key = item.artist.accountId || item.artist.name.toLowerCase();
       const current = artistsMap.get(key) || {
@@ -169,8 +178,8 @@ function buildAutoPlaylists(rawPacks = [], options = {}) {
 
     const artistEntries = [...artistsMap.values()];
     let allocatedArtistCents = 0;
-    artistEntries.forEach((entry, index) => {
-      const isLast = index === artistEntries.length - 1;
+    artistEntries.forEach((entry, artistIndex) => {
+      const isLast = artistIndex === artistEntries.length - 1;
       const proportionalShare = totalPriceCents > 0
         ? Math.round((entry.grossCents / totalPriceCents) * artistPoolCents)
         : 0;
@@ -181,12 +190,13 @@ function buildAutoPlaylists(rawPacks = [], options = {}) {
       entry.sonaraCommissionCents = Math.max(0, entry.grossCents - entry.artistShareCents);
     });
 
-    playlists.push({
-      id: `auto:${editionKey}:${slugify(categoryKey)}`,
+    return {
+      id: `auto:${editionKey}:${baseSlug}${idSuffix}`,
       generatedBy: "sonara",
       editionKey,
+      scope,
       category: { key: categoryKey, display: categoryDisplay },
-      title: `Sélection ${categoryDisplay}`,
+      title,
       trackCount: selected.length,
       coverPack: selected[0]?.coverPack || "",
       tracks: selected,
@@ -206,10 +216,73 @@ function buildAutoPlaylists(rawPacks = [], options = {}) {
           artistShare: (entry.artistShareCents / 100).toFixed(2)
         }))
       }
+    };
+  }
+
+  function chunkTracks(tracks = []) {
+    const chunks = [];
+    for (let index = 0; index < tracks.length; index += maxTracks) {
+      chunks.push(tracks.slice(index, index + maxTracks));
+    }
+    return chunks;
+  }
+
+  const byCategory = new Map();
+  singles.forEach((track) => {
+    const categories = Array.isArray(track.categories) && track.categories.length
+      ? track.categories
+      : [track.category || { key: "decouverte", display: "Découverte" }];
+
+    categories.forEach((category) => {
+      const key = clean(category?.key) || "decouverte";
+      if (!byCategory.has(key)) {
+        byCategory.set(key, {
+          display: clean(category?.display) || "Découverte",
+          tracks: []
+        });
+      }
+      byCategory.get(key).tracks.push(track);
+    });
+  });
+
+  const playlists = [];
+
+  for (const [categoryKey, group] of byCategory.entries()) {
+    const seed = `${editionKey}:category:${categoryKey}`;
+    const ordered = [...group.tracks].sort((a, b) =>
+      deterministicScore(seed, a.trackId) - deterministicScore(seed, b.trackId)
+    );
+
+    chunkTracks(ordered).forEach((chunk, index) => {
+      const playlist = buildPlaylist(chunk, {
+        scope: "category",
+        categoryKey,
+        categoryDisplay: group.display,
+        index
+      });
+      if (playlist) playlists.push(playlist);
     });
   }
 
-  playlists.sort((a, b) => a.category.display.localeCompare(b.category.display, "fr"));
+  const discoveryOrdered = [...singles].sort((a, b) =>
+    deterministicScore(`${editionKey}:discovery`, a.trackId) -
+    deterministicScore(`${editionKey}:discovery`, b.trackId)
+  );
+
+  chunkTracks(discoveryOrdered).forEach((chunk, index) => {
+    const playlist = buildPlaylist(chunk, {
+      scope: "discovery",
+      categoryKey: "decouverte",
+      categoryDisplay: "Découverte",
+      index
+    });
+    if (playlist) playlists.push(playlist);
+  });
+
+  playlists.sort((a, b) => {
+    if (a.scope !== b.scope) return a.scope === "discovery" ? -1 : 1;
+    return a.category.display.localeCompare(b.category.display, "fr") || a.id.localeCompare(b.id);
+  });
 
   const quickTracks = [...singles]
     .sort((a, b) =>
