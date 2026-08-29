@@ -208,9 +208,12 @@
         <small class="montage-track-direct-hint">${escapeHtml(t("Glissez le bloc pour le placer. Tirez le bord gauche ou droit pour couper le son."))}</small>
 
         <div class="montage-track-controls montage-volume-only">
-          <label class="montage-control">
-            <span><b>${escapeHtml(t("Volume"))}</b><output>${Math.round(track.volume * 100)}%</output></span>
-            <input type="range" min="0" max="1.5" step="0.05" value="${track.volume}" data-track-volume="${escapeHtml(track.id)}">
+          <label class="montage-control montage-volume-control">
+            <span>
+              <span class="montage-volume-label"><i data-lucide="volume-2"></i><b>${escapeHtml(t("Volume"))}</b></span>
+              <output>${Math.round(track.volume * 100)}%</output>
+            </span>
+            <input type="range" min="0" max="1.5" step="0.05" value="${track.volume}" data-track-volume="${escapeHtml(track.id)}" aria-label="${escapeHtml(t("Volume"))}">
           </label>
         </div>
       </article>

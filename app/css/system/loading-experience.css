@@ -188,3 +188,36 @@
   gap: 16px;
   color: #f5fbff;
 }
+/* Mobile — conseil plus compact et réellement centré. */
+@media (max-width: 599px) {
+  .sonara-loading-advice {
+    width: min(430px, 82vw);
+    margin: 16px auto 0;
+    padding: 11px 12px 10px;
+    border-radius: 14px;
+    box-sizing: border-box;
+  }
+
+  .sonara-loading-advice-head {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .sonara-loading-advice-text {
+    min-height: 36px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .sonara-loading-advice-actions {
+    gap: 7px;
+    margin-top: 7px;
+  }
+
+  .sonara-loading-advice-button {
+    min-width: 34px;
+    min-height: 31px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+}

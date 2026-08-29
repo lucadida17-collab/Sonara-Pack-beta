@@ -515,6 +515,40 @@ body.montage {
   margin-top: 11px;
 }
 
+.montage-volume-control {
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+}
+
+.montage-volume-control > span {
+  align-items: center;
+}
+
+.montage-volume-label {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+}
+
+.montage-volume-label svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.montage-volume-control output {
+  color: rgba(255,255,255,.82);
+  font-variant-numeric: tabular-nums;
+}
+
+.montage-volume-control input[type="range"] {
+  min-height: 24px;
+  cursor: pointer;
+}
+
 .montage-track-direct-hint {
   display: block;
   margin: -3px 0 4px;
