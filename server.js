@@ -284,14 +284,23 @@ const licenseProtection = createLicenseProtection({
 
 
 
+let databaseReady = false;
+let databaseStartupPromise = null;
+
 async function connectDB() {
-  try {
+  if (databaseReady) return true;
+  if (databaseStartupPromise) return databaseStartupPromise;
+
+  databaseStartupPromise = (async () => {
     await client.connect();
+    await db.command({ ping: 1 });
+
     await verificationSecurityCollection.createIndex(
       { expiresAt: 1 },
       { expireAfterSeconds: 0, name: "verification_security_ttl" }
     );
     await licenseProtection.init();
+
     const [legacyUsers, legacyPacks] = await Promise.all([
       usersCollection.find({}).toArray(),
       packsCollection.find({}).toArray()
@@ -300,14 +309,28 @@ async function connectDB() {
       rootUsers: legacyUsers,
       packs: legacyPacks
     });
+
+    databaseReady = true;
     console.log(`Traçabilité licences MAIN prête — ${legacyResult.observed} téléchargement(s) legacy observé(s).`);
     console.log("MongoDB connecté 🔥");
+    return true;
+  })();
+
+  try {
+    return await databaseStartupPromise;
   } catch (error) {
-    console.error(error)
+    // Important sur Render : un premier réveil Mongo peut échouer pendant quelques
+    // secondes. On libère la promesse afin que /api/health ou la requête suivante
+    // puisse réellement retenter la connexion au lieu de garder un échec figé.
+    databaseReady = false;
+    databaseStartupPromise = null;
+    throw error;
   }
 }
 
-connectDB()
+void connectDB().catch((error) => {
+  console.error("Initialisation MongoDB MAIN différée :", error.message || error);
+});
 
 
 const app = express();
@@ -435,13 +458,32 @@ app.post(
 app.use(express.json({ limit: "2mb" }));
 app.use(rejectUnsafeJsonKeys);
 registerSonaraSyncEngine(app);
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    service: "sonara-api",
-    environment: "main",
-    timestamp: new Date().toISOString()
-  });
+app.get("/api/health", async (_req, res) => {
+  try {
+    // MAIN n'est considéré prêt que lorsque MongoDB et les initialisations
+    // critiques sont réellement disponibles. Cela empêche l'écran d'entrée
+    // d'arriver à l'étape ID pendant le réveil de Render/Mongo.
+    await connectDB();
+    await db.command({ ping: 1 });
+
+    return res.status(200).json({
+      ok: true,
+      service: "sonara-api",
+      environment: "main",
+      database: "ready",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.warn("Health MAIN en attente de MongoDB :", error.message || error);
+    return res.status(503).json({
+      ok: false,
+      service: "sonara-api",
+      environment: "main",
+      database: "starting",
+      retryable: true,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 registerAutoPlaylistRoutes(app, {
@@ -1158,6 +1200,10 @@ function sanitizeAccount(account, rootUserId) {
 }
 
 async function findRootAndAccountById(id) {
+  // Une page peut appeler directement /api/profile sans passer par l'écran
+  // d'entrée. On garantit donc ici aussi que MAIN a fini son réveil Mongo.
+  await connectDB();
+
   const requestedId = String(id || "");
 
   if (!requestedId) {
@@ -1186,6 +1232,20 @@ async function findRootAndAccountById(id) {
     }
   }
 
+  // Compatibilité avec les anciennes sessions qui stockaient l'id utilisateur
+  // racine à la place de l'accountId. On ne choisit automatiquement un compte
+  // que lorsqu'il n'y en a qu'un, afin de ne jamais deviner entre plusieurs comptes.
+  const legacyRootUser = await usersCollection.findOne({ id: requestedId });
+  const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
+    ? legacyRootUser.accounts
+    : [];
+
+  if (legacyRootUser && legacyAccounts.length === 1) {
+    return {
+      rootUser: legacyRootUser,
+      account: legacyAccounts[0],
+    };
+  }
 
   return null;
 }
