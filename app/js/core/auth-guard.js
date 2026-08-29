@@ -411,6 +411,20 @@ async function waitForSonaraApiUrl(timeoutMs = 10000) {
   return API_URL;
 }
 
+async function fetchSonaraAuthWithTimeout(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function getSonaraAuthMode() {
   return String(
     SONARA_AUTH_SCRIPT?.dataset?.sonaraAuth ||
@@ -583,13 +597,22 @@ async function verifySonaraSession(options = {}) {
   const redirectOnFailure = options.redirectOnFailure ?? (mode === "required");
 
   const storedProfile = getStoredSonaraProfile();
-  const profileIds = [...new Set([
-    storedProfile?.accountId,
-    storedProfile?.id,
-    storedProfile?.userId
-  ].map((value) => String(value || "").trim()).filter(Boolean))];
+  const storedAccountId = String(
+    storedProfile?.accountId || storedProfile?.id || ""
+  ).trim();
 
-  if (!profileIds.length) {
+  // MAIN/compte : l'identité locale doit être cohérente avant même l'appel serveur.
+  // Si accountId et id existent tous les deux, ils doivent désigner exactement
+  // le même compte. Un userId racine n'est jamais utilisé pour choisir un compte.
+  const storedExplicitAccountId = String(storedProfile?.accountId || "").trim();
+  const storedLegacyId = String(storedProfile?.id || "").trim();
+  const localIdentityMismatch = Boolean(
+    storedExplicitAccountId &&
+    storedLegacyId &&
+    storedExplicitAccountId !== storedLegacyId
+  );
+
+  if (!storedAccountId || localIdentityMismatch) {
     clearSonaraLocalSession();
 
     if (mode === "optional") {
@@ -605,29 +628,17 @@ async function verifySonaraSession(options = {}) {
 
   try {
     const apiUrl = await waitForSonaraApiUrl();
-    let response = null;
+    const response = await fetchSonaraAuthWithTimeout(
+      `${apiUrl}/api/profile/${encodeURIComponent(storedAccountId)}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: { Accept: "application/json" }
+      },
+      8000
+    );
 
-    for (const profileId of profileIds) {
-      response = await fetch(
-        `${apiUrl}/api/profile/${encodeURIComponent(profileId)}`,
-        {
-          method: "GET",
-          cache: "no-store",
-          headers: { Accept: "application/json" }
-        }
-      );
-
-      // Compatibilité avec les anciennes sessions : certains profils stockés
-      // peuvent encore contenir l'ancien id racine. On essaie tous les ids
-      // connus avant de conclure que le compte n'existe plus.
-      if (response.status === 404) {
-        continue;
-      }
-
-      break;
-    }
-
-    if (!response || [401, 403, 404].includes(response.status)) {
+    if ([401, 403, 404].includes(response.status)) {
       clearSonaraLocalSession();
 
       if (redirectOnFailure) {
@@ -645,7 +656,11 @@ async function verifySonaraSession(options = {}) {
       await response.json().catch(() => null)
     );
 
-    if (!(freshProfile?.accountId || freshProfile?.id) || !freshProfile?.role) {
+    const verifiedAccountId = String(
+      freshProfile?.accountId || freshProfile?.id || ""
+    ).trim();
+
+    if (!verifiedAccountId || !freshProfile?.role) {
       clearSonaraLocalSession();
 
       if (redirectOnFailure) {
@@ -653,6 +668,17 @@ async function verifySonaraSession(options = {}) {
       }
 
       return { ok: false, mode, reason: "invalid_profile", profile: null };
+    }
+
+    if (verifiedAccountId !== storedAccountId) {
+      console.error("Identité Sonara refusée : accountId serveur différent de l'accountId demandé.");
+      clearSonaraLocalSession();
+
+      if (redirectOnFailure) {
+        redirectToInscription();
+      }
+
+      return { ok: false, mode, reason: "identity_mismatch", profile: null };
     }
 
     localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
@@ -732,12 +758,6 @@ async function verifySonaraSession(options = {}) {
   } catch (error) {
     console.error("Impossible de vérifier la session :", error);
 
-    const entryLoaderOwnsServerError = /^\/(?:index\.html)?$/.test(window.location.pathname);
-
-    if (mode === "required" && !entryLoaderOwnsServerError) {
-      showSonaraAuthServerError();
-    }
-
     return {
       ok: false,
       mode,
@@ -768,10 +788,50 @@ const SonaraAuth = {
 
 window.SonaraAuth = SonaraAuth;
 
+async function verifyRequiredSessionWithRetry() {
+  const deadline = Date.now() + 60000;
+  let attempt = 0;
+  let result = null;
+
+  do {
+    attempt += 1;
+    result = await verifySonaraSession({
+      mode: SonaraAuth.mode,
+      redirectOnFailure: SonaraAuth.mode === "required"
+    });
+
+    if (result?.reason !== "server_unavailable") {
+      return result;
+    }
+
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+
+    const retryDelay = Math.min(2500, 650 + Math.max(0, attempt - 1) * 350);
+    await new Promise((resolve) => setTimeout(resolve, Math.min(retryDelay, remaining)));
+  } while (Date.now() < deadline);
+
+  if (SonaraAuth.mode === "required") {
+    showSonaraAuthServerError();
+  }
+
+  return result || {
+    ok: false,
+    mode: SonaraAuth.mode,
+    reason: "server_unavailable",
+    profile: null
+  };
+}
+
 function bootstrapSonaraAuth() {
   if (SonaraAuth.ready) return SonaraAuth.ready;
 
-  SonaraAuth.ready = verifySonaraSession({ mode: SonaraAuth.mode });
+  // L'écran d'entrée possède déjà son propre budget global de 60 secondes.
+  // Les pages protégées directes utilisent le même principe ici.
+  SonaraAuth.ready = SonaraAuth.mode === "required"
+    ? verifyRequiredSessionWithRetry()
+    : verifySonaraSession({ mode: SonaraAuth.mode });
+
   window.sonaraPageSessionReady = SonaraAuth.ready;
   return SonaraAuth.ready;
 }

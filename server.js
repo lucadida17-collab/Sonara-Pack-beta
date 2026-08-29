@@ -286,6 +286,40 @@ const licenseProtection = createLicenseProtection({
 
 let databaseReady = false;
 let databaseStartupPromise = null;
+let databaseReconnectTimer = null;
+let databaseReconnectAttempt = 0;
+
+function markDatabaseUnavailable() {
+  databaseReady = false;
+  databaseStartupPromise = null;
+}
+
+function scheduleDatabaseReconnect() {
+  if (databaseReady || databaseReconnectTimer) return;
+
+  databaseReconnectAttempt += 1;
+  const delay = Math.min(2500, 650 + Math.max(0, databaseReconnectAttempt - 1) * 350);
+
+  databaseReconnectTimer = setTimeout(async () => {
+    databaseReconnectTimer = null;
+
+    try {
+      // Un ping/query peut échouer après une connexion précédemment valide.
+      // On invalide alors l'ancien état avant chaque vraie tentative.
+      markDatabaseUnavailable();
+      await connectDB();
+      databaseReconnectAttempt = 0;
+    } catch (error) {
+      console.warn(
+        `MongoDB MAIN toujours indisponible — nouvelle tentative dans ${delay} ms :`,
+        error.message || error
+      );
+      scheduleDatabaseReconnect();
+    }
+  }, delay);
+
+  databaseReconnectTimer.unref?.();
+}
 
 async function connectDB() {
   if (databaseReady) return true;
@@ -322,14 +356,15 @@ async function connectDB() {
     // Important sur Render : un premier réveil Mongo peut échouer pendant quelques
     // secondes. On libère la promesse afin que /api/health ou la requête suivante
     // puisse réellement retenter la connexion au lieu de garder un échec figé.
-    databaseReady = false;
-    databaseStartupPromise = null;
+    markDatabaseUnavailable();
+    scheduleDatabaseReconnect();
     throw error;
   }
 }
 
 void connectDB().catch((error) => {
   console.error("Initialisation MongoDB MAIN différée :", error.message || error);
+  scheduleDatabaseReconnect();
 });
 
 
@@ -474,6 +509,8 @@ app.get("/api/health", async (_req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    markDatabaseUnavailable();
+    scheduleDatabaseReconnect();
     console.warn("Health MAIN en attente de MongoDB :", error.message || error);
     return res.status(503).json({
       ok: false,
@@ -1200,11 +1237,11 @@ function sanitizeAccount(account, rootUserId) {
 }
 
 async function findRootAndAccountById(id) {
-  // Une page peut appeler directement /api/profile sans passer par l'écran
-  // d'entrée. On garantit donc ici aussi que MAIN a fini son réveil Mongo.
+  // Une page peut appeler directement une route de compte sans passer par
+  // l'écran d'entrée. On garantit donc ici aussi que MAIN a fini son réveil Mongo.
   await connectDB();
 
-  const requestedId = String(id || "");
+  const requestedId = String(id || "").trim();
 
   if (!requestedId) {
     return null;
@@ -1225,29 +1262,57 @@ async function findRootAndAccountById(id) {
     );
 
     if (account) {
-      return {
-        rootUser,
-        account,
-      };
+      return { rootUser, account };
     }
   }
 
-  // Compatibilité avec les anciennes sessions qui stockaient l'id utilisateur
-  // racine à la place de l'accountId. On ne choisit automatiquement un compte
-  // que lorsqu'il n'y en a qu'un, afin de ne jamais deviner entre plusieurs comptes.
+  // Compatibilité historique conservée pour les anciennes routes internes.
+  // IMPORTANT : cette compatibilité n'est PAS utilisée par la vérification
+  // d'identité de /api/profile/:id, qui utilise le resolver strict ci-dessous.
   const legacyRootUser = await usersCollection.findOne({ id: requestedId });
   const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
     ? legacyRootUser.accounts
     : [];
 
   if (legacyRootUser && legacyAccounts.length === 1) {
-    return {
-      rootUser: legacyRootUser,
-      account: legacyAccounts[0],
-    };
+    return { rootUser: legacyRootUser, account: legacyAccounts[0] };
   }
 
   return null;
+}
+
+async function findRootAndAccountByAccountIdStrict(accountId) {
+  await connectDB();
+
+  const requestedAccountId = String(accountId || "").trim();
+  if (!requestedAccountId) return null;
+
+  const rootUser = await usersCollection.findOne({
+    $or: [
+      { "accounts.accountId": requestedAccountId },
+      { "accounts.id": requestedAccountId }
+    ]
+  });
+
+  if (!rootUser) return null;
+
+  const account = (rootUser.accounts || []).find((currentAccount) => {
+    const canonical = String(
+      currentAccount.accountId || currentAccount.id || ""
+    ).trim();
+    return canonical === requestedAccountId;
+  });
+
+  if (!account) return null;
+
+  const canonicalAccountId = String(
+    account.accountId || account.id || ""
+  ).trim();
+  if (!canonicalAccountId || canonicalAccountId !== requestedAccountId) {
+    return null;
+  }
+
+  return { rootUser, account };
 }
 
 async function saveAccountState(rootUser, account) {
@@ -2065,7 +2130,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
 app.get("/api/profile/:id", async (req, res) => {
   try {
     const result =
-      await findRootAndAccountById(req.params.id);
+      await findRootAndAccountByAccountIdStrict(req.params.id);
 
     if (!result?.account) {
       return res.status(404).json({
@@ -2111,9 +2176,12 @@ app.get("/api/profile/:id", async (req, res) => {
       error
     );
 
-    return res.status(500).json({
+    markDatabaseUnavailable();
+    scheduleDatabaseReconnect();
+    return res.status(503).json({
       success: false,
-      error: "Impossible de récupérer le profil"
+      retryable: true,
+      error: "Impossible de vérifier le profil pour le moment"
     });
   }
 });
