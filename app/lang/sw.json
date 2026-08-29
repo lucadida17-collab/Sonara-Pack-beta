@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Orodha iliyoundwa na Sonara",
   "1 titre": "Wimbo 1",
   "{0} titres": "Nyimbo {0}",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Muhtasari wa leseni",
+  "Voir le détail des licences": "Tazama maelezo ya leseni",
+  "Masquer le détail des licences": "Ficha maelezo ya leseni",
+  "Licences de la playlist": "Leseni za orodha ya nyimbo",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara inaweka leseni pamoja hapa ili usilazimike kukubali kila wimbo mmoja mmoja.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Kukubali mara moja kunathibitisha leseni za nyimbo zote kwenye orodha hii. Kila leseni bado huhifadhiwa kivyake pamoja na toleo lake.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Tazama maelezo: haki hutofautiana kati ya nyimbo.",
+  "Aucune restriction standard supplémentaire.": "Hakuna vizuizi vya kawaida vya ziada.",
+  "Licences mises à jour": "Leseni zimesasishwa",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Leseni imebadilika tangu ulipofungua orodha. Pakia upya ukurasa ili uone toleo jipya kabla ya kuendelea."
 }

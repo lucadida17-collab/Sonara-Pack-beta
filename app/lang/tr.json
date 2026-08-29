@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Sonara tarafından oluşturulan çalma listesi",
   "1 titre": "1 parça",
   "{0} titres": "{0} parça",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Lisans özeti",
+  "Voir le détail des licences": "Lisans ayrıntılarını gör",
+  "Masquer le détail des licences": "Lisans ayrıntılarını gizle",
+  "Licences de la playlist": "Çalma listesi lisansları",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara, her parçayı tek tek kabul etmeniz gerekmesin diye lisansları burada gruplar.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Tek bir kabul, bu çalma listesindeki tüm parçaların lisanslarını onaylar. Her lisans sürümüyle birlikte ayrı olarak kaydedilmeye devam eder.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Ayrıntılara bakın: haklar parçaya göre değişir.",
+  "Aucune restriction standard supplémentaire.": "Ek standart kısıtlama yok.",
+  "Licences mises à jour": "Lisanslar güncellendi",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Çalma listesini açtıktan sonra bir lisans değişti. Devam etmeden önce yeni sürümü görmek için sayfayı yenileyin."
 }

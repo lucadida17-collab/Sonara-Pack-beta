@@ -11,6 +11,13 @@ function pack(id, category, price, artistId) {
     categorie: [category],
     title: `Pack ${id}`,
     artistProfile: { accountId: artistId, name: `Artist ${artistId}` },
+    license: {
+      version: 2,
+      name: "Licence standard Sonara",
+      permissions: { commercialProjects: true, socialMedia: true },
+      restrictions: { standaloneResale: true },
+      creditRequired: false
+    },
     tracks: [{ id: `track-${id}`, title: `Track ${id}`, price: `${price}€` }]
   };
 }
@@ -30,6 +37,9 @@ test("génère les playlists de catégorie et découverte, même avec un seul si
   const discovery = result.playlists.find((playlist) => playlist.scope === "discovery");
 
   assert.equal(cinematic.trackCount, 2);
+  assert.equal(cinematic.tracks[0].license.version, 2);
+  assert.equal(cinematic.tracks[0].license.permissions.commercialProjects, true);
+  assert.equal(cinematic.tracks[0].license.restrictions.standaloneResale, true);
   assert.equal(cinematic.pricing.totalPriceCents, 3000);
   assert.equal(cinematic.pricing.sonaraCommissionCents, 600);
   assert.equal(cinematic.pricing.artistPoolCents, 2400);

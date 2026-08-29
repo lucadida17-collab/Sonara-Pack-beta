@@ -2729,5 +2729,15 @@
   "Playlist faite par Sonara": "Playlist faite par Sonara",
   "1 titre": "1 titre",
   "{0} titres": "{0} titres",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Résumé des licences",
+  "Voir le détail des licences": "Voir le détail des licences",
+  "Masquer le détail des licences": "Masquer le détail des licences",
+  "Licences de la playlist": "Licences de la playlist",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Consultez le détail : les droits diffèrent selon les titres.",
+  "Aucune restriction standard supplémentaire.": "Aucune restriction standard supplémentaire.",
+  "Licences mises à jour": "Licences mises à jour",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer."
 }

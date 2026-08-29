@@ -1,5 +1,7 @@
 "use strict";
 
+const { licenseModerationSummary } = require("../licenses/pack-license");
+
 const crypto = require("crypto");
 
 const AUTO_PLAYLIST_MAX_TRACKS = 12;
@@ -128,11 +130,7 @@ function publicTrack(pack = {}) {
     previewDuration: Math.min(30, Math.max(1, Number(track.previewDuration || 30))),
     priceCents,
     price: (priceCents / 100).toFixed(2),
-    license: {
-      id: clean(pack?.license?.id || `${pack.id}:license:v${Number(pack?.license?.version || 1)}`),
-      version: Number(pack?.license?.version || 1),
-      name: clean(pack?.license?.name || "Licence standard Sonara") || "Licence standard Sonara"
-    }
+    license: licenseModerationSummary(pack)
   };
 }
 

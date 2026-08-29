@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Плейлист от Sonara",
   "1 titre": "1 трек",
   "{0} titres": "{0} треков",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Сводка лицензий",
+  "Voir le détail des licences": "Показать детали лицензий",
+  "Masquer le détail des licences": "Скрыть детали лицензий",
+  "Licences de la playlist": "Лицензии плейлиста",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara объединяет лицензии здесь, чтобы вам не приходилось принимать условия для каждого трека отдельно.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Одно подтверждение принимает лицензии всех треков плейлиста. Каждая лицензия по-прежнему сохраняется отдельно с указанием версии.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Смотрите детали: права различаются для разных треков.",
+  "Aucune restriction standard supplémentaire.": "Нет дополнительных стандартных ограничений.",
+  "Licences mises à jour": "Лицензии обновлены",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Лицензия изменилась после открытия плейлиста. Перезагрузите страницу и ознакомьтесь с новой версией перед продолжением."
 }

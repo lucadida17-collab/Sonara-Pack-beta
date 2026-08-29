@@ -13,7 +13,7 @@
     gtag('config', 'G-NEBG1Z3EE0');
   </script>
 
-  <link rel="stylesheet" href="/app/css/catalog/pack.css?v=playlist-cover-mosaic-v1">
+  <link rel="stylesheet" href="/app/css/catalog/pack.css?v=playlist-license-summary-v1">
   <link rel="stylesheet" href="/app/css/components/header/header.css?v=cinematic-replay-component-v3">
   <link rel="stylesheet" href="/app/css/core/catalog-shell.css?v=5.3.8.67">
 
@@ -201,6 +201,18 @@
         </section>
       </div>
 
+      <section class="notice-playlist-license-summary" hidden>
+        <div class="notice-playlist-license-summary-head">
+          <h3><i data-lucide="layers-3"></i>Résumé des licences</h3>
+          <button class="notice-playlist-license-toggle" type="button" aria-expanded="false">Voir le détail des licences</button>
+        </div>
+        <p class="notice-playlist-license-intro"></p>
+        <ul class="notice-playlist-license-groups"></ul>
+        <div class="notice-playlist-license-details" hidden>
+          <ul class="notice-playlist-license-tracks"></ul>
+        </div>
+      </section>
+
       <section class="notice-license-details" hidden>
         <h3>Conditions complémentaires</h3>
         <p class="notice-license-custom" data-user-content></p>
@@ -226,10 +238,10 @@
 <script src="/app/js/core/auth-guard.js?v=pre-v1-language-first-entry-v2" data-sonara-auth="required"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/app/js/components/header/header.js?v=cinematic-replay-component-v3"></script>
-  <script src="/app/js/components/navigation/montage-access.js?v=montage-v1"></script>
+  <script src="/app/js/components/navigation/montage-access.js?v=sync-access-auth-ordered-v2"></script>
   <script src="/app/js/legacy/memoire.js"></script>
   <script src="/app/js/system/loading-experience.js?v=loading-tip-controls-v1" defer></script>
-  <script src="/app/js/catalog/pack.js?v=playlist-cover-mosaic-v1" defer></script>
+  <script src="/app/js/catalog/pack.js?v=playlist-license-summary-v1" defer></script>
   <script src="/app/js/core/i18n.js?v=boutique-artist-phase1" defer></script>
 </body>
 

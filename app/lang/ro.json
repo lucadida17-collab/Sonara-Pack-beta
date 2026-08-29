@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Playlist creat de Sonara",
   "1 titre": "1 piesă",
   "{0} titres": "{0} piese",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Rezumat licențe",
+  "Voir le détail des licences": "Vezi detaliile licențelor",
+  "Masquer le détail des licences": "Ascunde detaliile licențelor",
+  "Licences de la playlist": "Licențele playlistului",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara grupează licențele aici pentru a nu fi nevoie să accepți fiecare piesă separat.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "O singură acceptare validează licențele tuturor pieselor din playlist. Fiecare licență rămâne înregistrată separat cu versiunea ei.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Vezi detaliile: drepturile diferă între piese.",
+  "Aucune restriction standard supplémentaire.": "Fără restricții standard suplimentare.",
+  "Licences mises à jour": "Licențe actualizate",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "O licență s-a schimbat după deschiderea playlistului. Reîncarcă pagina pentru a vedea noua versiune înainte de a continua."
 }

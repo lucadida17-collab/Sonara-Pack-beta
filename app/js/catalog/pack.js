@@ -32,6 +32,7 @@ function showPopup({ type = "info", title = "", message = "" }) {
 let selectedPackId = null;
 let selectedTrackId = null;
 let selectedPurchaseType = null;
+let selectedPlaylistLicenseManifest = [];
 
 /*
   Le titre principal du pack garde sa taille CSS normale tant qu'elle tient.
@@ -176,7 +177,112 @@ function packLicenseList(labels, states, customItems) {
   ];
 }
 
+
+function playlistLicenseSignature(licenseValue = {}) {
+  const license = normalizePackLicense(licenseValue);
+  return JSON.stringify({
+    version: Number(license.version || 1),
+    name: String(license.name || ""),
+    creditRequired: Boolean(license.creditRequired),
+    permissions: license.permissions,
+    restrictions: license.restrictions,
+    customPermissions: license.customPermissions,
+    customRestrictions: license.customRestrictions,
+    customTerms: String(license.customTerms || "")
+  });
+}
+
+function buildPlaylistLicenseManifest(pack = {}) {
+  return (Array.isArray(pack?.tracks) ? pack.tracks : []).map((track) => ({
+    packId: String(track?.sourcePackId || track?.packId || ""),
+    trackId: String(track?.sourceTrackId || track?.id || ""),
+    licenseId: String(track?.license?.id || ""),
+    licenseVersion: Number(track?.license?.version || 1)
+  }));
+}
+
+function renderPlaylistLicenseNotice(pack) {
+  const tracks = Array.isArray(pack?.tracks) ? pack.tracks : [];
+  const normalized = tracks.map((track) => ({ track, license: normalizePackLicense(track?.license) }));
+  const groups = new Map();
+
+  normalized.forEach(({ track, license }) => {
+    const signature = playlistLicenseSignature(track?.license);
+    const current = groups.get(signature) || { license, tracks: [] };
+    current.tracks.push(track);
+    groups.set(signature, current);
+  });
+
+  const permissionKeys = Object.keys(PACK_LICENSE_PERMISSION_LABELS);
+  const restrictionKeys = Object.keys(PACK_LICENSE_RESTRICTION_LABELS);
+  const commonPermissions = permissionKeys.filter((key) =>
+    normalized.length > 0 && normalized.every(({ license }) => Boolean(license.permissions?.[key]))
+  );
+  const applicableRestrictions = restrictionKeys.filter((key) =>
+    normalized.some(({ license }) => Boolean(license.restrictions?.[key]))
+  );
+
+  const title = document.getElementById("licenseNoticeTitle");
+  const packLabel = document.querySelector(".notice-license-pack");
+  const permissionList = document.querySelector(".notice-license-permissions");
+  const restrictionList = document.querySelector(".notice-license-restrictions");
+  const details = document.querySelector(".notice-license-details");
+  const credit = document.querySelector(".notice-license-credit");
+  const confirmation = document.querySelector(".notice-license-confirmation");
+  const price = document.querySelector(".notice-license-price");
+  const summary = document.querySelector(".notice-playlist-license-summary");
+  const intro = document.querySelector(".notice-playlist-license-intro");
+  const groupList = document.querySelector(".notice-playlist-license-groups");
+  const trackList = document.querySelector(".notice-playlist-license-tracks");
+  const detailBox = document.querySelector(".notice-playlist-license-details");
+  const toggle = document.querySelector(".notice-playlist-license-toggle");
+
+  selectedPlaylistLicenseManifest = buildPlaylistLicenseManifest(pack);
+  if (title) title.textContent = "Licences de la playlist";
+  if (packLabel) packLabel.textContent = `${tracks.length} titres`;
+  if (price) {
+    const displayedPrice = displayPriceWithEuro(pack?.price || pack?.packPrice || pack?.totalPrice) || "Prix indisponible";
+    price.textContent = isPreV1CommercialMode() ? `Prix prévu : ${displayedPrice}` : displayedPrice;
+  }
+  if (permissionList) {
+    permissionList.innerHTML = commonPermissions.length
+      ? commonPermissions.map((key) => `<li>${escapePackLicenseHtml(PACK_LICENSE_PERMISSION_LABELS[key])}</li>`).join("")
+      : "<li>Consultez le détail : les droits diffèrent selon les titres.</li>";
+  }
+  if (restrictionList) {
+    restrictionList.innerHTML = applicableRestrictions.length
+      ? applicableRestrictions.map((key) => `<li>${escapePackLicenseHtml(PACK_LICENSE_RESTRICTION_LABELS[key])}</li>`).join("")
+      : "<li>Aucune restriction standard supplémentaire.</li>";
+  }
+  if (details) details.hidden = true;
+  if (credit) credit.hidden = !normalized.some(({ license }) => license.creditRequired);
+  if (confirmation) confirmation.textContent = "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.";
+  if (summary) summary.hidden = false;
+  if (intro) intro.textContent = "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.";
+  if (groupList) {
+    groupList.innerHTML = [...groups.values()].map(({ license, tracks: groupTracks }) =>
+      `<li><strong>${escapePackLicenseHtml(license.name || "Licence Sonara")}</strong><span>${groupTracks.length} titre${groupTracks.length > 1 ? "s" : ""} · v${Number(license.version || 1)}</span></li>`
+    ).join("");
+  }
+  if (trackList) {
+    trackList.innerHTML = tracks.map((track) =>
+      `<li><span>${escapePackLicenseHtml(track.title || "Track Sonara")}</span><span>${escapePackLicenseHtml(typeof track?.artist === "string" ? track.artist : (track?.artist?.name || track?.artistName || "Artiste"))}</span><strong>${escapePackLicenseHtml(track?.license?.name || "Licence Sonara")} · v${Number(track?.license?.version || 1)}</strong></li>`
+    ).join("");
+  }
+  if (detailBox) detailBox.hidden = true;
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = "Voir le détail des licences";
+  }
+
+  if (window.lucide) lucide.createIcons();
+  window.SonaraI18n?.refresh?.();
+}
+
 function renderPackLicenseNotice(pack, selectedItem = null) {
+  selectedPlaylistLicenseManifest = [];
+  const playlistSummary = document.querySelector(".notice-playlist-license-summary");
+  if (playlistSummary) playlistSummary.hidden = true;
   const license = normalizePackLicense(pack?.license);
   const permissions = packLicenseList(
     PACK_LICENSE_PERMISSION_LABELS,
@@ -246,7 +352,11 @@ function renderPackLicenseNotice(pack, selectedItem = null) {
 }
 
 function openPackLicenseNotice(selectedItem = null) {
-  renderPackLicenseNotice(packData, selectedItem);
+  if (packData?.isAutoPlaylist && (!selectedItem || selectedItem === packData)) {
+    renderPlaylistLicenseNotice(packData);
+  } else {
+    renderPackLicenseNotice(packData, selectedItem);
+  }
   const overlay = document.querySelector(".notice-overlay");
   if (!overlay) return;
   overlay.style.display = "flex";
@@ -381,11 +491,24 @@ async function acquireAutoPlaylist(profile, commercialState) {
   const response = await fetch(`${API_URL}/api/auto-playlists/${encodeURIComponent(packData.id)}/acquire`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, licensesAccepted: true })
+    body: JSON.stringify({
+      userId,
+      licensesAccepted: true,
+      licenseManifest: selectedPlaylistLicenseManifest
+    })
   });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || data.success !== true) {
+    if (data.code === "PLAYLIST_LICENSES_CHANGED") {
+      showPopup({
+        type: "info",
+        title: "Licences mises à jour",
+        message: "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer."
+      });
+      closePackLicenseNotice();
+      return;
+    }
     throw new Error(data.message || "Playlist indisponible.");
   }
 
@@ -1721,6 +1844,16 @@ src="${getFilePath(track.audioName || track.audio)}"
     const noticeClose = document.querySelector('.notice-close');
     const noticeRefuse = document.querySelector('.notice-refuse');
     const noticeAccept = document.querySelector('.notice-accept');
+    const playlistLicenseToggle = document.querySelector('.notice-playlist-license-toggle');
+    const playlistLicenseDetails = document.querySelector('.notice-playlist-license-details');
+
+    playlistLicenseToggle?.addEventListener('click', () => {
+      const willOpen = Boolean(playlistLicenseDetails?.hidden);
+      if (playlistLicenseDetails) playlistLicenseDetails.hidden = !willOpen;
+      playlistLicenseToggle.setAttribute('aria-expanded', String(willOpen));
+      playlistLicenseToggle.textContent = willOpen ? 'Masquer le détail des licences' : 'Voir le détail des licences';
+      window.SonaraI18n?.refresh?.();
+    });
 
     const zipTrackButtons = document.querySelectorAll(".track-price, .track-price-mobile");
 

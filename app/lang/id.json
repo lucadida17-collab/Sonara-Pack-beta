@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Playlist dibuat oleh Sonara",
   "1 titre": "1 lagu",
   "{0} titres": "{0} lagu",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Ringkasan lisensi",
+  "Voir le détail des licences": "Lihat detail lisensi",
+  "Masquer le détail des licences": "Sembunyikan detail lisensi",
+  "Licences de la playlist": "Lisensi playlist",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara mengelompokkan lisensi di sini agar Anda tidak perlu menerima setiap track satu per satu.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Satu persetujuan mengesahkan lisensi semua track di playlist ini. Setiap lisensi tetap dicatat terpisah beserta versinya.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Lihat detail: hak berbeda untuk setiap track.",
+  "Aucune restriction standard supplémentaire.": "Tidak ada pembatasan standar tambahan.",
+  "Licences mises à jour": "Lisensi diperbarui",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Sebuah lisensi berubah sejak playlist dibuka. Muat ulang halaman untuk meninjau versi baru sebelum melanjutkan."
 }

@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Playlist gemaakt door Sonara",
   "1 titre": "1 nummer",
   "{0} titres": "{0} nummers",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Licentieoverzicht",
+  "Voir le détail des licences": "Licentiedetails bekijken",
+  "Masquer le détail des licences": "Licentiedetails verbergen",
+  "Licences de la playlist": "Playlistlicenties",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara groepeert de licenties hier zodat je niet elk nummer afzonderlijk hoeft te accepteren.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Eén acceptatie bevestigt de licenties van alle nummers in deze playlist. Elke licentie wordt nog steeds afzonderlijk met de versie opgeslagen.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Bekijk de details: rechten verschillen per nummer.",
+  "Aucune restriction standard supplémentaire.": "Geen extra standaardbeperkingen.",
+  "Licences mises à jour": "Licenties bijgewerkt",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Een licentie is gewijzigd sinds je de playlist opende. Herlaad de pagina om de nieuwe versie te bekijken voordat je doorgaat."
 }

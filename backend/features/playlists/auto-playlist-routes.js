@@ -6,6 +6,29 @@ function text(value) {
   return String(value ?? "").trim();
 }
 
+
+function playlistLicenseManifest(playlist = {}) {
+  return (Array.isArray(playlist.tracks) ? playlist.tracks : []).map((track) => ({
+    packId: text(track.packId),
+    trackId: text(track.trackId),
+    licenseId: text(track?.license?.id),
+    licenseVersion: Number(track?.license?.version || 1)
+  }));
+}
+
+function sameLicenseManifest(expected = [], received = []) {
+  if (!Array.isArray(received) || received.length !== expected.length) return false;
+  const key = (item = {}) => [
+    text(item.packId),
+    text(item.trackId),
+    text(item.licenseId),
+    Number(item.licenseVersion || 1)
+  ].join("::");
+  const expectedKeys = expected.map(key).sort();
+  const receivedKeys = received.map(key).sort();
+  return expectedKeys.every((value, index) => value === receivedKeys[index]);
+}
+
 function isBlockedAccount(account = {}) {
   const accountStatus = text(account.status || "approved").toLowerCase();
   const artistStatus = text(account.artistStatus || "").toLowerCase();
@@ -117,6 +140,16 @@ function registerAutoPlaylistRoutes(app, options = {}) {
         return res.status(404).json({ success: false, message: "Playlist Sonara introuvable." });
       }
 
+      const expectedLicenseManifest = playlistLicenseManifest(playlist);
+      if (!sameLicenseManifest(expectedLicenseManifest, req.body?.licenseManifest)) {
+        return res.status(409).json({
+          success: false,
+          code: "PLAYLIST_LICENSES_CHANGED",
+          message: "Les licences de cette playlist ont changé. Recharge la playlist avant de continuer.",
+          licenseManifest: expectedLicenseManifest
+        });
+      }
+
       const account = accountResult?.account;
       if (!account) {
         return res.status(404).json({ success: false, message: "Compte utilisateur introuvable." });
@@ -185,6 +218,7 @@ function registerAutoPlaylistRoutes(app, options = {}) {
         playlistId: playlist.id,
         acquisitionsAdded,
         downloadCount: preparedDownloads.length,
+        licenseAcceptanceCount: preparedDownloads.length,
         downloads: preparedDownloads
       });
     } catch (error) {

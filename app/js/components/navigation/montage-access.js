@@ -25,7 +25,10 @@
   function hasDownloadedContent(profile) {
     return Boolean(
       (Array.isArray(profile?.downloadedPacks) && profile.downloadedPacks.length > 0) ||
-      (Array.isArray(profile?.downloadedTracks) && profile.downloadedTracks.length > 0)
+      (Array.isArray(profile?.downloadedTracks) && profile.downloadedTracks.length > 0) ||
+      (Array.isArray(profile?.downloadHistory) && profile.downloadHistory.some((entry) =>
+        entry && (entry.packId || entry.trackId)
+      ))
     );
   }
 
@@ -65,29 +68,69 @@
     return merged;
   }
 
-  async function fetchFreshProfile(profile) {
-    const accountId = getAccountId(profile);
+  function normalizeFreshProfile(payload) {
+    return payload?.account || payload?.profile || payload || null;
+  }
 
-    if (!accountId || typeof API_URL !== "string" || !API_URL) {
+  async function fetchFreshProfile(profile) {
+    const profileIds = [...new Set([
+      profile?.accountId,
+      profile?.id,
+      profile?.userId
+    ].map((value) => String(value || "").trim()).filter(Boolean))];
+
+    if (!profileIds.length || typeof API_URL !== "string" || !API_URL) {
       return profile;
     }
 
-    const response = await fetch(
-      `${API_URL}/api/users/${encodeURIComponent(accountId)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-        headers: { Accept: "application/json" }
-      }
-    );
+    let lastResponse = null;
 
-    if (!response.ok) {
-      throw new Error(`Profil Montage indisponible (${response.status}).`);
+    for (const profileId of profileIds) {
+      // Même source que la Bibliothèque : elle contient les acquisitions du compte.
+      const libraryResponse = await fetch(
+        `${API_URL}/api/users/${encodeURIComponent(profileId)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: { Accept: "application/json" }
+        }
+      );
+
+      lastResponse = libraryResponse;
+      if (libraryResponse.ok) {
+        const payload = await libraryResponse.json().catch(() => null);
+        const freshProfile = normalizeFreshProfile(payload);
+        if (freshProfile) return mergeAndStoreProfile(profile, freshProfile);
+      }
+
+      if (libraryResponse.status !== 404) break;
+
+      // Compatibilité anciennes sessions : /api/profile sait aussi résoudre
+      // l'ancien id racine lorsqu'il n'y a qu'un compte possible.
+      const profileResponse = await fetch(
+        `${API_URL}/api/profile/${encodeURIComponent(profileId)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: { Accept: "application/json" }
+        }
+      );
+
+      lastResponse = profileResponse;
+      if (profileResponse.ok) {
+        const payload = await profileResponse.json().catch(() => null);
+        const freshProfile = normalizeFreshProfile(payload);
+        if (freshProfile) return mergeAndStoreProfile(profile, freshProfile);
+      }
+
+      if (profileResponse.status !== 404) break;
     }
 
-    const payload = await response.json().catch(() => ({}));
-    const freshProfile = payload?.account || payload;
-    return mergeAndStoreProfile(profile, freshProfile);
+    if (lastResponse && !lastResponse.ok) {
+      throw new Error(`Profil Montage indisponible (${lastResponse.status}).`);
+    }
+
+    return profile;
   }
 
   async function refresh() {
@@ -121,6 +164,18 @@
   });
 
   async function initialize() {
+    // Le garde de session est la première source de vérité. Sans cette attente,
+    // Sync pouvait lire un vieux profil local avant la restauration du compte
+    // et rediriger à tort vers le Home.
+    try {
+      const authResult = await window.SonaraAuth?.ready;
+      if (authResult?.profile) {
+        mergeAndStoreProfile(getStoredProfile(), authResult.profile);
+      }
+    } catch (error) {
+      console.warn("Montage : session non resynchronisée avant le contrôle d'accès.", error);
+    }
+
     const result = await refresh();
     resolveReady(result);
   }

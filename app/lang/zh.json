@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Sonara 创建的播放列表",
   "1 titre": "1 首曲目",
   "{0} titres": "{0} 首曲目",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "许可证摘要",
+  "Voir le détail des licences": "查看许可证详情",
+  "Masquer le détail des licences": "隐藏许可证详情",
+  "Licences de la playlist": "播放列表许可证",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara 会在这里汇总许可证，避免你逐首确认每个曲目。",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "一次确认即可接受此播放列表中所有曲目的许可证。每份许可证及其版本仍会单独记录。",
+  "Consultez le détail : les droits diffèrent selon les titres.": "请查看详情：不同曲目的授权范围可能不同。",
+  "Aucune restriction standard supplémentaire.": "没有额外的标准限制。",
+  "Licences mises à jour": "许可证已更新",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "你打开播放列表后有许可证发生了变化。请刷新页面并查看新版本后再继续。"
 }

@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Playlist criada pela Sonara",
   "1 titre": "1 faixa",
   "{0} titres": "{0} faixas",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Resumo das licenças",
+  "Voir le détail des licences": "Ver detalhes das licenças",
+  "Masquer le détail des licences": "Ocultar detalhes das licenças",
+  "Licences de la playlist": "Licenças da playlist",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "A Sonara agrupa as licenças aqui para evitar que tenhas de aceitar cada faixa uma a uma.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Uma única aceitação valida as licenças de todas as faixas desta playlist. Cada licença continua registada separadamente com a sua versão.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Consulta os detalhes: os direitos variam entre as faixas.",
+  "Aucune restriction standard supplémentaire.": "Sem restrições padrão adicionais.",
+  "Licences mises à jour": "Licenças atualizadas",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Uma licença mudou desde que abriste a playlist. Recarrega a página para consultar a nova versão antes de continuar."
 }

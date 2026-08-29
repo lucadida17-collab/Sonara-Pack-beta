@@ -367,7 +367,102 @@ body {
     opacity: 0.9;
   }
 
-  .notice-actions {
+  
+.notice-playlist-license-summary {
+  margin: 14px 0 0;
+  border: 1px solid rgba(111, 225, 255, .14);
+  border-radius: 17px;
+  padding: 15px 17px;
+  background: rgba(58, 150, 194, .07);
+}
+
+.notice-playlist-license-summary[hidden],
+.notice-playlist-license-details[hidden] {
+  display: none !important;
+}
+
+.notice-playlist-license-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notice-playlist-license-summary h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #75eaf5;
+  font-size: .95rem;
+}
+
+.notice-playlist-license-summary h3 svg { width: 17px; height: 17px; }
+
+.notice-playlist-license-toggle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #76e9f4;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notice-playlist-license-intro {
+  margin: 9px 0 0 !important;
+  color: rgba(229, 244, 255, .65) !important;
+  font-size: .82rem !important;
+  line-height: 1.5 !important;
+}
+
+.notice-playlist-license-groups,
+.notice-playlist-license-tracks {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.notice-playlist-license-groups li {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 8px 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.notice-playlist-license-groups strong { color: rgba(242,250,255,.88); font-size: .8rem; }
+.notice-playlist-license-groups span { color: rgba(225,242,255,.52); font-size: .74rem; white-space: nowrap; }
+
+.notice-playlist-license-details {
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+
+.notice-playlist-license-tracks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) auto;
+  gap: 10px;
+  align-items: center;
+  color: rgba(232,246,255,.68);
+  font-size: .75rem;
+}
+
+.notice-playlist-license-tracks strong {
+  color: rgba(118,233,244,.78);
+  font-size: .72rem;
+  text-align: right;
+}
+
+.notice-actions {
     display: flex;
     gap: 12px;
     margin-top: 24px;
@@ -2634,6 +2729,25 @@ body.pack-page .track-list,
   .notice-license-icon svg { width: 22px; height: 22px; }
   
   .notice-license-grid { grid-template-columns: 1fr; }
+  .notice-playlist-license-summary-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .notice-playlist-license-groups li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .notice-playlist-license-tracks li {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .notice-playlist-license-tracks strong { text-align: left; }
+
   .notice-actions {
     bottom: -21px;
     margin: 18px -16px -21px;

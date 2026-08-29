@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "قائمة تشغيل من إعداد Sonara",
   "1 titre": "عنوان واحد",
   "{0} titres": "{0} عناوين",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "ملخص التراخيص",
+  "Voir le détail des licences": "عرض تفاصيل التراخيص",
+  "Masquer le détail des licences": "إخفاء تفاصيل التراخيص",
+  "Licences de la playlist": "تراخيص قائمة التشغيل",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "تجمع Sonara التراخيص هنا حتى لا تضطر إلى قبول كل مقطع على حدة.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "موافقة واحدة تعتمد تراخيص جميع المقاطع في قائمة التشغيل، مع بقاء كل ترخيص محفوظًا بشكل منفصل مع إصداره.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "راجع التفاصيل: تختلف الحقوق حسب المقطع.",
+  "Aucune restriction standard supplémentaire.": "لا توجد قيود قياسية إضافية.",
+  "Licences mises à jour": "تم تحديث التراخيص",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "تم تغيير أحد التراخيص منذ فتح قائمة التشغيل. أعد تحميل الصفحة لمراجعة الإصدار الجديد قبل المتابعة."
 }

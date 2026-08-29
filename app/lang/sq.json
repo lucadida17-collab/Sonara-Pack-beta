@@ -2730,5 +2730,15 @@
   "Playlist faite par Sonara": "Listë e krijuar nga Sonara",
   "1 titre": "1 këngë",
   "{0} titres": "{0} këngë",
-  "Top Track": "Top Track"
+  "Top Track": "Top Track",
+  "Résumé des licences": "Përmbledhja e licencave",
+  "Voir le détail des licences": "Shiko detajet e licencave",
+  "Masquer le détail des licences": "Fshih detajet e licencave",
+  "Licences de la playlist": "Licencat e listës",
+  "Sonara regroupe ici les licences pour éviter de vous faire accepter chaque titre un par un.": "Sonara i grupon licencat këtu që të mos të duhet të pranosh çdo këngë veçmas.",
+  "Une seule acceptation valide les licences de tous les titres de cette playlist. Chaque licence reste enregistrée séparément avec sa version.": "Një pranim i vetëm vlefshmëron licencat e të gjitha këngëve në këtë listë. Çdo licencë ruhet veçmas me versionin e saj.",
+  "Consultez le détail : les droits diffèrent selon les titres.": "Shiko detajet: të drejtat ndryshojnë sipas këngës.",
+  "Aucune restriction standard supplémentaire.": "Nuk ka kufizime standarde shtesë.",
+  "Licences mises à jour": "Licencat u përditësuan",
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Një licencë ndryshoi pasi hape listën. Rifresko faqen për të parë versionin e ri para se të vazhdosh."
 }
