@@ -781,15 +781,8 @@
   async function initialize() {
     const profile = getProfile();
     initializeNavigation(profile);
-
-    try {
-      const access = await window.SonaraMontageAccess?.ready;
-      if (!access?.allowed) { window.location.replace("/home.html"); return; }
-    } catch (error) {
-      console.error("Accès Sonara Sync impossible :", error);
-      window.location.replace("/home.html");
-      return;
-    }
+    // Sync est indépendant de Bibliothèque. Le garde de session de la page
+    // reste la seule protection d’accès au compte.
 
     try { await window.SonaraI18n?.ready; } catch {}
 
