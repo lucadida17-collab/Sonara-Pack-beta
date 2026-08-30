@@ -2008,7 +2008,6 @@ function renderLicense() {
                 <strong>Création humaine & vérification</strong>
                 <small>Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.</small>
               </div>
-              <span class="create-human-badge">HUMAN FIRST</span>
             </div>
 
             <label class="create-license-credit create-human-declaration">
@@ -2023,10 +2022,12 @@ function renderLicense() {
               <label><span>DAW utilisé</span><input name="creationDaw" maxlength="100" value="${escapeHtml(packData.creationProcess.daw || "")}" placeholder="FL Studio, Ableton Live…"></label>
               <label><span>Instruments utilisés</span><input name="creationInstruments" maxlength="900" value="${escapeHtml((packData.creationProcess.instruments || []).join(", "))}" placeholder="Piano, violon, batterie…"></label>
               <label><span>VST / plugins principaux</span><input name="creationPlugins" maxlength="1200" value="${escapeHtml((packData.creationProcess.plugins || []).join(", "))}" placeholder="Kontakt, Serum, FabFilter…"></label>
-              <label class="create-human-check"><input type="checkbox" name="creationMidiPresent" ${packData.creationProcess.midiPresent ? "checked" : ""}><span>MIDI utilisé dans la création</span></label>
             </div>
 
-            <label class="create-human-check"><input type="checkbox" name="aiAssistanceUsed" ${packData.creationProcess.aiAssistanceUsed ? "checked" : ""}><span>Une aide IA technique a été utilisée</span></label>
+            <div class="create-human-toggle-row">
+              <label class="create-human-check"><input type="checkbox" name="creationMidiPresent" ${packData.creationProcess.midiPresent ? "checked" : ""}><span>MIDI utilisé dans la création</span></label>
+              <label class="create-human-check"><input type="checkbox" name="aiAssistanceUsed" ${packData.creationProcess.aiAssistanceUsed ? "checked" : ""}><span>Une aide IA technique a été utilisée</span></label>
+            </div>
             <div class="create-human-ai-fields" ${packData.creationProcess.aiAssistanceUsed ? "" : "hidden"}>
               <label><span>Type d’aide IA</span><select name="aiAssistanceType">
                 <option value="mastering" ${packData.creationProcess.aiAssistanceType === "mastering" ? "selected" : ""}>Mastering assisté</option>
@@ -2041,12 +2042,7 @@ function renderLicense() {
 
             <label><span>Commentaire sur le processus de création</span><textarea name="creationProcessComment" maxlength="1600" placeholder="Optionnel : composition, enregistrement, arrangement, mix…">${escapeHtml(packData.creationProcess.processComment || "")}</textarea></label>
 
-            <label class="create-human-evidence-upload">
-              <span>Justificatifs privés pour la modération</span>
-              <input type="file" name="creationEvidenceFiles" multiple accept=".mid,.midi,.flp,.als,.logicx,.rpp,.cpr,.ptx,.song,.wav,.flac,.aif,.aiff,.zip,.png,.jpg,.jpeg,.webp,.pdf">
-              <small>MIDI, projet DAW, stems, capture ou document · 8 fichiers max · 100 Mo max par fichier.</small>
-            </label>
-            <div class="create-human-evidence-list"></div>
+            
           </section>
         </form>
 
@@ -2081,38 +2077,6 @@ function renderLicense() {
   updateCreatePackLicensePreview(form);
   const aiToggle = form.elements.aiAssistanceUsed;
   const aiFields = form.querySelector(".create-human-ai-fields");
-  const evidenceInput = form.elements.creationEvidenceFiles;
-  const evidenceList = form.querySelector(".create-human-evidence-list");
-  const renderEvidenceList = () => {
-    if (!evidenceList) return;
-    evidenceList.innerHTML = packData.creationEvidenceFiles.length
-      ? packData.creationEvidenceFiles.map((file) => `<span>${escapeHtml(file.name)} <small>${escapeHtml(inferCreationEvidenceKind(file))}</small></span>`).join("")
-      : `<small>Aucun justificatif ajouté.</small>`;
-  };
-  aiToggle?.addEventListener("change", () => {
-    if (aiFields) aiFields.hidden = !aiToggle.checked;
-    syncHumanCreationForm(form);
-  });
-  form.querySelectorAll('[name^="creation"], [name="aiAssistanceType"], [name="aiAssistanceDetails"]').forEach((field) => {
-    field.addEventListener("input", () => syncHumanCreationForm(form));
-    field.addEventListener("change", () => syncHumanCreationForm(form));
-  });
-  evidenceInput?.addEventListener("change", () => {
-    const files = Array.from(evidenceInput.files || []).slice(0, 8);
-    const oversized = files.find((file) => file.size > 100 * 1024 * 1024);
-    if (oversized) {
-      showFieldError("license", "Un justificatif dépasse 100 Mo.");
-      evidenceInput.value = "";
-      return;
-    }
-    packData.creationEvidenceFiles = files;
-    if (files.some((file) => ["midi", "project"].includes(inferCreationEvidenceKind(file)))) {
-      packData.creationProcess.midiPresent = packData.creationProcess.midiPresent || files.some((file) => inferCreationEvidenceKind(file) === "midi");
-    }
-    renderEvidenceList();
-  });
-  renderEvidenceList();
-
   document.querySelector(".create-license-reset").addEventListener("click", () => {
     packData.license = createDefaultPackLicense();
     renderLicense();
@@ -2397,10 +2361,6 @@ async function submitPack() {
       });
     }
 
-    packData.creationEvidenceFiles.forEach((file, index) => {
-      formData.append(`creationEvidence_${index}`, file);
-    });
-
     submissionLoader?.setStatus("Tes fichiers sont envoyés à Sonara…");
 
     const response = await sendPackFormData(formData, submissionLoader);
@@ -2576,7 +2536,7 @@ function buildFinalPack() {
     },
     rightsDeclarationAccepted: packData.rightsDeclarationAccepted === true,
     creationProcess: { ...packData.creationProcess, declaredAt: new Date().toISOString() },
-    creationEvidenceKinds: packData.creationEvidenceFiles.map(inferCreationEvidenceKind),
+    creationEvidenceKinds: [],
     status: "pending",
     createdAt: new Date().toISOString()
   };
