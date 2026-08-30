@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Sprawdź szczegóły: prawa różnią się między utworami.",
   "Aucune restriction standard supplémentaire.": "Brak dodatkowych standardowych ograniczeń.",
   "Licences mises à jour": "Licencje zaktualizowane",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Licencja zmieniła się od czasu otwarcia playlisty. Odśwież stronę, aby sprawdzić nową wersję przed kontynuowaniem."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Licencja zmieniła się od czasu otwarcia playlisty. Odśwież stronę, aby sprawdzić nową wersję przed kontynuowaniem.",
+  "Création humaine & vérification": "Twórczość ludzka i weryfikacja",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Te informacje i dowody pozostają prywatne i są widoczne tylko dla moderacji.",
+  "Déclaration de création humaine obligatoire": "Obowiązkowe oświadczenie o twórczości ludzkiej",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Potwierdzam, że ta muzyka została stworzona głównie przez człowieka, posiadam niezbędne prawa i nie została ona w większości wygenerowana przez sztuczną inteligencję.",
+  "DAW utilisé": "Używany DAW",
+  "Instruments utilisés": "Użyte instrumenty",
+  "VST / plugins principaux": "Główne VST / wtyczki",
+  "MIDI utilisé dans la création": "MIDI użyte w tworzeniu",
+  "Une aide IA technique a été utilisée": "Użyto technicznego wsparcia AI",
+  "Type d’aide IA": "Rodzaj wsparcia AI",
+  "Précision sur l’aide IA": "Szczegóły wsparcia AI",
+  "Commentaire sur le processus de création": "Komentarz o procesie tworzenia",
+  "Justificatifs privés pour la modération": "Prywatne dowody dla moderacji",
+  "Signal de détection automatique — non conclusif": "Automatyczny sygnał wykrywania — nierozstrzygający",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Potwierdź oświadczenie o twórczości ludzkiej przed wysłaniem.",
+  "Réponse envoyée à la modération.": "Odpowiedź wysłana do moderacji."
 }

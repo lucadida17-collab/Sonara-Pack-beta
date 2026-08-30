@@ -17,6 +17,8 @@ const {
   licenseModerationSummary
 } = require("./backend/features/licenses/pack-license");
 const { createLicenseProtection, hashFileSha256, FINGERPRINT_STATUS } = require("./backend/features/licenses/license-protection");
+const humanCreationModeration = require("./backend/features/moderation/human-creation");
+const { registerHumanCreationReviewRoutes } = require("./backend/features/moderation/human-review-routes");
 const nodemailer = require("nodemailer");
 const AdmZip = require("adm-zip");
 require("dotenv").config({
@@ -291,7 +293,9 @@ const PACK_MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const PACK_MAX_AUDIO_SIZE = 250 * 1024 * 1024;
 const PACK_MAX_RESOURCES = 20;
 const PACK_MAX_RESOURCE_SIZE = 250 * 1024 * 1024;
-const PACK_MAX_FILES = 1 + Math.max(PACK_MAX_TRACKS * 2, PACK_MAX_RESOURCES);
+const PACK_MAX_EVIDENCE_FILES = 8;
+const PACK_MAX_EVIDENCE_SIZE = 100 * 1024 * 1024;
+const PACK_MAX_FILES = 1 + Math.max(PACK_MAX_TRACKS * 2, PACK_MAX_RESOURCES) + PACK_MAX_EVIDENCE_FILES;
 
 const PACK_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -321,6 +325,16 @@ function isPackResourceField(fieldname) {
   return /^resourceFile_\d+$/.test(fieldname);
 }
 
+function isPackEvidenceField(fieldname) {
+  return /^creationEvidence_\d+$/.test(fieldname);
+}
+
+function isAllowedCreationEvidence(file) {
+  const extension = path.extname(file?.originalname || "").toLowerCase();
+  const blocked = new Set([".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".js", ".mjs", ".cjs", ".php", ".py", ".sh", ".ps1"]);
+  return Boolean(extension) && !blocked.has(extension) && Number(file?.size || 0) <= PACK_MAX_EVIDENCE_SIZE;
+}
+
 function packFileFilter(req, file, cb) {
   if (isPackImageField(file.fieldname)) {
     if (!PACK_IMAGE_TYPES.has(file.mimetype)) {
@@ -340,6 +354,10 @@ function packFileFilter(req, file, cb) {
   }
 
   if (isPackResourceField(file.fieldname)) {
+    return cb(null, true);
+  }
+
+  if (isPackEvidenceField(file.fieldname) && isAllowedCreationEvidence(file)) {
     return cb(null, true);
   }
 
@@ -681,6 +699,14 @@ function validatePendingPackRequest(req) {
   if (pack.rightsDeclarationAccepted !== true) {
     return { valid: false, status: 400, code: "RIGHTS_DECLARATION_REQUIRED", message: "La déclaration de droits est obligatoire avant publication." };
   }
+  const creationValidation = humanCreationModeration.validateCreationProcess(pack.creationProcess || {});
+  if (!creationValidation.valid) {
+    return { valid: false, status: 400, code: creationValidation.code, message: creationValidation.message };
+  }
+  pack.creationProcess = creationValidation.value;
+  pack.creationEvidenceKinds = Array.isArray(pack.creationEvidenceKinds)
+    ? pack.creationEvidenceKinds.map((value) => String(value || "other").trim().slice(0, 40)).slice(0, PACK_MAX_EVIDENCE_FILES)
+    : [];
   pack.license = normalizePackLicense(pack.license);
 
   const files = Array.isArray(req.files) ? req.files : [];
@@ -755,6 +781,18 @@ function validatePendingPackRequest(req) {
       expectedFields.add(`resourceFile_${index}`);
     });
   }
+  const evidenceFiles = files
+    .filter((file) => isPackEvidenceField(file.fieldname))
+    .sort((a, b) => Number(a.fieldname.split("_").pop()) - Number(b.fieldname.split("_").pop()));
+  if (evidenceFiles.length > PACK_MAX_EVIDENCE_FILES) {
+    return { valid: false, status: 400, message: `Maximum ${PACK_MAX_EVIDENCE_FILES} justificatifs privés.` };
+  }
+  for (const evidenceFile of evidenceFiles) {
+    if (!isAllowedCreationEvidence(evidenceFile)) {
+      return { valid: false, status: 400, message: "Un justificatif de création n’est pas autorisé ou dépasse 100 Mo." };
+    }
+    expectedFields.add(evidenceFile.fieldname);
+  }
   const unexpectedFile = files.find((file) => !expectedFields.has(file.fieldname));
   if (unexpectedFile) return { valid: false, status: 400, message: "Le pack contient un fichier inattendu." };
   if (files.length !== expectedFields.size) return { valid: false, status: 400, message: "Le nombre de fichiers reçus ne correspond pas au pack." };
@@ -814,6 +852,13 @@ licenseProtection.init()
   .catch((error) => {
     console.error("Initialisation protection licences LOCAL impossible :", error);
   });
+
+registerHumanCreationReviewRoutes({
+  app,
+  packsPath,
+  environment: "local",
+  localEvidenceDir: path.join(__dirname, "data", "moderation-evidence")
+});
 
 registerAutoPlaylistRoutes(app, {
   getApprovedAudioPacks: async () => readJsonArray(packsPath).filter((pack) =>
@@ -1579,6 +1624,22 @@ app.get("/api/profile/:id", (req, res) => {
         account = foundAccount;
 
         break;
+      }
+    }
+
+    if (!account) {
+      const legacyRootUser = users.find(
+        (currentRootUser) => String(currentRootUser.id) === requestedId
+      );
+      const legacyAccounts = Array.isArray(legacyRootUser?.accounts)
+        ? legacyRootUser.accounts
+        : [];
+
+      // Anciennes sessions : l'id racine pouvait être conservé à la place de
+      // l'accountId. On restaure uniquement lorsqu'un seul compte est possible.
+      if (legacyRootUser && legacyAccounts.length === 1) {
+        rootUser = legacyRootUser;
+        account = legacyAccounts[0];
       }
     }
 
@@ -4160,7 +4221,7 @@ function enrichLocalPublicCataloguePack(pack, context) {
   });
 
   return {
-    ...pack,
+    ...humanCreationModeration.publicPackWithoutPrivateEvidence(pack),
     resources: publicResources,
     artistProfile,
     metrics: {
@@ -4174,7 +4235,7 @@ function enrichLocalPublicCataloguePack(pack, context) {
 app.get("/api/packs/pending", (req, res) => {
   const packs = readJsonArray(packsPath)
     .filter((pack) => !isPackHiddenByModeration(pack))
-    .map((pack) => ({ ...pack, license: normalizePackLicense(pack.license) }));
+    .map((pack) => ({ ...humanCreationModeration.publicPackWithoutPrivateEvidence(pack), license: normalizePackLicense(pack.license) }));
   res.json(packs);
 });
 
@@ -4412,6 +4473,43 @@ app.post(
       const coverPackFile = fileByField.get("coverPack");
       receivedPack.coverPack = coverPackFile.filename;
 
+      const creationEvidence = [];
+      const evidenceFiles = (Array.isArray(req.files) ? req.files : [])
+        .filter((file) => isPackEvidenceField(file.fieldname))
+        .sort((a, b) => Number(a.fieldname.split("_").pop()) - Number(b.fieldname.split("_").pop()));
+      for (const file of evidenceFiles) {
+        const evidenceIndex = Number(file.fieldname.split("_").pop()) || 0;
+        const extension = path.extname(file.originalname || "").toLowerCase();
+        let midiAnalysis = null;
+        if ([".mid", ".midi"].includes(extension)) {
+          const preview = buildMidiPreviewFromFile(file.path, { full: true });
+          if (preview) {
+            const notes = Array.isArray(preview.notes) ? preview.notes : [];
+            midiAnalysis = {
+              noteCount: notes.length,
+              velocityVariety: [...new Set(notes.map((note) => Number(note.velocity)).filter(Number.isFinite))].length,
+              lowestNote: preview.lowestNote ?? null,
+              highestNote: preview.highestNote ?? null,
+              ticksPerQuarter: preview.ticksPerQuarter || null,
+              totalTicks: preview.totalTicks || null,
+              notes: notes.slice(0, 512)
+            };
+          }
+        }
+        const privateEvidenceDir = path.join(__dirname, "data", "moderation-evidence");
+        fs.mkdirSync(privateEvidenceDir, { recursive: true });
+        const privateEvidencePath = path.join(privateEvidenceDir, path.basename(file.filename));
+        fs.renameSync(file.path, privateEvidencePath);
+        const storageKey = path.basename(file.filename);
+        creationEvidence.push(humanCreationModeration.normalizeEvidenceMeta({
+          kind: receivedPack.creationEvidenceKinds?.[evidenceIndex] || ([".mid", ".midi"].includes(extension) ? "midi" : "other"),
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          storageKey,
+          midiAnalysis
+        }));
+      }
       const preparedTracks = [];
       const preparedResources = [];
 
@@ -4478,6 +4576,9 @@ app.post(
           }
         ).license,
         licenseHistory: Array.isArray(receivedPack.licenseHistory) ? receivedPack.licenseHistory : [],
+        creationEvidence,
+        humanModeration: { state: "pending", internalNote: "", history: [], requests: [] },
+        technicalModerationSignals: humanCreationModeration.buildTechnicalSignals({ ...receivedPack, tracks: preparedTracks, creationEvidence }),
         status: "pending",
         submissionType: "publish",
         submittedAt: new Date().toISOString(),
@@ -4565,7 +4666,7 @@ app.post(
         persisted: true,
         notificationCreated,
         message: "Pack envoyé en modération.",
-        pack: storedPack
+        pack: humanCreationModeration.publicPackWithoutPrivateEvidence(storedPack)
       });
     } catch (error) {
       console.error("ERREUR /api/packs/pending :", error);

@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Vezi detaliile: drepturile diferă între piese.",
   "Aucune restriction standard supplémentaire.": "Fără restricții standard suplimentare.",
   "Licences mises à jour": "Licențe actualizate",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "O licență s-a schimbat după deschiderea playlistului. Reîncarcă pagina pentru a vedea noua versiune înainte de a continua."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "O licență s-a schimbat după deschiderea playlistului. Reîncarcă pagina pentru a vedea noua versiune înainte de a continua.",
+  "Création humaine & vérification": "Creație umană și verificare",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Aceste informații și dovezi rămân private și sunt vizibile doar moderării.",
+  "Déclaration de création humaine obligatoire": "Declarație obligatorie de creație umană",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Confirm că această muzică a fost creată în principal de un om, că dețin drepturile necesare și că nu a fost generată în cea mai mare parte de inteligență artificială.",
+  "DAW utilisé": "DAW utilizat",
+  "Instruments utilisés": "Instrumente utilizate",
+  "VST / plugins principaux": "VST / pluginuri principale",
+  "MIDI utilisé dans la création": "MIDI utilizat în creație",
+  "Une aide IA technique a été utilisée": "A fost folosită asistență tehnică AI",
+  "Type d’aide IA": "Tip de asistență AI",
+  "Précision sur l’aide IA": "Detalii despre asistența AI",
+  "Commentaire sur le processus de création": "Comentariu despre procesul de creație",
+  "Justificatifs privés pour la modération": "Dovezi private pentru moderare",
+  "Signal de détection automatique — non conclusif": "Semnal de detecție automată — neconcludent",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Confirmă declarația de creație umană înainte de trimitere.",
+  "Réponse envoyée à la modération.": "Răspuns trimis către moderare."
 }

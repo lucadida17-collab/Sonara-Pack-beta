@@ -234,6 +234,40 @@ function bindManagePackChoiceStates(form) {
   });
 }
 
+async function loadManagePackModerationRequest(pack) {
+  const accountId = managePackAccountId();
+  if (!accountId || !pack?.id) return;
+  try {
+    const response = await fetch(`${API_URL}/api/packs/${encodeURIComponent(pack.id)}/moderation-request?accountId=${encodeURIComponent(accountId)}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    const openRequest = [...(data.requests || [])].reverse().find((item) => item?.status === "open");
+    if (!openRequest) return;
+    const hero = managePackRoot.querySelector(".manage-pack-hero");
+    if (!hero) return;
+    const section = document.createElement("section");
+    section.className = "manage-pack-moderation-request";
+    section.innerHTML = `
+      <div><p class="manage-pack-eyebrow">MODÉRATION · INFORMATIONS REQUISES</p><h2>${managePackEscape(openRequest.question || "La modération demande des informations supplémentaires.")}</h2><small>Ta réponse sera conservée dans l’historique de review du pack.</small></div>
+      <form><textarea name="response" maxlength="2200" required placeholder="Réponds précisément sur ton processus de création ou les justificatifs demandés."></textarea><button type="submit">Envoyer la réponse</button></form>`;
+    hero.insertAdjacentElement("afterend", section);
+    section.querySelector("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget; const button = form.querySelector("button");
+      button.disabled = true;
+      try {
+        const send = await fetch(`${API_URL}/api/packs/${encodeURIComponent(pack.id)}/moderation-response`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accountId, response: form.response.value })
+        });
+        const result = await managePackReadJson(send);
+        if (!send.ok) throw new Error(result.message || "Réponse non enregistrée.");
+        section.remove(); managePackToast("Réponse envoyée à la modération.");
+      } catch (error) { managePackToast(error.message, "error"); button.disabled = false; }
+    });
+  } catch {}
+}
+
 function renderManagePack(pack) {
   const license = managePackCloneLicense(pack.license);
   const title = pack.title || pack.name || "Pack sans titre";
@@ -353,6 +387,7 @@ function renderManagePack(pack) {
   `;
 
   managePackRoot.setAttribute("aria-busy", "false");
+  loadManagePackModerationRequest(pack);
   if (window.lucide) lucide.createIcons();
 
   const form = managePackRoot.querySelector(".license-editor");

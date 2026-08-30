@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Consulta i dettagli: i diritti variano tra i brani.",
   "Aucune restriction standard supplémentaire.": "Nessuna restrizione standard aggiuntiva.",
   "Licences mises à jour": "Licenze aggiornate",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Una licenza è cambiata da quando hai aperto la playlist. Ricarica la pagina per vedere la nuova versione prima di continuare."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Una licenza è cambiata da quando hai aperto la playlist. Ricarica la pagina per vedere la nuova versione prima di continuare.",
+  "Création humaine & vérification": "Creazione umana e verifica",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Queste informazioni e prove restano private e sono visibili solo alla moderazione.",
+  "Déclaration de création humaine obligatoire": "Dichiarazione obbligatoria di creazione umana",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Confermo che questa musica è stata creata principalmente da una persona, che possiedo i diritti necessari e che non è stata generata prevalentemente da un’intelligenza artificiale.",
+  "DAW utilisé": "DAW utilizzata",
+  "Instruments utilisés": "Strumenti utilizzati",
+  "VST / plugins principaux": "VST / plugin principali",
+  "MIDI utilisé dans la création": "MIDI utilizzato nella creazione",
+  "Une aide IA technique a été utilisée": "È stata utilizzata assistenza tecnica IA",
+  "Type d’aide IA": "Tipo di assistenza IA",
+  "Précision sur l’aide IA": "Dettagli sull’assistenza IA",
+  "Commentaire sur le processus de création": "Commento sul processo creativo",
+  "Justificatifs privés pour la modération": "Prove private per la moderazione",
+  "Signal de détection automatique — non conclusif": "Segnale di rilevamento automatico — non conclusivo",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Conferma la dichiarazione di creazione umana prima dell’invio.",
+  "Réponse envoyée à la modération.": "Risposta inviata alla moderazione."
 }

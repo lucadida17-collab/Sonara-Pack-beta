@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Shiko detajet: të drejtat ndryshojnë sipas këngës.",
   "Aucune restriction standard supplémentaire.": "Nuk ka kufizime standarde shtesë.",
   "Licences mises à jour": "Licencat u përditësuan",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Një licencë ndryshoi pasi hape listën. Rifresko faqen për të parë versionin e ri para se të vazhdosh."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Një licencë ndryshoi pasi hape listën. Rifresko faqen për të parë versionin e ri para se të vazhdosh.",
+  "Création humaine & vérification": "Krijim njerëzor dhe verifikim",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Këto informacione dhe prova mbeten private dhe shihen vetëm nga moderimi.",
+  "Déclaration de création humaine obligatoire": "Deklaratë e detyrueshme e krijimit njerëzor",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Konfirmoj se kjo muzikë është krijuar kryesisht nga një njeri, se zotëroj të drejtat e nevojshme dhe se nuk është gjeneruar kryesisht nga inteligjenca artificiale.",
+  "DAW utilisé": "DAW i përdorur",
+  "Instruments utilisés": "Instrumentet e përdorura",
+  "VST / plugins principaux": "VST / plugin-et kryesore",
+  "MIDI utilisé dans la création": "MIDI i përdorur në krijim",
+  "Une aide IA technique a été utilisée": "Është përdorur ndihmë teknike me AI",
+  "Type d’aide IA": "Lloji i ndihmës AI",
+  "Précision sur l’aide IA": "Detaje mbi ndihmën AI",
+  "Commentaire sur le processus de création": "Koment mbi procesin e krijimit",
+  "Justificatifs privés pour la modération": "Prova private për moderim",
+  "Signal de détection automatique — non conclusif": "Sinjal zbulimi automatik — jo përfundimtar",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Konfirmo deklaratën e krijimit njerëzor para dërgimit.",
+  "Réponse envoyée à la modération.": "Përgjigjja iu dërgua moderimit."
 }

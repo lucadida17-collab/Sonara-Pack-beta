@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Tazama maelezo: haki hutofautiana kati ya nyimbo.",
   "Aucune restriction standard supplémentaire.": "Hakuna vizuizi vya kawaida vya ziada.",
   "Licences mises à jour": "Leseni zimesasishwa",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Leseni imebadilika tangu ulipofungua orodha. Pakia upya ukurasa ili uone toleo jipya kabla ya kuendelea."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Leseni imebadilika tangu ulipofungua orodha. Pakia upya ukurasa ili uone toleo jipya kabla ya kuendelea.",
+  "Création humaine & vérification": "Uundaji wa binadamu na uthibitishaji",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Taarifa na ushahidi huu hubaki binafsi na huonekana na usimamizi pekee.",
+  "Déclaration de création humaine obligatoire": "Tamko la lazima la uundaji wa binadamu",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Ninathibitisha kuwa muziki huu umeundwa hasa na binadamu, nina haki zinazohitajika, na haujazalishwa kwa kiasi kikubwa na akili bandia.",
+  "DAW utilisé": "DAW iliyotumika",
+  "Instruments utilisés": "Ala zilizotumika",
+  "VST / plugins principaux": "VST / programu-jalizi kuu",
+  "MIDI utilisé dans la création": "MIDI imetumika katika uundaji",
+  "Une aide IA technique a été utilisée": "Usaidizi wa kiufundi wa AI umetumika",
+  "Type d’aide IA": "Aina ya usaidizi wa AI",
+  "Précision sur l’aide IA": "Maelezo ya usaidizi wa AI",
+  "Commentaire sur le processus de création": "Maoni kuhusu mchakato wa uundaji",
+  "Justificatifs privés pour la modération": "Ushahidi binafsi kwa usimamizi",
+  "Signal de détection automatique — non conclusif": "Ishara ya utambuzi wa kiotomatiki — si hitimisho",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Thibitisha tamko la uundaji wa binadamu kabla ya kutuma.",
+  "Réponse envoyée à la modération.": "Jibu limetumwa kwa usimamizi."
 }

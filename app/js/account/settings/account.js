@@ -2335,11 +2335,14 @@ function renderAddAccountForm(role) {
             required
           >
 
+          <label class="birthdate-field-label">Date de naissance</label>
           <input
             type="date"
             class="account-input add-account-date"
             required
-          >
+          
+            aria-label="Date de naissance"
+            title="Date de naissance">
 
           <input
             type="email"

@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Смотрите детали: права различаются для разных треков.",
   "Aucune restriction standard supplémentaire.": "Нет дополнительных стандартных ограничений.",
   "Licences mises à jour": "Лицензии обновлены",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Лицензия изменилась после открытия плейлиста. Перезагрузите страницу и ознакомьтесь с новой версией перед продолжением."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Лицензия изменилась после открытия плейлиста. Перезагрузите страницу и ознакомьтесь с новой версией перед продолжением.",
+  "Création humaine & vérification": "Создание человеком и проверка",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Эта информация и подтверждения остаются приватными и видны только модерации.",
+  "Déclaration de création humaine obligatoire": "Обязательное заявление о создании человеком",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Я подтверждаю, что эта музыка была создана преимущественно человеком, у меня есть необходимые права и она не была преимущественно сгенерирована искусственным интеллектом.",
+  "DAW utilisé": "Используемая DAW",
+  "Instruments utilisés": "Использованные инструменты",
+  "VST / plugins principaux": "Основные VST / плагины",
+  "MIDI utilisé dans la création": "MIDI использовался при создании",
+  "Une aide IA technique a été utilisée": "Использовалась техническая помощь ИИ",
+  "Type d’aide IA": "Тип помощи ИИ",
+  "Précision sur l’aide IA": "Подробности о помощи ИИ",
+  "Commentaire sur le processus de création": "Комментарий о процессе создания",
+  "Justificatifs privés pour la modération": "Приватные подтверждения для модерации",
+  "Signal de détection automatique — non conclusif": "Сигнал автоматического обнаружения — не является окончательным",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Подтвердите заявление о создании человеком перед отправкой.",
+  "Réponse envoyée à la modération.": "Ответ отправлен модерации."
 }

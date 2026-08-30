@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "راجع التفاصيل: تختلف الحقوق حسب المقطع.",
   "Aucune restriction standard supplémentaire.": "لا توجد قيود قياسية إضافية.",
   "Licences mises à jour": "تم تحديث التراخيص",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "تم تغيير أحد التراخيص منذ فتح قائمة التشغيل. أعد تحميل الصفحة لمراجعة الإصدار الجديد قبل المتابعة."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "تم تغيير أحد التراخيص منذ فتح قائمة التشغيل. أعد تحميل الصفحة لمراجعة الإصدار الجديد قبل المتابعة.",
+  "Création humaine & vérification": "الإنشاء البشري والتحقق",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "تبقى هذه المعلومات والأدلة خاصة ولا يراها سوى فريق الإشراف.",
+  "Déclaration de création humaine obligatoire": "إقرار إلزامي بالإنشاء البشري",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "أؤكد أن هذه الموسيقى أُنشئت أساسًا بواسطة إنسان، وأنني أملك الحقوق اللازمة، وأنها لم تُولّد في معظمها بواسطة الذكاء الاصطناعي.",
+  "DAW utilisé": "برنامج DAW المستخدم",
+  "Instruments utilisés": "الآلات المستخدمة",
+  "VST / plugins principaux": "أهم إضافات VST / المكونات الإضافية",
+  "MIDI utilisé dans la création": "تم استخدام MIDI في الإنشاء",
+  "Une aide IA technique a été utilisée": "تم استخدام مساعدة تقنية بالذكاء الاصطناعي",
+  "Type d’aide IA": "نوع مساعدة الذكاء الاصطناعي",
+  "Précision sur l’aide IA": "تفاصيل مساعدة الذكاء الاصطناعي",
+  "Commentaire sur le processus de création": "تعليق حول عملية الإنشاء",
+  "Justificatifs privés pour la modération": "أدلة خاصة للمراجعة",
+  "Signal de détection automatique — non conclusif": "إشارة كشف تلقائي — غير حاسمة",
+  "Confirme la déclaration de création humaine avant l’envoi.": "أكد إقرار الإنشاء البشري قبل الإرسال.",
+  "Réponse envoyée à la modération.": "تم إرسال الرد إلى فريق الإشراف."
 }

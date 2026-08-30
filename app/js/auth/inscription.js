@@ -864,7 +864,10 @@ btnLogin.addEventListener("click", () =>{
             <form class="user-form">
               <input type="text" placeholder="Prénom"  class="formulaire firstname-input" required>
               <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
-              <input type="date" class="formulaire date-input" required>
+              <label class="birthdate-field-label">Date de naissance</label>
+              <input type="date" class="formulaire date-input" required
+            aria-label="Date de naissance"
+            title="Date de naissance">
               <input type="email" placeholder="Email" class="formulaire mail-input" required>
               <input type="password" placeholder="Mot de passe" class="formulaire password-input" minlength="8" maxlength="128" required>
               <input type="tel" placeholder="Téléphone facultatif" class="formulaire phone-input">
@@ -1024,7 +1027,10 @@ btnLogin.addEventListener("click", () =>{
       <form class="artist-form">
         <input type="text" placeholder="Prénom" class="formulaire firstname-input" required>
         <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
-        <input type="date" class="formulaire date-input"  required>
+        <label class="birthdate-field-label">Date de naissance</label>
+        <input type="date" class="formulaire date-input"  required
+            aria-label="Date de naissance"
+            title="Date de naissance">
         <input type="text" placeholder="Adresse complète" class="formulaire adress-input" required>
         <input type="email" placeholder="Email" class="formulaire mail-input" required>
         <input type="password" placeholder="Mot de passe"class="formulaire password-input" minlength="8" maxlength="128" required>
@@ -1193,7 +1199,10 @@ btnLogin.addEventListener("click", () =>{
       <form class="both-form">
         <input type="text" placeholder="Prénom"  class="formulaire firstname-input" required>
         <input type="text" placeholder="Nom" class="formulaire lastname-input" required>
-        <input type="date" class="formulaire date-input" required>
+        <label class="birthdate-field-label">Date de naissance</label>
+        <input type="date" class="formulaire date-input" required
+            aria-label="Date de naissance"
+            title="Date de naissance">
         <input type="text" placeholder="Adresse complète" class="formulaire adress-input" required>
         <input type="email" placeholder="Email" class="formulaire mail-input" required>
         <input type="password" placeholder="Mot de passe" class="formulaire password-input" minlength="8" maxlength="128" required>

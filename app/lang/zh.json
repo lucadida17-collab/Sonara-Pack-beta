@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "请查看详情：不同曲目的授权范围可能不同。",
   "Aucune restriction standard supplémentaire.": "没有额外的标准限制。",
   "Licences mises à jour": "许可证已更新",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "你打开播放列表后有许可证发生了变化。请刷新页面并查看新版本后再继续。"
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "你打开播放列表后有许可证发生了变化。请刷新页面并查看新版本后再继续。",
+  "Création humaine & vérification": "人工创作与验证",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "这些信息和证明材料保持私密，仅审核人员可见。",
+  "Déclaration de création humaine obligatoire": "强制人工创作声明",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "我确认该音乐主要由人类创作，我拥有必要权利，并且该音乐并非主要由人工智能生成。",
+  "DAW utilisé": "使用的 DAW",
+  "Instruments utilisés": "使用的乐器",
+  "VST / plugins principaux": "主要 VST / 插件",
+  "MIDI utilisé dans la création": "创作中使用了 MIDI",
+  "Une aide IA technique a été utilisée": "使用了技术性 AI 辅助",
+  "Type d’aide IA": "AI 辅助类型",
+  "Précision sur l’aide IA": "AI 辅助说明",
+  "Commentaire sur le processus de création": "创作过程说明",
+  "Justificatifs privés pour la modération": "供审核使用的私密证明",
+  "Signal de détection automatique — non conclusif": "自动检测信号——非结论性",
+  "Confirme la déclaration de création humaine avant l’envoi.": "发送前请确认人工创作声明。",
+  "Réponse envoyée à la modération.": "回复已发送给审核团队。"
 }

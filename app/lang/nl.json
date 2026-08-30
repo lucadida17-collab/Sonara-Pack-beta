@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Bekijk de details: rechten verschillen per nummer.",
   "Aucune restriction standard supplémentaire.": "Geen extra standaardbeperkingen.",
   "Licences mises à jour": "Licenties bijgewerkt",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Een licentie is gewijzigd sinds je de playlist opende. Herlaad de pagina om de nieuwe versie te bekijken voordat je doorgaat."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Een licentie is gewijzigd sinds je de playlist opende. Herlaad de pagina om de nieuwe versie te bekijken voordat je doorgaat.",
+  "Création humaine & vérification": "Menselijke creatie & verificatie",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Deze informatie en bewijzen blijven privé en zijn alleen zichtbaar voor moderatie.",
+  "Déclaration de création humaine obligatoire": "Verplichte verklaring van menselijke creatie",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Ik bevestig dat deze muziek voornamelijk door een mens is gemaakt, dat ik over de nodige rechten beschik en dat ze niet grotendeels door kunstmatige intelligentie is gegenereerd.",
+  "DAW utilisé": "Gebruikte DAW",
+  "Instruments utilisés": "Gebruikte instrumenten",
+  "VST / plugins principaux": "Belangrijkste VSTs / plugins",
+  "MIDI utilisé dans la création": "MIDI gebruikt bij de creatie",
+  "Une aide IA technique a été utilisée": "Technische AI-assistentie is gebruikt",
+  "Type d’aide IA": "Type AI-assistentie",
+  "Précision sur l’aide IA": "Details over AI-assistentie",
+  "Commentaire sur le processus de création": "Toelichting op het creatieproces",
+  "Justificatifs privés pour la modération": "Privébewijzen voor moderatie",
+  "Signal de détection automatique — non conclusif": "Automatisch detectiesignaal — niet doorslaggevend",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Bevestig vóór verzending de verklaring van menselijke creatie.",
+  "Réponse envoyée à la modération.": "Antwoord naar moderatie verzonden."
 }

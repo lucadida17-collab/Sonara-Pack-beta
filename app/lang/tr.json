@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Ayrıntılara bakın: haklar parçaya göre değişir.",
   "Aucune restriction standard supplémentaire.": "Ek standart kısıtlama yok.",
   "Licences mises à jour": "Lisanslar güncellendi",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Çalma listesini açtıktan sonra bir lisans değişti. Devam etmeden önce yeni sürümü görmek için sayfayı yenileyin."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Çalma listesini açtıktan sonra bir lisans değişti. Devam etmeden önce yeni sürümü görmek için sayfayı yenileyin.",
+  "Création humaine & vérification": "İnsan yapımı içerik ve doğrulama",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Bu bilgiler ve kanıtlar gizli kalır ve yalnızca moderasyon tarafından görülebilir.",
+  "Déclaration de création humaine obligatoire": "Zorunlu insan üretimi beyanı",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Bu müziğin ağırlıklı olarak bir insan tarafından oluşturulduğunu, gerekli haklara sahip olduğumu ve ağırlıklı olarak yapay zekâ tarafından üretilmediğini onaylıyorum.",
+  "DAW utilisé": "Kullanılan DAW",
+  "Instruments utilisés": "Kullanılan enstrümanlar",
+  "VST / plugins principaux": "Başlıca VST / eklentiler",
+  "MIDI utilisé dans la création": "Üretimde MIDI kullanıldı",
+  "Une aide IA technique a été utilisée": "Teknik yapay zekâ desteği kullanıldı",
+  "Type d’aide IA": "Yapay zekâ yardım türü",
+  "Précision sur l’aide IA": "Yapay zekâ yardımı ayrıntıları",
+  "Commentaire sur le processus de création": "Üretim süreci hakkında yorum",
+  "Justificatifs privés pour la modération": "Moderasyon için özel kanıtlar",
+  "Signal de détection automatique — non conclusif": "Otomatik tespit sinyali — kesin değildir",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Göndermeden önce insan üretimi beyanını onayla.",
+  "Réponse envoyée à la modération.": "Yanıt moderasyona gönderildi."
 }

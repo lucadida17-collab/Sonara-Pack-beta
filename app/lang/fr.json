@@ -2739,5 +2739,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Consultez le détail : les droits diffèrent selon les titres.",
   "Aucune restriction standard supplémentaire.": "Aucune restriction standard supplémentaire.",
   "Licences mises à jour": "Licences mises à jour",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.",
+  "Création humaine & vérification": "Création humaine & vérification",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.",
+  "Déclaration de création humaine obligatoire": "Déclaration de création humaine obligatoire",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.",
+  "DAW utilisé": "DAW utilisé",
+  "Instruments utilisés": "Instruments utilisés",
+  "VST / plugins principaux": "VST / plugins principaux",
+  "MIDI utilisé dans la création": "MIDI utilisé dans la création",
+  "Une aide IA technique a été utilisée": "Une aide IA technique a été utilisée",
+  "Type d’aide IA": "Type d’aide IA",
+  "Précision sur l’aide IA": "Précision sur l’aide IA",
+  "Commentaire sur le processus de création": "Commentaire sur le processus de création",
+  "Justificatifs privés pour la modération": "Justificatifs privés pour la modération",
+  "Signal de détection automatique — non conclusif": "Signal de détection automatique — non conclusif",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Confirme la déclaration de création humaine avant l’envoi.",
+  "Réponse envoyée à la modération.": "Réponse envoyée à la modération."
 }

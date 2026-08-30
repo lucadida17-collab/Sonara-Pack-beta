@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Details ansehen: Die Rechte unterscheiden sich je nach Titel.",
   "Aucune restriction standard supplémentaire.": "Keine zusätzlichen Standardbeschränkungen.",
   "Licences mises à jour": "Lizenzen aktualisiert",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Eine Lizenz hat sich seit dem Öffnen der Playlist geändert. Lade die Seite neu, um die neue Version vor dem Fortfahren zu prüfen."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Eine Lizenz hat sich seit dem Öffnen der Playlist geändert. Lade die Seite neu, um die neue Version vor dem Fortfahren zu prüfen.",
+  "Création humaine & vérification": "Menschliche Erstellung & Verifizierung",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Diese Informationen und Nachweise bleiben privat und sind nur für die Moderation sichtbar.",
+  "Déclaration de création humaine obligatoire": "Verpflichtende Erklärung zur menschlichen Erstellung",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Ich bestätige, dass diese Musik überwiegend von einem Menschen geschaffen wurde, dass ich die erforderlichen Rechte besitze und dass sie nicht überwiegend durch künstliche Intelligenz generiert wurde.",
+  "DAW utilisé": "Verwendete DAW",
+  "Instruments utilisés": "Verwendete Instrumente",
+  "VST / plugins principaux": "Wichtigste VSTs / Plugins",
+  "MIDI utilisé dans la création": "MIDI bei der Erstellung verwendet",
+  "Une aide IA technique a été utilisée": "Technische KI-Unterstützung wurde verwendet",
+  "Type d’aide IA": "Art der KI-Unterstützung",
+  "Précision sur l’aide IA": "Details zur KI-Unterstützung",
+  "Commentaire sur le processus de création": "Kommentar zum Erstellungsprozess",
+  "Justificatifs privés pour la modération": "Private Nachweise für die Moderation",
+  "Signal de détection automatique — non conclusif": "Automatisches Erkennungssignal — nicht schlüssig",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Bestätige vor dem Senden die Erklärung zur menschlichen Erstellung.",
+  "Réponse envoyée à la modération.": "Antwort an die Moderation gesendet."
 }

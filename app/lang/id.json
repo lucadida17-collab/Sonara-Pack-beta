@@ -2740,5 +2740,21 @@
   "Consultez le détail : les droits diffèrent selon les titres.": "Lihat detail: hak berbeda untuk setiap track.",
   "Aucune restriction standard supplémentaire.": "Tidak ada pembatasan standar tambahan.",
   "Licences mises à jour": "Lisensi diperbarui",
-  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Sebuah lisensi berubah sejak playlist dibuka. Muat ulang halaman untuk meninjau versi baru sebelum melanjutkan."
+  "Une licence a changé depuis l’ouverture de la playlist. Recharge la page pour consulter la nouvelle version avant de continuer.": "Sebuah lisensi berubah sejak playlist dibuka. Muat ulang halaman untuk meninjau versi baru sebelum melanjutkan.",
+  "Création humaine & vérification": "Kreasi manusia & verifikasi",
+  "Ces informations et justificatifs restent privés et sont visibles uniquement par la modération.": "Informasi dan bukti ini tetap privat dan hanya terlihat oleh moderasi.",
+  "Déclaration de création humaine obligatoire": "Pernyataan wajib kreasi manusia",
+  "Je confirme que cette musique a été créée principalement par un humain, que je possède les droits nécessaires et qu’elle n’a pas été générée majoritairement par une intelligence artificielle.": "Saya mengonfirmasi bahwa musik ini terutama dibuat oleh manusia, saya memiliki hak yang diperlukan, dan musik ini tidak sebagian besar dihasilkan oleh kecerdasan buatan.",
+  "DAW utilisé": "DAW yang digunakan",
+  "Instruments utilisés": "Instrumen yang digunakan",
+  "VST / plugins principaux": "VST / plugin utama",
+  "MIDI utilisé dans la création": "MIDI digunakan dalam pembuatan",
+  "Une aide IA technique a été utilisée": "Bantuan teknis AI digunakan",
+  "Type d’aide IA": "Jenis bantuan AI",
+  "Précision sur l’aide IA": "Rincian bantuan AI",
+  "Commentaire sur le processus de création": "Komentar tentang proses pembuatan",
+  "Justificatifs privés pour la modération": "Bukti privat untuk moderasi",
+  "Signal de détection automatique — non conclusif": "Sinyal deteksi otomatis — tidak konklusif",
+  "Confirme la déclaration de création humaine avant l’envoi.": "Konfirmasi pernyataan kreasi manusia sebelum mengirim.",
+  "Réponse envoyée à la modération.": "Respons dikirim ke moderasi."
 }
