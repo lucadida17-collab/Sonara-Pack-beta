@@ -6904,6 +6904,37 @@ app.get("/api/founder/moderation/packs", requireFounderKey, (_req, res) => {
   res.json({ success: true, items, packs: items });
 });
 
+app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, (req, res) => {
+  const { packs } = getLocalFounderState();
+  const pack = packs.find((item) =>
+    String(item?.id || item?.packId || "") === String(req.params.id) &&
+    String(item?.status || "") === "pending"
+  );
+
+  if (!pack) {
+    return res.status(404).json({ success: false, message: "Pack introuvable." });
+  }
+
+  const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+    String(item?.id || item?.trackId || "") === String(req.params.trackId)
+  );
+
+  const audioName = path.basename(String(track?.audioName || ""));
+  if (!audioName) {
+    return res.status(404).json({ success: false, message: "Audio introuvable." });
+  }
+
+  const uploadsRoot = path.resolve(__dirname, "uploads");
+  const filePath = path.resolve(uploadsRoot, audioName);
+  if (!filePath.startsWith(`${uploadsRoot}${path.sep}`) || !fs.existsSync(filePath)) {
+    return res.status(404).json({ success: false, message: "Fichier audio introuvable." });
+  }
+
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Accept-Ranges", "bytes");
+  return res.sendFile(filePath);
+});
+
 app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, res) => {
   const type = String(req.params.type || "").toLowerCase();
   const requestedId = String(req.params.id || "");

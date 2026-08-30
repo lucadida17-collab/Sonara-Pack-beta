@@ -7205,6 +7205,58 @@ app.get("/api/founder/moderation/packs", requireFounderKey, async (_req, res) =>
   res.json({ success: true, items: packs, packs });
 });
 
+app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, async (req, res) => {
+  try {
+    const pack = await packsCollection.findOne({
+      id: String(req.params.id),
+      status: "pending"
+    });
+    if (!pack) {
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+      String(item?.id || item?.trackId || "") === String(req.params.trackId)
+    );
+    const audioKey = normalizePackR2Key(track?.audioName);
+    if (!audioKey) {
+      return res.status(404).json({ success: false, message: "Audio introuvable." });
+    }
+
+    const object = await r2.send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: audioKey,
+      ...(req.headers.range ? { Range: req.headers.range } : {})
+    }));
+
+    res.status(req.headers.range ? 206 : 200);
+    res.setHeader("Content-Type", object.ContentType || "audio/mpeg");
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Cache-Control", "private, no-store");
+    if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
+    if (object.ContentRange) res.setHeader("Content-Range", object.ContentRange);
+
+    if (!object.Body || typeof object.Body.pipe !== "function") {
+      return res.status(500).json({ success: false, message: "Flux audio indisponible." });
+    }
+
+    object.Body.on("error", (error) => {
+      console.error("Erreur lecture audio Founder :", error);
+      if (!res.headersSent) {
+        res.status(502).json({ success: false, message: "Audio de modération indisponible." });
+      } else {
+        res.destroy(error);
+      }
+    });
+    return object.Body.pipe(res);
+  } catch (error) {
+    console.error("Erreur audio modération Founder :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de charger cet audio." });
+    }
+  }
+});
+
 app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (req, res) => {
   const type = String(req.params.type || "").toLowerCase();
   const requestedId = String(req.params.id || "");

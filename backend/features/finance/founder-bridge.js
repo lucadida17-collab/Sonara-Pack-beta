@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { buildTechnicalSignals, appendModerationEvent } = require("../moderation/human-creation");
 
 function registerFounderBridge(options) {
   const { app, db, usersCollection, packsCollection, sanitizeAccount, findRootAndAccountById, saveAccountState } = options;
@@ -59,6 +60,55 @@ function registerFounderBridge(options) {
   async function getPacks() { return isMongo ? packsCollection.find({}).toArray() : readJson(packsPath); }
   const flattenAccounts = roots => roots.flatMap(root => (root.accounts || [root]).map(account => ({ ...account, userId: root.id || account.userId })));
 
+
+  function moderationAudioUrl(req, audioName) {
+    const value = String(audioName || "").trim();
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) return value;
+
+    const cleanName = value.replace(/^\/+/, "").replace(/^uploads\//, "");
+    const forwardedProto = String(req.get("x-forwarded-proto") || "").split(",")[0].trim();
+    const protocol = forwardedProto || req.protocol || "http";
+    const host = req.get("host");
+    return host ? `${protocol}://${host}/uploads/${encodeURIComponent(cleanName)}` : `/uploads/${encodeURIComponent(cleanName)}`;
+  }
+
+  function safeEvidenceList(pack) {
+    return (Array.isArray(pack?.creationEvidence) ? pack.creationEvidence : []).map(item => ({
+      id: item?.id || null,
+      kind: item?.kind || "other",
+      originalName: item?.originalName || "",
+      mimeType: item?.mimeType || "",
+      size: Math.max(0, Number(item?.size) || 0),
+      uploadedAt: item?.uploadedAt || null,
+      midiAnalysis: item?.midiAnalysis || null
+    }));
+  }
+
+  function moderationPackView(pack, req, accounts = []) {
+    const cleanPack = clean(pack);
+    const artistId = String(pack?.artistId || "");
+    const artist = accounts.find(account =>
+      [account?.accountId, account?.id].map(value => String(value || "")).includes(artistId)
+    ) || null;
+
+    return {
+      ...cleanPack,
+      artistModerationProfile: artist ? {
+        accountId: artist.accountId || artist.id || null,
+        pseudo: artist.pseudo || artist.artistname || "",
+        mail: artist.mail || artist.email || "",
+        role: artist.role || ""
+      } : null,
+      creationEvidence: safeEvidenceList(pack),
+      technicalModerationSignals: buildTechnicalSignals(pack),
+      tracks: (Array.isArray(pack?.tracks) ? pack.tracks : []).map(track => ({
+        ...track,
+        moderationAudioUrl: moderationAudioUrl(req, track?.audioName)
+      }))
+    };
+  }
+
   app.get("/api/founder/health", requireFounderKey, async (_req, res) => {
     if (isMongo) await db.command({ ping: 1 });
     res.json({ success: true, service: "sonara-pack", storage: isMongo ? "mongodb" : "json-local", now: new Date().toISOString() });
@@ -99,8 +149,13 @@ function registerFounderBridge(options) {
     const items = flattenAccounts(await getRoots()).filter(a => a.status === "pending" && ["artist", "both"].includes(a.role));
     res.json({ success: true, items: items.map(a => typeof sanitizeAccount === "function" ? sanitizeAccount(a, a.userId) : clean(a)) });
   });
-  app.get("/api/founder/moderation/packs", requireFounderKey, async (_req, res) => {
-    res.json({ success: true, items: (await getPacks()).filter(p => p.status === "pending").map(clean) });
+  app.get("/api/founder/moderation/packs", requireFounderKey, async (req, res) => {
+    const [packs, roots] = await Promise.all([getPacks(), getRoots()]);
+    const accounts = flattenAccounts(roots);
+    const items = packs
+      .filter(pack => pack.status === "pending")
+      .map(pack => moderationPackView(pack, req, accounts));
+    res.json({ success: true, items });
   });
 
   app.patch("/api/founder/moderation/artists/:id/status", requireFounderKey, async (req, res) => {
@@ -122,11 +177,85 @@ function registerFounderBridge(options) {
   });
 
   app.patch("/api/founder/moderation/packs/:id/status", requireFounderKey, async (req, res) => {
-    const status = String(req.body.status || ""); const now = new Date().toISOString(); let pack;
-    if (isMongo) { const result=await packsCollection.updateOne({ id:req.params.id },{$set:{status,moderatedAt:now}}); if(!result.matchedCount) return res.status(404).json({success:false,message:"Pack introuvable."}); pack=await packsCollection.findOne({id:req.params.id}); }
-    else { const packs=readJson(packsPath); pack=packs.find(p=>String(p.id)===String(req.params.id)); if(!pack) return res.status(404).json({success:false,message:"Pack introuvable."}); pack.status=status; pack.moderatedAt=now; writeJson(packsPath,packs); }
-    await createFounderNotification({type:"moderation",title:"Pack modéré",message:`${pack.title || pack.name || pack.id} : ${status}`,entityId:req.params.id});
-    res.json({success:true,pack:clean(pack)});
+    const requestedStatus = String(req.body.status || "");
+    const moderationState = String(req.body.moderationState || "").trim();
+    const note = String(req.body.note || "").trim().slice(0, 1800);
+    const allowedStatuses = new Set(["approved", "rejected", "pending"]);
+    const allowedModerationStates = new Set(["pending", "approved", "rejected", "information_requested", "on_hold", "suspect"]);
+
+    if (!allowedStatuses.has(requestedStatus)) {
+      return res.status(400).json({ success: false, message: "Statut pack invalide." });
+    }
+    if (moderationState && !allowedModerationStates.has(moderationState)) {
+      return res.status(400).json({ success: false, message: "État de modération invalide." });
+    }
+
+    const now = new Date().toISOString();
+    let pack;
+
+    if (isMongo) {
+      pack = await packsCollection.findOne({ id: req.params.id });
+    } else {
+      pack = readJson(packsPath).find(item => String(item.id) === String(req.params.id));
+    }
+    if (!pack) return res.status(404).json({ success:false, message:"Pack introuvable." });
+
+    const effectiveModerationState = moderationState ||
+      (requestedStatus === "approved" ? "approved" : requestedStatus === "rejected" ? "rejected" : "pending");
+
+    const previousModeration = pack.humanModeration && typeof pack.humanModeration === "object"
+      ? pack.humanModeration
+      : {};
+    const requests = Array.isArray(previousModeration.requests) ? [...previousModeration.requests] : [];
+
+    if (effectiveModerationState === "information_requested") {
+      requests.push({
+        id: `request_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+        question: note || "La modération demande des informations supplémentaires sur le processus de création.",
+        response: "",
+        status: "open",
+        requestedAt: now,
+        respondedAt: null
+      });
+    }
+
+    pack.status = requestedStatus;
+    pack.moderatedAt = now;
+    pack.humanModeration = {
+      ...previousModeration,
+      state: effectiveModerationState,
+      internalNote: note || previousModeration.internalNote || "",
+      reviewedAt: now,
+      requests: requests.slice(-50),
+      history: appendModerationEvent(pack, {
+        type: "review",
+        state: effectiveModerationState,
+        note,
+        author: "founder"
+      })
+    };
+    pack.technicalModerationSignals = buildTechnicalSignals(pack);
+
+    if (isMongo) {
+      const { _id, ...set } = pack;
+      await packsCollection.updateOne({ id: req.params.id }, { $set: set });
+      pack = await packsCollection.findOne({ id: req.params.id });
+    } else {
+      const packs = readJson(packsPath);
+      const index = packs.findIndex(item => String(item.id) === String(req.params.id));
+      packs[index] = pack;
+      writeJson(packsPath, packs);
+    }
+
+    await createFounderNotification({
+      type:"moderation",
+      title:"Pack modéré",
+      message:`${pack.title || pack.name || pack.id} : ${effectiveModerationState}`,
+      entityId:req.params.id
+    });
+
+    const accounts = flattenAccounts(await getRoots());
+    res.json({ success:true, pack:moderationPackView(pack, req, accounts) });
   });
 
   app.get("/api/founder/support", requireFounderKey, async (_req, res) => {
