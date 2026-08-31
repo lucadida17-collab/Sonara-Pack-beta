@@ -1,4 +1,6 @@
 # SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
+/catalog/packs/:id                  /.netlify/functions/catalog-pack?id=:id                        200
+/catalog/tracks/:packId/:trackId    /.netlify/functions/catalog-track?packId=:packId&trackId=:trackId 200
 /robots.txt             /.netlify/functions/seo-robots   200
 /sitemap-catalog.xml    /.netlify/functions/seo-sitemap 200
 

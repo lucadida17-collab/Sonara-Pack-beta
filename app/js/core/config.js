@@ -657,3 +657,19 @@ const SonaraSession = (() => {
 })();
 
 window.SonaraSession = SonaraSession;
+
+/* =========================================================
+   ORGANIC JOURNEY LOADER
+   Additif uniquement : charge le tracker sur toutes les pages
+   qui utilisent déjà config.js, sans modifier leur logique.
+========================================================= */
+(() => {
+  if (window.__SONARA_ORGANIC_ATTRIBUTION_ACTIVE__ === true) return;
+  if (document.querySelector('script[data-sonara-organic-attribution="true"]')) return;
+
+  const script = document.createElement("script");
+  script.src = "/app/js/growth/organic-attribution.js?v=organic-visibility-v4-client-context";
+  script.async = true;
+  script.dataset.sonaraOrganicAttribution = "true";
+  (document.head || document.documentElement).appendChild(script);
+})();

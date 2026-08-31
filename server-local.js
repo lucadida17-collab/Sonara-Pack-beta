@@ -8,6 +8,7 @@ const { registerSonaraSyncEngine } = require("./sync-engine");
 const { installDataProtection, rejectUnsafeJsonKeys, sanitizeAccountSecrets } = require("./backend/security/data-protection");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
 const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
+const { registerOrganicVisibility } = require("./backend/features/growth/organic-visibility");
 const {
   defaultPackLicense,
   normalizePackLicense,
@@ -25,7 +26,8 @@ require("dotenv").config({
 path: path.resolve(__dirname, ".env.local")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
-const { analyzeAudioPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { createPreviewWorkspace, renderAudioPreview, previewDownloadName, coverDownloadName } = require("./backend/features/audio/preview-export");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
@@ -873,6 +875,29 @@ registerAutoPlaylistRoutes(app, {
   appendAcquisitionHistory
 });
 
+registerOrganicVisibility({
+  app,
+  environment: "local",
+  commercialPolicy,
+  getPublicPacks: async () => {
+    const catalogueContext = buildLocalPublicCatalogueContext();
+    return readJsonArray(packsPath)
+      .filter((pack) =>
+        String(pack?.status || "").toLowerCase() === "approved" &&
+        !isPackHiddenByModeration(pack)
+      )
+      .filter((pack) =>
+        commercialPolicy.paymentsActive ||
+        String(pack?.contentType || "audio").toLowerCase() === "audio"
+      )
+      .map((pack) => enrichLocalPublicCataloguePack(pack, catalogueContext));
+  },
+  findAccount: findRootAndAccountById,
+  requireFounderKey,
+  dataDir: path.join(__dirname, "data"),
+  publicOrigin: frontUrl
+});
+
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
@@ -1271,6 +1296,26 @@ app.post("/api/register", upload.any(), async (req, res) => {
         now
     };
 
+    const founderRegistrationSync = queueFounderAccountSync({
+      rootUser,
+      account,
+      changeType: "registration",
+      changedFields: [
+        "id",
+        "accountId",
+        "firstname",
+        "lastname",
+        "date",
+        "phone",
+        "mail",
+        "pseudo",
+        "role",
+        "status",
+        "imageProfile",
+        "createdAt"
+      ]
+    });
+
     users.push(rootUser);
 
     fs.writeFileSync(
@@ -1342,6 +1387,9 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
       account:
         returnedAccount,
+
+      founderSync:
+        createFounderSyncResponse(founderRegistrationSync),
 
       redirectTo:
         account.role === "artist" ||
@@ -1530,12 +1578,22 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
+    const founderAccountCreationSync = queueFounderAccountSync({
+      rootUser,
+      account,
+      changeType: "account_created",
+      changedFields: [
+        "id", "accountId", "firstname", "lastname", "date", "phone",
+        "mail", "pseudo", "role", "status", "imageProfile", "createdAt"
+      ]
+    });
+
     if (!Array.isArray(rootUser.accounts)) {
       rootUser.accounts = [];
     }
 
     rootUser.accounts.push(account);
-    rootUser.updatedAt = now;
+    rootUser.updatedAt = account.updatedAt || now;
 
     fs.writeFileSync(
       usersPath,
@@ -1584,7 +1642,8 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount
+      account: returnedAccount,
+      founderSync: createFounderSyncResponse(founderAccountCreationSync)
     });
 
   } catch (error) {
@@ -2925,6 +2984,8 @@ function createFounderAccountSyncSnapshot(
       account.artistStatus || null,
     imageArtist:
       account.imageArtist || null,
+    createdAt:
+      account.createdAt || null,
     updatedAt:
       account.updatedAt ||
       new Date().toISOString()
@@ -6261,6 +6322,23 @@ function sanitizeFounderAccount(account, userId) {
   return sanitizeAccountSecrets(account, userId);
 }
 
+function founderAccountsFromRootUser(rootUser = {}) {
+  if (Array.isArray(rootUser.accounts) && rootUser.accounts.length) {
+    return rootUser.accounts;
+  }
+
+  const looksLikeLegacyAccount = Boolean(
+    rootUser.accountId ||
+    rootUser.mail ||
+    rootUser.email ||
+    rootUser.pseudo ||
+    rootUser.artistname ||
+    rootUser.role
+  );
+
+  return looksLikeLegacyAccount ? [rootUser] : [];
+}
+
 function getLocalFounderState() {
   const rootUsers = readJsonArray(usersPath);
   const packs = readJsonArray(packsPath);
@@ -6268,9 +6346,8 @@ function getLocalFounderState() {
   const notifications = readJsonArray(founderNotificationsPath);
 
   const accounts = rootUsers.flatMap((rootUser) =>
-    Array.isArray(rootUser.accounts)
-      ? rootUser.accounts.map((account) => sanitizeFounderAccount(account, rootUser.id))
-      : []
+    founderAccountsFromRootUser(rootUser)
+      .map((account) => sanitizeFounderAccount(account, rootUser.id || rootUser.userId || rootUser.accountId || rootUser.id))
   ).filter(Boolean);
 
   return { rootUsers, accounts, packs, tickets, notifications };
@@ -6933,6 +7010,84 @@ app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, (
   res.setHeader("Cache-Control", "private, no-store");
   res.setHeader("Accept-Ranges", "bytes");
   return res.sendFile(filePath);
+});
+
+
+app.get("/api/founder/moderation/packs/:id/cover", requireFounderKey, (req, res) => {
+  const { packs } = getLocalFounderState();
+  const pack = packs.find((item) =>
+    String(item?.id || item?.packId || "") === String(req.params.id) &&
+    String(item?.status || "") === "pending"
+  );
+
+  if (!pack) {
+    return res.status(404).json({ success: false, message: "Pack introuvable." });
+  }
+
+  const coverName = path.basename(String(pack.coverPack || ""));
+  if (!coverName) {
+    return res.status(404).json({ success: false, message: "Cover introuvable." });
+  }
+
+  const uploadsRoot = path.resolve(__dirname, "uploads");
+  const filePath = path.resolve(uploadsRoot, coverName);
+  if (!filePath.startsWith(`${uploadsRoot}${path.sep}`) || !fs.existsSync(filePath)) {
+    return res.status(404).json({ success: false, message: "Fichier cover introuvable." });
+  }
+
+  res.setHeader("Cache-Control", "private, no-store");
+  return res.download(filePath, coverDownloadName(pack, coverName));
+});
+
+app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey, async (req, res) => {
+  const { packs } = getLocalFounderState();
+  const pack = packs.find((item) =>
+    String(item?.id || item?.packId || "") === String(req.params.id) &&
+    String(item?.status || "") === "pending"
+  );
+
+  if (!pack) {
+    return res.status(404).json({ success: false, message: "Pack introuvable." });
+  }
+
+  const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+    String(item?.id || item?.trackId || "") === String(req.params.trackId)
+  );
+  const audioName = path.basename(String(track?.audioName || ""));
+  if (!track || !audioName) {
+    return res.status(404).json({ success: false, message: "Audio introuvable." });
+  }
+
+  const uploadsRoot = path.resolve(__dirname, "uploads");
+  const inputPath = path.resolve(uploadsRoot, audioName);
+  if (!inputPath.startsWith(`${uploadsRoot}${path.sep}`) || !fs.existsSync(inputPath)) {
+    return res.status(404).json({ success: false, message: "Fichier audio introuvable." });
+  }
+
+  const workspace = createPreviewWorkspace();
+  try {
+    const preview = normalizeStoredPreview(track);
+    await renderAudioPreview({
+      inputPath,
+      outputPath: workspace.outputPath,
+      start: preview.previewStart,
+      duration: preview.previewDuration
+    });
+
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.download(workspace.outputPath, previewDownloadName(pack, track), (error) => {
+      workspace.cleanup();
+      if (error && !res.headersSent) {
+        res.status(500).json({ success: false, message: "Impossible de télécharger cet extrait." });
+      }
+    });
+  } catch (error) {
+    workspace.cleanup();
+    console.error("Erreur export extrait Founder LOCAL :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de créer cet extrait audio." });
+    }
+  }
 });
 
 app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, res) => {
@@ -7765,7 +7920,7 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
   const accounts = [];
 
   for (const rootUser of rootUsers) {
-    for (const account of Array.isArray(rootUser.accounts) ? rootUser.accounts : []) {
+    for (const account of founderAccountsFromRootUser(rootUser)) {
       const accountId = account.accountId || account.id;
       const role = String(account.originalRole || account.role || "user").toLowerCase();
       accounts.push({
@@ -7789,7 +7944,14 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
     new Date(a.updatedAt || a.createdAt || 0)
   );
 
-  return res.json({ success: true, items: accounts, accounts });
+  return res.json({
+    success: true,
+    connectedEnvironment: "local",
+    snapshotGeneratedAt: new Date().toISOString(),
+    totalAccounts: accounts.length,
+    items: accounts,
+    accounts
+  });
 });
 
 app.patch(

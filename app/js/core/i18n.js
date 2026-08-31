@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-08-29-playlist-license-summary-v1";
+    "2026-08-31-organic-visibility-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;

@@ -1,87 +1,56 @@
-const MAIN_ORIGIN = 'https://sonarapack.com';
-const MAIN_API = 'https://sonara-pack-beta.onrender.com';
-const CATALOGUE_TIMEOUT_MS = 2500;
+const { environmentFromEvent, fetchJson } = require("./_organic-seo");
 
-function xmlEscape(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+function xml(value = "") {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
-function packArtistId(pack = {}) {
-  return String(
-    pack.artistProfile?.accountId ||
-    pack.accountId ||
-    pack.artistAccountId ||
-    pack.artistId ||
-    ''
-  ).trim();
-}
-
-function sitemapXml(urls) {
-  const nodes = urls.map((url) => `  <url><loc>${xmlEscape(url)}</loc></url>`).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${nodes}${nodes ? '\n' : ''}</urlset>\n`;
+function validLastmod(value) {
+  const date = new Date(value || 0);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 exports.handler = async (event) => {
-  const host = String(event.headers?.host || '').toLowerCase().split(':')[0];
-  const isMain = host === 'sonarapack.com' || host === 'www.sonarapack.com';
-
-  if (!isMain) {
+  if (environmentFromEvent(event) !== "main") {
     return {
-      statusCode: 404,
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Robots-Tag': 'noindex, nofollow'
-      },
-      body: 'Not Found'
+      statusCode: 200,
+      headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
     };
   }
 
-  const urls = new Set();
-
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CATALOGUE_TIMEOUT_MS);
-    let response;
-    try {
-      response = await fetch(`${MAIN_API}/api/packs`, {
-        headers: { Accept: 'application/json' },
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+    const { data } = await fetchJson(event, "/api/seo/catalog");
+    const entries = [
+      ...(Array.isArray(data?.packs) ? data.packs : []),
+      ...(Array.isArray(data?.tracks) ? data.tracks : [])
+    ];
 
-    if (!response.ok) throw new Error(`Catalogue HTTP ${response.status}`);
-    const packs = await response.json();
+    const urls = entries
+      .filter((item) => item?.url)
+      .map((item) => {
+        const lastmod = validLastmod(item.updatedAt);
+        return `  <url>\n    <loc>${xml(item.url)}</loc>${lastmod ? `\n    <lastmod>${xml(lastmod)}</lastmod>` : ""}\n  </url>`;
+      })
+      .join("\n");
 
-    if (Array.isArray(packs)) {
-      for (const pack of packs) {
-        if (!pack?.id || String(pack?.status || '').toLowerCase() !== 'approved' || pack?.moderationHidden === true) continue;
-
-        urls.add(`${MAIN_ORIGIN}/app/pages/catalog/pack.html?id=${encodeURIComponent(String(pack.id))}`);
-
-        const artistId = packArtistId(pack);
-        if (artistId) {
-          urls.add(`${MAIN_ORIGIN}/app/pages/catalog/artist.html?id=${encodeURIComponent(artistId)}`);
-        }
-      }
-    }
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=300, s-maxage=900"
+      },
+      body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`
+    };
   } catch (error) {
-    console.error('[SEO sitemap] catalogue temporairement indisponible:', error.message);
+    return {
+      statusCode: 503,
+      headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+    };
   }
-
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=300, s-maxage=300',
-      'X-Content-Type-Options': 'nosniff'
-    },
-    body: sitemapXml([...urls])
-  };
 };

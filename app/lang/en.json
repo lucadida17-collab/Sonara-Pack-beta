@@ -2795,5 +2795,17 @@
   "Justificatifs privés pour la modération": "Private evidence for moderation",
   "Signal de détection automatique — non conclusif": "Automatic detection signal — non-conclusive",
   "Confirme la déclaration de création humaine avant l’envoi.": "Confirm the human-creation declaration before sending.",
-  "Réponse envoyée à la modération.": "Response sent to moderation."
+  "Réponse envoyée à la modération.": "Response sent to moderation.",
+  "Catalogue public Sonara": "Sonara public catalog",
+  "Catégorie ·": "Category ·",
+  "Nombre de titres ·": "Number of tracks ·",
+  "Aperçu audio": "Audio preview",
+  "Découvrir sur Sonara Pack": "Discover on Sonara Pack",
+  "Retour au catalogue": "Back to catalog",
+  "Publié sur Sonara Pack": "Published on Sonara Pack",
+  "Pack ·": "Pack ·",
+  "Ouvrir le pack complet": "Open full pack",
+  "Chargement de la page publique…": "Loading public page…",
+  "Aucun aperçu audio disponible.": "No audio preview available.",
+  "Contenu public indisponible.": "Public content unavailable."
 }

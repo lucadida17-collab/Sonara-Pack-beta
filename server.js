@@ -15,6 +15,7 @@ const { registerSonaraSyncEngine } = require("./sync-engine");
 const { installDataProtection, rejectUnsafeJsonKeys, sanitizeAccountSecrets } = require("./backend/security/data-protection");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
 const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
+const { registerOrganicVisibility } = require("./backend/features/growth/organic-visibility");
 const {
   defaultPackLicense,
   normalizePackLicense,
@@ -30,7 +31,8 @@ require("dotenv").config({
   path: path.resolve(__dirname, ".env.prod")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
-const { analyzeAudioPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { createPreviewWorkspace, renderAudioPreview, previewDownloadName, coverDownloadName } = require("./backend/features/audio/preview-export");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
@@ -547,6 +549,34 @@ registerAutoPlaylistRoutes(app, {
   commercialPolicy,
   licenseProtection,
   appendAcquisitionHistory
+});
+
+registerOrganicVisibility({
+  app,
+  environment: "main",
+  commercialPolicy,
+  getPublicPacks: async () => {
+    const [approvedPacks, catalogueContext] = await Promise.all([
+      packsCollection.find({
+        status: "approved",
+        moderationHidden: { $ne: true }
+      }).toArray(),
+      buildPublicCatalogueContext()
+    ]);
+
+    const visiblePacks = commercialPolicy.paymentsActive
+      ? approvedPacks
+      : approvedPacks.filter((pack) =>
+          String(pack?.contentType || "audio").toLowerCase() === "audio"
+        );
+
+    return visiblePacks.map((pack) => enrichPublicCataloguePack(pack, catalogueContext));
+  },
+  findAccount: findRootAndAccountById,
+  requireFounderKey,
+  db,
+  dataDir: path.join(__dirname, "data"),
+  publicOrigin: frontUrl
 });
 
 
@@ -1836,6 +1866,26 @@ app.post("/api/register", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
+    const founderRegistrationSync = queueFounderAccountSync({
+      rootUser,
+      account,
+      changeType: "registration",
+      changedFields: [
+        "id",
+        "accountId",
+        "firstname",
+        "lastname",
+        "date",
+        "phone",
+        "mail",
+        "pseudo",
+        "role",
+        "status",
+        "imageProfile",
+        "createdAt"
+      ]
+    });
+
     await usersCollection.insertOne(rootUser);
 
     if (status === "pending") {
@@ -1910,6 +1960,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
       message: "Compte créé avec succès.",
       profile: returnedAccount,
       account: returnedAccount,
+      founderSync: createFounderSyncResponse(founderRegistrationSync),
 
       redirectTo,
       stripeOnboardingUrl: null
@@ -2081,6 +2132,16 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
+    const founderAccountCreationSync = queueFounderAccountSync({
+      rootUser,
+      account,
+      changeType: "account_created",
+      changedFields: [
+        "id", "accountId", "firstname", "lastname", "date", "phone",
+        "mail", "pseudo", "role", "status", "imageProfile", "createdAt"
+      ]
+    });
+
     await usersCollection.updateOne(
       { _id: rootUser._id },
       {
@@ -2088,7 +2149,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
           accounts: account
         },
         $set: {
-          updatedAt: now
+          updatedAt: account.updatedAt || now
         }
       }
     );
@@ -2158,7 +2219,8 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount
+      account: returnedAccount,
+      founderSync: createFounderSyncResponse(founderAccountCreationSync)
     });
 
   } catch (error) {
@@ -3285,7 +3347,7 @@ app.patch(
    FOUNDER — ACCOUNT SYNC QUEUE
 ========================= */
 
-const SONARA_FOUNDER_SYNC_ENVIRONMENT = "prod";
+const SONARA_FOUNDER_SYNC_ENVIRONMENT = "main";
 
 function createFounderAccountSyncSnapshot(
   account = {},
@@ -3325,6 +3387,8 @@ function createFounderAccountSyncSnapshot(
       account.artistStatus || null,
     imageArtist:
       account.imageArtist || null,
+    createdAt:
+      account.createdAt || null,
     updatedAt:
       account.updatedAt ||
       new Date().toISOString()
@@ -6577,15 +6641,33 @@ function sanitizeFounderAccount(account, userId) {
   return sanitizeAccountSecrets(account, userId);
 }
 
+function founderAccountsFromRootUser(rootUser = {}) {
+  if (Array.isArray(rootUser.accounts) && rootUser.accounts.length) {
+    return rootUser.accounts;
+  }
+
+  const looksLikeLegacyAccount = Boolean(
+    rootUser.accountId ||
+    rootUser.mail ||
+    rootUser.email ||
+    rootUser.pseudo ||
+    rootUser.artistname ||
+    rootUser.role
+  );
+
+  return looksLikeLegacyAccount ? [rootUser] : [];
+}
+
 async function getRemoteFounderAccounts() {
   const documents = await usersCollection.find({}).toArray();
 
   return documents.flatMap((rootUser) =>
-    Array.isArray(rootUser.accounts)
-      ? rootUser.accounts.map((account) =>
-          sanitizeFounderAccount(account, rootUser.id || String(rootUser._id))
-        )
-      : []
+    founderAccountsFromRootUser(rootUser).map((account) =>
+      sanitizeFounderAccount(
+        account,
+        rootUser.id || rootUser.userId || account.userId || String(rootUser._id)
+      )
+    )
   ).filter(Boolean);
 }
 
@@ -7253,6 +7335,98 @@ app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, a
     console.error("Erreur audio modération Founder :", error);
     if (!res.headersSent) {
       return res.status(500).json({ success: false, message: "Impossible de charger cet audio." });
+    }
+  }
+});
+
+
+app.get("/api/founder/moderation/packs/:id/cover", requireFounderKey, async (req, res) => {
+  try {
+    const pack = await packsCollection.findOne({
+      id: String(req.params.id),
+      status: "pending"
+    });
+    if (!pack) {
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const coverKey = normalizePackR2Key(pack.coverPack);
+    if (!coverKey) {
+      return res.status(404).json({ success: false, message: "Cover introuvable." });
+    }
+
+    const object = await r2.send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: coverKey
+    }));
+    if (!object.Body || typeof object.Body.pipe !== "function") {
+      return res.status(500).json({ success: false, message: "Flux cover indisponible." });
+    }
+
+    res.setHeader("Cache-Control", "private, no-store");
+    res.attachment(coverDownloadName(pack, coverKey));
+    if (object.ContentType) res.setHeader("Content-Type", object.ContentType);
+    if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
+
+    object.Body.on("error", (error) => {
+      console.error("Erreur téléchargement cover Founder MAIN :", error);
+      if (!res.headersSent) {
+        res.status(502).json({ success: false, message: "Cover de modération indisponible." });
+      } else {
+        res.destroy(error);
+      }
+    });
+    return object.Body.pipe(res);
+  } catch (error) {
+    console.error("Erreur cover Founder MAIN :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de télécharger cette cover." });
+    }
+  }
+});
+
+app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey, async (req, res) => {
+  const workspace = createPreviewWorkspace();
+  try {
+    const pack = await packsCollection.findOne({
+      id: String(req.params.id),
+      status: "pending"
+    });
+    if (!pack) {
+      workspace.cleanup();
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+      String(item?.id || item?.trackId || "") === String(req.params.trackId)
+    );
+    const audioKey = normalizePackR2Key(track?.audioName);
+    if (!track || !audioKey) {
+      workspace.cleanup();
+      return res.status(404).json({ success: false, message: "Audio introuvable." });
+    }
+
+    await downloadPackR2File(audioKey, workspace.inputPath);
+    const preview = normalizeStoredPreview(track);
+    await renderAudioPreview({
+      inputPath: workspace.inputPath,
+      outputPath: workspace.outputPath,
+      start: preview.previewStart,
+      duration: preview.previewDuration
+    });
+
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.download(workspace.outputPath, previewDownloadName(pack, track), (error) => {
+      workspace.cleanup();
+      if (error && !res.headersSent) {
+        res.status(500).json({ success: false, message: "Impossible de télécharger cet extrait." });
+      }
+    });
+  } catch (error) {
+    workspace.cleanup();
+    console.error("Erreur export extrait Founder MAIN :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de créer cet extrait audio." });
     }
   }
 });
@@ -8096,7 +8270,14 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
     new Date(a.updatedAt || a.createdAt || 0)
   );
 
-  return res.json({ success: true, items: accounts, accounts });
+  return res.json({
+    success: true,
+    connectedEnvironment: "main",
+    snapshotGeneratedAt: new Date().toISOString(),
+    totalAccounts: accounts.length,
+    items: accounts,
+    accounts
+  });
 });
 
 app.patch(

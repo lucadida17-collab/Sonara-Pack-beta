@@ -1,0 +1,303 @@
+.public-catalog-page {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(91, 168, 255, 0.14), transparent 34rem),
+    #07090f;
+  color: #f5f7fb;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.public-catalog-page * {
+  box-sizing: border-box;
+}
+
+.public-catalog-shell {
+  width: min(1080px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 56px 0 72px;
+}
+
+.public-catalog-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.public-catalog-brand img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+.public-catalog-card {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: minmax(250px, 360px) minmax(0, 1fr);
+  gap: 42px;
+  padding: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 28px;
+  background: rgba(13, 17, 27, 0.88);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.32);
+}
+
+.public-catalog-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 22px;
+  background: #111722;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+.public-catalog-eyebrow {
+  margin: 0 0 10px;
+  color: #80c9ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-catalog-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
+}
+
+.public-catalog-artist {
+  margin: 14px 0 0;
+  color: #c6cfdd;
+  font-size: 1.08rem;
+  font-weight: 650;
+}
+
+.public-catalog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 24px 0 0;
+}
+
+.public-catalog-meta span {
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8d0dc;
+  font-size: 0.86rem;
+}
+
+.public-catalog-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.public-catalog-section h2 {
+  margin: 0 0 13px;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aab5c6;
+}
+
+.public-catalog-audio-list {
+  display: grid;
+  gap: 13px;
+}
+
+.public-catalog-audio-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.public-catalog-audio-row strong {
+  overflow-wrap: anywhere;
+}
+
+.public-catalog-audio-row audio {
+  width: 100%;
+  min-height: 40px;
+}
+
+.public-catalog-license {
+  color: #cbd3df;
+  line-height: 1.65;
+}
+
+.public-catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.public-catalog-action {
+  min-height: 46px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+  color: #fff;
+  font-weight: 750;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.public-catalog-action.primary {
+  background: #f7f9fc;
+  color: #090c12;
+  border-color: #f7f9fc;
+}
+
+.public-catalog-loading,
+.public-catalog-error {
+  margin-top: 34px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: rgba(13, 17, 27, 0.78);
+  color: #cbd3df;
+}
+
+@media (max-width: 899px) {
+  .public-catalog-shell {
+    width: min(100% - 28px, 760px);
+    padding: 28px 0 48px;
+  }
+
+  .public-catalog-card {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .public-catalog-cover {
+    max-width: 460px;
+  }
+}
+
+/* Player public Sonara : contrôles maison, sans barre audio native du navigateur. */
+.public-catalog-audio-row[data-public-preview-player] {
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+.public-catalog-preview-audio {
+  display: none;
+}
+
+.public-catalog-preview-play {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(123, 211, 255, 0.38);
+  border-radius: 50%;
+  background: rgba(6, 23, 37, 0.96);
+  box-shadow: 0 0 24px rgba(82, 185, 255, 0.17);
+  cursor: pointer;
+}
+
+.public-catalog-preview-play::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 14px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid #f6fbff;
+}
+
+.public-catalog-preview-play.is-playing::before,
+.public-catalog-preview-play.is-playing::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  width: 4px;
+  height: 17px;
+  border: 0;
+  background: #f6fbff;
+  border-radius: 2px;
+}
+
+.public-catalog-preview-play.is-playing::before {
+  left: 16px;
+}
+
+.public-catalog-preview-play.is-playing::after {
+  left: 25px;
+}
+
+.public-catalog-preview-body {
+  min-width: 0;
+}
+
+.public-catalog-preview-body strong {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.public-catalog-preview-progress {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.17);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.public-catalog-preview-progress:focus-visible {
+  box-shadow: 0 0 0 3px rgba(126, 231, 255, 0.18);
+}
+
+.public-catalog-preview-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, #67cfff, #b5ecff);
+  border-radius: inherit;
+}
+
+.public-catalog-preview-progress-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f7fbff;
+  box-shadow: 0 0 12px rgba(126, 231, 255, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.public-catalog-preview-time {
+  margin-top: 7px;
+  display: flex;
+  justify-content: space-between;
+  color: rgba(216, 226, 238, 0.62);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
