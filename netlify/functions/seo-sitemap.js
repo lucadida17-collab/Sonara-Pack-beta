@@ -24,7 +24,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { data } = await fetchJson(event, "/api/seo/catalog");
+    const { data } = await fetchJson(event, "/api/public/catalog/sitemap");
     const entries = [
       ...(Array.isArray(data?.packs) ? data.packs : []),
       ...(Array.isArray(data?.tracks) ? data.tracks : [])

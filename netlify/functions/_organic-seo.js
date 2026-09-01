@@ -83,6 +83,11 @@ function countLabel(count) {
   return Number(count) === 1 ? "1 titre" : `${Number(count) || 0} titres`;
 }
 
+function onboardingHref(destination = "") {
+  const safeDestination = String(destination || "").trim();
+  return `/index.html?language=choose&returnTo=${encodeURIComponent(safeDestination)}`;
+}
+
 function audioMarkup(track = {}) {
   if (!track.previewAudioUrl) return "";
   const previewDuration = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
@@ -133,7 +138,7 @@ function shell({ event, apiBase, head, markup, type }) {
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
   <script src="/app/js/growth/organic-attribution.js?v=organic-visibility-v3-full-journey"></script>
-  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v3-player-links"></script>
+  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v5-return-tunnel"></script>
   <script src="/app/js/core/i18n.js?v=organic-visibility-v1" defer></script>
 </body>
 </html>`;
@@ -169,7 +174,7 @@ function renderPackPage(event, apiBase, pack) {
       <div class="public-catalog-meta"><span>Catégorie · <b data-user-content>${escapeHtml(category)}</b></span><span>Nombre de titres · ${escapeHtml(countLabel(pack.trackCount))}</span></div>
       <section class="public-catalog-section"><h2>Aperçu audio</h2><div class="public-catalog-audio-list">${previews}</div></section>
       <section class="public-catalog-section public-catalog-license"><h2>Licence</h2><p>${escapeHtml(pack.license?.name || "Licence standard Sonara")}</p></section>
-      <div class="public-catalog-actions"><a class="public-catalog-action primary" href="/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}">Découvrir sur Sonara Pack</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
+      <div class="public-catalog-actions"><a class="public-catalog-action primary" href="${escapeHtml(onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}`))}">Découvrir sur Sonara Pack</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
     </div>
   </article>`;
 
@@ -207,7 +212,7 @@ function renderTrackPage(event, apiBase, pack, track) {
       <p class="public-catalog-artist" data-user-content>${escapeHtml(track.artist)}</p>
       <div class="public-catalog-meta"><span>Catégorie · <b data-user-content>${escapeHtml(category)}</b></span><span>Pack · <b data-user-content>${escapeHtml(pack.title || "Sonara Pack")}</b></span></div>
       <section class="public-catalog-section"><h2>Aperçu audio</h2><div class="public-catalog-audio-list">${audioMarkup(track) || "<p>Aucun aperçu audio disponible.</p>"}</div></section>
-      <div class="public-catalog-actions"><a class="public-catalog-action primary" href="/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&trackId=${encodeURIComponent(track.id)}">Ouvrir le pack complet</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
+      <div class="public-catalog-actions"><a class="public-catalog-action primary" href="${escapeHtml(onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&trackId=${encodeURIComponent(track.id)}`))}">Ouvrir le pack complet</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
     </div>
   </article>`;
 

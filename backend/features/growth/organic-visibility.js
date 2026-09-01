@@ -828,7 +828,7 @@ function registerOrganicVisibility({
     }
   });
 
-  app.get("/api/seo/catalog", async (_req, res) => {
+  app.get("/api/seo/catalog", requireFounderKey, async (_req, res) => {
     try {
       const packs = await visiblePacks();
       const packEntries = [];
@@ -866,6 +866,43 @@ function registerOrganicVisibility({
     } catch (error) {
       console.error("SEO catalog impossible :", error);
       return res.status(500).json({ success: false, message: "Catalogue SEO indisponible." });
+    }
+  });
+
+  app.get("/api/public/catalog/sitemap", async (_req, res) => {
+    try {
+      const packs = await visiblePacks();
+      const packEntries = [];
+      const trackEntries = [];
+
+      for (const pack of packs) {
+        const normalized = publicPack(pack);
+        if (!normalized.id) continue;
+
+        packEntries.push({
+          url: publicPackUrl(normalizedPublicOrigin, normalized.id),
+          updatedAt: normalized.publishedAt
+        });
+
+        for (const track of Array.isArray(pack.tracks) ? pack.tracks : []) {
+          if (!trackSeoEligible(pack, track) || !track?.id) continue;
+          trackEntries.push({
+            url: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
+            updatedAt: normalized.publishedAt
+          });
+        }
+      }
+
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        packs: packEntries,
+        tracks: trackEntries,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Public sitemap catalog impossible :", error);
+      return res.status(500).json({ success: false, message: "Catalogue sitemap indisponible." });
     }
   });
 

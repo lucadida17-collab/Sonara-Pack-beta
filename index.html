@@ -231,6 +231,62 @@
       const MIN_STEP_TIME = 360;
       const TYPE_SPEED = 18;
 
+      const SEO_RETURN_SESSION_KEY = "sonaraSeoReturnAfterAuth";
+      const SEO_RETURN_MAX_AGE = 30 * 60 * 1000;
+
+      function sanitizeSeoReturnTarget(rawTarget) {
+        if (!rawTarget) return "";
+
+        try {
+          const targetUrl = new URL(rawTarget, window.location.origin);
+          const packId = String(targetUrl.searchParams.get("id") || "").trim();
+          if (targetUrl.origin !== window.location.origin) return "";
+          if (targetUrl.pathname !== "/app/pages/catalog/pack.html") return "";
+          if (!packId) return "";
+          return `${targetUrl.pathname}${targetUrl.search}`;
+        } catch {
+          return "";
+        }
+      }
+
+      function rememberSeoReturnTarget() {
+        const params = new URLSearchParams(window.location.search);
+        const queryTarget = sanitizeSeoReturnTarget(params.get("returnTo"));
+
+        if (queryTarget) {
+          try {
+            sessionStorage.setItem(
+              SEO_RETURN_SESSION_KEY,
+              JSON.stringify({ target: queryTarget, requestedAt: Date.now() })
+            );
+          } catch {
+            // La query-string reste suffisante si le stockage de session est indisponible.
+          }
+          return queryTarget;
+        }
+
+        try {
+          const stored = JSON.parse(sessionStorage.getItem(SEO_RETURN_SESSION_KEY) || "null");
+          const age = Date.now() - Number(stored?.requestedAt || 0);
+          const storedTarget = sanitizeSeoReturnTarget(stored?.target);
+          if (storedTarget && age >= 0 && age <= SEO_RETURN_MAX_AGE) return storedTarget;
+          sessionStorage.removeItem(SEO_RETURN_SESSION_KEY);
+        } catch {
+          try { sessionStorage.removeItem(SEO_RETURN_SESSION_KEY); } catch { /* aucun stockage */ }
+        }
+
+        return "";
+      }
+
+      function consumeSeoReturnTarget() {
+        const target = rememberSeoReturnTarget();
+        if (!target) return "";
+        try { sessionStorage.removeItem(SEO_RETURN_SESSION_KEY); } catch { /* aucun stockage */ }
+        return target;
+      }
+
+      const seoReturnTarget = rememberSeoReturnTarget();
+
       const loader = document.getElementById("sonaraEntryLoader");
       const statusElement = document.getElementById("sonaraLoadingStatus");
       const progressFill = document.getElementById("sonaraProgressFill");
@@ -448,19 +504,28 @@
       }
 
       function goToInscription() {
-        window.location.replace("/app/pages/auth/inscription.html");
+        const inscriptionUrl = new URL("/app/pages/auth/inscription.html", window.location.origin);
+        if (seoReturnTarget) inscriptionUrl.searchParams.set("returnTo", seoReturnTarget);
+        window.location.replace(`${inscriptionUrl.pathname}${inscriptionUrl.search}`);
       }
 
       function redirectByRole(profile) {
         const role = String(profile?.role || "").toLowerCase();
         const status = String(profile?.status || "").toLowerCase();
 
+        if (["artist", "both"].includes(role) && status === "pending") {
+          window.location.replace("/app/pages/auth/pending.html");
+          return;
+        }
+
+        const returnTarget = consumeSeoReturnTarget();
+        if (returnTarget && ["user", "artist", "both"].includes(role)) {
+          window.location.replace(returnTarget);
+          return;
+        }
+
         if (["artist", "both"].includes(role)) {
-          window.location.replace(
-            status === "pending"
-              ? "/app/pages/auth/pending.html"
-              : "/app/pages/creator/dashboard.html"
-          );
+          window.location.replace("/app/pages/creator/dashboard.html");
           return;
         }
 

@@ -6,6 +6,64 @@ const PASSWORD_MAX_LENGTH = 128;
 
 const SHARED_PACK_REDIRECT_KEY = "sonaraRedirectAfterAuth";
 
+const SEO_RETURN_REDIRECT_KEY = "sonaraSeoReturnAfterAuth";
+const SEO_RETURN_MAX_AGE = 30 * 60 * 1000;
+
+function normalizeSeoReturnRedirect(value) {
+  if (!value) return null;
+
+  try {
+    const target = new URL(value, window.location.origin);
+    const packId = String(target.searchParams.get("id") || "").trim();
+    if (target.origin !== window.location.origin) return null;
+    if (target.pathname !== "/app/pages/catalog/pack.html") return null;
+    if (!packId) return null;
+    return `${target.pathname}${target.search}`;
+  } catch {
+    return null;
+  }
+}
+
+function rememberSeoReturnRedirectFromUrl() {
+  const redirect = normalizeSeoReturnRedirect(
+    new URLSearchParams(window.location.search).get("returnTo")
+  );
+
+  if (!redirect) return;
+
+  try {
+    sessionStorage.setItem(
+      SEO_RETURN_REDIRECT_KEY,
+      JSON.stringify({ target: redirect, requestedAt: Date.now() })
+    );
+  } catch {
+    // La query-string a déjà transmis la destination à cette page.
+  }
+}
+
+function getRememberedSeoReturnRedirect() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(SEO_RETURN_REDIRECT_KEY) || "null");
+    const age = Date.now() - Number(stored?.requestedAt || 0);
+    const target = normalizeSeoReturnRedirect(stored?.target);
+    if (target && age >= 0 && age <= SEO_RETURN_MAX_AGE) return target;
+    sessionStorage.removeItem(SEO_RETURN_REDIRECT_KEY);
+  } catch {
+    try { sessionStorage.removeItem(SEO_RETURN_REDIRECT_KEY); } catch { /* aucun stockage */ }
+  }
+  return null;
+}
+
+function consumeSeoReturnRedirect() {
+  const redirect = getRememberedSeoReturnRedirect();
+  if (redirect) {
+    try { sessionStorage.removeItem(SEO_RETURN_REDIRECT_KEY); } catch { /* aucun stockage */ }
+  }
+  return redirect;
+}
+
+rememberSeoReturnRedirectFromUrl();
+
 function normalizeSharedPackRedirect(value) {
   if (!value) return null;
 
@@ -77,6 +135,12 @@ function getAccountRedirect(profile = {}) {
 
   if (status === "pending") {
     return "/app/pages/auth/pending.html";
+  }
+
+  const seoReturnRedirect = consumeSeoReturnRedirect();
+
+  if (seoReturnRedirect) {
+    return seoReturnRedirect;
   }
 
   const sharedPackRedirect = consumeSharedPackRedirect();

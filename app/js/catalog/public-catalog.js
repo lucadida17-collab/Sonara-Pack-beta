@@ -28,6 +28,11 @@
     return Number(count) === 1 ? "1 titre" : `${Number(count) || 0} titres`;
   }
 
+  function onboardingHref(destination = "") {
+    const safeDestination = String(destination || "").trim();
+    return `/index.html?language=choose&returnTo=${encodeURIComponent(safeDestination)}`;
+  }
+
   function setMeta(name, content, attribute = "name") {
     let meta = document.querySelector(`meta[${attribute}="${name}"]`);
     if (!meta) {
@@ -155,7 +160,7 @@
             <p>${escapeHTML(pack.license?.name || "Licence standard Sonara")}</p>
           </section>
           <div class="public-catalog-actions">
-            <a class="public-catalog-action primary" href="/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}">Découvrir sur Sonara Pack</a>
+            <a class="public-catalog-action primary" href="${onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}`)}">Découvrir sur Sonara Pack</a>
             <a class="public-catalog-action" href="/home.html">Retour au catalogue</a>
           </div>
         </div>
@@ -182,7 +187,7 @@
             <div class="public-catalog-audio-list">${audioMarkup(track) || "<p>Aucun aperçu audio disponible.</p>"}</div>
           </section>
           <div class="public-catalog-actions">
-            <a class="public-catalog-action primary" href="/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&trackId=${encodeURIComponent(track.id)}">Ouvrir le pack complet</a>
+            <a class="public-catalog-action primary" href="${onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&trackId=${encodeURIComponent(track.id)}`)}">Ouvrir le pack complet</a>
             <a class="public-catalog-action" href="/home.html">Retour au catalogue</a>
           </div>
         </div>
