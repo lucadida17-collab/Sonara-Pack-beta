@@ -1040,3 +1040,39 @@ button {
   }
 }
 
+
+/* Date de naissance — iOS/TikTok : même boîte que les autres champs */
+.user-form > input.formulaire.date-input,
+.artist-form > input.formulaire.date-input,
+.both-form > input.formulaire.date-input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-self: stretch;
+  flex: 0 0 auto;
+  margin: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.user-form > input.formulaire.date-input::-webkit-date-and-time-value,
+.artist-form > input.formulaire.date-input::-webkit-date-and-time-value,
+.both-form > input.formulaire.date-input::-webkit-date-and-time-value {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.user-form > input.formulaire.date-input::-webkit-datetime-edit,
+.artist-form > input.formulaire.date-input::-webkit-datetime-edit,
+.both-form > input.formulaire.date-input::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
