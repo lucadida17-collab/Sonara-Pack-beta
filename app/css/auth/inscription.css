@@ -972,12 +972,29 @@ button {
 }
 
 
-/* Date de naissance — repère mobile uniquement */
+/* Date de naissance — alignement visuel avec les autres champs */
 .birthdate-field-label {
   display: none;
 }
 
-.date-input,
+.date-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 58px;
+  min-height: 58px;
+  max-height: 58px;
+  padding: 0 18px;
+  display: block;
+  box-sizing: border-box;
+  background: #101010;
+  color: #ffffff;
+  border: 1px solid #2d2d2d;
+  border-radius: 14px;
+  outline: none;
+  color-scheme: dark;
+}
+
 .add-account-date {
   color-scheme: dark;
 }
@@ -1003,7 +1020,14 @@ button {
     text-align: left;
   }
 
-  .date-input,
+  .date-input {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .add-account-date {
     min-height: 54px;
   }
