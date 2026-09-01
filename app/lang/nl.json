@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Volledig pack openen",
   "Chargement de la page publique…": "Openbare pagina wordt geladen…",
   "Aucun aperçu audio disponible.": "Geen audiovoorbeeld beschikbaar.",
-  "Contenu public indisponible.": "Openbare inhoud niet beschikbaar."
+  "Contenu public indisponible.": "Openbare inhoud niet beschikbaar.",
+  "Captures d’écran (facultatif)": "Schermafbeeldingen (optioneel)",
+  "Ajouter des captures": "Schermafbeeldingen toevoegen",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG of WebP · maximaal 5 afbeeldingen · 10 MB per afbeelding",
+  "Aucune capture sélectionnée": "Geen schermafbeelding geselecteerd",
+  "{0} capture(s) sélectionnée(s)": "{0} schermafbeelding(en) geselecteerd",
+  "Retirer la capture": "Schermafbeelding verwijderen",
+  "Maximum 5 captures.": "Maximaal 5 schermafbeeldingen.",
+  "Chaque capture doit faire 10 Mo maximum.": "Elke schermafbeelding mag maximaal 10 MB zijn.",
+  "Format accepté : PNG, JPG ou WebP.": "Geaccepteerde formaten: PNG, JPG of WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Schermafbeeldingen zijn alleen beschikbaar voor probleemmeldingen.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Een schermafbeelding is niet werkelijk een PNG-, JPG- of WebP-bestand.",
+  "Le serveur a refusé une capture.": "De server heeft een schermafbeelding geweigerd.",
+  "Capture {0}": "Schermafbeelding {0}"
 }

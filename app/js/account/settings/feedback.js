@@ -19,6 +19,27 @@ const FEEDBACK_TYPES = [
   { value: "bug", label: "Problème rencontré", icon: "bug" }
 ];
 
+const FEEDBACK_ATTACHMENT_MAX_FILES = 5;
+const FEEDBACK_ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024;
+const FEEDBACK_ATTACHMENT_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp"
+]);
+let feedbackAttachmentFiles = [];
+let feedbackAttachmentPreviewUrls = [];
+
+function feedbackClearAttachmentPreviewUrls() {
+  feedbackAttachmentPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+  feedbackAttachmentPreviewUrls = [];
+}
+
+function feedbackResetAttachments() {
+  feedbackClearAttachmentPreviewUrls();
+  feedbackAttachmentFiles = [];
+}
+
+
 function feedbackEscape(value = "") {
   const element = document.createElement("div");
   element.textContent = String(value);
@@ -379,6 +400,28 @@ function renderFeedbackForm(initialType = "general") {
             </div>
           </div>
 
+          <div id="feedbackAttachmentsField" class="feedback-field feedback-attachments-field" hidden>
+            <label for="feedbackAttachments">Captures d’écran (facultatif)</label>
+            <input
+              id="feedbackAttachments"
+              class="feedback-attachments-input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              hidden
+            >
+
+            <button id="feedbackAttachmentsButton" class="feedback-attachments-button" type="button">
+              <i data-lucide="image-plus"></i>
+              <span>Ajouter des captures</span>
+            </button>
+
+            <p class="feedback-attachments-note">PNG, JPG ou WebP · 5 images maximum · 10 Mo par image</p>
+            <p id="feedbackAttachmentsSummary" class="feedback-attachments-summary">Aucune capture sélectionnée</p>
+            <div id="feedbackAttachmentsPreview" class="feedback-attachments-preview"></div>
+            <p class="feedback-error" data-error-for="attachments"></p>
+          </div>
+
           <button id="feedbackSubmit" class="feedback-submit" type="submit">
             Envoyer le commentaire
           </button>
@@ -392,8 +435,105 @@ function renderFeedbackForm(initialType = "general") {
   const form = document.getElementById("feedbackForm");
   const message = document.getElementById("feedbackMessage");
   const ratingValue = document.getElementById("feedbackRatingValue");
+  const typeInput = document.getElementById("feedbackType");
+  const attachmentsField = document.getElementById("feedbackAttachmentsField");
+  const attachmentsInput = document.getElementById("feedbackAttachments");
+  const attachmentsButton = document.getElementById("feedbackAttachmentsButton");
+  const attachmentsPreview = document.getElementById("feedbackAttachmentsPreview");
+  const attachmentsSummary = document.getElementById("feedbackAttachmentsSummary");
+  const attachmentsError = document.querySelector('[data-error-for="attachments"]');
 
-  document.querySelector(".feedback-back")?.addEventListener("click", renderFeedbackHome);
+  feedbackResetAttachments();
+
+  function renderAttachmentPreviews() {
+    feedbackClearAttachmentPreviewUrls();
+    attachmentsPreview.innerHTML = feedbackAttachmentFiles.map((file, index) => {
+      const url = URL.createObjectURL(file);
+      feedbackAttachmentPreviewUrls.push(url);
+      return `
+        <article class="feedback-attachment-preview-card">
+          <img src="${url}" alt="Capture ${index + 1}">
+          <button
+            type="button"
+            class="feedback-attachment-remove"
+            data-remove-feedback-attachment="${index}"
+            aria-label="Retirer la capture"
+          >
+            <i data-lucide="x"></i>
+          </button>
+        </article>
+      `;
+    }).join("");
+
+    attachmentsSummary.textContent = feedbackAttachmentFiles.length
+      ? `${feedbackAttachmentFiles.length} capture(s) sélectionnée(s)`
+      : "Aucune capture sélectionnée";
+
+    document.querySelectorAll("[data-remove-feedback-attachment]").forEach((button) => {
+      button.addEventListener("click", () => {
+        feedbackAttachmentFiles.splice(Number(button.dataset.removeFeedbackAttachment), 1);
+        attachmentsInput.value = "";
+        attachmentsError.textContent = "";
+        renderAttachmentPreviews();
+      });
+    });
+
+    feedbackIcons();
+  }
+
+  function syncAttachmentField() {
+    const bugMode = typeInput.value === "bug";
+    attachmentsField.hidden = !bugMode;
+    if (!bugMode && feedbackAttachmentFiles.length) {
+      feedbackResetAttachments();
+      attachmentsInput.value = "";
+      attachmentsError.textContent = "";
+      renderAttachmentPreviews();
+    }
+  }
+
+  attachmentsButton.addEventListener("click", () => attachmentsInput.click());
+
+  attachmentsInput.addEventListener("change", () => {
+    attachmentsError.textContent = "";
+    const selected = Array.from(attachmentsInput.files || []);
+    const merged = [...feedbackAttachmentFiles];
+
+    for (const file of selected) {
+      if (!FEEDBACK_ATTACHMENT_TYPES.has(file.type)) {
+        attachmentsError.textContent = "Format accepté : PNG, JPG ou WebP.";
+        continue;
+      }
+
+      if (file.size > FEEDBACK_ATTACHMENT_MAX_SIZE) {
+        attachmentsError.textContent = "Chaque capture doit faire 10 Mo maximum.";
+        continue;
+      }
+
+      const duplicate = merged.some((item) =>
+        item.name === file.name &&
+        item.size === file.size &&
+        item.lastModified === file.lastModified
+      );
+
+      if (!duplicate) merged.push(file);
+    }
+
+    if (merged.length > FEEDBACK_ATTACHMENT_MAX_FILES) {
+      attachmentsError.textContent = "Maximum 5 captures.";
+    }
+
+    feedbackAttachmentFiles = merged.slice(0, FEEDBACK_ATTACHMENT_MAX_FILES);
+    attachmentsInput.value = "";
+    renderAttachmentPreviews();
+  });
+
+  typeInput.addEventListener("change", syncAttachmentField);
+
+  document.querySelector(".feedback-back")?.addEventListener("click", () => {
+    feedbackResetAttachments();
+    renderFeedbackHome();
+  });
 
   message.addEventListener("input", () => {
     document.getElementById("feedbackCounter").textContent =
@@ -414,6 +554,8 @@ function renderFeedbackForm(initialType = "general") {
     });
   });
 
+  syncAttachmentField();
+  renderAttachmentPreviews();
   form.addEventListener("submit", submitFeedback);
 }
 
@@ -473,18 +615,33 @@ async function submitFeedback(event) {
   };
 
   try {
-    const response = await fetch(`${feedbackApiUrl()}/api/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    let requestOptions;
 
+    if (type === "bug" && feedbackAttachmentFiles.length) {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        formData.append(key, String(value ?? ""));
+      });
+      feedbackAttachmentFiles.forEach((file) => {
+        formData.append("attachments", file, file.name);
+      });
+      requestOptions = { method: "POST", body: formData };
+    } else {
+      requestOptions = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      };
+    }
+
+    const response = await fetch(`${feedbackApiUrl()}/api/feedback`, requestOptions);
     const data = await feedbackReadJson(response);
 
     if (!response.ok) {
       throw new Error(data.message || "Impossible d’envoyer le commentaire.");
     }
 
+    feedbackResetAttachments();
     renderFeedbackConfirmation(data.feedback);
   } catch (error) {
     document.querySelector('[data-error-for="message"]').textContent =

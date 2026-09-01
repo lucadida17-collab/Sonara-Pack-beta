@@ -2767,5 +2767,18 @@
   "Ouvrir le pack complet": "Ouvrir le pack complet",
   "Chargement de la page publique…": "Chargement de la page publique…",
   "Aucun aperçu audio disponible.": "Aucun aperçu audio disponible.",
-  "Contenu public indisponible.": "Contenu public indisponible."
+  "Contenu public indisponible.": "Contenu public indisponible.",
+  "Captures d’écran (facultatif)": "Captures d’écran (facultatif)",
+  "Ajouter des captures": "Ajouter des captures",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image",
+  "Aucune capture sélectionnée": "Aucune capture sélectionnée",
+  "{0} capture(s) sélectionnée(s)": "{0} capture(s) sélectionnée(s)",
+  "Retirer la capture": "Retirer la capture",
+  "Maximum 5 captures.": "Maximum 5 captures.",
+  "Chaque capture doit faire 10 Mo maximum.": "Chaque capture doit faire 10 Mo maximum.",
+  "Format accepté : PNG, JPG ou WebP.": "Format accepté : PNG, JPG ou WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Les captures sont réservées aux signalements de problème.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.",
+  "Le serveur a refusé une capture.": "Le serveur a refusé une capture.",
+  "Capture {0}": "Capture {0}"
 }

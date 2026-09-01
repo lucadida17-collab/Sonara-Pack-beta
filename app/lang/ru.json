@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Открыть полный пак",
   "Chargement de la page publique…": "Загрузка публичной страницы…",
   "Aucun aperçu audio disponible.": "Аудиопревью недоступно.",
-  "Contenu public indisponible.": "Публичный контент недоступен."
+  "Contenu public indisponible.": "Публичный контент недоступен.",
+  "Captures d’écran (facultatif)": "Скриншоты (необязательно)",
+  "Ajouter des captures": "Добавить скриншоты",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG или WebP · максимум 5 изображений · 10 МБ на изображение",
+  "Aucune capture sélectionnée": "Скриншот не выбран",
+  "{0} capture(s) sélectionnée(s)": "Выбрано скриншотов: {0}",
+  "Retirer la capture": "Удалить скриншот",
+  "Maximum 5 captures.": "Максимум 5 скриншотов.",
+  "Chaque capture doit faire 10 Mo maximum.": "Размер каждого скриншота — не более 10 МБ.",
+  "Format accepté : PNG, JPG ou WebP.": "Допустимые форматы: PNG, JPG или WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Скриншоты доступны только для сообщений о проблемах.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Скриншот фактически не является файлом PNG, JPG или WebP.",
+  "Le serveur a refusé une capture.": "Сервер отклонил скриншот.",
+  "Capture {0}": "Скриншот {0}"
 }

@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Buka paket lengkap",
   "Chargement de la page publique…": "Memuat halaman publik…",
   "Aucun aperçu audio disponible.": "Pratinjau audio tidak tersedia.",
-  "Contenu public indisponible.": "Konten publik tidak tersedia."
+  "Contenu public indisponible.": "Konten publik tidak tersedia.",
+  "Captures d’écran (facultatif)": "Tangkapan layar (opsional)",
+  "Ajouter des captures": "Tambahkan tangkapan layar",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG, atau WebP · maksimal 5 gambar · 10 MB per gambar",
+  "Aucune capture sélectionnée": "Tidak ada tangkapan layar yang dipilih",
+  "{0} capture(s) sélectionnée(s)": "{0} tangkapan layar dipilih",
+  "Retirer la capture": "Hapus tangkapan layar",
+  "Maximum 5 captures.": "Maksimal 5 tangkapan layar.",
+  "Chaque capture doit faire 10 Mo maximum.": "Setiap tangkapan layar maksimal 10 MB.",
+  "Format accepté : PNG, JPG ou WebP.": "Format yang diterima: PNG, JPG, atau WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Tangkapan layar hanya tersedia untuk laporan masalah.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Sebuah tangkapan layar sebenarnya bukan file PNG, JPG, atau WebP.",
+  "Le serveur a refusé une capture.": "Server menolak sebuah tangkapan layar.",
+  "Capture {0}": "Tangkapan layar {0}"
 }

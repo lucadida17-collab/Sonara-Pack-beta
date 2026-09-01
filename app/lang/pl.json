@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Otwórz pełny pakiet",
   "Chargement de la page publique…": "Ładowanie strony publicznej…",
   "Aucun aperçu audio disponible.": "Brak dostępnego podglądu audio.",
-  "Contenu public indisponible.": "Treść publiczna jest niedostępna."
+  "Contenu public indisponible.": "Treść publiczna jest niedostępna.",
+  "Captures d’écran (facultatif)": "Zrzuty ekranu (opcjonalnie)",
+  "Ajouter des captures": "Dodaj zrzuty ekranu",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG lub WebP · maks. 5 obrazów · 10 MB na obraz",
+  "Aucune capture sélectionnée": "Nie wybrano zrzutu ekranu",
+  "{0} capture(s) sélectionnée(s)": "Wybrano {0} zrzut(ów) ekranu",
+  "Retirer la capture": "Usuń zrzut ekranu",
+  "Maximum 5 captures.": "Maksymalnie 5 zrzutów ekranu.",
+  "Chaque capture doit faire 10 Mo maximum.": "Każdy zrzut ekranu może mieć maksymalnie 10 MB.",
+  "Format accepté : PNG, JPG ou WebP.": "Akceptowane formaty: PNG, JPG lub WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Zrzuty ekranu są dostępne tylko w zgłoszeniach problemów.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Zrzut ekranu nie jest rzeczywistym plikiem PNG, JPG ani WebP.",
+  "Le serveur a refusé une capture.": "Serwer odrzucił zrzut ekranu.",
+  "Capture {0}": "Zrzut ekranu {0}"
 }

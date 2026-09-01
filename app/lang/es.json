@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Abrir el pack completo",
   "Chargement de la page publique…": "Cargando la página pública…",
   "Aucun aperçu audio disponible.": "No hay vista previa de audio disponible.",
-  "Contenu public indisponible.": "Contenido público no disponible."
+  "Contenu public indisponible.": "Contenido público no disponible.",
+  "Captures d’écran (facultatif)": "Capturas de pantalla (opcional)",
+  "Ajouter des captures": "Añadir capturas",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG o WebP · máximo 5 imágenes · 10 MB por imagen",
+  "Aucune capture sélectionnée": "Ninguna captura seleccionada",
+  "{0} capture(s) sélectionnée(s)": "{0} captura(s) seleccionada(s)",
+  "Retirer la capture": "Quitar captura",
+  "Maximum 5 captures.": "Máximo 5 capturas.",
+  "Chaque capture doit faire 10 Mo maximum.": "Cada captura debe pesar como máximo 10 MB.",
+  "Format accepté : PNG, JPG ou WebP.": "Formatos aceptados: PNG, JPG o WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Las capturas solo están disponibles para reportes de problemas.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Una captura no corresponde realmente a un archivo PNG, JPG o WebP.",
+  "Le serveur a refusé une capture.": "El servidor rechazó una captura.",
+  "Capture {0}": "Captura {0}"
 }

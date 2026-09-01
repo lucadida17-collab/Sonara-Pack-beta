@@ -8060,13 +8060,203 @@ app.patch("/api/profile/:id/moderation-notice/read", (req, res) => {
 });
 
 
+
+const FEEDBACK_MAX_ATTACHMENTS = 5;
+const FEEDBACK_MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const FEEDBACK_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+]);
+
+function feedbackImageExtension(mimeType = "") {
+  if (mimeType === "image/png") return ".png";
+  if (mimeType === "image/webp") return ".webp";
+  return ".jpg";
+}
+
+function feedbackAttachmentFileFilter(_req, file, cb) {
+  if (!FEEDBACK_IMAGE_TYPES.has(String(file?.mimetype || "").toLowerCase())) {
+    return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file?.fieldname || "attachments"));
+  }
+  return cb(null, true);
+}
+
+const feedbackAttachmentUpload = multer({
+  storage,
+  limits: {
+    files: FEEDBACK_MAX_ATTACHMENTS,
+    fileSize: FEEDBACK_MAX_ATTACHMENT_SIZE,
+    fields: 16,
+    fieldSize: 2 * 1024 * 1024
+  },
+  fileFilter: feedbackAttachmentFileFilter
+});
+
+function cleanupFeedbackTempFiles(files = []) {
+  for (const file of Array.isArray(files) ? files : []) {
+    try {
+      if (file?.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    } catch (error) {
+      console.error("Nettoyage capture feedback impossible :", error.message);
+    }
+  }
+}
+
+function handleFeedbackAttachmentUpload(req, res, next) {
+  feedbackAttachmentUpload.array("attachments", FEEDBACK_MAX_ATTACHMENTS)(req, res, (error) => {
+    if (!error) return next();
+
+    cleanupFeedbackTempFiles(req.files);
+
+    const messages = {
+      LIMIT_FILE_SIZE: "Chaque capture doit faire 10 Mo maximum.",
+      LIMIT_FILE_COUNT: "Maximum 5 captures par signalement.",
+      LIMIT_UNEXPECTED_FILE: "Format accepté : PNG, JPG ou WebP.",
+      LIMIT_FIELD_VALUE: "Les informations du signalement sont trop volumineuses."
+    };
+
+    return res.status(400).json({
+      success: false,
+      code: error.code || "FEEDBACK_ATTACHMENT_UPLOAD_ERROR",
+      message: messages[error.code] || "Le serveur a refusé une capture."
+    });
+  });
+}
+
+function feedbackImageSignatureIsValid(file) {
+  if (!file?.path || !fs.existsSync(file.path)) return false;
+
+  let descriptor;
+  try {
+    descriptor = fs.openSync(file.path, "r");
+    const header = Buffer.alloc(16);
+    const length = fs.readSync(descriptor, header, 0, header.length, 0);
+    const mimeType = String(file.mimetype || "").toLowerCase();
+
+    if (mimeType === "image/png") {
+      return length >= 8 && header.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    }
+
+    if (mimeType === "image/jpeg") {
+      return length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    }
+
+    if (mimeType === "image/webp") {
+      return length >= 12 && header.toString("ascii", 0, 4) === "RIFF" && header.toString("ascii", 8, 12) === "WEBP";
+    }
+  } catch (error) {
+    console.error("Validation capture feedback impossible :", error.message);
+    return false;
+  } finally {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch {}
+    }
+  }
+
+  return false;
+}
+
+function feedbackAttachmentDisplayName(value = "capture") {
+  const base = path.basename(String(value || "capture"));
+  return base.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_").slice(0, 140) || "capture";
+}
+
+function publicFeedbackRecord(item = {}) {
+  const { _id, ...record } = item || {};
+  return {
+    ...record,
+    attachments: (Array.isArray(record.attachments) ? record.attachments : []).map((attachment) => ({
+      id: String(attachment?.id || ""),
+      kind: "image",
+      name: feedbackAttachmentDisplayName(attachment?.name || "capture"),
+      mimeType: String(attachment?.mimeType || "application/octet-stream"),
+      size: Math.max(0, Number(attachment?.size || 0))
+    }))
+  };
+}
+
+function persistLocalFeedbackAttachments(files = [], feedbackId) {
+  const attachments = [];
+
+  for (const file of Array.isArray(files) ? files : []) {
+    if (!feedbackImageSignatureIsValid(file)) {
+      cleanupFeedbackTempFiles(files);
+      const invalidError = new Error("Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.");
+      invalidError.code = "INVALID_FEEDBACK_IMAGE";
+      throw invalidError;
+    }
+  }
+
+  try {
+    for (const file of Array.isArray(files) ? files : []) {
+      const id = `attachment_${crypto.randomBytes(8).toString("hex")}`;
+      const extension = feedbackImageExtension(file.mimetype);
+      const storageName = `feedback-${feedbackId}-${id}${extension}`;
+      const destination = path.join(__dirname, "uploads", storageName);
+      fs.renameSync(file.path, destination);
+
+      attachments.push({
+        id,
+        kind: "image",
+        name: feedbackAttachmentDisplayName(file.originalname),
+        mimeType: String(file.mimetype),
+        size: Number(file.size || 0),
+        storageKey: storageName
+      });
+    }
+
+    return attachments;
+  } catch (error) {
+    deleteLocalFeedbackAttachments(attachments);
+    cleanupFeedbackTempFiles(files);
+    throw error;
+  }
+}
+
+function deleteLocalFeedbackAttachments(attachments = []) {
+  for (const attachment of Array.isArray(attachments) ? attachments : []) {
+    const storageName = path.basename(String(attachment?.storageKey || ""));
+    if (!storageName) continue;
+    try {
+      const filePath = path.join(__dirname, "uploads", storageName);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (error) {
+      console.error("Suppression capture feedback locale impossible :", error.message);
+    }
+  }
+}
+
+function sendFounderLocalFeedbackAttachment(feedback, attachmentId, res) {
+  const attachment = (Array.isArray(feedback?.attachments) ? feedback.attachments : [])
+    .find((item) => String(item?.id || "") === String(attachmentId || ""));
+  const storageName = path.basename(String(attachment?.storageKey || ""));
+
+  if (!attachment || !storageName) {
+    return res.status(404).json({ success: false, message: "Capture introuvable." });
+  }
+
+  const filePath = path.join(__dirname, "uploads", storageName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ success: false, message: "Capture introuvable." });
+  }
+
+  res.setHeader("Content-Type", attachment.mimeType || "application/octet-stream");
+  res.setHeader("Content-Length", String(fs.statSync(filePath).size));
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(feedbackAttachmentDisplayName(attachment.name))}`);
+  return fs.createReadStream(filePath).pipe(res);
+}
+
+
 /* =========================
    FEEDBACK SONARA -> FOUNDER
 ========================= */
 
 const feedbackPath = path.join(__dirname, "data", "feedback.json");
 
-app.post("/api/feedback", (req, res) => {
+app.post("/api/feedback", handleFeedbackAttachmentUpload, (req, res) => {
+  let storedAttachments = [];
   try {
     const {
       rootUserId = "",
@@ -8081,10 +8271,20 @@ app.post("/api/feedback", (req, res) => {
       page = ""
     } = req.body || {};
 
+    const incomingFiles = Array.isArray(req.files) ? req.files : [];
+    if (incomingFiles.length && String(type || "general") !== "bug") {
+      cleanupFeedbackTempFiles(incomingFiles);
+      return res.status(400).json({
+        success: false,
+        message: "Les captures sont réservées aux signalements de problème."
+      });
+    }
+
     const cleanTitle = String(title).trim();
     const cleanMessage = String(message).trim();
 
     if (cleanTitle.length < 3 || cleanMessage.length < 10) {
+      cleanupFeedbackTempFiles(incomingFiles);
       return res.status(400).json({
         success: false,
         message: "Titre et commentaire obligatoires."
@@ -8093,9 +8293,11 @@ app.post("/api/feedback", (req, res) => {
 
     const items = readJsonArray(feedbackPath);
     const createdAt = new Date().toISOString();
+    const feedbackId = `feedback_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    storedAttachments = persistLocalFeedbackAttachments(incomingFiles, feedbackId);
 
     const feedback = {
-      id: `feedback_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      id: feedbackId,
       reference: `FB-${Date.now().toString().slice(-8)}`,
       rootUserId: String(rootUserId),
       accountId: String(accountId),
@@ -8107,6 +8309,7 @@ app.post("/api/feedback", (req, res) => {
       title: cleanTitle,
       message: cleanMessage,
       page: String(page),
+      attachments: storedAttachments,
       status: "new",
       replies: [],
       createdAt,
@@ -8124,12 +8327,15 @@ app.post("/api/feedback", (req, res) => {
       priority: feedback.type === "bug" ? "urgent" : "normal"
     });
 
-    return res.status(201).json({ success: true, feedback });
+    return res.status(201).json({ success: true, feedback: publicFeedbackRecord(feedback) });
   } catch (error) {
+    cleanupFeedbackTempFiles(req.files);
+    if (storedAttachments.length) deleteLocalFeedbackAttachments(storedAttachments);
     console.error("Erreur création feedback :", error);
-    return res.status(500).json({
+    const invalidImage = error?.code === "INVALID_FEEDBACK_IMAGE";
+    return res.status(invalidImage ? 400 : 500).json({
       success: false,
-      message: "Impossible d’envoyer le commentaire."
+      message: invalidImage ? error.message : "Impossible d’envoyer le commentaire."
     });
   }
 });
@@ -8158,7 +8364,8 @@ app.get("/api/feedback/mine", (req, res) => {
 
         return matchesAccount || matchesEmail;
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(publicFeedbackRecord);
 
     return res.json({
       success: true,
@@ -8175,7 +8382,8 @@ app.get("/api/feedback/mine", (req, res) => {
 
 app.get("/api/founder/feedback", requireFounderKey, (_req, res) => {
   const feedback = readJsonArray(feedbackPath)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map(publicFeedbackRecord);
 
   res.json({
     success: true,
@@ -8185,6 +8393,18 @@ app.get("/api/founder/feedback", requireFounderKey, (_req, res) => {
   });
 });
 
+
+app.get("/api/founder/feedback/:id/attachments/:attachmentId", requireFounderKey, (req, res) => {
+  const feedback = readJsonArray(feedbackPath).find(
+    (item) => item.id === req.params.id || item.reference === req.params.id
+  );
+
+  if (!feedback) {
+    return res.status(404).json({ success: false, message: "Feedback introuvable." });
+  }
+
+  return sendFounderLocalFeedbackAttachment(feedback, req.params.attachmentId, res);
+});
 
 app.post("/api/founder/feedback/:id/replies", requireFounderKey, async (req, res) => {
   try {
@@ -8285,18 +8505,23 @@ app.patch("/api/founder/feedback/:id/status", requireFounderKey, (req, res) => {
 
 app.delete("/api/founder/feedback/:id", requireFounderKey, (req, res) => {
   const items = readJsonArray(feedbackPath);
-  const remaining = items.filter(
-    (item) => item.id !== req.params.id && item.reference !== req.params.id
+  const feedback = items.find(
+    (item) => item.id === req.params.id || item.reference === req.params.id
   );
 
-  if (remaining.length === items.length) {
+  if (!feedback) {
     return res.status(404).json({
       success: false,
       message: "Feedback introuvable."
     });
   }
 
+  const remaining = items.filter(
+    (item) => item.id !== req.params.id && item.reference !== req.params.id
+  );
+
   writeJsonArray(feedbackPath, remaining);
+  deleteLocalFeedbackAttachments(feedback.attachments);
   res.json({ success: true, message: "Feedback supprimé." });
 });
 

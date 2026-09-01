@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Paketin tamamını aç",
   "Chargement de la page publique…": "Herkese açık sayfa yükleniyor…",
   "Aucun aperçu audio disponible.": "Ses önizlemesi mevcut değil.",
-  "Contenu public indisponible.": "Herkese açık içerik kullanılamıyor."
+  "Contenu public indisponible.": "Herkese açık içerik kullanılamıyor.",
+  "Captures d’écran (facultatif)": "Ekran görüntüleri (isteğe bağlı)",
+  "Ajouter des captures": "Ekran görüntüsü ekle",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG veya WebP · en fazla 5 görsel · görsel başına 10 MB",
+  "Aucune capture sélectionnée": "Ekran görüntüsü seçilmedi",
+  "{0} capture(s) sélectionnée(s)": "{0} ekran görüntüsü seçildi",
+  "Retirer la capture": "Ekran görüntüsünü kaldır",
+  "Maximum 5 captures.": "En fazla 5 ekran görüntüsü.",
+  "Chaque capture doit faire 10 Mo maximum.": "Her ekran görüntüsü en fazla 10 MB olmalıdır.",
+  "Format accepté : PNG, JPG ou WebP.": "Kabul edilen formatlar: PNG, JPG veya WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Ekran görüntüleri yalnızca sorun bildirimlerinde kullanılabilir.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Bir ekran görüntüsü gerçekte PNG, JPG veya WebP dosyası değil.",
+  "Le serveur a refusé une capture.": "Sunucu bir ekran görüntüsünü reddetti.",
+  "Capture {0}": "Ekran görüntüsü {0}"
 }

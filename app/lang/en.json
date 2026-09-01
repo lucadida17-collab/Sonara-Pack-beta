@@ -2807,5 +2807,18 @@
   "Ouvrir le pack complet": "Open full pack",
   "Chargement de la page publique…": "Loading public page…",
   "Aucun aperçu audio disponible.": "No audio preview available.",
-  "Contenu public indisponible.": "Public content unavailable."
+  "Contenu public indisponible.": "Public content unavailable.",
+  "Captures d’écran (facultatif)": "Screenshots (optional)",
+  "Ajouter des captures": "Add screenshots",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG or WebP · up to 5 images · 10 MB per image",
+  "Aucune capture sélectionnée": "No screenshot selected",
+  "{0} capture(s) sélectionnée(s)": "{0} screenshot(s) selected",
+  "Retirer la capture": "Remove screenshot",
+  "Maximum 5 captures.": "Maximum 5 screenshots.",
+  "Chaque capture doit faire 10 Mo maximum.": "Each screenshot must be 10 MB or less.",
+  "Format accepté : PNG, JPG ou WebP.": "Accepted formats: PNG, JPG or WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Screenshots are only available for problem reports.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "A screenshot does not actually match a PNG, JPG or WebP file.",
+  "Le serveur a refusé une capture.": "The server rejected a screenshot.",
+  "Capture {0}": "Screenshot {0}"
 }

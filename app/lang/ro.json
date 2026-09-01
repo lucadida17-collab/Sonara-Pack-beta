@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Deschide pachetul complet",
   "Chargement de la page publique…": "Se încarcă pagina publică…",
   "Aucun aperçu audio disponible.": "Nu este disponibilă nicio previzualizare audio.",
-  "Contenu public indisponible.": "Conținutul public nu este disponibil."
+  "Contenu public indisponible.": "Conținutul public nu este disponibil.",
+  "Captures d’écran (facultatif)": "Capturi de ecran (opțional)",
+  "Ajouter des captures": "Adaugă capturi",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG sau WebP · maximum 5 imagini · 10 MB per imagine",
+  "Aucune capture sélectionnée": "Nicio captură selectată",
+  "{0} capture(s) sélectionnée(s)": "{0} captură/capturi selectată(e)",
+  "Retirer la capture": "Elimină captura",
+  "Maximum 5 captures.": "Maximum 5 capturi.",
+  "Chaque capture doit faire 10 Mo maximum.": "Fiecare captură trebuie să aibă maximum 10 MB.",
+  "Format accepté : PNG, JPG ou WebP.": "Formate acceptate: PNG, JPG sau WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Capturile sunt disponibile doar pentru raportările de probleme.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "O captură nu corespunde de fapt unui fișier PNG, JPG sau WebP.",
+  "Le serveur a refusé une capture.": "Serverul a respins o captură.",
+  "Capture {0}": "Captură {0}"
 }

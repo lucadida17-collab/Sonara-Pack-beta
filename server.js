@@ -8361,13 +8361,222 @@ app.patch("/api/profile/:id/moderation-notice/read", async (req, res) => {
 });
 
 
+
+const FEEDBACK_MAX_ATTACHMENTS = 5;
+const FEEDBACK_MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const FEEDBACK_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+]);
+
+function feedbackImageExtension(mimeType = "") {
+  if (mimeType === "image/png") return ".png";
+  if (mimeType === "image/webp") return ".webp";
+  return ".jpg";
+}
+
+function feedbackAttachmentFileFilter(_req, file, cb) {
+  if (!FEEDBACK_IMAGE_TYPES.has(String(file?.mimetype || "").toLowerCase())) {
+    return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file?.fieldname || "attachments"));
+  }
+  return cb(null, true);
+}
+
+const feedbackAttachmentUpload = multer({
+  storage,
+  limits: {
+    files: FEEDBACK_MAX_ATTACHMENTS,
+    fileSize: FEEDBACK_MAX_ATTACHMENT_SIZE,
+    fields: 16,
+    fieldSize: 2 * 1024 * 1024
+  },
+  fileFilter: feedbackAttachmentFileFilter
+});
+
+function cleanupFeedbackTempFiles(files = []) {
+  for (const file of Array.isArray(files) ? files : []) {
+    try {
+      if (file?.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    } catch (error) {
+      console.error("Nettoyage capture feedback impossible :", error.message);
+    }
+  }
+}
+
+function handleFeedbackAttachmentUpload(req, res, next) {
+  feedbackAttachmentUpload.array("attachments", FEEDBACK_MAX_ATTACHMENTS)(req, res, (error) => {
+    if (!error) return next();
+
+    cleanupFeedbackTempFiles(req.files);
+
+    const messages = {
+      LIMIT_FILE_SIZE: "Chaque capture doit faire 10 Mo maximum.",
+      LIMIT_FILE_COUNT: "Maximum 5 captures par signalement.",
+      LIMIT_UNEXPECTED_FILE: "Format accepté : PNG, JPG ou WebP.",
+      LIMIT_FIELD_VALUE: "Les informations du signalement sont trop volumineuses."
+    };
+
+    return res.status(400).json({
+      success: false,
+      code: error.code || "FEEDBACK_ATTACHMENT_UPLOAD_ERROR",
+      message: messages[error.code] || "Le serveur a refusé une capture."
+    });
+  });
+}
+
+function feedbackImageSignatureIsValid(file) {
+  if (!file?.path || !fs.existsSync(file.path)) return false;
+
+  let descriptor;
+  try {
+    descriptor = fs.openSync(file.path, "r");
+    const header = Buffer.alloc(16);
+    const length = fs.readSync(descriptor, header, 0, header.length, 0);
+    const mimeType = String(file.mimetype || "").toLowerCase();
+
+    if (mimeType === "image/png") {
+      return length >= 8 && header.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    }
+
+    if (mimeType === "image/jpeg") {
+      return length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    }
+
+    if (mimeType === "image/webp") {
+      return length >= 12 && header.toString("ascii", 0, 4) === "RIFF" && header.toString("ascii", 8, 12) === "WEBP";
+    }
+  } catch (error) {
+    console.error("Validation capture feedback impossible :", error.message);
+    return false;
+  } finally {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch {}
+    }
+  }
+
+  return false;
+}
+
+function feedbackAttachmentDisplayName(value = "capture") {
+  const base = path.basename(String(value || "capture"));
+  return base.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_").slice(0, 140) || "capture";
+}
+
+function publicFeedbackRecord(item = {}) {
+  const { _id, ...record } = item || {};
+  return {
+    ...record,
+    attachments: (Array.isArray(record.attachments) ? record.attachments : []).map((attachment) => ({
+      id: String(attachment?.id || ""),
+      kind: "image",
+      name: feedbackAttachmentDisplayName(attachment?.name || "capture"),
+      mimeType: String(attachment?.mimeType || "application/octet-stream"),
+      size: Math.max(0, Number(attachment?.size || 0))
+    }))
+  };
+}
+
+async function persistFeedbackAttachments(files = [], feedbackId, environment) {
+  const attachments = [];
+
+  try {
+    for (const file of Array.isArray(files) ? files : []) {
+      if (!feedbackImageSignatureIsValid(file)) {
+        const invalidError = new Error("Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.");
+        invalidError.code = "INVALID_FEEDBACK_IMAGE";
+        throw invalidError;
+      }
+
+      const id = `attachment_${crypto.randomBytes(8).toString("hex")}`;
+      const extension = feedbackImageExtension(file.mimetype);
+      const storageKey = `feedback/${environment}/${feedbackId}/${id}${extension}`;
+      await uploadLocalFileToR2(file.path, storageKey, file.mimetype);
+
+      attachments.push({
+        id,
+        kind: "image",
+        name: feedbackAttachmentDisplayName(file.originalname),
+        mimeType: String(file.mimetype),
+        size: Number(file.size || 0),
+        storageKey
+      });
+    }
+
+    return attachments;
+  } catch (error) {
+    if (attachments.length) await deleteFeedbackAttachmentsBestEffort(attachments);
+    throw error;
+  } finally {
+    cleanupFeedbackTempFiles(files);
+  }
+}
+
+async function deleteFeedbackAttachmentsBestEffort(attachments = []) {
+  for (const attachment of Array.isArray(attachments) ? attachments : []) {
+    const storageKey = String(attachment?.storageKey || "").trim();
+    if (!storageKey) continue;
+
+    try {
+      await r2.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: storageKey
+      }));
+    } catch (error) {
+      console.error(`Suppression capture feedback impossible (${storageKey}) :`, error.message);
+    }
+  }
+}
+
+async function sendFounderFeedbackAttachment(feedback, attachmentId, res) {
+  const attachment = (Array.isArray(feedback?.attachments) ? feedback.attachments : [])
+    .find((item) => String(item?.id || "") === String(attachmentId || ""));
+
+  if (!attachment?.storageKey) {
+    return res.status(404).json({ success: false, message: "Capture introuvable." });
+  }
+
+  try {
+    const object = await r2.send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: String(attachment.storageKey)
+    }));
+
+    if (!object.Body || typeof object.Body.pipe !== "function") {
+      throw new Error("Flux de capture introuvable.");
+    }
+
+    res.setHeader("Content-Type", attachment.mimeType || object.ContentType || "application/octet-stream");
+    if (object.ContentLength) res.setHeader("Content-Length", String(object.ContentLength));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(feedbackAttachmentDisplayName(attachment.name))}`);
+
+    object.Body.on("error", (error) => {
+      console.error("Lecture capture feedback R2 impossible :", error);
+      if (!res.headersSent) res.status(500).end();
+      else res.destroy(error);
+    });
+
+    return object.Body.pipe(res);
+  } catch (error) {
+    const status = error?.$metadata?.httpStatusCode;
+    if (status === 404 || error?.name === "NoSuchKey") {
+      return res.status(404).json({ success: false, message: "Capture introuvable." });
+    }
+    console.error("Lecture capture feedback impossible :", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger la capture." });
+  }
+}
+
+
 /* =========================
    FEEDBACK SONARA -> FOUNDER
 ========================= */
 
 const feedbackCollection = db.collection("feedback");
 
-app.post("/api/feedback", async (req, res) => {
+app.post("/api/feedback", handleFeedbackAttachmentUpload, async (req, res) => {
+  let storedAttachments = [];
   try {
     const {
       rootUserId = "",
@@ -8382,10 +8591,20 @@ app.post("/api/feedback", async (req, res) => {
       page = ""
     } = req.body || {};
 
+    const incomingFiles = Array.isArray(req.files) ? req.files : [];
+    if (incomingFiles.length && String(type || "general") !== "bug") {
+      cleanupFeedbackTempFiles(incomingFiles);
+      return res.status(400).json({
+        success: false,
+        message: "Les captures sont réservées aux signalements de problème."
+      });
+    }
+
     const cleanTitle = String(title).trim();
     const cleanMessage = String(message).trim();
 
     if (cleanTitle.length < 3 || cleanMessage.length < 10) {
+      cleanupFeedbackTempFiles(incomingFiles);
       return res.status(400).json({
         success: false,
         message: "Titre et commentaire obligatoires."
@@ -8393,9 +8612,11 @@ app.post("/api/feedback", async (req, res) => {
     }
 
     const createdAt = new Date().toISOString();
+    const feedbackId = `feedback_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    storedAttachments = await persistFeedbackAttachments(incomingFiles, feedbackId, "main");
 
     const feedback = {
-      id: `feedback_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      id: feedbackId,
       reference: `FB-${Date.now().toString().slice(-8)}`,
       rootUserId: String(rootUserId),
       accountId: String(accountId),
@@ -8407,6 +8628,7 @@ app.post("/api/feedback", async (req, res) => {
       title: cleanTitle,
       message: cleanMessage,
       page: String(page),
+      attachments: storedAttachments,
       status: "new",
       replies: [],
       createdAt,
@@ -8423,16 +8645,18 @@ app.post("/api/feedback", async (req, res) => {
       priority: feedback.type === "bug" ? "urgent" : "normal"
     });
 
-    const { _id, ...publicFeedback } = feedback;
     return res.status(201).json({
       success: true,
-      feedback: publicFeedback
+      feedback: publicFeedbackRecord(feedback)
     });
   } catch (error) {
+    cleanupFeedbackTempFiles(req.files);
+    if (storedAttachments.length) await deleteFeedbackAttachmentsBestEffort(storedAttachments);
     console.error("Erreur création feedback :", error);
-    return res.status(500).json({
+    const invalidImage = error?.code === "INVALID_FEEDBACK_IMAGE";
+    return res.status(invalidImage ? 400 : 500).json({
       success: false,
-      message: "Impossible d’envoyer le commentaire."
+      message: invalidImage ? error.message : "Impossible d’envoyer le commentaire."
     });
   }
 });
@@ -8462,7 +8686,7 @@ app.get("/api/feedback/mine", async (req, res) => {
       .limit(100)
       .toArray();
 
-    const feedback = items.map(({ _id, ...item }) => item);
+    const feedback = items.map(publicFeedbackRecord);
 
     return res.json({
       success: true,
@@ -8484,7 +8708,7 @@ app.get("/api/founder/feedback", requireFounderKey, async (_req, res) => {
     .limit(300)
     .toArray();
 
-  const feedback = items.map(({ _id, ...item }) => item);
+  const feedback = items.map(publicFeedbackRecord);
 
   res.json({
     success: true,
@@ -8494,6 +8718,26 @@ app.get("/api/founder/feedback", requireFounderKey, async (_req, res) => {
   });
 });
 
+
+app.get("/api/founder/feedback/:id/attachments/:attachmentId", requireFounderKey, async (req, res) => {
+  try {
+    const feedback = await feedbackCollection.findOne({
+      $or: [
+        { id: String(req.params.id || "") },
+        { reference: String(req.params.id || "") }
+      ]
+    });
+
+    if (!feedback) {
+      return res.status(404).json({ success: false, message: "Feedback introuvable." });
+    }
+
+    return sendFounderFeedbackAttachment(feedback, req.params.attachmentId, res);
+  } catch (error) {
+    console.error("Erreur lecture capture feedback Founder :", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger la capture." });
+  }
+});
 
 app.post("/api/founder/feedback/:id/replies", requireFounderKey, async (req, res) => {
   try {
@@ -8604,20 +8848,22 @@ app.patch("/api/founder/feedback/:id/status", requireFounderKey, async (req, res
 });
 
 app.delete("/api/founder/feedback/:id", requireFounderKey, async (req, res) => {
-  const result = await feedbackCollection.deleteOne({
+  const feedback = await feedbackCollection.findOne({
     $or: [
       { id: req.params.id },
       { reference: req.params.id }
     ]
   });
 
-  if (!result.deletedCount) {
+  if (!feedback) {
     return res.status(404).json({
       success: false,
       message: "Feedback introuvable."
     });
   }
 
+  await feedbackCollection.deleteOne({ _id: feedback._id });
+  await deleteFeedbackAttachmentsBestEffort(feedback.attachments);
   res.json({ success: true, message: "Feedback supprimé." });
 });
 

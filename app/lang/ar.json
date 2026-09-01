@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "فتح الحزمة كاملة",
   "Chargement de la page publique…": "جارٍ تحميل الصفحة العامة…",
   "Aucun aperçu audio disponible.": "لا تتوفر معاينة صوتية.",
-  "Contenu public indisponible.": "المحتوى العام غير متاح."
+  "Contenu public indisponible.": "المحتوى العام غير متاح.",
+  "Captures d’écran (facultatif)": "لقطات الشاشة (اختياري)",
+  "Ajouter des captures": "إضافة لقطات شاشة",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG أو JPG أو WebP · بحد أقصى 5 صور · 10 ميغابايت لكل صورة",
+  "Aucune capture sélectionnée": "لم يتم اختيار لقطة شاشة",
+  "{0} capture(s) sélectionnée(s)": "تم اختيار {0} لقطة شاشة",
+  "Retirer la capture": "إزالة لقطة الشاشة",
+  "Maximum 5 captures.": "الحد الأقصى 5 لقطات شاشة.",
+  "Chaque capture doit faire 10 Mo maximum.": "يجب ألا يتجاوز حجم كل لقطة شاشة 10 ميغابايت.",
+  "Format accepté : PNG, JPG ou WebP.": "الصيغ المقبولة: PNG أو JPG أو WebP.",
+  "Les captures sont réservées aux signalements de problème.": "لقطات الشاشة متاحة فقط لبلاغات المشكلات.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "إحدى اللقطات ليست فعليًا ملف PNG أو JPG أو WebP.",
+  "Le serveur a refusé une capture.": "رفض الخادم لقطة شاشة.",
+  "Capture {0}": "لقطة شاشة {0}"
 }

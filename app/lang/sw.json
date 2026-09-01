@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Fungua pack kamili",
   "Chargement de la page publique…": "Inapakia ukurasa wa umma…",
   "Aucun aperçu audio disponible.": "Hakuna onyesho la sauti linalopatikana.",
-  "Contenu public indisponible.": "Maudhui ya umma hayapatikani."
+  "Contenu public indisponible.": "Maudhui ya umma hayapatikani.",
+  "Captures d’écran (facultatif)": "Picha za skrini (si lazima)",
+  "Ajouter des captures": "Ongeza picha za skrini",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG au WebP · picha zisizozidi 5 · MB 10 kwa picha",
+  "Aucune capture sélectionnée": "Hakuna picha ya skrini iliyochaguliwa",
+  "{0} capture(s) sélectionnée(s)": "Picha {0} za skrini zimechaguliwa",
+  "Retirer la capture": "Ondoa picha ya skrini",
+  "Maximum 5 captures.": "Picha za skrini zisizozidi 5.",
+  "Chaque capture doit faire 10 Mo maximum.": "Kila picha ya skrini isiwe zaidi ya MB 10.",
+  "Format accepté : PNG, JPG ou WebP.": "Miundo inayokubalika: PNG, JPG au WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Picha za skrini zinapatikana tu kwa ripoti za matatizo.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Picha moja ya skrini si faili halisi ya PNG, JPG au WebP.",
+  "Le serveur a refusé une capture.": "Seva imekataa picha ya skrini.",
+  "Capture {0}": "Picha ya skrini {0}"
 }

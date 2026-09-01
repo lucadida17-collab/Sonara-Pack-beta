@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Hap paketën e plotë",
   "Chargement de la page publique…": "Po ngarkohet faqja publike…",
   "Aucun aperçu audio disponible.": "Nuk ka parapamje audio të disponueshme.",
-  "Contenu public indisponible.": "Përmbajtja publike nuk është e disponueshme."
+  "Contenu public indisponible.": "Përmbajtja publike nuk është e disponueshme.",
+  "Captures d’écran (facultatif)": "Pamje ekrani (opsionale)",
+  "Ajouter des captures": "Shto pamje ekrani",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG ose WebP · maksimumi 5 imazhe · 10 MB për imazh",
+  "Aucune capture sélectionnée": "Nuk u zgjodh asnjë pamje ekrani",
+  "{0} capture(s) sélectionnée(s)": "U zgjodhën {0} pamje ekrani",
+  "Retirer la capture": "Hiq pamjen e ekranit",
+  "Maximum 5 captures.": "Maksimumi 5 pamje ekrani.",
+  "Chaque capture doit faire 10 Mo maximum.": "Çdo pamje ekrani duhet të jetë maksimumi 10 MB.",
+  "Format accepté : PNG, JPG ou WebP.": "Formatet e pranuara: PNG, JPG ose WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Pamjet e ekranit janë vetëm për raportimet e problemeve.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Një pamje ekrani nuk është realisht skedar PNG, JPG ose WebP.",
+  "Le serveur a refusé une capture.": "Serveri refuzoi një pamje ekrani.",
+  "Capture {0}": "Pamje ekrani {0}"
 }

@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "打开完整音频包",
   "Chargement de la page publique…": "正在加载公开页面…",
   "Aucun aperçu audio disponible.": "暂无音频预览。",
-  "Contenu public indisponible.": "公开内容不可用。"
+  "Contenu public indisponible.": "公开内容不可用。",
+  "Captures d’écran (facultatif)": "屏幕截图（可选）",
+  "Ajouter des captures": "添加截图",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG、JPG 或 WebP · 最多 5 张图片 · 每张 10 MB",
+  "Aucune capture sélectionnée": "未选择截图",
+  "{0} capture(s) sélectionnée(s)": "已选择 {0} 张截图",
+  "Retirer la capture": "移除截图",
+  "Maximum 5 captures.": "最多 5 张截图。",
+  "Chaque capture doit faire 10 Mo maximum.": "每张截图最大 10 MB。",
+  "Format accepté : PNG, JPG ou WebP.": "支持格式：PNG、JPG 或 WebP。",
+  "Les captures sont réservées aux signalements de problème.": "截图仅用于问题报告。",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "某个截图实际上并不是 PNG、JPG 或 WebP 文件。",
+  "Le serveur a refusé une capture.": "服务器拒绝了一个截图。",
+  "Capture {0}": "截图 {0}"
 }

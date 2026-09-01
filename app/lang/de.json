@@ -2768,5 +2768,18 @@
   "Ouvrir le pack complet": "Vollständiges Pack öffnen",
   "Chargement de la page publique…": "Öffentliche Seite wird geladen…",
   "Aucun aperçu audio disponible.": "Keine Audiovorschau verfügbar.",
-  "Contenu public indisponible.": "Öffentlicher Inhalt nicht verfügbar."
+  "Contenu public indisponible.": "Öffentlicher Inhalt nicht verfügbar.",
+  "Captures d’écran (facultatif)": "Screenshots (optional)",
+  "Ajouter des captures": "Screenshots hinzufügen",
+  "PNG, JPG ou WebP · 5 images maximum · 10 Mo par image": "PNG, JPG oder WebP · maximal 5 Bilder · 10 MB pro Bild",
+  "Aucune capture sélectionnée": "Kein Screenshot ausgewählt",
+  "{0} capture(s) sélectionnée(s)": "{0} Screenshot(s) ausgewählt",
+  "Retirer la capture": "Screenshot entfernen",
+  "Maximum 5 captures.": "Maximal 5 Screenshots.",
+  "Chaque capture doit faire 10 Mo maximum.": "Jeder Screenshot darf höchstens 10 MB groß sein.",
+  "Format accepté : PNG, JPG ou WebP.": "Akzeptierte Formate: PNG, JPG oder WebP.",
+  "Les captures sont réservées aux signalements de problème.": "Screenshots sind nur für Problemmeldungen verfügbar.",
+  "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Ein Screenshot entspricht tatsächlich keiner PNG-, JPG- oder WebP-Datei.",
+  "Le serveur a refusé une capture.": "Der Server hat einen Screenshot abgelehnt.",
+  "Capture {0}": "Screenshot {0}"
 }
