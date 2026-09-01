@@ -1866,26 +1866,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
-    const founderRegistrationSync = queueFounderAccountSync({
-      rootUser,
-      account,
-      changeType: "registration",
-      changedFields: [
-        "id",
-        "accountId",
-        "firstname",
-        "lastname",
-        "date",
-        "phone",
-        "mail",
-        "pseudo",
-        "role",
-        "status",
-        "imageProfile",
-        "createdAt"
-      ]
-    });
-
     await usersCollection.insertOne(rootUser);
 
     if (status === "pending") {
@@ -1960,7 +1940,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
       message: "Compte créé avec succès.",
       profile: returnedAccount,
       account: returnedAccount,
-      founderSync: createFounderSyncResponse(founderRegistrationSync),
 
       redirectTo,
       stripeOnboardingUrl: null
@@ -2132,16 +2111,6 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
-    const founderAccountCreationSync = queueFounderAccountSync({
-      rootUser,
-      account,
-      changeType: "account_created",
-      changedFields: [
-        "id", "accountId", "firstname", "lastname", "date", "phone",
-        "mail", "pseudo", "role", "status", "imageProfile", "createdAt"
-      ]
-    });
-
     await usersCollection.updateOne(
       { _id: rootUser._id },
       {
@@ -2149,7 +2118,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
           accounts: account
         },
         $set: {
-          updatedAt: account.updatedAt || now
+          updatedAt: now
         }
       }
     );
@@ -2219,8 +2188,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount,
-      founderSync: createFounderSyncResponse(founderAccountCreationSync)
+      account: returnedAccount
     });
 
   } catch (error) {
@@ -3347,7 +3315,7 @@ app.patch(
    FOUNDER — ACCOUNT SYNC QUEUE
 ========================= */
 
-const SONARA_FOUNDER_SYNC_ENVIRONMENT = "main";
+const SONARA_FOUNDER_SYNC_ENVIRONMENT = "prod";
 
 function createFounderAccountSyncSnapshot(
   account = {},
@@ -3387,8 +3355,6 @@ function createFounderAccountSyncSnapshot(
       account.artistStatus || null,
     imageArtist:
       account.imageArtist || null,
-    createdAt:
-      account.createdAt || null,
     updatedAt:
       account.updatedAt ||
       new Date().toISOString()
@@ -6641,33 +6607,15 @@ function sanitizeFounderAccount(account, userId) {
   return sanitizeAccountSecrets(account, userId);
 }
 
-function founderAccountsFromRootUser(rootUser = {}) {
-  if (Array.isArray(rootUser.accounts) && rootUser.accounts.length) {
-    return rootUser.accounts;
-  }
-
-  const looksLikeLegacyAccount = Boolean(
-    rootUser.accountId ||
-    rootUser.mail ||
-    rootUser.email ||
-    rootUser.pseudo ||
-    rootUser.artistname ||
-    rootUser.role
-  );
-
-  return looksLikeLegacyAccount ? [rootUser] : [];
-}
-
 async function getRemoteFounderAccounts() {
   const documents = await usersCollection.find({}).toArray();
 
   return documents.flatMap((rootUser) =>
-    founderAccountsFromRootUser(rootUser).map((account) =>
-      sanitizeFounderAccount(
-        account,
-        rootUser.id || rootUser.userId || account.userId || String(rootUser._id)
-      )
-    )
+    Array.isArray(rootUser.accounts)
+      ? rootUser.accounts.map((account) =>
+          sanitizeFounderAccount(account, rootUser.id || String(rootUser._id))
+        )
+      : []
   ).filter(Boolean);
 }
 
@@ -7344,7 +7292,8 @@ app.get("/api/founder/moderation/packs/:id/cover", requireFounderKey, async (req
   try {
     const pack = await packsCollection.findOne({
       id: String(req.params.id),
-      status: "pending"
+      status: { $in: ["pending", "approved"] },
+      moderationHidden: { $ne: true }
     });
     if (!pack) {
       return res.status(404).json({ success: false, message: "Pack introuvable." });
@@ -7390,7 +7339,8 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
   try {
     const pack = await packsCollection.findOne({
       id: String(req.params.id),
-      status: "pending"
+      status: { $in: ["pending", "approved"] },
+      moderationHidden: { $ne: true }
     });
     if (!pack) {
       workspace.cleanup();
@@ -7412,7 +7362,8 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
       inputPath: workspace.inputPath,
       outputPath: workspace.outputPath,
       start: preview.previewStart,
-      duration: preview.previewDuration
+      duration: preview.previewDuration,
+      levelPercent: req.query?.level
     });
 
     res.setHeader("Cache-Control", "private, no-store");
@@ -8270,14 +8221,7 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
     new Date(a.updatedAt || a.createdAt || 0)
   );
 
-  return res.json({
-    success: true,
-    connectedEnvironment: "main",
-    snapshotGeneratedAt: new Date().toISOString(),
-    totalAccounts: accounts.length,
-    items: accounts,
-    accounts
-  });
+  return res.json({ success: true, items: accounts, accounts });
 });
 
 app.patch(

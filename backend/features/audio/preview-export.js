@@ -37,7 +37,7 @@ function createPreviewWorkspace() {
   };
 }
 
-function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30 }) {
+function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30, levelPercent = 100 }) {
   return new Promise((resolve, reject) => {
     if (!ffmpegPath) {
       reject(new Error("FFmpeg indisponible."));
@@ -50,11 +50,13 @@ function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30 })
 
     const safeStart = Math.max(0, safeNumber(start, 0));
     const safeDuration = clamp(safeNumber(duration, 30), 1, 30);
+    const safeLevel = clamp(safeNumber(levelPercent, 100), 70, 100) / 100;
     const fadeInDuration = Math.min(0.15, safeDuration / 4);
     const fadeOutDuration = Math.min(0.35, safeDuration / 3);
     const fadeOutStart = Math.max(0, safeDuration - fadeOutDuration);
     const audioFilter = [
       "loudnorm=I=-16:TP=-1.5:LRA=11",
+      `volume=${safeLevel.toFixed(3)}`,
       `afade=t=in:st=0:d=${fadeInDuration.toFixed(3)}`,
       `afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOutDuration.toFixed(3)}`
     ].join(",");

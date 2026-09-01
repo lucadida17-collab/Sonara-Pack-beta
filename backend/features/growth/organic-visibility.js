@@ -625,6 +625,129 @@ function summarizeAttribution(records = []) {
     journeys
   };
 }
+
+function optionalPackMetric(pack = {}, names = []) {
+  const metrics = pack?.metrics && typeof pack.metrics === "object" ? pack.metrics : {};
+  for (const name of names) {
+    const candidates = [metrics[name], pack?.[name]];
+    for (const candidate of candidates) {
+      if (candidate === null || candidate === undefined || candidate === "") continue;
+      const value = Number(candidate);
+      if (Number.isFinite(value) && value >= 0) return value;
+    }
+  }
+  return null;
+}
+
+function founderPackNetworkStats(records = [], packId = "") {
+  const normalizedPackId = String(packId || "");
+  const sourceBreakdown = Object.fromEntries(ORGANIC_SOURCES.map((source) => [source, 0]));
+  let arrivals = 0;
+  let signups = 0;
+
+  for (const record of Array.isArray(records) ? records : []) {
+    if (String(record?.firstTouch?.packId || "") !== normalizedPackId) continue;
+    arrivals += 1;
+    const source = normalizeSource(record?.firstTouch?.source);
+    sourceBreakdown[source] = Math.max(0, Number(sourceBreakdown[source] || 0)) + 1;
+    if (record?.signupAttributed === true && record?.accountId) signups += 1;
+  }
+
+  return {
+    arrivals,
+    signups,
+    conversionRate: arrivals > 0 ? Number(((signups / arrivals) * 100).toFixed(1)) : 0,
+    sourceBreakdown
+  };
+}
+
+function normalizedNetworkSignal(value, maximum) {
+  const safeValue = Math.max(0, Number(value || 0));
+  const safeMaximum = Math.max(0, Number(maximum || 0));
+  if (safeMaximum <= 0) return null;
+  return Math.max(0, Math.min(100, (Math.log1p(safeValue) / Math.log1p(safeMaximum)) * 100));
+}
+
+function buildFounderPackCatalog(req, packs = [], records = [], publicOrigin = "", environment = "main") {
+  const rows = (Array.isArray(packs) ? packs : []).map((pack) => {
+    const normalized = publicPack(pack);
+    const network = founderPackNetworkStats(records, normalized.id);
+    const downloads = optionalPackMetric(pack, ["downloadCount", "downloads"]) ?? 0;
+    const listens = optionalPackMetric(pack, ["listenCount", "listens", "playCount", "plays"]);
+    const clicks = optionalPackMetric(pack, ["clickCount", "clicks"]);
+    const impressions = optionalPackMetric(pack, ["impressionCount", "impressions"]);
+    const libraryAdds = optionalPackMetric(pack, ["libraryAddCount", "libraryAdds"]);
+
+    return {
+      packId: normalized.id,
+      title: normalized.title,
+      artist: normalized.artist,
+      category: normalized.category,
+      categories: normalized.categories,
+      status: text(pack?.status || "approved", 40),
+      coverUrl: mediaUrl(req, normalized.coverPack),
+      publicUrl: publicPackPreviewUrl(environment, publicOrigin, normalized.id),
+      canonicalUrl: publicPackUrl(publicOrigin, normalized.id),
+      publishedAt: normalized.publishedAt,
+      trackCount: normalized.trackCount,
+      tracks: normalized.tracks.map((track) => ({
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        duration: track.duration,
+        previewStart: track.previewStart,
+        previewDuration: track.previewDuration,
+        previewAudioUrl: mediaUrl(req, track.audioName),
+        coverUrl: mediaUrl(req, track.coverPack)
+      })),
+      stats: {
+        downloads,
+        arrivals: network.arrivals,
+        signups: network.signups,
+        conversionRate: network.conversionRate,
+        listens,
+        clicks,
+        impressions,
+        libraryAdds,
+        sourceBreakdown: network.sourceBreakdown
+      },
+      score: 0,
+      rank: 0
+    };
+  });
+
+  const maxima = {
+    downloads: Math.max(0, ...rows.map((row) => Number(row.stats.downloads || 0))),
+    arrivals: Math.max(0, ...rows.map((row) => Number(row.stats.arrivals || 0))),
+    signups: Math.max(0, ...rows.map((row) => Number(row.stats.signups || 0))),
+    listens: Math.max(0, ...rows.map((row) => Number(row.stats.listens || 0)).filter(Number.isFinite))
+  };
+
+  rows.forEach((row) => {
+    const components = [
+      [normalizedNetworkSignal(row.stats.downloads, maxima.downloads), 0.50],
+      [normalizedNetworkSignal(row.stats.arrivals, maxima.arrivals), 0.20],
+      [normalizedNetworkSignal(row.stats.signups, maxima.signups), 0.20],
+      [normalizedNetworkSignal(row.stats.listens, maxima.listens), 0.10]
+    ].filter(([score]) => score !== null);
+
+    const totalWeight = components.reduce((sum, [, weight]) => sum + weight, 0);
+    row.score = totalWeight > 0
+      ? Number((components.reduce((sum, [score, weight]) => sum + score * weight, 0) / totalWeight).toFixed(1))
+      : 0;
+  });
+
+  rows.sort((a, b) =>
+    Number(b.score || 0) - Number(a.score || 0) ||
+    Number(b.stats.downloads || 0) - Number(a.stats.downloads || 0) ||
+    Number(b.stats.signups || 0) - Number(a.stats.signups || 0) ||
+    Number(b.stats.arrivals || 0) - Number(a.stats.arrivals || 0) ||
+    new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0)
+  );
+
+  return rows.map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
 function registerOrganicVisibility({
   app,
   environment,
@@ -810,6 +933,31 @@ function registerOrganicVisibility({
     } catch (error) {
       console.error("Public track impossible :", error);
       return res.status(500).json({ success: false, message: "Track publique indisponible." });
+    }
+  });
+
+  app.get("/api/founder/catalog-packs", requireFounderKey, async (req, res) => {
+    try {
+      const [records, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const items = buildFounderPackCatalog(
+        req,
+        packs,
+        records,
+        normalizedPublicOrigin,
+        runtimeEnvironment
+      );
+
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        commercialMode: commercialPolicy?.mode || (commercialPolicy?.paymentsActive ? "COMMERCIAL" : "PRE_V1"),
+        total: items.length,
+        items,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Founder pack catalog impossible :", error);
+      return res.status(500).json({ success: false, message: "Catalogue Founder indisponible." });
     }
   });
 

@@ -1296,26 +1296,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
         now
     };
 
-    const founderRegistrationSync = queueFounderAccountSync({
-      rootUser,
-      account,
-      changeType: "registration",
-      changedFields: [
-        "id",
-        "accountId",
-        "firstname",
-        "lastname",
-        "date",
-        "phone",
-        "mail",
-        "pseudo",
-        "role",
-        "status",
-        "imageProfile",
-        "createdAt"
-      ]
-    });
-
     users.push(rootUser);
 
     fs.writeFileSync(
@@ -1387,9 +1367,6 @@ app.post("/api/register", upload.any(), async (req, res) => {
 
       account:
         returnedAccount,
-
-      founderSync:
-        createFounderSyncResponse(founderRegistrationSync),
 
       redirectTo:
         account.role === "artist" ||
@@ -1578,22 +1555,12 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       updatedAt: now
     };
 
-    const founderAccountCreationSync = queueFounderAccountSync({
-      rootUser,
-      account,
-      changeType: "account_created",
-      changedFields: [
-        "id", "accountId", "firstname", "lastname", "date", "phone",
-        "mail", "pseudo", "role", "status", "imageProfile", "createdAt"
-      ]
-    });
-
     if (!Array.isArray(rootUser.accounts)) {
       rootUser.accounts = [];
     }
 
     rootUser.accounts.push(account);
-    rootUser.updatedAt = account.updatedAt || now;
+    rootUser.updatedAt = now;
 
     fs.writeFileSync(
       usersPath,
@@ -1642,8 +1609,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       success: true,
       message: "Compte ajouté avec succès.",
       profile: returnedAccount,
-      account: returnedAccount,
-      founderSync: createFounderSyncResponse(founderAccountCreationSync)
+      account: returnedAccount
     });
 
   } catch (error) {
@@ -2984,8 +2950,6 @@ function createFounderAccountSyncSnapshot(
       account.artistStatus || null,
     imageArtist:
       account.imageArtist || null,
-    createdAt:
-      account.createdAt || null,
     updatedAt:
       account.updatedAt ||
       new Date().toISOString()
@@ -6322,23 +6286,6 @@ function sanitizeFounderAccount(account, userId) {
   return sanitizeAccountSecrets(account, userId);
 }
 
-function founderAccountsFromRootUser(rootUser = {}) {
-  if (Array.isArray(rootUser.accounts) && rootUser.accounts.length) {
-    return rootUser.accounts;
-  }
-
-  const looksLikeLegacyAccount = Boolean(
-    rootUser.accountId ||
-    rootUser.mail ||
-    rootUser.email ||
-    rootUser.pseudo ||
-    rootUser.artistname ||
-    rootUser.role
-  );
-
-  return looksLikeLegacyAccount ? [rootUser] : [];
-}
-
 function getLocalFounderState() {
   const rootUsers = readJsonArray(usersPath);
   const packs = readJsonArray(packsPath);
@@ -6346,8 +6293,9 @@ function getLocalFounderState() {
   const notifications = readJsonArray(founderNotificationsPath);
 
   const accounts = rootUsers.flatMap((rootUser) =>
-    founderAccountsFromRootUser(rootUser)
-      .map((account) => sanitizeFounderAccount(account, rootUser.id || rootUser.userId || rootUser.accountId || rootUser.id))
+    Array.isArray(rootUser.accounts)
+      ? rootUser.accounts.map((account) => sanitizeFounderAccount(account, rootUser.id))
+      : []
   ).filter(Boolean);
 
   return { rootUsers, accounts, packs, tickets, notifications };
@@ -7017,7 +6965,8 @@ app.get("/api/founder/moderation/packs/:id/cover", requireFounderKey, (req, res)
   const { packs } = getLocalFounderState();
   const pack = packs.find((item) =>
     String(item?.id || item?.packId || "") === String(req.params.id) &&
-    String(item?.status || "") === "pending"
+    ["pending", "approved"].includes(String(item?.status || "").toLowerCase()) &&
+    item?.moderationHidden !== true
   );
 
   if (!pack) {
@@ -7043,7 +6992,8 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
   const { packs } = getLocalFounderState();
   const pack = packs.find((item) =>
     String(item?.id || item?.packId || "") === String(req.params.id) &&
-    String(item?.status || "") === "pending"
+    ["pending", "approved"].includes(String(item?.status || "").toLowerCase()) &&
+    item?.moderationHidden !== true
   );
 
   if (!pack) {
@@ -7071,7 +7021,8 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
       inputPath,
       outputPath: workspace.outputPath,
       start: preview.previewStart,
-      duration: preview.previewDuration
+      duration: preview.previewDuration,
+      levelPercent: req.query?.level
     });
 
     res.setHeader("Cache-Control", "private, no-store");
@@ -7920,7 +7871,7 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
   const accounts = [];
 
   for (const rootUser of rootUsers) {
-    for (const account of founderAccountsFromRootUser(rootUser)) {
+    for (const account of Array.isArray(rootUser.accounts) ? rootUser.accounts : []) {
       const accountId = account.accountId || account.id;
       const role = String(account.originalRole || account.role || "user").toLowerCase();
       accounts.push({
@@ -7944,14 +7895,7 @@ app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
     new Date(a.updatedAt || a.createdAt || 0)
   );
 
-  return res.json({
-    success: true,
-    connectedEnvironment: "local",
-    snapshotGeneratedAt: new Date().toISOString(),
-    totalAccounts: accounts.length,
-    items: accounts,
-    accounts
-  });
+  return res.json({ success: true, items: accounts, accounts });
 });
 
 app.patch(
