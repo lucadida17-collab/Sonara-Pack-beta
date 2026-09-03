@@ -14,7 +14,7 @@ const crypto = require("crypto");
 const { registerSonaraSyncEngine } = require("./sync-engine");
 const { installDataProtection, rejectUnsafeJsonKeys, sanitizeAccountSecrets } = require("./backend/security/data-protection");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
-const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
+const { registerPlatformGrowth, applyPlatformReturnActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
 const { registerOrganicVisibility } = require("./backend/features/growth/organic-visibility");
 const {
   defaultPackLicense,
@@ -6487,13 +6487,23 @@ async function recordMongoPlatformActivity(requestedAccountId, occurredAt) {
   const result = await findRootAndAccountById(requestedAccountId);
   if (!result?.account) return { found: false, recorded: false };
 
-  const recorded = applyPlatformActivity(result.account, occurredAt);
-  if (recorded) await saveAccountState(result.rootUser, result.account);
+  const activity = applyPlatformReturnActivity(result.account, occurredAt);
+  if (activity.changed) {
+    await usersCollection.updateOne(
+      { _id: result.rootUser._id },
+      { $set: { accounts: result.rootUser.accounts } }
+    );
+  }
 
   return {
     found: true,
-    recorded,
-    day: platformGrowthDayKey(occurredAt)
+    recorded: activity.recordedDay === true,
+    newSession: activity.newSession === true,
+    sessionCount: activity.sessionCount || 0,
+    activeDays: activity.activeDays || 0,
+    lastSeenAt: activity.lastSeenAt || null,
+    sessionWindowMinutes: activity.sessionWindowMinutes || 30,
+    day: activity.day || platformGrowthDayKey(occurredAt)
   };
 }
 

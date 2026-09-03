@@ -549,13 +549,19 @@ async function reportSonaraPlatformActivity(apiUrl, profile) {
   const accountId = String(profile?.accountId || profile?.id || "").trim();
   if (!accountId) return;
 
-  const day = platformActivityDayKey();
-  const storageKey = `sonaraPlatformActivity:${accountId}:${day}`;
+  // Ping léger : le serveur garde la vraie frontière de session à 30 min.
+  // Côté navigateur on évite simplement de requêter à chaque navigation/refresh.
+  const pingIntervalMs = 5 * 60 * 1000;
+  const now = Date.now();
+  const environmentKey = String(window.location.origin || window.location.hostname || "sonara");
+  const storageKey = `sonaraPlatformActivityPing:${environmentKey}:${accountId}`;
 
   try {
-    if (localStorage.getItem(storageKey) === "1") return;
+    const previousPing = Number(localStorage.getItem(storageKey) || 0);
+    if (previousPing > 0 && now - previousPing < pingIntervalMs) return;
+    localStorage.setItem(storageKey, String(now));
   } catch {
-    // Le serveur déduplique aussi l’activité quotidienne.
+    // Le serveur déduplique aussi les sessions : le tracking continue sans stockage local.
   }
 
   try {
@@ -566,14 +572,20 @@ async function reportSonaraPlatformActivity(apiUrl, profile) {
       keepalive: true
     });
 
-    if (!response.ok) return;
-
-    try {
-      localStorage.setItem(storageKey, "1");
-    } catch {
-      // L’enregistrement serveur reste la source de vérité.
+    if (!response.ok) {
+      try {
+        if (localStorage.getItem(storageKey) === String(now)) {
+          localStorage.removeItem(storageKey);
+        }
+      } catch {}
+      return;
     }
   } catch (error) {
+    try {
+      if (localStorage.getItem(storageKey) === String(now)) {
+        localStorage.removeItem(storageKey);
+      }
+    } catch {}
     console.warn("Activité Sonara non enregistrée :", error);
   }
 }

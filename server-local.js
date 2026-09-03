@@ -7,7 +7,7 @@ const crypto = require("crypto");
 const { registerSonaraSyncEngine } = require("./sync-engine");
 const { installDataProtection, rejectUnsafeJsonKeys, sanitizeAccountSecrets } = require("./backend/security/data-protection");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
-const { registerPlatformGrowth, applyPlatformActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
+const { registerPlatformGrowth, applyPlatformReturnActivity, dayKey: platformGrowthDayKey } = require("./backend/features/growth/platform-growth");
 const { registerOrganicVisibility } = require("./backend/features/growth/organic-visibility");
 const {
   defaultPackLicense,
@@ -6317,13 +6317,18 @@ function recordLocalPlatformActivity(requestedAccountId, occurredAt) {
 
   if (!foundAccount) return { found: false, recorded: false };
 
-  const recorded = applyPlatformActivity(foundAccount, occurredAt);
-  if (recorded) writeJsonArray(usersPath, rootUsers);
+  const activity = applyPlatformReturnActivity(foundAccount, occurredAt);
+  if (activity.changed) writeJsonArray(usersPath, rootUsers);
 
   return {
     found: true,
-    recorded,
-    day: platformGrowthDayKey(occurredAt)
+    recorded: activity.recordedDay === true,
+    newSession: activity.newSession === true,
+    sessionCount: activity.sessionCount || 0,
+    activeDays: activity.activeDays || 0,
+    lastSeenAt: activity.lastSeenAt || null,
+    sessionWindowMinutes: activity.sessionWindowMinutes || 30,
+    day: activity.day || platformGrowthDayKey(occurredAt)
   };
 }
 

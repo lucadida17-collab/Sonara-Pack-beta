@@ -15,6 +15,9 @@
 /app/js/core/config.js
   Cache-Control: no-store, max-age=0
 
+/app/js/core/auth-guard.js
+  Cache-Control: no-store, max-age=0
+
 # SONARA SEO — pages privées / compte jamais indexables
 /app/pages/creator/*
   X-Robots-Tag: noindex, nofollow

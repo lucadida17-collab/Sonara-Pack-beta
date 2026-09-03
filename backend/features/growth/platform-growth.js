@@ -1,5 +1,6 @@
 const CONFIRMED_STATUSES = new Set(["confirmed", "succeeded", "paid", "completed"]);
 const TIME_ZONE = "Europe/Paris";
+const SESSION_WINDOW_MS = 30 * 60 * 1000;
 
 function normalizeEnvironment(value) {
   const environment = String(value || "").trim().toLowerCase();
@@ -76,6 +77,85 @@ function applyPlatformActivity(account, value = new Date()) {
   account.updatedAt = account.updatedAt || occurredAt.toISOString();
 
   return !alreadyRecorded;
+}
+
+function safeActivityDate(value) {
+  const date = value instanceof Date ? value : new Date(value || "");
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function applyPlatformReturnActivity(account, value = new Date(), options = {}) {
+  if (!account || typeof account !== "object") {
+    return { changed: false, recordedDay: false, newSession: false };
+  }
+
+  const occurredAt = value instanceof Date ? value : new Date(value || Date.now());
+  if (Number.isNaN(occurredAt.getTime())) {
+    return { changed: false, recordedDay: false, newSession: false };
+  }
+
+  const sessionWindowMs = Math.max(60_000, Number(options.sessionWindowMs || SESSION_WINDOW_MS));
+  const key = dayKey(occurredAt);
+  if (!key) return { changed: false, recordedDay: false, newSession: false };
+
+  const previousDays = Array.isArray(account.platformActivityDays)
+    ? account.platformActivityDays.map(String).filter(Boolean)
+    : [];
+  const uniqueDays = [...new Set(previousDays)];
+  const alreadyRecordedDay = uniqueDays.includes(key);
+  if (!alreadyRecordedDay) uniqueDays.push(key);
+  uniqueDays.sort();
+  account.platformActivityDays = uniqueDays.slice(-730);
+  account.activeDays = account.platformActivityDays.length;
+
+  const occurredIso = occurredAt.toISOString();
+  const trackingStartedAt = safeActivityDate(account.sessionTrackingStartedAt);
+  const previousSessionActivityAt = safeActivityDate(account.lastSessionActivityAt);
+  let sessionCount = Math.max(0, Math.floor(Number(account.sessionCount || 0)));
+  let returnSessionCount = Math.max(0, Math.floor(Number(account.returnSessionCount || 0)));
+  let newSession = false;
+
+  if (!trackingStartedAt || sessionCount < 1) {
+    const createdAt = safeActivityDate(account.createdAt || account.registeredAt);
+    const initialSessionWasSignup = Boolean(
+      createdAt &&
+      occurredAt.getTime() >= createdAt.getTime() - 60_000 &&
+      occurredAt.getTime() - createdAt.getTime() <= sessionWindowMs
+    );
+
+    account.sessionTrackingStartedAt = occurredIso;
+    account.firstTrackedSessionAt = account.firstTrackedSessionAt || occurredIso;
+    account.initialSessionWasSignup = initialSessionWasSignup;
+    sessionCount = 1;
+    returnSessionCount = initialSessionWasSignup ? 0 : 1;
+    newSession = true;
+  } else {
+    const idleReference = previousSessionActivityAt || safeActivityDate(account.lastSeenAt) || trackingStartedAt;
+    const idleMs = idleReference ? occurredAt.getTime() - idleReference.getTime() : sessionWindowMs;
+    if (idleMs >= sessionWindowMs) {
+      sessionCount += 1;
+      returnSessionCount += 1;
+      newSession = true;
+    }
+  }
+
+  if (newSession) account.lastSessionAt = occurredIso;
+  account.sessionCount = sessionCount;
+  account.returnSessionCount = returnSessionCount;
+  account.lastSessionActivityAt = occurredIso;
+  account.lastSeenAt = occurredIso;
+
+  return {
+    changed: true,
+    recordedDay: !alreadyRecordedDay,
+    newSession,
+    sessionCount,
+    returnSessionCount,
+    activeDays: account.activeDays,
+    lastSeenAt: account.lastSeenAt,
+    day: key,
+    sessionWindowMinutes: Math.round(sessionWindowMs / 60000)
+  };
 }
 
 function allowedRevenueEnvironments(runtimeEnvironment) {
@@ -259,6 +339,11 @@ function registerPlatformGrowth({
         success: true,
         environment: runtimeEnvironment,
         recorded: result.recorded === true,
+        newSession: result.newSession === true,
+        sessionCount: Math.max(0, Number(result.sessionCount || 0)),
+        activeDays: Math.max(0, Number(result.activeDays || 0)),
+        lastSeenAt: result.lastSeenAt || null,
+        sessionWindowMinutes: Number(result.sessionWindowMinutes || 30),
         day: result.day || dayKey(new Date(), timeZone)
       });
     } catch (error) {
@@ -293,5 +378,7 @@ module.exports = {
   buildPlatformGrowth,
   buildDownloadStatistics,
   applyPlatformActivity,
+  applyPlatformReturnActivity,
+  SESSION_WINDOW_MS,
   dayKey
 };
