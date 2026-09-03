@@ -27,6 +27,8 @@ function createPreviewWorkspace() {
     directory,
     inputPath: path.join(directory, "source-audio"),
     outputPath: path.join(directory, "preview.mp3"),
+    framePath: path.join(directory, "promo.png"),
+    videoPath: path.join(directory, "promo.mp4"),
     cleanup() {
       try {
         fs.rmSync(directory, { recursive: true, force: true });
@@ -95,6 +97,66 @@ function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30, l
   });
 }
 
+
+function renderPromoVideo({ framePath, audioPath, outputPath, duration = 30 }) {
+  return new Promise((resolve, reject) => {
+    if (!ffmpegPath) {
+      reject(new Error("FFmpeg indisponible."));
+      return;
+    }
+    if (!framePath || !fs.existsSync(framePath)) {
+      reject(new Error("Visuel promo introuvable."));
+      return;
+    }
+    if (!audioPath || !fs.existsSync(audioPath)) {
+      reject(new Error("Extrait audio introuvable."));
+      return;
+    }
+
+    const safeDuration = clamp(safeNumber(duration, 30), 1, 30);
+    const args = [
+      "-v", "error",
+      "-y",
+      "-loop", "1",
+      "-framerate", "30",
+      "-i", framePath,
+      "-i", audioPath,
+      "-t", safeDuration.toFixed(3),
+      "-map_metadata", "-1",
+      "-vf", "scale=1080:1920:flags=lanczos,setsar=1",
+      "-c:v", "libx264",
+      "-preset", "medium",
+      "-crf", "18",
+      "-pix_fmt", "yuv420p",
+      "-r", "30",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-ar", "48000",
+      "-shortest",
+      "-movflags", "+faststart",
+      outputPath
+    ];
+
+    const child = spawn(ffmpegPath, args, {
+      windowsHide: true,
+      stdio: ["ignore", "ignore", "pipe"]
+    });
+
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      if (stderr.length < 8000) stderr += chunk.toString("utf8");
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code !== 0 || !fs.existsSync(outputPath)) {
+        reject(new Error(stderr.trim() || `FFmpeg a quitté avec le code ${code}.`));
+        return;
+      }
+      resolve(outputPath);
+    });
+  });
+}
+
 function safeDownloadPart(value, fallback = "sonara") {
   const cleaned = String(value || "")
     .normalize("NFKD")
@@ -115,9 +177,15 @@ function coverDownloadName(pack = {}, storedName = "") {
   return `${safeDownloadPart(pack.title || pack.name || "sonara-pack")}-cover${safeExtension}`;
 }
 
+function promoVideoDownloadName(pack = {}, track = {}) {
+  return `${safeDownloadPart(pack.title || pack.name || "sonara-pack")}-${safeDownloadPart(track.title || track.name || "track")}-promo.mp4`;
+}
+
 module.exports = {
   createPreviewWorkspace,
   renderAudioPreview,
+  renderPromoVideo,
   previewDownloadName,
-  coverDownloadName
+  coverDownloadName,
+  promoVideoDownloadName
 };

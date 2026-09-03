@@ -32,7 +32,7 @@ require("dotenv").config({
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
-const { createPreviewWorkspace, renderAudioPreview, previewDownloadName, coverDownloadName } = require("./backend/features/audio/preview-export");
+const { createPreviewWorkspace, renderAudioPreview, renderPromoVideo, previewDownloadName, coverDownloadName, promoVideoDownloadName } = require("./backend/features/audio/preview-export");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
@@ -7378,6 +7378,71 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
     console.error("Erreur export extrait Founder MAIN :", error);
     if (!res.headersSent) {
       return res.status(500).json({ success: false, message: "Impossible de créer cet extrait audio." });
+    }
+  }
+});
+
+
+app.post("/api/founder/moderation/packs/:id/promo-video/:trackId", requireFounderKey, express.raw({ type: "image/png", limit: "15mb" }), async (req, res) => {
+  const workspace = createPreviewWorkspace();
+  try {
+    const frame = req.body;
+    const pngSignature = Buffer.isBuffer(frame) && frame.length >= 8
+      ? frame.subarray(0, 8).toString("hex")
+      : "";
+    if (pngSignature !== "89504e470d0a1a0a") {
+      workspace.cleanup();
+      return res.status(400).json({ success: false, message: "Visuel promo PNG invalide." });
+    }
+
+    const pack = await packsCollection.findOne({
+      id: String(req.params.id),
+      status: { $in: ["pending", "approved"] },
+      moderationHidden: { $ne: true }
+    });
+    if (!pack) {
+      workspace.cleanup();
+      return res.status(404).json({ success: false, message: "Pack introuvable." });
+    }
+
+    const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+      String(item?.id || item?.trackId || "") === String(req.params.trackId)
+    );
+    const audioKey = normalizePackR2Key(track?.audioName);
+    if (!track || !audioKey) {
+      workspace.cleanup();
+      return res.status(404).json({ success: false, message: "Audio introuvable." });
+    }
+
+    fs.writeFileSync(workspace.framePath, frame);
+    await downloadPackR2File(audioKey, workspace.inputPath);
+    const preview = normalizeStoredPreview(track);
+    await renderAudioPreview({
+      inputPath: workspace.inputPath,
+      outputPath: workspace.outputPath,
+      start: preview.previewStart,
+      duration: preview.previewDuration,
+      levelPercent: req.query?.level
+    });
+    await renderPromoVideo({
+      framePath: workspace.framePath,
+      audioPath: workspace.outputPath,
+      outputPath: workspace.videoPath,
+      duration: preview.previewDuration
+    });
+
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.download(workspace.videoPath, promoVideoDownloadName(pack, track), (error) => {
+      workspace.cleanup();
+      if (error && !res.headersSent) {
+        res.status(500).json({ success: false, message: "Impossible de télécharger la promo vidéo." });
+      }
+    });
+  } catch (error) {
+    workspace.cleanup();
+    console.error("Erreur export promo vidéo Founder :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de créer la promo vidéo." });
     }
   }
 });

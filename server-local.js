@@ -27,7 +27,7 @@ path: path.resolve(__dirname, ".env.local")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
-const { createPreviewWorkspace, renderAudioPreview, previewDownloadName, coverDownloadName } = require("./backend/features/audio/preview-export");
+const { createPreviewWorkspace, renderAudioPreview, renderPromoVideo, previewDownloadName, coverDownloadName, promoVideoDownloadName } = require("./backend/features/audio/preview-export");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
 const {
@@ -7037,6 +7037,75 @@ app.get("/api/founder/moderation/packs/:id/preview/:trackId", requireFounderKey,
     console.error("Erreur export extrait Founder LOCAL :", error);
     if (!res.headersSent) {
       return res.status(500).json({ success: false, message: "Impossible de créer cet extrait audio." });
+    }
+  }
+});
+
+
+app.post("/api/founder/moderation/packs/:id/promo-video/:trackId", requireFounderKey, express.raw({ type: "image/png", limit: "15mb" }), async (req, res) => {
+  const { packs } = getLocalFounderState();
+  const pack = packs.find((item) =>
+    String(item?.id || item?.packId || "") === String(req.params.id) &&
+    ["pending", "approved"].includes(String(item?.status || "").toLowerCase()) &&
+    item?.moderationHidden !== true
+  );
+  if (!pack) {
+    return res.status(404).json({ success: false, message: "Pack introuvable." });
+  }
+
+  const track = (Array.isArray(pack.tracks) ? pack.tracks : []).find((item) =>
+    String(item?.id || item?.trackId || "") === String(req.params.trackId)
+  );
+  const audioName = path.basename(String(track?.audioName || ""));
+  if (!track || !audioName) {
+    return res.status(404).json({ success: false, message: "Audio introuvable." });
+  }
+
+  const uploadsRoot = path.resolve(__dirname, "uploads");
+  const inputPath = path.resolve(uploadsRoot, audioName);
+  if (!inputPath.startsWith(`${uploadsRoot}${path.sep}`) || !fs.existsSync(inputPath)) {
+    return res.status(404).json({ success: false, message: "Fichier audio introuvable." });
+  }
+
+  const workspace = createPreviewWorkspace();
+  try {
+    const frame = req.body;
+    const pngSignature = Buffer.isBuffer(frame) && frame.length >= 8
+      ? frame.subarray(0, 8).toString("hex")
+      : "";
+    if (pngSignature !== "89504e470d0a1a0a") {
+      workspace.cleanup();
+      return res.status(400).json({ success: false, message: "Visuel promo PNG invalide." });
+    }
+
+    fs.writeFileSync(workspace.framePath, frame);
+    const preview = normalizeStoredPreview(track);
+    await renderAudioPreview({
+      inputPath,
+      outputPath: workspace.outputPath,
+      start: preview.previewStart,
+      duration: preview.previewDuration,
+      levelPercent: req.query?.level
+    });
+    await renderPromoVideo({
+      framePath: workspace.framePath,
+      audioPath: workspace.outputPath,
+      outputPath: workspace.videoPath,
+      duration: preview.previewDuration
+    });
+
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.download(workspace.videoPath, promoVideoDownloadName(pack, track), (error) => {
+      workspace.cleanup();
+      if (error && !res.headersSent) {
+        res.status(500).json({ success: false, message: "Impossible de télécharger la promo vidéo." });
+      }
+    });
+  } catch (error) {
+    workspace.cleanup();
+    console.error("Erreur export promo vidéo Founder LOCAL :", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: "Impossible de créer la promo vidéo." });
     }
   }
 });
