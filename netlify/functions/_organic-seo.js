@@ -137,7 +137,7 @@ function shell({ event, apiBase, head, markup, type }) {
     <section data-public-catalog-root>${markup}</section>
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
-  <script src="/app/js/growth/organic-attribution.js?v=organic-visibility-v3-full-journey"></script>
+  <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-signup-fix-v1"></script>
   <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v5-return-tunnel"></script>
   <script src="/app/js/core/i18n.js?v=organic-visibility-v1" defer></script>
 </body>

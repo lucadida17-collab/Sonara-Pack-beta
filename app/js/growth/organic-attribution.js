@@ -60,7 +60,7 @@
     if (normalized.includes("tiktok")) return "TikTok";
     if (normalized.includes("instagram") || normalized === "ig") return "Instagram";
     if (normalized.includes("youtube") || normalized === "yt") return "YouTube";
-    if (["direct", "none", "unknown"].includes(normalized)) return "Direct";
+    if (["direct", "none"].includes(normalized)) return "Direct";
     return "Other";
   }
 
@@ -269,7 +269,11 @@
 
     const result = await postJson("/api/growth/organic/link-account", {
       visitorId: attribution.visitorId,
-      accountId
+      accountId,
+      // Le backend peut reconstruire la visite d'origine si la première requête
+      // de tracking a été interrompue avant l'inscription (navigation/cold start).
+      // firstTouch reste la toute première source conservée dans le navigateur.
+      firstTouch: attribution.firstTouch || null
     });
 
     if (result?.success === true) {
@@ -358,9 +362,14 @@
     }, LINK_WATCH_INTERVAL_MS);
   }
 
+  async function linkCurrentAccount() {
+    return linkAccountIfAvailable(ensureAttribution());
+  }
+
   window.SonaraOrganicAttribution = Object.freeze({
     trackStep,
-    trackStepOnce
+    trackStepOnce,
+    linkCurrentAccount
   });
 
   if (document.readyState === "loading") {

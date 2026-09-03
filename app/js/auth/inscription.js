@@ -823,6 +823,22 @@ async function submitRegistration({
       );
     }
 
+    // L'inscription venait auparavant de rediriger immédiatement, alors que
+    // le tracker ne reliait le compte qu'au prochain polling (2 s). La page
+    // pouvait donc disparaître avant l'attribution. On utilise ici le tracker
+    // existant et on attend sa liaison, sans rendre l'inscription dépendante
+    // du tracking en cas d'indisponibilité.
+    try {
+      if (window.SonaraOrganicAttribution?.linkCurrentAccount) {
+        await Promise.race([
+          window.SonaraOrganicAttribution.linkCurrentAccount(),
+          new Promise((resolve) => window.setTimeout(() => resolve(false), 2500))
+        ]);
+      }
+    } catch (trackingError) {
+      console.warn("Attribution acquisition non bloquante :", trackingError);
+    }
+
     onSuccess(data);
   } catch (error) {
     console.error("ERREUR BACKEND :", error);

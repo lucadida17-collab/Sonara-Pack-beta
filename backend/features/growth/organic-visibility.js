@@ -26,7 +26,7 @@ function normalizeSource(value) {
   if (source.includes("tiktok")) return "TikTok";
   if (source.includes("instagram") || source === "ig") return "Instagram";
   if (source.includes("youtube") || source === "yt") return "YouTube";
-  if (["direct", "none", "unknown"].includes(source)) return "Direct";
+  if (["direct", "none"].includes(source)) return "Direct";
   return "Other";
 }
 
@@ -800,8 +800,24 @@ function registerOrganicVisibility({
         return res.status(404).json({ success: false, message: "Compte introuvable." });
       }
 
-      const records = await store.list();
-      const existing = records.find((record) => String(record.visitorId) === visitorId);
+      let records = await store.list();
+      let existing = records.find((record) => String(record.visitorId) === visitorId);
+
+      // Correction chirurgicale : la source initiale est déjà figée côté navigateur.
+      // Si la toute première requête /visit a été perdue (navigation très rapide,
+      // cold start, réseau mobile), on recrée ici UNIQUEMENT ce firstTouch avant
+      // de relier le compte. Aucune source n'est inventée côté serveur.
+      if (!existing && req.body?.firstTouch && typeof req.body.firstTouch === "object") {
+        existing = await store.upsertVisit(
+          visitorId,
+          normalizeTouch({
+            ...req.body.firstTouch,
+            journeyKind: "event",
+            journeyStep: "registration_attribution_recovered"
+          })
+        );
+      }
+
       if (!existing) {
         return res.status(404).json({ success: false, message: "Visite organique introuvable." });
       }
