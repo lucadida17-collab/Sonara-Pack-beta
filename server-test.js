@@ -8145,14 +8145,18 @@ app.post("/api/founder/license-incidents/:id/sanctions", requireFounderKey, asyn
 
 app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
   const accounts = await getRemoteFounderAccounts();
-  for (const account of accounts) {
+  await Promise.all(accounts.map(async (account) => {
     const accountId = account.accountId || account.id;
     const role = String(account.originalRole || account.role || "user").toLowerCase();
-    account.licenseEvidence = await licenseProtection.accountEvidence(accountId, account.userId || account.rootUserId || null);
-    account.artistLicenseEvidence = ["artist", "both"].includes(role)
-      ? await licenseProtection.artistEvidence(accountId)
-      : null;
-  }
+    const [licenseEvidence, artistLicenseEvidence] = await Promise.all([
+      licenseProtection.accountEvidence(accountId, account.userId || account.rootUserId || null),
+      ["artist", "both"].includes(role)
+        ? licenseProtection.artistEvidence(accountId)
+        : Promise.resolve(null)
+    ]);
+    account.licenseEvidence = licenseEvidence;
+    account.artistLicenseEvidence = artistLicenseEvidence;
+  }));
 
   accounts.sort((a, b) =>
     new Date(b.updatedAt || b.createdAt || 0) -

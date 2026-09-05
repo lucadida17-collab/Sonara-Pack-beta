@@ -324,7 +324,6 @@ function createMongoStore(collection) {
             visitorId,
             firstTouch: touch,
             firstSeenAt: now,
-            visitCount: 0,
             accountId: "",
             accountCreatedAt: "",
             linkedAt: "",

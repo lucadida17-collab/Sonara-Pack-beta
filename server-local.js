@@ -7942,27 +7942,35 @@ app.post("/api/founder/license-incidents/:id/sanctions", requireFounderKey, asyn
 
 app.get("/api/founder/accounts", requireFounderKey, async (_req, res) => {
   const rootUsers = readJsonArray(usersPath);
-  const accounts = [];
+  const accountTasks = [];
 
   for (const rootUser of rootUsers) {
     for (const account of Array.isArray(rootUser.accounts) ? rootUser.accounts : []) {
-      const accountId = account.accountId || account.id;
-      const role = String(account.originalRole || account.role || "user").toLowerCase();
-      accounts.push({
-        ...sanitizeFounderAccount(account, rootUser.id),
-        artistStatus: account.artistStatus || null,
-        originalRole: account.originalRole || null,
-        suspendedUntil: account.suspendedUntil || null,
-        moderationHistory: Array.isArray(account.moderationHistory)
-          ? account.moderationHistory.slice(0, 5)
-          : [],
-        licenseEvidence: await licenseProtection.accountEvidence(accountId, rootUser.id),
-        artistLicenseEvidence: ["artist", "both"].includes(role)
-          ? await licenseProtection.artistEvidence(accountId)
-          : null
-      });
+      accountTasks.push((async () => {
+        const accountId = account.accountId || account.id;
+        const role = String(account.originalRole || account.role || "user").toLowerCase();
+        const [licenseEvidence, artistLicenseEvidence] = await Promise.all([
+          licenseProtection.accountEvidence(accountId, rootUser.id),
+          ["artist", "both"].includes(role)
+            ? licenseProtection.artistEvidence(accountId)
+            : Promise.resolve(null)
+        ]);
+        return {
+          ...sanitizeFounderAccount(account, rootUser.id),
+          artistStatus: account.artistStatus || null,
+          originalRole: account.originalRole || null,
+          suspendedUntil: account.suspendedUntil || null,
+          moderationHistory: Array.isArray(account.moderationHistory)
+            ? account.moderationHistory.slice(0, 5)
+            : [],
+          licenseEvidence,
+          artistLicenseEvidence
+        };
+      })());
     }
   }
+
+  const accounts = await Promise.all(accountTasks);
 
   accounts.sort((a, b) =>
     new Date(b.updatedAt || b.createdAt || 0) -
