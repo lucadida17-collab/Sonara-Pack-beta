@@ -249,29 +249,38 @@ async function shareMyPack(pack = {}) {
     return;
   }
 
-  const url = myPackPublicUrl(pack.id);
-  const text = myPackShareText(pack);
-  const mobileShare = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "") ||
-    window.matchMedia?.("(max-width: 820px)")?.matches === true;
-
-  if (mobileShare && typeof navigator.share === "function") {
-    try {
-      await navigator.share({
-        title: String(pack.title || pack.name || "Sonara Pack"),
-        text,
-        url
-      });
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
+  if (typeof navigator.share !== "function") {
+    showMyPackMessage(myPackTranslate("Le partage automatique est indisponible sur ce navigateur."), "error");
+    return;
   }
 
+  const url = myPackPublicUrl(pack.id);
+  const text = myPackShareText(pack);
+
   try {
-    const shareValue = `${text}\n${url}`;
+    await navigator.share({
+      title: String(pack.title || pack.name || "Sonara Pack"),
+      text,
+      url
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    showMyPackMessage(myPackTranslate("Le partage automatique est indisponible sur ce navigateur."), "error");
+  }
+}
+
+async function copyMyPackLink(pack = {}) {
+  if (String(pack?.status || "").toLowerCase() !== "approved") {
+    showMyPackMessage(myPackTranslate("Seuls les packs publiés peuvent être partagés."), "error");
+    return;
+  }
+
+  const url = myPackPublicUrl(pack.id);
+
+  try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      await navigator.clipboard.writeText(shareValue);
-    } else if (!copyMyPackTextFallback(shareValue)) {
+      await navigator.clipboard.writeText(url);
+    } else if (!copyMyPackTextFallback(url)) {
       throw new Error("Copie indisponible");
     }
     showMyPackMessage(myPackTranslate("Lien du pack copié."));
@@ -751,7 +760,11 @@ async function initializeMyPacks() {
                 ${status === "approved" ? `
                   <button class="my-pack-share-button" type="button" data-share-pack>
                     <i data-lucide="share-2"></i>
-                    Partager mon pack
+                    ${escapeMyPackHtml(myPackTranslate("Partager mon pack"))}
+                  </button>
+                  <button class="my-pack-copy-link-button" type="button" data-copy-pack-link>
+                    <i data-lucide="link-2"></i>
+                    ${escapeMyPackHtml(myPackTranslate("Copier le lien"))}
                   </button>` : ""}
                 <button class="my-pack-manage-button" type="button" data-manage-pack>
                   Gérer le pack
@@ -786,6 +799,14 @@ async function initializeMyPacks() {
           event.preventDefault();
           event.stopPropagation();
           await shareMyPack(pack);
+          return;
+        }
+
+        const copyLinkButton = event.target.closest("[data-copy-pack-link]");
+        if (copyLinkButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          await copyMyPackLink(pack);
           return;
         }
 
