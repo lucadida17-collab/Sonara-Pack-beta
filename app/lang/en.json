@@ -2820,5 +2820,13 @@
   "Les captures sont réservées aux signalements de problème.": "Screenshots are only available for problem reports.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "A screenshot does not actually match a PNG, JPG or WebP file.",
   "Le serveur a refusé une capture.": "The server rejected a screenshot.",
-  "Capture {0}": "Screenshot {0}"
+  "Capture {0}": "Screenshot {0}",
+  "Partager mon pack": "Share my pack",
+  "Lien du pack copié.": "Pack link copied.",
+  "Liens des packs copiés.": "Pack links copied.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, available on Sonara Pack",
+  "Copier le crédit": "Copy credit",
+  "Crédit copié": "Credit copied",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Music: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "New releases"
 }

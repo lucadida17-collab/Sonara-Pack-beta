@@ -748,6 +748,82 @@ function buildFounderPackCatalog(req, packs = [], records = [], publicOrigin = "
   return rows.map((row, index) => ({ ...row, rank: index + 1 }));
 }
 
+const SEO_FACET_MIN_PACKS = Object.freeze({
+  artist: 2,
+  category: 3
+});
+
+function seoFacetSlug(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
+function buildSeoFacetReadiness(packs = []) {
+  const normalizedPacks = (Array.isArray(packs) ? packs : [])
+    .map((pack) => publicPack(pack))
+    .filter((pack) => pack.id);
+  const artists = new Map();
+  const categories = new Map();
+
+  for (const pack of normalizedPacks) {
+    const artist = text(pack.artist, 180);
+    if (artist) {
+      const key = artist.toLocaleLowerCase("fr");
+      const current = artists.get(key) || { label: artist, packIds: [] };
+      if (!current.packIds.includes(pack.id)) current.packIds.push(pack.id);
+      artists.set(key, current);
+    }
+
+    for (const category of Array.isArray(pack.categories) ? pack.categories : []) {
+      const label = text(category, 160);
+      if (!label) continue;
+      const key = label.toLocaleLowerCase("fr");
+      const current = categories.get(key) || { label, packIds: [] };
+      if (!current.packIds.includes(pack.id)) current.packIds.push(pack.id);
+      categories.set(key, current);
+    }
+  }
+
+  const serialize = (map, type, minimum) => [...map.values()]
+    .map((entry) => ({
+      type,
+      label: entry.label,
+      slug: seoFacetSlug(entry.label),
+      packCount: entry.packIds.length,
+      packIds: entry.packIds,
+      eligible: entry.packIds.length >= minimum,
+      plannedPath: type === "artist"
+        ? `/catalog/artists/${seoFacetSlug(entry.label)}`
+        : `/catalog/categories/${seoFacetSlug(entry.label)}`
+    }))
+    .filter((entry) => entry.slug)
+    .sort((a, b) => b.packCount - a.packCount || a.label.localeCompare(b.label));
+
+  return {
+    preparedOnly: true,
+    publicRoutesEnabled: false,
+    sitemapEnabled: false,
+    policy: {
+      artistMinimumPacks: SEO_FACET_MIN_PACKS.artist,
+      categoryMinimumPacks: SEO_FACET_MIN_PACKS.category,
+      rule: "Aucune page facette n'est publiée ni indexée tant que la route publique n'est pas activée et que le seuil de contenu réel n'est pas atteint."
+    },
+    artists: serialize(artists, "artist", SEO_FACET_MIN_PACKS.artist),
+    categories: serialize(categories, "category", SEO_FACET_MIN_PACKS.category),
+    unavailableDimensions: [
+      { type: "genre", reason: "Aucun champ genre distinct et structuré n'existe actuellement dans le catalogue." },
+      { type: "ambiance", reason: "Aucun champ ambiance distinct et structuré n'existe actuellement dans le catalogue." },
+      { type: "usage", reason: "Aucun champ d'usage public distinct n'est actuellement exposé comme dimension SEO du catalogue." }
+    ]
+  };
+}
+
 function registerOrganicVisibility({
   app,
   environment,
@@ -877,6 +953,7 @@ function registerOrganicVisibility({
         environment: runtimeEnvironment,
         packs: packEntries,
         tracks: trackEntries,
+        futureFacets: buildSeoFacetReadiness(packs),
         generatedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -1049,5 +1126,6 @@ module.exports = {
   ORGANIC_SOURCES,
   normalizeSource,
   trackSeoEligible,
+  buildSeoFacetReadiness,
   registerOrganicVisibility
 };

@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "截图仅用于问题报告。",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "某个截图实际上并不是 PNG、JPG 或 WebP 文件。",
   "Le serveur a refusé une capture.": "服务器拒绝了一个截图。",
-  "Capture {0}": "截图 {0}"
+  "Capture {0}": "截图 {0}",
+  "Partager mon pack": "分享我的音乐包",
+  "Lien du pack copié.": "音乐包链接已复制。",
+  "Liens des packs copiés.": "音乐包链接已复制。",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}，现已在 Sonara Pack 上提供",
+  "Copier le crédit": "复制署名",
+  "Crédit copié": "署名已复制",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "音乐：{0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "最新内容"
 }

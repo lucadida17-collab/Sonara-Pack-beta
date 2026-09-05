@@ -339,6 +339,7 @@ body.Download {
 }
 
 .download-montage-button,
+.download-credit-button,
 .download-library-button,
 .download-after-actions .download-home-button {
   width: auto;
@@ -365,12 +366,19 @@ body.Download {
   height: 18px;
 }
 
+.download-credit-button,
 .download-library-button {
   border: 1px solid rgba(255,255,255,.11);
   background: rgba(255,255,255,.045);
   color: #fff;
   font-weight: 780;
   cursor: pointer;
+}
+
+.download-credit-button svg {
+  width: 17px;
+  height: 17px;
+  color: #7dd3fc;
 }
 
 @media (max-width: 820px) {
@@ -405,6 +413,7 @@ body.Download {
   }
 
   .download-montage-button,
+  .download-credit-button,
   .download-library-button,
   .download-after-actions .download-home-button {
     width: 100%;

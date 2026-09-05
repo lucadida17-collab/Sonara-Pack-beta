@@ -505,6 +505,47 @@ textarea:focus-visible {
   color: #7dd3fc;
 }
 
+.my-pack-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.my-pack-share-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 12px;
+  background: rgba(125, 211, 252, 0.045);
+  color: rgba(255, 255, 255, 0.84);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  font-weight: 740;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.my-pack-share-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.32);
+  background: rgba(125, 211, 252, 0.085);
+}
+
+.my-pack-share-button:active {
+  transform: scale(0.97);
+}
+
+.my-pack-share-button svg {
+  width: 15px;
+  height: 15px;
+}
+
 .my-pack-manage-button {
   flex: 0 0 auto;
   min-height: 38px;

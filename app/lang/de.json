@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Screenshots sind nur für Problemmeldungen verfügbar.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Ein Screenshot entspricht tatsächlich keiner PNG-, JPG- oder WebP-Datei.",
   "Le serveur a refusé une capture.": "Der Server hat einen Screenshot abgelehnt.",
-  "Capture {0}": "Screenshot {0}"
+  "Capture {0}": "Screenshot {0}",
+  "Partager mon pack": "Mein Pack teilen",
+  "Lien du pack copié.": "Pack-Link kopiert.",
+  "Liens des packs copiés.": "Pack-Links kopiert.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, verfügbar auf Sonara Pack",
+  "Copier le crédit": "Credit kopieren",
+  "Crédit copié": "Credit kopiert",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Musik: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Neuheiten"
 }

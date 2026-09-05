@@ -308,6 +308,7 @@ body{
 }
 
 .cover {
+  position: relative;
   width: 160px;
   height: 160px;
   border-radius: 10px;
@@ -680,6 +681,45 @@ body.home .home-distribution-section {
   min-width: 0;
   display: grid;
   gap: 7px;
+}
+
+.home-section-title-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.home-section-fresh-badge,
+.home-new-content-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(103, 232, 255, 0.22);
+  background: rgba(34, 211, 238, 0.09);
+  color: #a5f3fc;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-section-fresh-badge {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border-radius: 999px;
+}
+
+.home-new-content-badge {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  left: 8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
 }
 
 body.home .home-section-heading h2 {

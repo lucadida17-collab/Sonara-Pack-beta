@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "لقطات الشاشة متاحة فقط لبلاغات المشكلات.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "إحدى اللقطات ليست فعليًا ملف PNG أو JPG أو WebP.",
   "Le serveur a refusé une capture.": "رفض الخادم لقطة شاشة.",
-  "Capture {0}": "لقطة شاشة {0}"
+  "Capture {0}": "لقطة شاشة {0}",
+  "Partager mon pack": "مشاركة الحزمة الخاصة بي",
+  "Lien du pack copié.": "تم نسخ رابط الحزمة.",
+  "Liens des packs copiés.": "تم نسخ روابط الحزم.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}، متاح على Sonara Pack",
+  "Copier le crédit": "نسخ نسب الموسيقى",
+  "Crédit copié": "تم نسخ النسب",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "الموسيقى: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "الجديد"
 }

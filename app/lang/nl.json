@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Schermafbeeldingen zijn alleen beschikbaar voor probleemmeldingen.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Een schermafbeelding is niet werkelijk een PNG-, JPG- of WebP-bestand.",
   "Le serveur a refusé une capture.": "De server heeft een schermafbeelding geweigerd.",
-  "Capture {0}": "Schermafbeelding {0}"
+  "Capture {0}": "Schermafbeelding {0}",
+  "Partager mon pack": "Mijn pack delen",
+  "Lien du pack copié.": "Packlink gekopieerd.",
+  "Liens des packs copiés.": "Packlinks gekopieerd.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, beschikbaar op Sonara Pack",
+  "Copier le crédit": "Credit kopiëren",
+  "Crédit copié": "Credit gekopieerd",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Muziek: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Nieuw"
 }

@@ -136,11 +136,31 @@ function myPackStatusLabel(status) {
   return labels[normalized] || status || "Brouillon";
 }
 
+function myPackTranslate(value) {
+  return window.SonaraI18n?.t?.(value) || value;
+}
+
+function myPackEnvironment() {
+  try {
+    return typeof SONARA_ENV !== "undefined" ? String(SONARA_ENV || "") : "";
+  } catch {
+    return "";
+  }
+}
+
 function myPackPublicUrl(packId) {
-  return (
-    `${window.location.origin}/app/pages/catalog/share.html` +
-    `?id=${encodeURIComponent(packId)}`
-  );
+  const safeId = encodeURIComponent(String(packId || ""));
+  if (myPackEnvironment() === "local") {
+    return `${window.location.origin}/app/pages/catalog/public-pack.html?id=${safeId}`;
+  }
+  return `${window.location.origin}/catalog/packs/${safeId}`;
+}
+
+function myPackShareText(pack = {}) {
+  const template = myPackTranslate("{0} — {1}, disponible sur Sonara Pack");
+  return template
+    .replace("{0}", String(pack.title || pack.name || "Sonara Pack"))
+    .replace("{1}", String(pack.artist || pack.pseudo || "Artiste Sonara"));
 }
 
 function myPackManagementUrl(packId) {
@@ -223,39 +243,59 @@ function copyMyPackTextFallback(text) {
   return copied;
 }
 
+async function shareMyPack(pack = {}) {
+  if (String(pack?.status || "").toLowerCase() !== "approved") {
+    showMyPackMessage(myPackTranslate("Seuls les packs publiés peuvent être partagés."), "error");
+    return;
+  }
+
+  const url = myPackPublicUrl(pack.id);
+  const text = myPackShareText(pack);
+  const mobileShare = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "") ||
+    window.matchMedia?.("(max-width: 820px)")?.matches === true;
+
+  if (mobileShare && typeof navigator.share === "function") {
+    try {
+      await navigator.share({
+        title: String(pack.title || pack.name || "Sonara Pack"),
+        text,
+        url
+      });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+
+  try {
+    const shareValue = `${text}\n${url}`;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(shareValue);
+    } else if (!copyMyPackTextFallback(shareValue)) {
+      throw new Error("Copie indisponible");
+    }
+    showMyPackMessage(myPackTranslate("Lien du pack copié."));
+  } catch {
+    showMyPackMessage(myPackTranslate("Le partage automatique est indisponible sur ce navigateur."), "error");
+  }
+}
+
 async function shareMyPacks(packs) {
-  const shareable = packs.filter((pack) => pack.status === "approved");
+  const shareable = packs.filter((pack) => String(pack?.status || "").toLowerCase() === "approved");
 
   if (!shareable.length) {
-    showMyPackMessage("Seuls les packs publiés peuvent être partagés.", "error");
+    showMyPackMessage(myPackTranslate("Seuls les packs publiés peuvent être partagés."), "error");
+    return;
+  }
+
+  if (shareable.length === 1) {
+    await shareMyPack(shareable[0]);
     return;
   }
 
   const text = shareable
-    .map((pack) => `${pack.title || pack.name}: ${myPackPublicUrl(pack.id)}`)
-    .join("\n");
-
-  if (typeof navigator.share === "function") {
-    try {
-      if (shareable.length === 1) {
-        await navigator.share({
-          title: shareable[0].title || "Pack Sonara",
-          text: "Découvrez ce pack sur Sonara Pack.",
-          url: myPackPublicUrl(shareable[0].id)
-        });
-      } else {
-        await navigator.share({
-          title: "Packs Sonara",
-          text
-        });
-      }
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") {
-        return;
-      }
-    }
-  }
+    .map((pack) => `${myPackShareText(pack)}\n${myPackPublicUrl(pack.id)}`)
+    .join("\n\n");
 
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
@@ -263,15 +303,9 @@ async function shareMyPacks(packs) {
     } else if (!copyMyPackTextFallback(text)) {
       throw new Error("Copie indisponible");
     }
-
-    showMyPackMessage(
-      `Lien${shareable.length > 1 ? "s" : ""} copié${shareable.length > 1 ? "s" : ""}.`
-    );
-  } catch (error) {
-    showMyPackMessage(
-      "Le partage automatique est indisponible sur ce navigateur.",
-      "error"
-    );
+    showMyPackMessage(myPackTranslate("Liens des packs copiés."));
+  } catch {
+    showMyPackMessage(myPackTranslate("Le partage automatique est indisponible sur ce navigateur."), "error");
   }
 }
 
@@ -713,10 +747,17 @@ async function initializeMyPacks() {
                 <i data-lucide="shield-check"></i>
                 Licence
               </span>
-              <button class="my-pack-manage-button" type="button" data-manage-pack>
-                Gérer le pack
-                <i data-lucide="arrow-up-right"></i>
-              </button>
+              <div class="my-pack-card-actions">
+                ${status === "approved" ? `
+                  <button class="my-pack-share-button" type="button" data-share-pack>
+                    <i data-lucide="share-2"></i>
+                    Partager mon pack
+                  </button>` : ""}
+                <button class="my-pack-manage-button" type="button" data-manage-pack>
+                  Gérer le pack
+                  <i data-lucide="arrow-up-right"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -739,7 +780,23 @@ async function initializeMyPacks() {
         updateSelectionUi();
       });
 
-      card.addEventListener("click", (event) => {
+      card.addEventListener("click", async (event) => {
+        const shareButton = event.target.closest("[data-share-pack]");
+        if (shareButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          await shareMyPack(pack);
+          return;
+        }
+
+        const manageButton = event.target.closest("[data-manage-pack]");
+        if (manageButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.location.href = myPackManagementUrl(card.dataset.packId);
+          return;
+        }
+
         if (selectionMode) {
           if (event.target.closest("button, input, label")) return;
           if (selected.has(card.dataset.packId)) selected.delete(card.dataset.packId);

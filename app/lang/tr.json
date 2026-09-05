@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Ekran görüntüleri yalnızca sorun bildirimlerinde kullanılabilir.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Bir ekran görüntüsü gerçekte PNG, JPG veya WebP dosyası değil.",
   "Le serveur a refusé une capture.": "Sunucu bir ekran görüntüsünü reddetti.",
-  "Capture {0}": "Ekran görüntüsü {0}"
+  "Capture {0}": "Ekran görüntüsü {0}",
+  "Partager mon pack": "Paketimi paylaş",
+  "Lien du pack copié.": "Paket bağlantısı kopyalandı.",
+  "Liens des packs copiés.": "Paket bağlantıları kopyalandı.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, Sonara Pack’te mevcut",
+  "Copier le crédit": "Krediyi kopyala",
+  "Crédit copié": "Kredi kopyalandı",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Müzik: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Yenilikler"
 }

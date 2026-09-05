@@ -158,6 +158,81 @@ function escapeDownloadHtml(value = "") {
     .replace(/'/g, "&#039;");
 }
 
+function downloadPublicPackUrl(id) {
+  const safeId = encodeURIComponent(String(id || ""));
+  let environment = "";
+  try {
+    environment = typeof SONARA_ENV !== "undefined" ? String(SONARA_ENV || "") : "";
+  } catch {}
+
+  if (environment === "local") {
+    return `${window.location.origin}/app/pages/catalog/public-pack.html?id=${safeId}`;
+  }
+  return `${window.location.origin}/catalog/packs/${safeId}`;
+}
+
+function buildDownloadCreditText() {
+  if (!selectedPack || String(selectedPack.contentType || "audio").toLowerCase() !== "audio") return "";
+
+  const title = String(selectedDownload?.title || selectedPack?.title || selectedPack?.name || "Sonara Pack");
+  const artist = String(
+    selectedDownload?.artist ||
+    selectedPack?.artist ||
+    selectedPack?.pseudo ||
+    selectedPack?.artistProfile?.name ||
+    "Artiste Sonara"
+  );
+  const url = downloadPublicPackUrl(selectedPack.id || packId);
+  const template = downloadTranslate("Musique : {0} — {1} | Sonara Pack — {2}");
+
+  return template
+    .replace("{0}", title)
+    .replace("{1}", artist)
+    .replace("{2}", url);
+}
+
+function copyDownloadTextFallback(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  Object.assign(textarea.style, {
+    position: "fixed",
+    opacity: "0",
+    pointerEvents: "none",
+    left: "-9999px"
+  });
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  let copied = false;
+  try { copied = document.execCommand("copy"); } catch {}
+  textarea.remove();
+  return copied;
+}
+
+async function copyDownloadCredit(button) {
+  const credit = buildDownloadCreditText();
+  if (!credit) return;
+
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(credit);
+    } else if (!copyDownloadTextFallback(credit)) {
+      throw new Error("Copie indisponible");
+    }
+
+    if (button) {
+      const original = downloadTranslate("Copier le crédit");
+      button.textContent = downloadTranslate("Crédit copié");
+      window.setTimeout(() => {
+        if (button.isConnected) button.textContent = original;
+      }, 1800);
+    }
+  } catch (error) {
+    console.warn("Crédit Sonara non copié :", error);
+  }
+}
+
 function getPlatformContext() {
   const userAgent = navigator.userAgent || "";
   const isAppleMobile = /iPhone|iPad|iPod/i.test(userAgent);
@@ -341,6 +416,7 @@ function renderPostDownloadAssistant() {
 
         <div class="download-after-actions">
           ${supportsSonaraSync ? `<button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>${escapeDownloadHtml(downloadTranslate("Ouvrir Sonara Sync"))}</button>` : ""}
+          ${contentType === "audio" ? `<button class="download-credit-button" type="button"><i data-lucide="copy"></i>${escapeDownloadHtml(downloadTranslate("Copier le crédit"))}</button>` : ""}
           <button class="download-library-button" type="button">${escapeDownloadHtml(downloadTranslate("Bibliothèque"))}</button>
           <button class="download-home-button" type="button">${escapeDownloadHtml(downloadTranslate("Accueil"))}</button>
         </div>
@@ -358,6 +434,10 @@ function renderPostDownloadAssistant() {
 
   document.querySelector(".download-montage-button")?.addEventListener("click", () => {
     window.location.assign("/app/pages/catalog/montage.html");
+  });
+
+  document.querySelector(".download-credit-button")?.addEventListener("click", (event) => {
+    void copyDownloadCredit(event.currentTarget);
   });
 
   document.querySelector(".download-library-button")?.addEventListener("click", () => {

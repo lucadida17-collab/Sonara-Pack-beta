@@ -545,6 +545,31 @@ function platformActivityDayKey() {
   }
 }
 
+function rememberSonaraNoveltyBaseline(profile) {
+  const accountId = String(profile?.accountId || profile?.id || "").trim();
+  if (!accountId) return;
+
+  const baseline = String(
+    profile?.lastSessionActivityAt ||
+    profile?.lastSeenAt ||
+    profile?.lastSessionAt ||
+    profile?.createdAt ||
+    ""
+  ).trim();
+  if (!baseline || Number.isNaN(new Date(baseline).getTime())) return;
+
+  const environmentKey = String(window.location.origin || window.location.hostname || "sonara");
+  const storageKey = `sonaraNoveltyBaseline:${environmentKey}:${accountId}`;
+
+  try {
+    if (!sessionStorage.getItem(storageKey)) {
+      sessionStorage.setItem(storageKey, baseline);
+    }
+  } catch {
+    // Indicateur purement visuel : aucune conséquence sur la session si le stockage est indisponible.
+  }
+}
+
 async function reportSonaraPlatformActivity(apiUrl, profile) {
   const accountId = String(profile?.accountId || profile?.id || "").trim();
   if (!accountId) return;
@@ -693,6 +718,7 @@ async function verifySonaraSession(options = {}) {
       return { ok: false, mode, reason: "identity_mismatch", profile: null };
     }
 
+    rememberSonaraNoveltyBaseline(freshProfile);
     localStorage.setItem("sonaraProfile", JSON.stringify(freshProfile));
     localStorage.setItem("sonaraProfileCreated", "true");
 

@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Tangkapan layar hanya tersedia untuk laporan masalah.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Sebuah tangkapan layar sebenarnya bukan file PNG, JPG, atau WebP.",
   "Le serveur a refusé une capture.": "Server menolak sebuah tangkapan layar.",
-  "Capture {0}": "Tangkapan layar {0}"
+  "Capture {0}": "Tangkapan layar {0}",
+  "Partager mon pack": "Bagikan pack saya",
+  "Lien du pack copié.": "Tautan pack disalin.",
+  "Liens des packs copiés.": "Tautan pack disalin.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, tersedia di Sonara Pack",
+  "Copier le crédit": "Salin kredit",
+  "Crédit copié": "Kredit disalin",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Musik: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Terbaru"
 }

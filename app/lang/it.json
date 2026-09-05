@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Gli screenshot sono disponibili solo per le segnalazioni di problemi.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Uno screenshot non corrisponde realmente a un file PNG, JPG o WebP.",
   "Le serveur a refusé une capture.": "Il server ha rifiutato uno screenshot.",
-  "Capture {0}": "Screenshot {0}"
+  "Capture {0}": "Screenshot {0}",
+  "Partager mon pack": "Condividi il mio pack",
+  "Lien du pack copié.": "Link del pack copiato.",
+  "Liens des packs copiés.": "Link dei pack copiati.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, disponibile su Sonara Pack",
+  "Copier le crédit": "Copia credito",
+  "Crédit copié": "Credito copiato",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Musica: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Novità"
 }

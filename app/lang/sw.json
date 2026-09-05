@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Picha za skrini zinapatikana tu kwa ripoti za matatizo.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Picha moja ya skrini si faili halisi ya PNG, JPG au WebP.",
   "Le serveur a refusé une capture.": "Seva imekataa picha ya skrini.",
-  "Capture {0}": "Picha ya skrini {0}"
+  "Capture {0}": "Picha ya skrini {0}",
+  "Partager mon pack": "Shiriki pack yangu",
+  "Lien du pack copié.": "Kiungo cha pack kimenakiliwa.",
+  "Liens des packs copiés.": "Viungo vya pack vimenakiliwa.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, inapatikana kwenye Sonara Pack",
+  "Copier le crédit": "Nakili utambulisho wa muziki",
+  "Crédit copié": "Utambulisho umenakiliwa",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Muziki: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Mapya"
 }

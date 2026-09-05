@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Скриншоты доступны только для сообщений о проблемах.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Скриншот фактически не является файлом PNG, JPG или WebP.",
   "Le serveur a refusé une capture.": "Сервер отклонил скриншот.",
-  "Capture {0}": "Скриншот {0}"
+  "Capture {0}": "Скриншот {0}",
+  "Partager mon pack": "Поделиться моим паком",
+  "Lien du pack copié.": "Ссылка на пак скопирована.",
+  "Liens des packs copiés.": "Ссылки на паки скопированы.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, доступно на Sonara Pack",
+  "Copier le crédit": "Скопировать указание авторства",
+  "Crédit copié": "Указание авторства скопировано",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Музыка: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Новинки"
 }

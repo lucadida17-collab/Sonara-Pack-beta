@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Capturile sunt disponibile doar pentru raportările de probleme.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "O captură nu corespunde de fapt unui fișier PNG, JPG sau WebP.",
   "Le serveur a refusé une capture.": "Serverul a respins o captură.",
-  "Capture {0}": "Captură {0}"
+  "Capture {0}": "Captură {0}",
+  "Partager mon pack": "Distribuie pack-ul meu",
+  "Lien du pack copié.": "Linkul pack-ului a fost copiat.",
+  "Liens des packs copiés.": "Linkurile pack-urilor au fost copiate.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, disponibil pe Sonara Pack",
+  "Copier le crédit": "Copiază creditul",
+  "Crédit copié": "Credit copiat",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Muzică: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Noutăți"
 }

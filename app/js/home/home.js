@@ -7,6 +7,88 @@ let homeQuickPreview = null;
 
 
 const HOME_RAIL_ITEM_LIMIT = 12;
+const HOME_RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const HOME_RECENT_LIMIT = 12;
+
+function getHomeContentTimestamp(pack = {}) {
+  const packValue =
+    pack?.updatedAt ||
+    pack?.publishedAt ||
+    pack?.moderatedAt ||
+    pack?.createdAt ||
+    "";
+  const packTimestamp = Date.parse(packValue);
+  const timestamps = [Number.isFinite(packTimestamp) ? packTimestamp : 0];
+
+  for (const track of Array.isArray(pack?.tracks) ? pack.tracks : []) {
+    const trackValue =
+      track?.updatedAt ||
+      track?.publishedAt ||
+      track?.createdAt ||
+      track?.addedAt ||
+      "";
+    const trackTimestamp = Date.parse(trackValue);
+    if (Number.isFinite(trackTimestamp)) timestamps.push(trackTimestamp);
+  }
+
+  return Math.max(...timestamps);
+}
+
+function getHomeNoveltyBaseline() {
+  const profile = getStoredHomeProfile();
+  const accountId = String(profile?.accountId || profile?.id || "").trim();
+  if (!accountId) return 0;
+
+  const environmentKey = String(window.location.origin || window.location.hostname || "sonara");
+  const storageKey = `sonaraNoveltyBaseline:${environmentKey}:${accountId}`;
+  let value = "";
+
+  try { value = sessionStorage.getItem(storageKey) || ""; } catch {}
+  if (!value) {
+    value = String(
+      profile?.lastSessionActivityAt ||
+      profile?.lastSeenAt ||
+      profile?.lastSessionAt ||
+      profile?.createdAt ||
+      ""
+    );
+  }
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function createHomeRecentSection(distributedPacks = []) {
+  const baseline = getHomeNoveltyBaseline();
+  const recentCutoff = Date.now() - HOME_RECENT_WINDOW_MS;
+  const items = (Array.isArray(distributedPacks) ? distributedPacks : [])
+    .filter((pack) => pack && pack.isAutoPlaylist !== true)
+    .map((pack) => {
+      const contentTimestamp = getHomeContentTimestamp(pack);
+      return {
+        ...pack,
+        __sonaraContentTimestamp: contentTimestamp,
+        __sonaraNewSinceVisit: Boolean(baseline && contentTimestamp > baseline)
+      };
+    })
+    .filter((pack) =>
+      pack.__sonaraContentTimestamp >= recentCutoff ||
+      pack.__sonaraNewSinceVisit === true
+    )
+    .sort((a, b) => b.__sonaraContentTimestamp - a.__sonaraContentTimestamp)
+    .slice(0, HOME_RECENT_LIMIT);
+
+  if (!items.length) return null;
+
+  return {
+    id: "catalog:recent",
+    kind: "recent",
+    title: "Nouveautés",
+    items,
+    hasNewSinceVisit: items.some((pack) => pack.__sonaraNewSinceVisit === true)
+  };
+}
+
 
 /*
   Titres de packs adaptatifs : on conserve la taille CSS normale tant que
@@ -444,6 +526,14 @@ async function loadHome() {
     packs,
     autoPlaylistPayload
   );
+
+  const recentSection = createHomeRecentSection(packs);
+  if (recentSection) {
+    homeSections = [
+      recentSection,
+      ...homeSections.filter((section) => String(section?.id || "") !== recentSection.id)
+    ];
+  }
 
   if (!homeSections.length && packs.length) {
     homeSections = [{
@@ -918,6 +1008,13 @@ function createPackCard(pack = {}) {
     }
   }
 
+  if (pack.__sonaraNewSinceVisit === true && pack.isAutoPlaylist !== true) {
+    const badge = document.createElement("span");
+    badge.className = "home-new-content-badge";
+    badge.textContent = "Nouveau";
+    cover.appendChild(badge);
+  }
+
   const info =
     document.createElement("div");
 
@@ -1315,7 +1412,10 @@ function createDistributionSectionMarkup(
         <div class="category-heading-group">
           <div class="category-heading-copy">
             <div class="home-section-heading">
-              <h2>${escapeHomeHtml(title)}</h2>
+              <div class="home-section-title-line">
+                <h2>${escapeHomeHtml(title)}</h2>
+                ${section?.kind === "recent" && section?.hasNewSinceVisit === true ? `<span class="home-section-fresh-badge">Nouveau</span>` : ""}
+              </div>
             </div>
           </div>
 

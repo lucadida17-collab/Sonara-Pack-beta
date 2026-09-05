@@ -2781,5 +2781,13 @@
   "Les captures sont réservées aux signalements de problème.": "Zrzuty ekranu są dostępne tylko w zgłoszeniach problemów.",
   "Une capture ne correspond pas réellement à un fichier PNG, JPG ou WebP.": "Zrzut ekranu nie jest rzeczywistym plikiem PNG, JPG ani WebP.",
   "Le serveur a refusé une capture.": "Serwer odrzucił zrzut ekranu.",
-  "Capture {0}": "Zrzut ekranu {0}"
+  "Capture {0}": "Zrzut ekranu {0}",
+  "Partager mon pack": "Udostępnij mój pack",
+  "Lien du pack copié.": "Link do packa skopiowany.",
+  "Liens des packs copiés.": "Linki do packów skopiowane.",
+  "{0} — {1}, disponible sur Sonara Pack": "{0} — {1}, dostępny w Sonara Pack",
+  "Copier le crédit": "Kopiuj podpis",
+  "Crédit copié": "Podpis skopiowany",
+  "Musique : {0} — {1} | Sonara Pack — {2}": "Muzyka: {0} — {1} | Sonara Pack — {2}",
+  "Nouveautés": "Nowości"
 }
