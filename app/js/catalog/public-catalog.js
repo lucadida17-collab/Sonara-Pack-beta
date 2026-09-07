@@ -166,7 +166,7 @@
     const category = categoryLabel(pack.category);
     return `
       <article class="public-catalog-card">
-        <div>
+        <div class="public-catalog-cover-frame">
           <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="600" height="600" data-user-content>
         </div>
         <div>
@@ -199,7 +199,7 @@
     const category = categoryLabel(pack?.category);
     return `
       <article class="public-catalog-card">
-        <div>
+        <div class="public-catalog-cover-frame">
           <img class="public-catalog-cover" src="${escapeHTML(track.coverUrl || "")}" alt="${escapeHTML(track.seo?.imageAlt || track.title)}" width="600" height="600" data-user-content>
         </div>
         <div>

@@ -167,7 +167,7 @@ function sharedHead({ title, description, canonical, image, imageAlt = "", ogTyp
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/app/css/catalog/public-catalog.css?v=organic-visibility-v4-semantic">
+  <link rel="stylesheet" href="/app/css/catalog/public-catalog.css?v=public-square-cover-v1">
   <link rel="stylesheet" href="/app/css/core/i18n.css">
   <script type="application/ld+json">${jsonForHtml(structuredData)}</script>`;
 }
@@ -184,7 +184,7 @@ function shell({ event, apiBase, head, markup, type }) {
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
   <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
-  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v7-cover-original"></script>
+  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v8-square-cover"></script>
   <script src="/app/js/core/i18n.js?v=organic-visibility-v1" defer></script>
 </body>
 </html>`;
@@ -221,7 +221,7 @@ function renderPackPage(event, apiBase, pack) {
   };
 
   const markup = `<article class="public-catalog-card">
-    <div>
+    <div class="public-catalog-cover-frame">
       <img class="public-catalog-cover" src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="600" height="600" fetchpriority="high" data-user-content>
     </div>
     <div>
@@ -268,7 +268,7 @@ function renderTrackPage(event, apiBase, pack, track) {
   };
 
   const markup = `<article class="public-catalog-card">
-    <div><img class="public-catalog-cover" src="${escapeHtml(track.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="600" height="600" fetchpriority="high" data-user-content></div>
+    <div class="public-catalog-cover-frame"><img class="public-catalog-cover" src="${escapeHtml(track.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="600" height="600" fetchpriority="high" data-user-content></div>
     <div>
       <p class="public-catalog-eyebrow">Publié sur Sonara Pack</p>
       <h1 class="public-catalog-title" data-user-content>${escapeHtml(track.title)}</h1>
