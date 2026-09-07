@@ -171,24 +171,27 @@ function downloadPublicPackUrl(id) {
   return `${window.location.origin}/catalog/packs/${safeId}`;
 }
 
-function buildDownloadCreditText() {
+function downloadArtistCreditText() {
   if (!selectedPack || String(selectedPack.contentType || "audio").toLowerCase() !== "audio") return "";
 
-  const title = String(selectedDownload?.title || selectedPack?.title || selectedPack?.name || "Sonara Pack");
+  const trackArtist = selectedDownload?.artist;
   const artist = String(
-    selectedDownload?.artist ||
-    selectedPack?.artist ||
+    (trackArtist && typeof trackArtist === "object"
+      ? (trackArtist.pseudo || trackArtist.name || trackArtist.artistName)
+      : trackArtist) ||
+    selectedPack?.artistProfile?.pseudo ||
     selectedPack?.pseudo ||
     selectedPack?.artistProfile?.name ||
+    selectedPack?.artist ||
     "Artiste Sonara"
-  );
-  const url = downloadPublicPackUrl(selectedPack.id || packId);
-  const template = downloadTranslate("Musique : {0} — {1} | Sonara Pack — {2}");
+  ).trim().replace(/^@+/, "");
 
-  return template
-    .replace("{0}", title)
-    .replace("{1}", artist)
-    .replace("{2}", url);
+  return artist ? `@${artist}` : "";
+}
+
+function downloadPackCreditText() {
+  if (!selectedPack || String(selectedPack.contentType || "audio").toLowerCase() !== "audio") return "";
+  return downloadPublicPackUrl(selectedPack.id || packId);
 }
 
 function copyDownloadTextFallback(text) {
@@ -210,22 +213,20 @@ function copyDownloadTextFallback(text) {
   return copied;
 }
 
-async function copyDownloadCredit(button) {
-  const credit = buildDownloadCreditText();
-  if (!credit) return;
+async function copyDownloadCreditValue(button, value, originalLabel) {
+  if (!value) return;
 
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      await navigator.clipboard.writeText(credit);
-    } else if (!copyDownloadTextFallback(credit)) {
+      await navigator.clipboard.writeText(value);
+    } else if (!copyDownloadTextFallback(value)) {
       throw new Error("Copie indisponible");
     }
 
     if (button) {
-      const original = downloadTranslate("Copier le crédit");
       button.textContent = downloadTranslate("Crédit copié");
       window.setTimeout(() => {
-        if (button.isConnected) button.textContent = original;
+        if (button.isConnected) button.textContent = downloadTranslate(originalLabel);
       }, 1800);
     }
   } catch (error) {
@@ -416,7 +417,7 @@ function renderPostDownloadAssistant() {
 
         <div class="download-after-actions">
           ${supportsSonaraSync ? `<button class="download-montage-button" type="button"><i data-lucide="clapperboard"></i>${escapeDownloadHtml(downloadTranslate("Ouvrir Sonara Sync"))}</button>` : ""}
-          ${contentType === "audio" ? `<button class="download-credit-button" type="button"><i data-lucide="copy"></i>${escapeDownloadHtml(downloadTranslate("Copier le crédit"))}</button>` : ""}
+          ${contentType === "audio" ? `<button class="download-credit-button" type="button" data-credit-action="artist"><i data-lucide="at-sign"></i>${escapeDownloadHtml(downloadTranslate("Créditer l’artiste"))}</button><button class="download-credit-button" type="button" data-credit-action="pack"><i data-lucide="link"></i>${escapeDownloadHtml(downloadTranslate("Crédit"))}</button>` : ""}
           <button class="download-library-button" type="button">${escapeDownloadHtml(downloadTranslate("Bibliothèque"))}</button>
           <button class="download-home-button" type="button">${escapeDownloadHtml(downloadTranslate("Accueil"))}</button>
         </div>
@@ -436,8 +437,17 @@ function renderPostDownloadAssistant() {
     window.location.assign("/app/pages/catalog/montage.html");
   });
 
-  document.querySelector(".download-credit-button")?.addEventListener("click", (event) => {
-    void copyDownloadCredit(event.currentTarget);
+  document.querySelectorAll("[data-credit-action]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const action = event.currentTarget.dataset.creditAction;
+      if (action === "artist") {
+        void copyDownloadCreditValue(event.currentTarget, downloadArtistCreditText(), "Créditer l’artiste");
+        return;
+      }
+      if (action === "pack") {
+        void copyDownloadCreditValue(event.currentTarget, downloadPackCreditText(), "Crédit");
+      }
+    });
   });
 
   document.querySelector(".download-library-button")?.addEventListener("click", () => {

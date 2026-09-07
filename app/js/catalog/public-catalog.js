@@ -167,7 +167,7 @@
     return `
       <article class="public-catalog-card">
         <div>
-          <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="1000" height="1000" data-user-content>
+          <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="600" height="600" data-user-content>
         </div>
         <div>
           <p class="public-catalog-eyebrow">Catalogue public Sonara</p>
@@ -200,7 +200,7 @@
     return `
       <article class="public-catalog-card">
         <div>
-          <img class="public-catalog-cover" src="${escapeHTML(track.coverUrl || "")}" alt="${escapeHTML(track.seo?.imageAlt || track.title)}" width="1000" height="1000" data-user-content>
+          <img class="public-catalog-cover" src="${escapeHTML(track.coverUrl || "")}" alt="${escapeHTML(track.seo?.imageAlt || track.title)}" width="600" height="600" data-user-content>
         </div>
         <div>
           <p class="public-catalog-eyebrow">Publié sur Sonara Pack</p>

@@ -184,7 +184,7 @@ function shell({ event, apiBase, head, markup, type }) {
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
   <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
-  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v6-semantic"></script>
+  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v7-cover-original"></script>
   <script src="/app/js/core/i18n.js?v=organic-visibility-v1" defer></script>
 </body>
 </html>`;
@@ -222,8 +222,7 @@ function renderPackPage(event, apiBase, pack) {
 
   const markup = `<article class="public-catalog-card">
     <div>
-      <img class="public-catalog-cover" src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="1000" height="1000" fetchpriority="high" data-user-content>
-      ${pack.promoImageUrl ? `<img class="public-catalog-promo-image" src="${escapeHtml(pack.promoImageUrl)}" alt="${escapeHtml(`${pack.title} by ${pack.artist} – Sonara Pack visual`)}" loading="lazy" data-user-content>` : ""}
+      <img class="public-catalog-cover" src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="600" height="600" fetchpriority="high" data-user-content>
     </div>
     <div>
       <p class="public-catalog-eyebrow">Catalogue public Sonara</p>
@@ -269,7 +268,7 @@ function renderTrackPage(event, apiBase, pack, track) {
   };
 
   const markup = `<article class="public-catalog-card">
-    <div><img class="public-catalog-cover" src="${escapeHtml(track.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="1000" height="1000" fetchpriority="high" data-user-content></div>
+    <div><img class="public-catalog-cover" src="${escapeHtml(track.coverUrl || "")}" alt="${escapeHtml(imageAlt)}" width="600" height="600" fetchpriority="high" data-user-content></div>
     <div>
       <p class="public-catalog-eyebrow">Publié sur Sonara Pack</p>
       <h1 class="public-catalog-title" data-user-content>${escapeHtml(track.title)}</h1>
@@ -316,7 +315,7 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
     mainEntity: { "@type": "ItemList", numberOfItems: itemList.length, itemListElement: itemList }
   };
   const cards = rows.map((pack) => `<article class="public-catalog-list-card">
-    <a href="${escapeHtml(pack.canonicalUrl)}"><img src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(pack.seo?.imageAlt || pack.title)}" width="1000" height="1000" loading="lazy" data-user-content></a>
+    <a href="${escapeHtml(pack.canonicalUrl)}"><img src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(pack.seo?.imageAlt || pack.title)}" width="600" height="600" loading="lazy" data-user-content></a>
     <div><h2><a href="${escapeHtml(pack.canonicalUrl)}" data-user-content>${escapeHtml(pack.title)}</a></h2><p data-user-content>${escapeHtml(pack.artist)}</p><p>${escapeHtml(pack.seo?.primaryPhrase || pack.semantic?.primaryPhrase || "")}</p></div>
   </article>`).join("");
   const markup = `<article class="public-catalog-collection">

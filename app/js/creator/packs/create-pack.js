@@ -677,7 +677,7 @@ function renderIdentity() {
           "pack-cover-input",
           packData.identity.coverFile,
           "Dépose la cover du pack",
-          "Format carré recommandé · minimum 1000 × 1000 px"
+          "Format carré recommandé · minimum 600 × 600 px"
         )}
 
         <small class="field-error" data-error="identity-cover"></small>
