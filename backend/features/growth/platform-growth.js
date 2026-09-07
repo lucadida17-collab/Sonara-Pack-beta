@@ -1,3 +1,10 @@
+let existingOwnerAccounts = {};
+try {
+  existingOwnerAccounts = require("../cinematic/cinematic-export").DEFAULT_OWNERS || {};
+} catch {
+  existingOwnerAccounts = {};
+}
+
 const CONFIRMED_STATUSES = new Set(["confirmed", "succeeded", "paid", "completed"]);
 const TIME_ZONE = "Europe/Paris";
 const SESSION_WINDOW_MS = 30 * 60 * 1000;
@@ -5,6 +12,18 @@ const SESSION_WINDOW_MS = 30 * 60 * 1000;
 function normalizeEnvironment(value) {
   const environment = String(value || "").trim().toLowerCase();
   return ["local", "test", "main"].includes(environment) ? environment : "local";
+}
+
+function internalAccountIds(environment = "local") {
+  const env = normalizeEnvironment(environment);
+  const configured = `${process.env.SONARA_INTERNAL_ACCOUNT_IDS || ""},${process.env[`SONARA_INTERNAL_ACCOUNT_IDS_${env.toUpperCase()}`] || ""}`
+    .split(/[,;\s]+/g)
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const existing = Array.isArray(existingOwnerAccounts?.[env])
+    ? existingOwnerAccounts[env].map((owner) => String(owner?.accountId || "").trim()).filter(Boolean)
+    : [];
+  return new Set([...configured, ...existing]);
 }
 
 function normalizeStatus(value) {
@@ -238,7 +257,10 @@ async function buildPlatformGrowth({
   const returningByDay = new Map(keys.map((key) => [key, new Set()]));
   const returningArtistsByDay = new Map(keys.map((key) => [key, new Set()]));
   const loadedAccounts = await getAccounts();
-  const accounts = Array.isArray(loadedAccounts) ? loadedAccounts : [];
+  const internalAccounts = internalAccountIds(runtimeEnvironment);
+  const accounts = (Array.isArray(loadedAccounts) ? loadedAccounts : []).filter(
+    (account) => !internalAccounts.has(accountId(account))
+  );
   const downloads = buildDownloadStatistics(accounts);
 
   for (const account of accounts) {
@@ -322,12 +344,22 @@ function registerPlatformGrowth({
   timeZone = TIME_ZONE
 }) {
   const runtimeEnvironment = normalizeEnvironment(environment);
+  const internalAccounts = internalAccountIds(runtimeEnvironment);
 
   app.post("/api/platform/activity", async (req, res) => {
     try {
       const requestedAccountId = String(req.body?.accountId || "").trim();
       if (!requestedAccountId) {
         return res.status(400).json({ success: false, message: "Compte obligatoire." });
+      }
+      if (internalAccounts.has(requestedAccountId)) {
+        return res.json({
+          success: true,
+          environment: runtimeEnvironment,
+          recorded: false,
+          excluded: true,
+          exclusionReason: "internal_account"
+        });
       }
 
       const result = await recordActivity(requestedAccountId, new Date());
@@ -380,5 +412,6 @@ module.exports = {
   applyPlatformActivity,
   applyPlatformReturnActivity,
   SESSION_WINDOW_MS,
-  dayKey
+  dayKey,
+  internalAccountIds
 };

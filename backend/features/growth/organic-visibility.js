@@ -1,5 +1,13 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+
+let existingOwnerAccounts = {};
+try {
+  existingOwnerAccounts = require("../cinematic/cinematic-export").DEFAULT_OWNERS || {};
+} catch {
+  existingOwnerAccounts = {};
+}
 
 const ORGANIC_SOURCES = Object.freeze([
   "Google",
@@ -9,6 +17,30 @@ const ORGANIC_SOURCES = Object.freeze([
   "Direct",
   "Other"
 ]);
+
+const CATEGORY_SEO_LABELS = Object.freeze({
+  "rap-hiphop": "Rap & Hip-Hop Music",
+  pop: "Pop Music",
+  "rnb-soul": "R&B & Soul Music",
+  electronic: "Electronic Music",
+  "rock-alternative": "Rock & Alternative Music",
+  chanson: "Chanson Music",
+  vocal: "Vocal Music",
+  "beats-production": "Beats & Production",
+  afro: "Afro Music",
+  "reggae-dancehall": "Reggae & Dancehall Music",
+  jazz: "Jazz Music",
+  piano: "Piano Music",
+  cinematic: "Cinematic Music",
+  classical: "Classical Music",
+  "drums-percussion": "Drums & Percussion",
+  "violin-strings": "Violin & Strings",
+  guitar: "Guitar Music",
+  orchestral: "Orchestral Music",
+  "ambient-textures": "Ambient & Atmospheric Music",
+  "sound-design": "Sound Design",
+  other: "Music"
+});
 
 function text(value, maxLength = 500) {
   return String(value ?? "").trim().slice(0, maxLength);
@@ -30,6 +62,24 @@ function normalizeSource(value) {
   return "Other";
 }
 
+function internalAccountIds(environment = "local") {
+  const env = normalizeEnvironment(environment);
+  const configured = `${process.env.SONARA_INTERNAL_ACCOUNT_IDS || ""},${process.env[`SONARA_INTERNAL_ACCOUNT_IDS_${env.toUpperCase()}`] || ""}`
+    .split(/[,;\s]+/g)
+    .map((value) => text(value, 180))
+    .filter(Boolean);
+  const existing = Array.isArray(existingOwnerAccounts?.[env])
+    ? existingOwnerAccounts[env].map((owner) => text(owner?.accountId, 180)).filter(Boolean)
+    : [];
+  return new Set([...configured, ...existing]);
+}
+
+function excludedUserAgent(value = "") {
+  const ua = String(value || "");
+  if (!ua) return false;
+  return /googlebot|google-inspectiontool|bingbot|duckduckbot|baiduspider|yandexbot|slurp|facebookexternalhit|twitterbot|linkedinbot|discordbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|uptimerobot|statuscake|pingdom|healthcheck|render(?:-|\s)?health|curl\/|wget\/|postmanruntime/i.test(ua);
+}
+
 function safeDate(value) {
   const date = new Date(value || 0);
   return Number.isNaN(date.getTime()) ? null : date;
@@ -43,6 +93,151 @@ function categoryValues(pack = {}) {
   else if (pack.categories) values.push(pack.categories);
   if (pack.category) values.push(pack.category);
   return [...new Set(values.map((value) => text(value, 120)).filter(Boolean))];
+}
+
+function listValues(...candidates) {
+  const values = [];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) values.push(...candidate);
+    else if (candidate !== undefined && candidate !== null && candidate !== "") values.push(candidate);
+  }
+  const unique = new Map();
+  for (const value of values) {
+    const display = text(value, 160);
+    if (!display) continue;
+    const key = display.toLocaleLowerCase("fr");
+    if (!unique.has(key)) unique.set(key, display);
+  }
+  return [...unique.values()].slice(0, 24);
+}
+
+function explicitBoolean(...candidates) {
+  for (const candidate of candidates) {
+    if (typeof candidate === "boolean") return candidate;
+    const normalized = text(candidate, 20).toLowerCase();
+    if (["true", "yes", "1", "instrumental"].includes(normalized)) return true;
+    if (["false", "no", "0", "vocal", "vocals"].includes(normalized)) return false;
+  }
+  return null;
+}
+
+function categorySeoLabel(value = "") {
+  const raw = text(value, 120);
+  const key = raw.toLowerCase();
+  if (CATEGORY_SEO_LABELS[key]) return CATEGORY_SEO_LABELS[key];
+  const human = raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+  if (!human) return "Music";
+  return /music|sound|beat|production|percussion|strings?/i.test(human) ? human : `${human} Music`;
+}
+
+function semanticData(pack = {}, track = null) {
+  const source = track && typeof track === "object" ? track : {};
+  const categories = categoryValues(pack);
+  const genres = listValues(source.genres, source.genre, pack.genres, pack.genre);
+  const moods = listValues(
+    source.moods,
+    source.mood,
+    source.ambiances,
+    source.ambiance,
+    pack.moods,
+    pack.mood,
+    pack.ambiances,
+    pack.ambiance
+  );
+  // Les données privées de creationProcess ne sont volontairement jamais utilisées ici.
+  const instruments = listValues(
+    source.publicInstruments,
+    source.instruments,
+    pack.publicInstruments,
+    pack.instruments
+  );
+  const usages = listValues(
+    source.useCases,
+    source.usages,
+    source.usage,
+    pack.useCases,
+    pack.usages,
+    pack.usage
+  );
+  const tags = listValues(
+    source.musicTags,
+    source.tags,
+    source.seoTags,
+    pack.musicTags,
+    pack.tags,
+    pack.seoTags
+  );
+  const instrumental = explicitBoolean(
+    source.instrumental,
+    source.isInstrumental,
+    pack.instrumental,
+    pack.isInstrumental
+  );
+  const description = text(
+    source.publicDescription ||
+    source.seoDescription ||
+    source.description ||
+    pack.publicDescription ||
+    pack.seoDescription ||
+    pack.description,
+    900
+  );
+  const primaryCategory = categories[0] || "";
+  const primaryPhrase = genres[0]
+    ? (/music/i.test(genres[0]) ? genres[0] : `${genres[0]} Music`)
+    : categorySeoLabel(primaryCategory);
+  const visibleTerms = listValues(
+    ...genres,
+    ...moods,
+    ...instruments,
+    ...usages,
+    ...tags
+  ).slice(0, 8);
+
+  return {
+    categories,
+    genres,
+    moods,
+    instruments,
+    usages,
+    tags,
+    instrumental,
+    description,
+    primaryPhrase,
+    visibleTerms
+  };
+}
+
+function seoMetadata({ title, artist, semantic = {}, licenseName = "", kind = "track" } = {}) {
+  const safeTitle = text(title || (kind === "pack" ? "Pack Sonara" : "Track Sonara"), 240);
+  const safeArtist = text(artist || "Artiste Sonara", 180);
+  const primaryPhrase = text(semantic.primaryPhrase || "Music", 140);
+  const generatedTitle = `${safeTitle} – ${primaryPhrase} by ${safeArtist} | Sonara Pack`.slice(0, 120);
+
+  const baseStyle = primaryPhrase.replace(/\s+music$/i, "").trim().toLowerCase();
+  const mood = text(semantic.moods?.[0], 100).toLowerCase();
+  const descriptor = [mood, baseStyle, semantic.instrumental === true ? "instrumental" : "music"]
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(" ");
+  const article = /^[aeiou]/i.test(descriptor) ? "an" : "a";
+  const generatedDescription = `Listen to ${safeTitle} by ${safeArtist}, ${article} ${descriptor || "music release"} available on Sonara Pack${licenseName ? ` under ${text(licenseName, 120)}` : ""} for creative projects.`;
+  const description = semantic.description
+    ? `${semantic.description.replace(/[.!?]\s*$/, "")}. Available on Sonara Pack${licenseName ? ` under ${text(licenseName, 120)}` : ""} for creative projects.`.replace(/\s+/g, " ").trim().slice(0, 180)
+    : generatedDescription.replace(/\s+/g, " ").trim().slice(0, 180);
+  const imageAlt = `${safeTitle} by ${safeArtist} – ${primaryPhrase} on Sonara Pack`.slice(0, 220);
+
+  return {
+    title: generatedTitle,
+    description,
+    imageAlt,
+    primaryPhrase,
+    visibleTerms: Array.isArray(semantic.visibleTerms) ? semantic.visibleTerms : []
+  };
 }
 
 function artistName(pack = {}) {
@@ -69,16 +264,23 @@ function artistAvatar(pack = {}) {
 }
 
 function publicTrack(track = {}, pack = {}) {
+  const semantic = semanticData(pack, track);
+  const artist = text(track.artist || artistName(pack), 180);
+  const title = text(track.title || "Track Sonara", 240);
+  const licenseName = text(pack.license?.name || "Licence standard Sonara", 180);
   return {
     id: text(track.id, 180),
-    title: text(track.title || "Track Sonara", 240),
-    artist: text(track.artist || artistName(pack), 180),
+    title,
+    artist,
     coverPack: text(track.coverPack || pack.coverPack, 1000),
+    promoImage: text(track.promoImageUrl || track.mockupUrl || pack.promoImageUrl || pack.mockupUrl, 1000),
     audioName: text(track.audioName || track.audio, 1000),
     previewStart: Math.max(0, Number(track.previewStart || 0) || 0),
     previewDuration: Math.min(30, Math.max(1, Number(track.previewDuration || 30) || 30)),
     duration: Math.max(0, Number(track.duration || 0) || 0),
-    price: text(track.price || track.trackPrice || track.unitPrice, 80)
+    price: text(track.price || track.trackPrice || track.unitPrice, 80),
+    semantic,
+    seo: seoMetadata({ title, artist, semantic, licenseName, kind: "track" })
   };
 }
 
@@ -96,21 +298,30 @@ function publicPack(pack = {}) {
       }
     : null;
 
-  return {
+  const title = text(pack.title || pack.name || "Pack Sonara", 240);
+  const artist = artistName(pack);
+  const semantic = semanticData(pack);
+  const result = {
     id: text(pack.id, 180),
-    title: text(pack.title || pack.name || "Pack Sonara", 240),
-    artist: artistName(pack),
+    title,
+    artist,
     artistAvatar: artistAvatar(pack),
+    artistBiography: text(pack.artistProfile?.biography || pack.biography, 1200),
     coverPack: text(pack.coverPack, 1000),
+    promoImage: text(pack.promoImageUrl || pack.mockupUrl || pack.promoMockupUrl, 1000),
     categories,
     category: categories[0] || "",
     contentType: text(pack.contentType || "audio", 40).toLowerCase() || "audio",
+    primaryAudience: text(pack.primaryAudience || "both", 30).toLowerCase() || "both",
     publishedAt: text(pack.publishedAt || pack.moderatedAt || pack.createdAt, 80),
     price: text(pack.price || pack.packPrice || pack.totalPrice, 80),
     license,
     trackCount: tracks.length,
-    tracks
+    tracks,
+    semantic
   };
+  result.seo = seoMetadata({ title, artist, semantic, licenseName: license?.name || "", kind: "pack" });
+  return result;
 }
 
 function trackSeoEligible(pack = {}, track = {}) {
@@ -205,6 +416,7 @@ function packCommunicationKit(req, pack, publicOrigin, environment = "main") {
     category: normalized.category,
     categories: normalized.categories,
     coverUrl: mediaUrl(req, normalized.coverPack),
+    promoImageUrl: mediaUrl(req, normalized.promoImage),
     publicUrl,
     canonicalUrl,
     trackedLinks: {
@@ -223,7 +435,7 @@ function packCommunicationKit(req, pack, publicOrigin, environment = "main") {
 function ensureLocalStore(filePath) {
   if (!fs.existsSync(path.dirname(filePath))) fs.mkdirSync(path.dirname(filePath), { recursive: true });
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify({ version: 2, visitors: [] }, null, 2), "utf8");
+    fs.writeFileSync(filePath, JSON.stringify({ version: 3, visitors: [], internalDevices: [] }, null, 2), "utf8");
   }
 }
 
@@ -234,17 +446,18 @@ function createLocalStore(filePath) {
     try {
       const parsed = JSON.parse(fs.readFileSync(filePath, "utf8") || "{}");
       return {
-        version: 2,
-        visitors: Array.isArray(parsed.visitors) ? parsed.visitors : []
+        version: 3,
+        visitors: Array.isArray(parsed.visitors) ? parsed.visitors : [],
+        internalDevices: Array.isArray(parsed.internalDevices) ? parsed.internalDevices : []
       };
     } catch (error) {
       console.error("Organic visibility LOCAL illisible :", error.message || error);
-      return { version: 2, visitors: [] };
+      return { version: 3, visitors: [], internalDevices: [] };
     }
   }
 
   function write(data) {
-    data.version = 2;
+    data.version = 3;
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
   }
 
@@ -277,6 +490,7 @@ function createLocalStore(filePath) {
           firstSeenAt: now,
           lastSeenAt: now,
           visitCount: touch.journeyKind === "event" ? 0 : 1,
+          internalVisitCount: touch.journeyKind === "event" || touch.internalTraffic !== true ? 0 : 1,
           accountId: "",
           accountCreatedAt: "",
           linkedAt: "",
@@ -291,6 +505,9 @@ function createLocalStore(filePath) {
         record.lastSeenAt = now;
         if (touch.journeyKind !== "event") {
           record.visitCount = Math.max(0, Number(record.visitCount || 0)) + 1;
+          if (touch.internalTraffic === true) {
+            record.internalVisitCount = Math.max(0, Number(record.internalVisitCount || 0)) + 1;
+          }
         }
         appendJourney(record, touch);
       }
@@ -309,14 +526,53 @@ function createLocalStore(filePath) {
 
     async list() {
       return read().visitors;
+    },
+
+    async registerInternalDevice(deviceId, metadata = {}) {
+      const data = read();
+      const now = new Date().toISOString();
+      const existing = data.internalDevices.find((item) => String(item.deviceId) === String(deviceId));
+      if (existing) {
+        existing.active = true;
+        existing.updatedAt = now;
+        existing.label = text(metadata.label || existing.label || "Founder device", 120);
+      } else {
+        data.internalDevices.push({
+          deviceId,
+          active: true,
+          createdAt: now,
+          updatedAt: now,
+          label: text(metadata.label || "Founder device", 120)
+        });
+      }
+      write(data);
+      return true;
+    },
+
+    async revokeInternalDevice(deviceId) {
+      const data = read();
+      const existing = data.internalDevices.find((item) => String(item.deviceId) === String(deviceId));
+      if (!existing) return false;
+      existing.active = false;
+      existing.updatedAt = new Date().toISOString();
+      write(data);
+      return true;
+    },
+
+    async isInternalDevice(deviceId) {
+      if (!deviceId) return false;
+      const data = read();
+      return data.internalDevices.some((item) => String(item.deviceId) === String(deviceId) && item.active === true);
     }
   };
 }
 
-function createMongoStore(collection) {
+function createMongoStore(collection, internalDevicesCollection) {
   return {
     async upsertVisit(visitorId, touch) {
       const now = new Date().toISOString();
+      const isPage = touch.journeyKind !== "event";
+      const isInternalPage = isPage && touch.internalTraffic === true;
       await collection.updateOne(
         { visitorId },
         {
@@ -327,13 +583,17 @@ function createMongoStore(collection) {
             accountId: "",
             accountCreatedAt: "",
             linkedAt: "",
-            signupAttributed: false
+            signupAttributed: false,
+            internalVisitCount: 0
           },
           $set: {
             lastTouch: touch,
             lastSeenAt: now
           },
-          $inc: { visitCount: touch.journeyKind === "event" ? 0 : 1 },
+          $inc: {
+            visitCount: isPage ? 1 : 0,
+            internalVisitCount: isInternalPage ? 1 : 0
+          },
           $push: { journey: { $each: [touch], $slice: -120 } }
         },
         { upsert: true }
@@ -352,13 +612,51 @@ function createMongoStore(collection) {
 
     async list() {
       return collection.find({}, { projection: { _id: 0 } }).sort({ firstSeenAt: -1 }).limit(50000).toArray();
+    },
+
+    async registerInternalDevice(deviceId, metadata = {}) {
+      const now = new Date().toISOString();
+      await internalDevicesCollection.updateOne(
+        { deviceId },
+        {
+          $setOnInsert: { deviceId, createdAt: now },
+          $set: {
+            active: true,
+            updatedAt: now,
+            label: text(metadata.label || "Founder device", 120)
+          }
+        },
+        { upsert: true }
+      );
+      return true;
+    },
+
+    async revokeInternalDevice(deviceId) {
+      const result = await internalDevicesCollection.updateOne(
+        { deviceId },
+        { $set: { active: false, updatedAt: new Date().toISOString() } }
+      );
+      return Number(result.matchedCount || 0) > 0;
+    },
+
+    async isInternalDevice(deviceId) {
+      if (!deviceId) return false;
+      const found = await internalDevicesCollection.findOne(
+        { deviceId, active: true },
+        { projection: { _id: 0, deviceId: 1 } }
+      );
+      return Boolean(found);
     }
   };
 }
 
 function createStore({ environment, db, dataDir }) {
   if (db && typeof db.collection === "function") {
-    return createMongoStore(db.collection(`organic_visibility_${normalizeEnvironment(environment)}`));
+    const env = normalizeEnvironment(environment);
+    return createMongoStore(
+      db.collection(`organic_visibility_${env}`),
+      db.collection(`organic_visibility_internal_devices_${env}`)
+    );
   }
   return createLocalStore(path.join(dataDir || process.cwd(), `organic-visibility-${environment}.json`));
 }
@@ -385,6 +683,8 @@ function normalizeTouch(body = {}) {
       : "page",
     journeyStep: text(body.journeyStep, 100),
     journeyDetail: text(body.journeyDetail, 240),
+    internalTraffic: body.internalTraffic === true,
+    trackingVersion: Math.max(1, Number(body.trackingVersion || 1) || 1),
     capturedAt: new Date().toISOString()
   };
 }
@@ -426,14 +726,37 @@ function summarizeAttribution(records = []) {
 
   const accountSources = new Map();
   const linkedAccounts = new Map();
+  const internalAccountSet = new Set();
+  let externalVisitorCount = 0;
+  let externalVisitCount = 0;
+  let internalVisitorCount = 0;
+  let internalVisitCount = 0;
 
   for (const record of records) {
     const source = normalizeSource(record?.firstTouch?.source);
-    const row = sourceMap.get(source) || sourceMap.get("Other");
-    row.visitors += 1;
-    row.visits += Math.max(1, Number(record.visitCount || 1));
+    const totalVisits = Math.max(record?.firstTouch ? 1 : 0, Number(record?.visitCount || 0));
+    const storedInternalVisits = Math.min(totalVisits, Math.max(0, Number(record?.internalVisitCount || 0)));
+    const internalAccount = record?.internalAccount === true;
+    const excludedVisits = internalAccount ? totalVisits : storedInternalVisits;
+    const externalVisits = Math.max(0, totalVisits - excludedVisits);
+    const hasExternalTraffic = externalVisits > 0;
+    const hasInternalTraffic = excludedVisits > 0 || internalAccount;
 
-    if (record.accountId) {
+    if (hasExternalTraffic) {
+      externalVisitorCount += 1;
+      externalVisitCount += externalVisits;
+      const row = sourceMap.get(source) || sourceMap.get("Other");
+      row.visitors += 1;
+      row.visits += externalVisits;
+    }
+
+    if (hasInternalTraffic) {
+      internalVisitorCount += 1;
+      internalVisitCount += excludedVisits;
+      if (record.accountId) internalAccountSet.add(String(record.accountId));
+    }
+
+    if (record.accountId && !internalAccount && hasExternalTraffic) {
       const accountId = String(record.accountId);
       const firstSeenTime = safeDate(record.firstSeenAt)?.getTime() || Number.MAX_SAFE_INTEGER;
       const lastSeenTime = safeDate(record.lastSeenAt)?.getTime() || 0;
@@ -485,6 +808,7 @@ function summarizeAttribution(records = []) {
         ? record.journey
         : [record.firstTouch, record.lastTouch].filter(Boolean);
       for (const step of journey) {
+        if (step?.internalTraffic === true) continue;
         linked.steps.push({
           source: normalizeSource(step?.source),
           sourceDetail: text(step?.sourceDetail, 120),
@@ -506,7 +830,7 @@ function summarizeAttribution(records = []) {
       }
     }
 
-    if (record.signupAttributed === true && record.accountId) {
+    if (record.signupAttributed === true && record.accountId && !internalAccount && hasExternalTraffic) {
       const accountId = String(record.accountId);
       const current = accountSources.get(accountId);
       const candidateTime = safeDate(record.linkedAt)?.getTime() || Number.MAX_SAFE_INTEGER;
@@ -614,10 +938,15 @@ function summarizeAttribution(records = []) {
     });
 
   return {
-    visitors: records.length,
-    visits: records.reduce((total, record) => total + Math.max(1, Number(record.visitCount || 1)), 0),
+    visitors: externalVisitorCount,
+    visits: externalVisitCount,
     attributedSignups: accountSources.size,
     linkedAccounts: linkedAccounts.size,
+    internalTraffic: {
+      visitors: internalVisitorCount,
+      visits: internalVisitCount,
+      linkedAccounts: internalAccountSet.size
+    },
     bySource,
     accountAttributions,
     recentSignups,
@@ -646,10 +975,15 @@ function founderPackNetworkStats(records = [], packId = "") {
 
   for (const record of Array.isArray(records) ? records : []) {
     if (String(record?.firstTouch?.packId || "") !== normalizedPackId) continue;
+    const totalVisits = Math.max(record?.firstTouch ? 1 : 0, Number(record?.visitCount || 0));
+    const internalVisits = record?.internalAccount === true
+      ? totalVisits
+      : Math.min(totalVisits, Math.max(0, Number(record?.internalVisitCount || 0)));
+    if (Math.max(0, totalVisits - internalVisits) <= 0) continue;
     arrivals += 1;
     const source = normalizeSource(record?.firstTouch?.source);
     sourceBreakdown[source] = Math.max(0, Number(sourceBreakdown[source] || 0)) + 1;
-    if (record?.signupAttributed === true && record?.accountId) signups += 1;
+    if (record?.signupAttributed === true && record?.accountId && record?.internalAccount !== true) signups += 1;
   }
 
   return {
@@ -749,7 +1083,10 @@ function buildFounderPackCatalog(req, packs = [], records = [], publicOrigin = "
 
 const SEO_FACET_MIN_PACKS = Object.freeze({
   artist: 2,
-  category: 3
+  category: 3,
+  genre: 3,
+  mood: 3,
+  usage: 3
 });
 
 function seoFacetSlug(value = "") {
@@ -763,64 +1100,87 @@ function seoFacetSlug(value = "") {
     .slice(0, 120);
 }
 
+function seoFacetPath(type, slug) {
+  const segments = {
+    artist: "artists",
+    category: "categories",
+    genre: "genres",
+    mood: "moods",
+    usage: "uses"
+  };
+  const segment = segments[type];
+  return segment && slug ? `/catalog/${segment}/${slug}` : "";
+}
+
 function buildSeoFacetReadiness(packs = []) {
   const normalizedPacks = (Array.isArray(packs) ? packs : [])
     .map((pack) => publicPack(pack))
     .filter((pack) => pack.id);
-  const artists = new Map();
-  const categories = new Map();
+  const maps = {
+    artist: new Map(),
+    category: new Map(),
+    genre: new Map(),
+    mood: new Map(),
+    usage: new Map()
+  };
 
-  for (const pack of normalizedPacks) {
-    const artist = text(pack.artist, 180);
-    if (artist) {
-      const key = artist.toLocaleLowerCase("fr");
-      const current = artists.get(key) || { label: artist, packIds: [] };
-      if (!current.packIds.includes(pack.id)) current.packIds.push(pack.id);
-      artists.set(key, current);
-    }
-
-    for (const category of Array.isArray(pack.categories) ? pack.categories : []) {
-      const label = text(category, 160);
-      if (!label) continue;
-      const key = label.toLocaleLowerCase("fr");
-      const current = categories.get(key) || { label, packIds: [] };
-      if (!current.packIds.includes(pack.id)) current.packIds.push(pack.id);
-      categories.set(key, current);
-    }
+  function append(type, value, packId, slugValue = value) {
+    const label = text(value, 160);
+    if (!label || !packId || !maps[type]) return;
+    const key = label.toLocaleLowerCase("fr");
+    const current = maps[type].get(key) || { label, slugSource: text(slugValue, 160), packIds: [] };
+    if (!current.packIds.includes(packId)) current.packIds.push(packId);
+    maps[type].set(key, current);
   }
 
-  const serialize = (map, type, minimum) => [...map.values()]
-    .map((entry) => ({
-      type,
-      label: entry.label,
-      slug: seoFacetSlug(entry.label),
-      packCount: entry.packIds.length,
-      packIds: entry.packIds,
-      eligible: entry.packIds.length >= minimum,
-      plannedPath: type === "artist"
-        ? `/catalog/artists/${seoFacetSlug(entry.label)}`
-        : `/catalog/categories/${seoFacetSlug(entry.label)}`
-    }))
+  for (const pack of normalizedPacks) {
+    append("artist", pack.artist, pack.id);
+    for (const category of pack.categories || []) append("category", categorySeoLabel(category), pack.id, category);
+    for (const genre of pack.semantic?.genres || []) append("genre", genre, pack.id);
+    for (const mood of pack.semantic?.moods || []) append("mood", mood, pack.id);
+    for (const usage of pack.semantic?.usages || []) append("usage", usage, pack.id);
+  }
+
+  const serialize = (map, type) => [...map.values()]
+    .map((entry) => {
+      const slug = seoFacetSlug(entry.slugSource || entry.label);
+      return {
+        type,
+        label: entry.label,
+        slug,
+        packCount: entry.packIds.length,
+        packIds: entry.packIds,
+        eligible: entry.packIds.length >= SEO_FACET_MIN_PACKS[type],
+        plannedPath: seoFacetPath(type, slug)
+      };
+    })
     .filter((entry) => entry.slug)
     .sort((a, b) => b.packCount - a.packCount || a.label.localeCompare(b.label));
 
-  return {
-    preparedOnly: true,
-    publicRoutesEnabled: false,
-    sitemapEnabled: false,
+  const result = {
+    preparedOnly: false,
+    publicRoutesEnabled: true,
+    sitemapEnabled: true,
     policy: {
       artistMinimumPacks: SEO_FACET_MIN_PACKS.artist,
       categoryMinimumPacks: SEO_FACET_MIN_PACKS.category,
-      rule: "Aucune page facette n'est publiée ni indexée tant que la route publique n'est pas activée et que le seuil de contenu réel n'est pas atteint."
+      genreMinimumPacks: SEO_FACET_MIN_PACKS.genre,
+      moodMinimumPacks: SEO_FACET_MIN_PACKS.mood,
+      usageMinimumPacks: SEO_FACET_MIN_PACKS.usage,
+      rule: "Une facette devient publique et indexable uniquement quand son seuil de contenus réels est atteint."
     },
-    artists: serialize(artists, "artist", SEO_FACET_MIN_PACKS.artist),
-    categories: serialize(categories, "category", SEO_FACET_MIN_PACKS.category),
-    unavailableDimensions: [
-      { type: "genre", reason: "Aucun champ genre distinct et structuré n'existe actuellement dans le catalogue." },
-      { type: "ambiance", reason: "Aucun champ ambiance distinct et structuré n'existe actuellement dans le catalogue." },
-      { type: "usage", reason: "Aucun champ d'usage public distinct n'est actuellement exposé comme dimension SEO du catalogue." }
-    ]
+    artists: serialize(maps.artist, "artist"),
+    categories: serialize(maps.category, "category"),
+    genres: serialize(maps.genre, "genre"),
+    moods: serialize(maps.mood, "mood"),
+    usages: serialize(maps.usage, "usage"),
+    unavailableDimensions: []
   };
+
+  if (!result.genres.length) result.unavailableDimensions.push({ type: "genre", reason: "Aucun genre public structuré n'existe encore dans le catalogue." });
+  if (!result.moods.length) result.unavailableDimensions.push({ type: "ambiance", reason: "Aucune ambiance publique structurée n'existe encore dans le catalogue." });
+  if (!result.usages.length) result.unavailableDimensions.push({ type: "usage", reason: "Aucun usage musical public structuré n'existe encore dans le catalogue." });
+  return result;
 }
 
 function registerOrganicVisibility({
@@ -837,27 +1197,158 @@ function registerOrganicVisibility({
   const runtimeEnvironment = normalizeEnvironment(environment);
   const store = createStore({ environment: runtimeEnvironment, db, dataDir });
   const normalizedPublicOrigin = String(publicOrigin || "").replace(/\/+$/, "");
+  const internalAccounts = internalAccountIds(runtimeEnvironment);
+  const internalMarkTokens = new Map();
+  const internalMarkTokenTtlMs = 10 * 60 * 1000;
 
   async function visiblePacks() {
     const packs = await getPublicPacks();
     return Array.isArray(packs) ? packs : [];
   }
 
+  function recordsWithKnownInternalAccounts(records = []) {
+    return (Array.isArray(records) ? records : []).map((record) => (
+      record?.accountId && internalAccounts.has(String(record.accountId))
+        ? { ...record, internalAccount: true }
+        : record
+    ));
+  }
+
+  function cleanupInternalMarkTokens() {
+    const now = Date.now();
+    for (const [token, payload] of internalMarkTokens.entries()) {
+      if (!payload || Number(payload.expiresAt || 0) <= now) internalMarkTokens.delete(token);
+    }
+  }
+
+  function facetCollections(readiness = {}) {
+    return {
+      artist: readiness.artists || [],
+      category: readiness.categories || [],
+      genre: readiness.genres || [],
+      mood: readiness.moods || [],
+      usage: readiness.usages || []
+    };
+  }
+
+  function seoLinksForPack(packId, readiness = {}) {
+    const id = String(packId || "");
+    const result = { artist: "", categories: [], genres: [], moods: [], usages: [] };
+    const collections = facetCollections(readiness);
+    for (const [type, entries] of Object.entries(collections)) {
+      const links = entries
+        .filter((entry) => entry?.eligible === true && Array.isArray(entry.packIds) && entry.packIds.includes(id))
+        .map((entry) => ({
+          label: entry.label,
+          url: `${normalizedPublicOrigin}${entry.plannedPath}`,
+          packCount: entry.packCount
+        }));
+      if (type === "artist") result.artist = links[0] || "";
+      else if (type === "category") result.categories = links;
+      else if (type === "genre") result.genres = links;
+      else if (type === "mood") result.moods = links;
+      else if (type === "usage") result.usages = links;
+    }
+    return result;
+  }
+
+  function publicPackForRequest(req, pack, readiness) {
+    const normalized = publicPack(pack);
+    return {
+      ...normalized,
+      coverUrl: mediaUrl(req, normalized.coverPack),
+      promoImageUrl: mediaUrl(req, normalized.promoImage),
+      tracks: normalized.tracks.map((track, index) => {
+        const sourceTrack = Array.isArray(pack?.tracks) ? pack.tracks[index] || {} : {};
+        const eligible = trackSeoEligible(pack, sourceTrack);
+        return {
+          ...track,
+          coverUrl: mediaUrl(req, track.coverPack),
+          promoImageUrl: mediaUrl(req, track.promoImage),
+          previewAudioUrl: mediaUrl(req, track.audioName),
+          publicUrl: eligible ? publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id, track.id) : "",
+          canonicalUrl: eligible ? publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id) : ""
+        };
+      }),
+      publicUrl: publicPackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id),
+      canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalized.id),
+      seoLinks: seoLinksForPack(normalized.id, readiness)
+    };
+  }
+
+  function facetDescription(type, label, count) {
+    const noun = type === "artist" ? "releases" : "music releases";
+    const relation = type === "artist" ? `by ${label}` : `related to ${label}`;
+    return `Explore ${count} Sonara Pack ${noun} ${relation}, with licensed music for creative projects.`;
+  }
+
   app.post("/api/growth/organic/visit", async (req, res) => {
     try {
+      if (excludedUserAgent(req.headers?.["user-agent"])) {
+        return res.json({
+          success: true,
+          environment: runtimeEnvironment,
+          excluded: true,
+          exclusionReason: "crawler_or_technical"
+        });
+      }
+
       const visitorId = text(req.body?.visitorId, 180);
       if (!/^[a-zA-Z0-9:_-]{12,180}$/.test(visitorId)) {
         return res.status(400).json({ success: false, message: "Identifiant visiteur invalide." });
       }
-      const record = await store.upsertVisit(visitorId, normalizeTouch(req.body));
+
+      const requestedInternalDeviceId = text(req.body?.internalDeviceId, 220);
+      const validInternalDevice = /^internal-[a-zA-Z0-9_-]{20,200}$/.test(requestedInternalDeviceId)
+        ? await store.isInternalDevice(requestedInternalDeviceId)
+        : false;
+      const record = await store.upsertVisit(visitorId, normalizeTouch({
+        ...req.body,
+        internalTraffic: validInternalDevice,
+        trackingVersion: 2
+      }));
       return res.json({
         success: true,
         environment: runtimeEnvironment,
-        visitorId: record?.visitorId || visitorId
+        visitorId: record?.visitorId || visitorId,
+        internalTraffic: validInternalDevice
       });
     } catch (error) {
       console.error("Organic visit impossible :", error);
       return res.status(500).json({ success: false, message: "Tracking organique indisponible." });
+    }
+  });
+
+  app.post("/api/growth/organic/internal-device/consume", async (req, res) => {
+    try {
+      cleanupInternalMarkTokens();
+      const token = text(req.body?.token, 220);
+      const payload = internalMarkTokens.get(token);
+      if (!token || !payload || Number(payload.expiresAt || 0) <= Date.now()) {
+        if (token) internalMarkTokens.delete(token);
+        return res.status(400).json({ success: false, message: "Lien de marquage interne invalide ou expiré." });
+      }
+      internalMarkTokens.delete(token);
+      const deviceId = `internal-${crypto.randomBytes(24).toString("base64url")}`;
+      await store.registerInternalDevice(deviceId, { label: "Founder device" });
+      return res.json({ success: true, environment: runtimeEnvironment, deviceId });
+    } catch (error) {
+      console.error("Internal device consume impossible :", error);
+      return res.status(500).json({ success: false, message: "Marquage interne indisponible." });
+    }
+  });
+
+  app.post("/api/growth/organic/internal-device/revoke", async (req, res) => {
+    try {
+      const deviceId = text(req.body?.deviceId, 220);
+      if (!/^internal-[a-zA-Z0-9_-]{20,200}$/.test(deviceId)) {
+        return res.json({ success: true, environment: runtimeEnvironment, revoked: false });
+      }
+      const revoked = await store.revokeInternalDevice(deviceId);
+      return res.json({ success: true, environment: runtimeEnvironment, revoked });
+    } catch (error) {
+      console.error("Internal device revoke impossible :", error);
+      return res.status(500).json({ success: false, message: "Révocation du marquage interne indisponible." });
     }
   });
 
@@ -875,18 +1366,21 @@ function registerOrganicVisibility({
         return res.status(404).json({ success: false, message: "Compte introuvable." });
       }
 
+      const requestedInternalDeviceId = text(req.body?.internalDeviceId, 220);
+      const internalDevice = /^internal-[a-zA-Z0-9_-]{20,200}$/.test(requestedInternalDeviceId)
+        ? await store.isInternalDevice(requestedInternalDeviceId)
+        : false;
+
       let records = await store.list();
       let existing = records.find((record) => String(record.visitorId) === visitorId);
 
-      // Correction chirurgicale : la source initiale est déjà figée côté navigateur.
-      // Si la toute première requête /visit a été perdue (navigation très rapide,
-      // cold start, réseau mobile), on recrée ici UNIQUEMENT ce firstTouch avant
-      // de relier le compte. Aucune source n'est inventée côté serveur.
       if (!existing && req.body?.firstTouch && typeof req.body.firstTouch === "object") {
         existing = await store.upsertVisit(
           visitorId,
           normalizeTouch({
             ...req.body.firstTouch,
+            internalTraffic: internalDevice,
+            trackingVersion: 2,
             journeyKind: "event",
             journeyStep: "registration_attribution_recovered"
           })
@@ -897,6 +1391,7 @@ function registerOrganicVisibility({
         return res.status(404).json({ success: false, message: "Visite organique introuvable." });
       }
 
+      const internalAccount = internalAccounts.has(account.accountId) || internalDevice || existing.internalAccount === true;
       const linkedAt = new Date().toISOString();
       const record = await store.linkAccount(visitorId, {
         accountId: account.accountId,
@@ -904,14 +1399,16 @@ function registerOrganicVisibility({
         accountRole: account.role,
         accountCreatedAt: account.createdAt,
         linkedAt,
-        signupAttributed: signupAttribution(existing.firstSeenAt, account.createdAt, linkedAt)
+        internalAccount,
+        signupAttributed: internalAccount ? false : signupAttribution(existing.firstSeenAt, account.createdAt, linkedAt)
       });
 
       return res.json({
         success: true,
         environment: runtimeEnvironment,
         accountId: account.accountId,
-        signupAttributed: record?.signupAttributed === true
+        signupAttributed: record?.signupAttributed === true,
+        internalTraffic: internalAccount
       });
     } catch (error) {
       console.error("Organic account link impossible :", error);
@@ -919,9 +1416,10 @@ function registerOrganicVisibility({
     }
   });
 
-  app.get("/api/seo/catalog", requireFounderKey, async (_req, res) => {
+  app.get("/api/seo/catalog", requireFounderKey, async (req, res) => {
     try {
       const packs = await visiblePacks();
+      const readiness = buildSeoFacetReadiness(packs);
       const packEntries = [];
       const trackEntries = [];
 
@@ -932,17 +1430,22 @@ function registerOrganicVisibility({
           id: normalized.id,
           url: publicPackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id),
           canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalized.id),
-          updatedAt: normalized.publishedAt
+          updatedAt: normalized.publishedAt,
+          imageUrl: mediaUrl(req, normalized.coverPack),
+          imageTitle: normalized.seo?.imageAlt || normalized.title
         });
 
-        for (const track of Array.isArray(pack.tracks) ? pack.tracks : []) {
-          if (!trackSeoEligible(pack, track) || !track?.id) continue;
+        for (const sourceTrack of Array.isArray(pack.tracks) ? pack.tracks : []) {
+          if (!trackSeoEligible(pack, sourceTrack) || !sourceTrack?.id) continue;
+          const track = publicTrack(sourceTrack, pack);
           trackEntries.push({
             packId: normalized.id,
-            trackId: text(track.id, 180),
+            trackId: track.id,
             url: publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id, track.id),
             canonicalUrl: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
-            updatedAt: normalized.publishedAt
+            updatedAt: normalized.publishedAt,
+            imageUrl: mediaUrl(req, track.coverPack),
+            imageTitle: track.seo?.imageAlt || track.title
           });
         }
       }
@@ -952,7 +1455,7 @@ function registerOrganicVisibility({
         environment: runtimeEnvironment,
         packs: packEntries,
         tracks: trackEntries,
-        futureFacets: buildSeoFacetReadiness(packs),
+        facets: readiness,
         generatedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -961,28 +1464,52 @@ function registerOrganicVisibility({
     }
   });
 
-  app.get("/api/public/catalog/sitemap", async (_req, res) => {
+  app.get("/api/public/catalog/sitemap", async (req, res) => {
     try {
       const packs = await visiblePacks();
+      const readiness = buildSeoFacetReadiness(packs);
+      const normalizedById = new Map();
       const packEntries = [];
       const trackEntries = [];
 
       for (const pack of packs) {
         const normalized = publicPack(pack);
         if (!normalized.id) continue;
-
+        normalizedById.set(normalized.id, normalized);
         packEntries.push({
           url: publicPackUrl(normalizedPublicOrigin, normalized.id),
-          updatedAt: normalized.publishedAt
+          updatedAt: normalized.publishedAt,
+          imageUrl: mediaUrl(req, normalized.coverPack),
+          imageTitle: normalized.seo?.imageAlt || normalized.title,
+          imageCaption: normalized.seo?.description || ""
         });
 
-        for (const track of Array.isArray(pack.tracks) ? pack.tracks : []) {
-          if (!trackSeoEligible(pack, track) || !track?.id) continue;
+        for (const sourceTrack of Array.isArray(pack.tracks) ? pack.tracks : []) {
+          if (!trackSeoEligible(pack, sourceTrack) || !sourceTrack?.id) continue;
+          const track = publicTrack(sourceTrack, pack);
           trackEntries.push({
             url: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
-            updatedAt: normalized.publishedAt
+            updatedAt: normalized.publishedAt,
+            imageUrl: mediaUrl(req, track.coverPack),
+            imageTitle: track.seo?.imageAlt || track.title,
+            imageCaption: track.seo?.description || ""
           });
         }
+      }
+
+      function sitemapFacetEntries(entries = []) {
+        return entries.filter((entry) => entry.eligible === true).map((entry) => {
+          const firstPack = normalizedById.get(entry.packIds?.[0]);
+          return {
+            type: entry.type,
+            label: entry.label,
+            url: `${normalizedPublicOrigin}${entry.plannedPath}`,
+            updatedAt: firstPack?.publishedAt || "",
+            imageUrl: firstPack ? mediaUrl(req, firstPack.coverPack) : "",
+            imageTitle: firstPack?.seo?.imageAlt || entry.label,
+            imageCaption: facetDescription(entry.type, entry.label, entry.packCount)
+          };
+        });
       }
 
       return res.json({
@@ -990,6 +1517,13 @@ function registerOrganicVisibility({
         environment: runtimeEnvironment,
         packs: packEntries,
         tracks: trackEntries,
+        facets: [
+          ...sitemapFacetEntries(readiness.categories),
+          ...sitemapFacetEntries(readiness.genres),
+          ...sitemapFacetEntries(readiness.moods),
+          ...sitemapFacetEntries(readiness.usages)
+        ],
+        artists: sitemapFacetEntries(readiness.artists),
         generatedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -1003,21 +1537,11 @@ function registerOrganicVisibility({
       const packs = await visiblePacks();
       const pack = packs.find((item) => String(item?.id || "") === String(req.params.id || ""));
       if (!pack) return res.status(404).json({ success: false, message: "Pack introuvable." });
-      const normalized = publicPack(pack);
+      const readiness = buildSeoFacetReadiness(packs);
       return res.json({
         success: true,
         environment: runtimeEnvironment,
-        pack: {
-          ...normalized,
-          coverUrl: mediaUrl(req, normalized.coverPack),
-          tracks: normalized.tracks.map((track) => ({
-            ...track,
-            coverUrl: mediaUrl(req, track.coverPack),
-            previewAudioUrl: mediaUrl(req, track.audioName)
-          })),
-          publicUrl: publicPackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id),
-          canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalized.id)
-        }
+        pack: publicPackForRequest(req, pack, readiness)
       });
     } catch (error) {
       console.error("Public pack impossible :", error);
@@ -1037,6 +1561,7 @@ function registerOrganicVisibility({
         return res.status(404).json({ success: false, message: "Track publique introuvable." });
       }
 
+      const readiness = buildSeoFacetReadiness(packs);
       const normalizedPack = publicPack(pack);
       const normalizedTrack = publicTrack(track, pack);
       return res.json({
@@ -1048,12 +1573,16 @@ function registerOrganicVisibility({
           artist: normalizedPack.artist,
           category: normalizedPack.category,
           categories: normalizedPack.categories,
+          semantic: normalizedPack.semantic,
+          seo: normalizedPack.seo,
           publicUrl: publicPackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalizedPack.id),
-          canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalizedPack.id)
+          canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalizedPack.id),
+          seoLinks: seoLinksForPack(normalizedPack.id, readiness)
         },
         track: {
           ...normalizedTrack,
           coverUrl: mediaUrl(req, normalizedTrack.coverPack),
+          promoImageUrl: mediaUrl(req, normalizedTrack.promoImage),
           previewAudioUrl: mediaUrl(req, normalizedTrack.audioName),
           publicUrl: publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalizedPack.id, normalizedTrack.id),
           canonicalUrl: publicTrackUrl(normalizedPublicOrigin, normalizedPack.id, normalizedTrack.id)
@@ -1065,9 +1594,70 @@ function registerOrganicVisibility({
     }
   });
 
+  app.get("/api/public/catalog/facet/:type/:slug", async (req, res) => {
+    try {
+      const type = text(req.params.type, 30).toLowerCase();
+      if (!["category", "genre", "mood", "usage"].includes(type)) {
+        return res.status(404).json({ success: false, message: "Page catalogue introuvable." });
+      }
+      const packs = await visiblePacks();
+      const readiness = buildSeoFacetReadiness(packs);
+      const collection = facetCollections(readiness)[type] || [];
+      const facet = collection.find((entry) => entry.eligible === true && entry.slug === text(req.params.slug, 120));
+      if (!facet) return res.status(404).json({ success: false, message: "Page catalogue introuvable." });
+      const matching = packs.filter((pack) => facet.packIds.includes(String(pack?.id || "")));
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        facet: {
+          type,
+          label: facet.label,
+          slug: facet.slug,
+          packCount: facet.packCount,
+          description: facetDescription(type, facet.label, facet.packCount),
+          canonicalUrl: `${normalizedPublicOrigin}${facet.plannedPath}`
+        },
+        packs: matching.map((pack) => publicPackForRequest(req, pack, readiness))
+      });
+    } catch (error) {
+      console.error("Public facet impossible :", error);
+      return res.status(500).json({ success: false, message: "Page catalogue indisponible." });
+    }
+  });
+
+  app.get("/api/public/catalog/artist/:slug", async (req, res) => {
+    try {
+      const packs = await visiblePacks();
+      const readiness = buildSeoFacetReadiness(packs);
+      const artist = (readiness.artists || []).find(
+        (entry) => entry.eligible === true && entry.slug === text(req.params.slug, 120)
+      );
+      if (!artist) return res.status(404).json({ success: false, message: "Artiste public introuvable." });
+      const matching = packs.filter((pack) => artist.packIds.includes(String(pack?.id || "")));
+      const first = publicPack(matching[0] || {});
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        artist: {
+          label: artist.label,
+          slug: artist.slug,
+          packCount: artist.packCount,
+          description: first.artistBiography || facetDescription("artist", artist.label, artist.packCount),
+          avatarUrl: mediaUrl(req, first.artistAvatar),
+          canonicalUrl: `${normalizedPublicOrigin}${artist.plannedPath}`
+        },
+        packs: matching.map((pack) => publicPackForRequest(req, pack, readiness))
+      });
+    } catch (error) {
+      console.error("Public artist impossible :", error);
+      return res.status(500).json({ success: false, message: "Page artiste indisponible." });
+    }
+  });
+
   app.get("/api/founder/catalog-packs", requireFounderKey, async (req, res) => {
     try {
-      const [records, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const [rawRecords, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const records = recordsWithKnownInternalAccounts(rawRecords);
       const items = buildFounderPackCatalog(
         req,
         packs,
@@ -1090,9 +1680,39 @@ function registerOrganicVisibility({
     }
   });
 
+  app.post("/api/founder/organic-visibility/internal-device-link", requireFounderKey, async (req, res) => {
+    try {
+      cleanupInternalMarkTokens();
+      const action = text(req.body?.action || "mark", 20).toLowerCase();
+      const origin = normalizedPublicOrigin || requestOrigin(req);
+      if (!origin) return res.status(500).json({ success: false, message: "Origine publique Sonara indisponible." });
+      if (action === "clear") {
+        const clear = new URL(origin);
+        clear.searchParams.set("sonara_internal_traffic", "clear");
+        return res.json({ success: true, environment: runtimeEnvironment, action: "clear", url: clear.toString() });
+      }
+      const token = crypto.randomBytes(32).toString("base64url");
+      const expiresAt = Date.now() + internalMarkTokenTtlMs;
+      internalMarkTokens.set(token, { expiresAt });
+      const mark = new URL(origin);
+      mark.searchParams.set("sonara_internal_token", token);
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        action: "mark",
+        url: mark.toString(),
+        expiresAt: new Date(expiresAt).toISOString()
+      });
+    } catch (error) {
+      console.error("Founder internal device link impossible :", error);
+      return res.status(500).json({ success: false, message: "Lien appareil Founder indisponible." });
+    }
+  });
+
   app.get("/api/founder/organic-visibility", requireFounderKey, async (req, res) => {
     try {
-      const [records, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const [rawRecords, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const records = recordsWithKnownInternalAccounts(rawRecords);
       const attribution = summarizeAttribution(records);
       const communication = packs
         .slice()
@@ -1126,5 +1746,9 @@ module.exports = {
   normalizeSource,
   trackSeoEligible,
   buildSeoFacetReadiness,
-  registerOrganicVisibility
+  registerOrganicVisibility,
+  semanticData,
+  seoMetadata,
+  summarizeAttribution,
+  excludedUserAgent
 };

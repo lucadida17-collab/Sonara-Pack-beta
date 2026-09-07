@@ -7,6 +7,9 @@
   const STORAGE_KEY = "sonaraOrganicAttributionV1";
   const LINKED_KEY = "sonaraOrganicAttributionLinkedV1";
   const STEP_ONCE_PREFIX = "sonaraOrganicJourneyStepV1:";
+  const INTERNAL_DEVICE_PREFIX = "sonaraInternalTrafficDeviceV1:";
+  const INTERNAL_TOKEN_PARAM = "sonara_internal_token";
+  const INTERNAL_ACTION_PARAM = "sonara_internal_traffic";
   const MAX_LINK_WATCH_MS = 10 * 60 * 1000;
   const LINK_WATCH_INTERVAL_MS = 2000;
 
@@ -33,6 +36,58 @@
     } catch {
       // Le tracking reste non bloquant si le stockage navigateur est indisponible.
     }
+  }
+
+  function safeStorageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Aucun privilège ne dépend de ce marqueur analytics.
+    }
+  }
+
+  function internalDeviceStorageKey() {
+    return `${INTERNAL_DEVICE_PREFIX}${apiBase() || window.location.origin}`;
+  }
+
+  function internalDeviceId() {
+    const value = String(safeStorageGet(internalDeviceStorageKey()) || "").trim();
+    return /^internal-[a-zA-Z0-9_-]{20,200}$/.test(value) ? value : "";
+  }
+
+  function cleanInternalActionParams() {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(INTERNAL_TOKEN_PARAM);
+      url.searchParams.delete(INTERNAL_ACTION_PARAM);
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    } catch {
+      // Le nettoyage d'URL ne doit jamais bloquer la page.
+    }
+  }
+
+  async function applyInternalDeviceAction() {
+    const params = new URLSearchParams(window.location.search);
+    const token = String(params.get(INTERNAL_TOKEN_PARAM) || "").trim();
+    const action = String(params.get(INTERNAL_ACTION_PARAM) || "").trim().toLowerCase();
+    if (!token && action !== "clear") return false;
+
+    if (action === "clear") {
+      const existing = internalDeviceId();
+      if (existing) {
+        await postJson("/api/growth/organic/internal-device/revoke", { deviceId: existing });
+      }
+      safeStorageRemove(internalDeviceStorageKey());
+      cleanInternalActionParams();
+      return true;
+    }
+
+    const result = await postJson("/api/growth/organic/internal-device/consume", { token });
+    if (result?.success === true && /^internal-[a-zA-Z0-9_-]{20,200}$/.test(String(result.deviceId || ""))) {
+      safeStorageSet(internalDeviceStorageKey(), String(result.deviceId));
+    }
+    cleanInternalActionParams();
+    return true;
   }
 
   function parseStoredAttribution() {
@@ -168,7 +223,9 @@
       ...currentTouch(),
       journeyKind: "event",
       journeyStep,
-      journeyDetail: journeyDetailText(detail)
+      journeyDetail: journeyDetailText(detail),
+      internalDeviceId: internalDeviceId(),
+      trackingVersion: 2
     });
 
     if (result?.success === true && onceKey) safeStorageSet(onceKey, "true");
@@ -262,7 +319,7 @@
   async function linkAccountIfAvailable(attribution) {
     const accountId = currentAccountId();
     if (!accountId) return false;
-    if (alreadyLinked(accountId)) {
+    if (alreadyLinked(accountId) && !internalDeviceId()) {
       trackStepOnce("access_granted", { accountId }, `access_granted:${accountId}`);
       return true;
     }
@@ -273,7 +330,9 @@
       // Le backend peut reconstruire la visite d'origine si la première requête
       // de tracking a été interrompue avant l'inscription (navigation/cold start).
       // firstTouch reste la toute première source conservée dans le navigateur.
-      firstTouch: attribution.firstTouch || null
+      firstTouch: attribution.firstTouch || null,
+      internalDeviceId: internalDeviceId(),
+      trackingVersion: 2
     });
 
     if (result?.success === true) {
@@ -336,13 +395,17 @@
   }
 
   async function start() {
+    if (await applyInternalDeviceAction()) return;
+
     const attribution = ensureAttribution();
     const touch = currentTouch();
 
     await postJson("/api/growth/organic/visit", {
       visitorId: attribution.visitorId,
       ...touch,
-      journeyKind: "page"
+      journeyKind: "page",
+      internalDeviceId: internalDeviceId(),
+      trackingVersion: 2
     });
 
     bindOnboardingJourney();
@@ -369,7 +432,8 @@
   window.SonaraOrganicAttribution = Object.freeze({
     trackStep,
     trackStepOnce,
-    linkCurrentAccount
+    linkCurrentAccount,
+    isInternalTraffic: () => Boolean(internalDeviceId())
   });
 
   if (document.readyState === "loading") {

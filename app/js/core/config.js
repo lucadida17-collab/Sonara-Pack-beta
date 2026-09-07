@@ -668,7 +668,7 @@ window.SonaraSession = SonaraSession;
   if (document.querySelector('script[data-sonara-organic-attribution="true"]')) return;
 
   const script = document.createElement("script");
-  script.src = "/app/js/growth/organic-attribution.js?v=organic-acquisition-signup-fix-v1";
+  script.src = "/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2";
   script.async = true;
   script.dataset.sonaraOrganicAttribution = "true";
   (document.head || document.documentElement).appendChild(script);

@@ -64,48 +64,76 @@
     script.textContent = JSON.stringify(value);
   }
 
+  function previewAudioObject(track = {}) {
+    if (!track.previewAudioUrl) return undefined;
+    const duration = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
+    return {
+      "@type": "AudioObject",
+      contentUrl: track.previewAudioUrl,
+      encodingFormat: "audio/mpeg",
+      duration: `PT${Math.round(duration)}S`
+    };
+  }
+
   function updatePackSeo(pack) {
     const url = pack.canonicalUrl || pack.publicUrl || window.location.href;
-    const description = `Découvrez ${pack.title} par ${pack.artist} sur Sonara Pack.`.slice(0, 160);
-    document.title = `${pack.title} - ${pack.artist} | Sonara Pack`;
+    const description = pack.seo?.description || `Découvrez ${pack.title} par ${pack.artist} sur Sonara Pack.`.slice(0, 160);
+    document.title = pack.seo?.title || `${pack.title} - ${pack.artist} | Sonara Pack`;
     setMeta("description", description);
     setMeta("og:title", document.title, "property");
     setMeta("og:description", description, "property");
     setMeta("og:type", "music.album", "property");
     setMeta("og:url", url, "property");
-    if (pack.coverUrl) setMeta("og:image", pack.coverUrl, "property");
+    if (pack.coverUrl) {
+      setMeta("og:image", pack.coverUrl, "property");
+      setMeta("og:image:alt", pack.seo?.imageAlt || pack.title, "property");
+    }
     setCanonical(url);
     setStructuredData({
       "@context": "https://schema.org",
       "@type": "MusicAlbum",
       name: pack.title,
+      description,
       byArtist: { "@type": "MusicGroup", name: pack.artist },
-      genre: pack.categories || [],
+      genre: (pack.semantic?.genres?.length ? pack.semantic.genres : pack.categories) || [],
       numTracks: Number(pack.trackCount || 0),
       image: pack.coverUrl || undefined,
-      url
+      url,
+      track: (Array.isArray(pack.tracks) ? pack.tracks : []).slice(0, 25).map((track) => ({
+        "@type": "MusicRecording",
+        name: track.title,
+        byArtist: { "@type": "MusicGroup", name: track.artist || pack.artist },
+        url: track.canonicalUrl || undefined,
+        audio: previewAudioObject(track)
+      }))
     });
   }
 
   function updateTrackSeo(pack, track) {
     const url = track.canonicalUrl || track.publicUrl || window.location.href;
-    const description = `Écoutez un aperçu de ${track.title} par ${track.artist} sur Sonara Pack.`.slice(0, 160);
-    document.title = `${track.title} - ${track.artist} | Sonara Pack`;
+    const description = track.seo?.description || `Écoutez un aperçu de ${track.title} par ${track.artist} sur Sonara Pack.`.slice(0, 160);
+    document.title = track.seo?.title || `${track.title} - ${track.artist} | Sonara Pack`;
     setMeta("description", description);
     setMeta("og:title", document.title, "property");
     setMeta("og:description", description, "property");
     setMeta("og:type", "music.song", "property");
     setMeta("og:url", url, "property");
-    if (track.coverUrl) setMeta("og:image", track.coverUrl, "property");
+    if (track.coverUrl) {
+      setMeta("og:image", track.coverUrl, "property");
+      setMeta("og:image:alt", track.seo?.imageAlt || track.title, "property");
+    }
     setCanonical(url);
     setStructuredData({
       "@context": "https://schema.org",
       "@type": "MusicRecording",
       name: track.title,
+      description,
       byArtist: { "@type": "MusicGroup", name: track.artist },
-      inAlbum: pack?.title ? { "@type": "MusicAlbum", name: pack.title } : undefined,
+      inAlbum: pack?.title ? { "@type": "MusicAlbum", name: pack.title, url: pack.canonicalUrl || undefined } : undefined,
+      genre: (track.semantic?.genres?.length ? track.semantic.genres : pack?.categories) || [],
       image: track.coverUrl || undefined,
-      url
+      url,
+      audio: previewAudioObject(track)
     });
   }
 
@@ -139,7 +167,7 @@
     return `
       <article class="public-catalog-card">
         <div>
-          <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.title)}" data-user-content>
+          <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="1000" height="1000" data-user-content>
         </div>
         <div>
           <p class="public-catalog-eyebrow">Catalogue public Sonara</p>
@@ -172,7 +200,7 @@
     return `
       <article class="public-catalog-card">
         <div>
-          <img class="public-catalog-cover" src="${escapeHTML(track.coverUrl || "")}" alt="${escapeHTML(track.title)}" data-user-content>
+          <img class="public-catalog-cover" src="${escapeHTML(track.coverUrl || "")}" alt="${escapeHTML(track.seo?.imageAlt || track.title)}" width="1000" height="1000" data-user-content>
         </div>
         <div>
           <p class="public-catalog-eyebrow">Publié sur Sonara Pack</p>

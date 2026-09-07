@@ -14,12 +14,17 @@ function validLastmod(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function imageXml(item = {}) {
+  if (!item.imageUrl) return "";
+  return `\n    <image:image>\n      <image:loc>${xml(item.imageUrl)}</image:loc>${item.imageTitle ? `\n      <image:title>${xml(item.imageTitle)}</image:title>` : ""}${item.imageCaption ? `\n      <image:caption>${xml(item.imageCaption)}</image:caption>` : ""}\n    </image:image>`;
+}
+
 exports.handler = async (event) => {
   if (environmentFromEvent(event) !== "main") {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
-      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>'
     };
   }
 
@@ -27,14 +32,17 @@ exports.handler = async (event) => {
     const { data } = await fetchJson(event, "/api/public/catalog/sitemap");
     const entries = [
       ...(Array.isArray(data?.packs) ? data.packs : []),
-      ...(Array.isArray(data?.tracks) ? data.tracks : [])
+      ...(Array.isArray(data?.tracks) ? data.tracks : []),
+      ...(Array.isArray(data?.facets) ? data.facets : []),
+      ...(Array.isArray(data?.artists) ? data.artists : [])
     ];
 
+    const seen = new Set();
     const urls = entries
-      .filter((item) => item?.url)
+      .filter((item) => item?.url && !seen.has(item.url) && seen.add(item.url))
       .map((item) => {
         const lastmod = validLastmod(item.updatedAt);
-        return `  <url>\n    <loc>${xml(item.url)}</loc>${lastmod ? `\n    <lastmod>${xml(lastmod)}</lastmod>` : ""}\n  </url>`;
+        return `  <url>\n    <loc>${xml(item.url)}</loc>${lastmod ? `\n    <lastmod>${xml(lastmod)}</lastmod>` : ""}${imageXml(item)}\n  </url>`;
       })
       .join("\n");
 
@@ -44,13 +52,13 @@ exports.handler = async (event) => {
         "Content-Type": "application/xml; charset=utf-8",
         "Cache-Control": "public, max-age=300, s-maxage=900"
       },
-      body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`
+      body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>`
     };
   } catch (error) {
     return {
       statusCode: 503,
       headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
-      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>'
     };
   }
 };

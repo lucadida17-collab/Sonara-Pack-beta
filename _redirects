@@ -1,4 +1,9 @@
 # SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
+/catalog/categories/*               /.netlify/functions/catalog-facet?path=categories/:splat  200
+/catalog/genres/*                   /.netlify/functions/catalog-facet?path=genres/:splat      200
+/catalog/moods/*                    /.netlify/functions/catalog-facet?path=moods/:splat       200
+/catalog/uses/*                     /.netlify/functions/catalog-facet?path=uses/:splat         200
+/catalog/artists/*                  /.netlify/functions/catalog-artist?path=:splat             200
 /catalog/packs/*                    /.netlify/functions/catalog-pack?path=:splat   200
 /catalog/tracks/*                   /.netlify/functions/catalog-track?path=:splat  200
 /robots.txt             /.netlify/functions/seo-robots   200

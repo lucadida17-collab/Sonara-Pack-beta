@@ -1396,6 +1396,17 @@ function createDistributionSectionMarkup(
   const isArtistSection =
     kind === "artists";
 
+  const publicCategoryHref = (() => {
+    if (kind !== "category" || !Array.isArray(section?.items) || section.items.length < 3) return "";
+    const rawKey = String(section?.signature?.[0]?.key || "").trim().toLowerCase();
+    const slug = rawKey
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return slug ? `/catalog/categories/${slug}` : "";
+  })();
+
   const rowClass =
     isArtistSection
       ? "pack-row home-artist-spotlight-row"
@@ -1419,6 +1430,16 @@ function createDistributionSectionMarkup(
             </div>
           </div>
 
+          ${publicCategoryHref ? `
+          <a
+            class="category-view-all"
+            href="${escapeHomeHtml(publicCategoryHref)}"
+            aria-label="Tout voir dans ${escapeHomeHtml(title)}"
+            title="Tout voir"
+          >
+            <span class="category-view-all-label">Tout voir</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"></path></svg>
+          </a>` : `
           <button
             class="category-view-all"
             type="button"
@@ -1427,14 +1448,8 @@ function createDistributionSectionMarkup(
             title="Tout voir"
           >
             <span class="category-view-all-label">Tout voir</span>
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="m9 18 6-6-6-6"></path>
-            </svg>
-          </button>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"></path></svg>
+          </button>`}
         </div>
 
         <div
