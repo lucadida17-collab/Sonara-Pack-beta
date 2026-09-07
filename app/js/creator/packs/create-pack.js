@@ -18,7 +18,9 @@ const DRAFT_DATABASE = "sonara-create-pack";
 const DRAFT_STORE = "drafts";
 const MAX_TRACKS = 20;
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
-const MAX_AUDIO_SIZE = 250 * 1024 * 1024;
+const AUDIO_UPLOAD_POLICY = window.SonaraAudioUploadPolicy;
+const MAX_AUDIO_SIZE = Number(AUDIO_UPLOAD_POLICY?.MAX_MP3_FILE_SIZE_BYTES || 0);
+const MAX_AUDIO_SIZE_MB = Number(AUDIO_UPLOAD_POLICY?.MAX_MP3_FILE_SIZE_MB || 0);
 const MAX_RESOURCE_SIZE = 250 * 1024 * 1024;
 const MAX_RESOURCES = 20;
 const TRACK_MIN_PRICE = 1;
@@ -38,15 +40,6 @@ const DAW_OPTIONS = [
   ["pro-tools", "Pro Tools"],
   ["studio-one", "Studio One"],
   ["other", "Autre"]
-];
-
-const ALLOWED_AUDIO_TYPES = [
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/flac",
-  "audio/x-flac"
 ];
 
 const distributionCategories = [
@@ -1153,7 +1146,7 @@ function renderTracks() {
               class="import-tracks-input"
               type="file"
               multiple
-              accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/flac,audio/x-flac"
+              accept=".mp3,audio/mpeg,audio/mp3,audio/x-mp3,audio/mpeg3,audio/x-mpeg-3"
               ${packData.tracks.length >= MAX_TRACKS && !packData.tracks.some(isBlankTrack) ? "disabled" : ""}
             >
             <span>+</span>
@@ -1443,7 +1436,7 @@ function renderAudioDropzone(inputId, file, duration, coverFile, trackTitle) {
       <input
         id="${inputId}"
         type="file"
-        accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/flac,audio/x-flac"
+        accept=".mp3,audio/mpeg,audio/mp3,audio/x-mp3,audio/mpeg3,audio/x-mpeg-3"
       >
 
       ${file ? `
@@ -1481,7 +1474,7 @@ function renderAudioDropzone(inputId, file, duration, coverFile, trackTitle) {
           <span class="audio-picker-icon">${audioIcon()}</span>
           <span>
             <strong>Choisir le fichier audio</strong>
-            <small>MP3, WAV ou FLAC · 250 Mo max</small>
+            <small>${createPackTranslate(`MP3 uniquement · ${MAX_AUDIO_SIZE_MB} Mo max`)}</small>
           </span>
         </label>
       `}
@@ -2599,6 +2592,12 @@ function validateTrack(index, focus = false) {
   if (!track.audioFile) {
     showTrackError(card, "audio", "Ajoute le fichier audio de cette track.");
     valid = false;
+  } else {
+    const audioError = validateAudioFile(track.audioFile);
+    if (audioError) {
+      showTrackError(card, "audio", audioError);
+      valid = false;
+    }
   }
 
   if (!valid && focus) {
@@ -2780,15 +2779,16 @@ function readImageDimensions(file) {
 }
 
 function validateAudioFile(file) {
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  const allowedExtension = ["mp3", "wav", "flac"].includes(extension);
+  if (!AUDIO_UPLOAD_POLICY || !MAX_AUDIO_SIZE) {
+    return createPackTranslate("Configuration d’upload audio indisponible.");
+  }
 
-  if (!ALLOWED_AUDIO_TYPES.includes(file.type) && !allowedExtension) {
-    return "Format refusé. Utilise MP3, WAV ou FLAC.";
+  if (!AUDIO_UPLOAD_POLICY.isAllowedMp3Metadata(file)) {
+    return createPackTranslate("Sonara Pack accepte actuellement uniquement les fichiers MP3.");
   }
 
   if (file.size > MAX_AUDIO_SIZE) {
-    return "Ce fichier audio dépasse 250 Mo.";
+    return createPackTranslate(`Ce fichier MP3 dépasse ${MAX_AUDIO_SIZE_MB} Mo.`);
   }
 
   return "";

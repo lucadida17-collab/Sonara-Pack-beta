@@ -2,6 +2,9 @@ const myPackPage = document.querySelector(".create-pack");
 const MY_PACK_MIN_LOADING_TIME = 6000;
 const MY_PACK_SERVER_LOADING_TIMEOUT = 60000;
 const MY_PACK_IMAGE_LOADING_TIMEOUT = 12000;
+const MY_PACK_AUDIO_UPLOAD_POLICY = window.SonaraAudioUploadPolicy;
+const MY_PACK_MAX_AUDIO_SIZE = Number(MY_PACK_AUDIO_UPLOAD_POLICY?.MAX_MP3_FILE_SIZE_BYTES || 0);
+const MY_PACK_MAX_AUDIO_SIZE_MB = Number(MY_PACK_AUDIO_UPLOAD_POLICY?.MAX_MP3_FILE_SIZE_MB || 0);
 
 function ensureMyPackLucide() {
   if (window.lucide) return Promise.resolve();
@@ -138,6 +141,20 @@ function myPackStatusLabel(status) {
 
 function myPackTranslate(value) {
   return window.SonaraI18n?.t?.(value) || value;
+}
+
+function myPackValidateAudioFile(file) {
+  if (!(file instanceof File) || file.size <= 0) return "";
+  if (!MY_PACK_AUDIO_UPLOAD_POLICY || !MY_PACK_MAX_AUDIO_SIZE) {
+    return myPackTranslate("Configuration d’upload audio indisponible.");
+  }
+  if (!MY_PACK_AUDIO_UPLOAD_POLICY.isAllowedMp3Metadata(file)) {
+    return myPackTranslate("Sonara Pack accepte actuellement uniquement les fichiers MP3.");
+  }
+  if (file.size > MY_PACK_MAX_AUDIO_SIZE) {
+    return myPackTranslate(`Ce fichier MP3 dépasse ${MY_PACK_MAX_AUDIO_SIZE_MB} Mo.`);
+  }
+  return "";
 }
 
 function myPackEnvironment() {
@@ -341,9 +358,9 @@ function openMyPackEditor(pack, onSaved) {
         <input
           name="trackAudio_${index}"
           type="file"
-          accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
+          accept=".mp3,audio/mpeg,audio/mp3,audio/x-mp3,audio/mpeg3,audio/x-mpeg-3"
         >
-        <small>Laissez vide pour conserver la version audio actuelle.</small>
+        <small>${myPackTranslate(`MP3 uniquement · ${MY_PACK_MAX_AUDIO_SIZE_MB} Mo max. Laissez vide pour conserver la version audio actuelle.`)}</small>
       </label>
     </fieldset>
   `).join("");
@@ -374,6 +391,16 @@ function openMyPackEditor(pack, onSaved) {
   document.body.appendChild(modal);
   if (window.lucide) lucide.createIcons();
   requestAnimationFrame(() => modal.classList.add("show"));
+
+  modal.querySelectorAll('input[type="file"][name^="trackAudio_"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      const error = myPackValidateAudioFile(file);
+      if (!error) return;
+      input.value = "";
+      showMyPackMessage(myPackTranslate(error), "error");
+    });
+  });
 
   const close = () => {
     modal.classList.remove("show");
@@ -406,6 +433,8 @@ function openMyPackEditor(pack, onSaved) {
       tracks.forEach((_, index) => {
         const audio = form.get(`trackAudio_${index}`);
         if (audio instanceof File && audio.size > 0) {
+          const audioError = myPackValidateAudioFile(audio);
+          if (audioError) throw new Error(myPackTranslate(audioError));
           payload.append(`trackAudio_${index}`, audio, audio.name);
         }
       });

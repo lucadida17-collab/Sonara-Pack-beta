@@ -2789,5 +2789,13 @@
   "Copier le crédit": "Copier le crédit",
   "Crédit copié": "Crédit copié",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Musique : {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Nouveautés"
+  "Nouveautés": "Nouveautés",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack accepte actuellement uniquement les fichiers MP3.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Ce fichier MP3 dépasse {1} Mo.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Le fichier MP3 de la track {1} dépasse {2} Mo.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Une nouvelle version MP3 dépasse {1} Mo.",
+  "MP3 uniquement · {1} Mo max": "MP3 uniquement · {1} Mo max",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.",
+  "Configuration d’upload audio indisponible.": "Configuration d’upload audio indisponible.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Le fichier envoyé ne contient pas un flux MP3 valide."
 }

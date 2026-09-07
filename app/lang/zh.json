@@ -2790,5 +2790,13 @@
   "Copier le crédit": "复制署名",
   "Crédit copié": "署名已复制",
   "Musique : {0} — {1} | Sonara Pack — {2}": "音乐：{0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "最新内容"
+  "Nouveautés": "最新内容",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack 目前仅接受 MP3 文件。",
+  "Ce fichier MP3 dépasse {1} Mo.": "此 MP3 文件超过 {1} MB。",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "第 {1} 条音轨的 MP3 文件超过 {2} MB。",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "新的 MP3 版本超过 {1} MB。",
+  "MP3 uniquement · {1} Mo max": "仅限 MP3 · 最大 {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "仅限 MP3 · 最大 {1} MB。留空可保留当前音频版本。",
+  "Configuration d’upload audio indisponible.": "音频上传配置不可用。",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "上传的文件不包含有效的 MP3 音频流。"
 }

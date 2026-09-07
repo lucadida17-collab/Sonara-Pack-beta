@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Credit kopiëren",
   "Crédit copié": "Credit gekopieerd",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Muziek: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Nieuw"
+  "Nouveautés": "Nieuw",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack accepteert momenteel alleen MP3-bestanden.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Dit MP3-bestand is groter dan {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Het MP3-bestand van track {1} is groter dan {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Een nieuwe MP3-versie is groter dan {1} MB.",
+  "MP3 uniquement · {1} Mo max": "Alleen MP3 · max. {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Alleen MP3 · max. {1} MB. Laat leeg om de huidige audioversie te behouden.",
+  "Configuration d’upload audio indisponible.": "De configuratie voor audio-upload is niet beschikbaar.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Het verzonden bestand bevat geen geldige MP3-stream."
 }

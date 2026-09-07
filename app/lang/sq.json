@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Kopjo kreditin",
   "Crédit copié": "Krediti u kopjua",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Muzikë: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Të reja"
+  "Nouveautés": "Të reja",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack aktualisht pranon vetëm skedarë MP3.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Ky skedar MP3 tejkalon {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Skedari MP3 i track-ut {1} tejkalon {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Një version i ri MP3 tejkalon {1} MB.",
+  "MP3 uniquement · {1} Mo max": "Vetëm MP3 · maksimumi {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Vetëm MP3 · maksimumi {1} MB. Lëre bosh për të ruajtur versionin aktual të audios.",
+  "Configuration d’upload audio indisponible.": "Konfigurimi i ngarkimit të audios nuk është i disponueshëm.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Skedari i dërguar nuk përmban një rrjedhë MP3 të vlefshme."
 }

@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Credit kopieren",
   "Crédit copié": "Credit kopiert",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Musik: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Neuheiten"
+  "Nouveautés": "Neuheiten",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack akzeptiert derzeit nur MP3-Dateien.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Diese MP3-Datei überschreitet {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Die MP3-Datei von Track {1} überschreitet {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Eine neue MP3-Version überschreitet {1} MB.",
+  "MP3 uniquement · {1} Mo max": "Nur MP3 · max. {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Nur MP3 · max. {1} MB. Leer lassen, um die aktuelle Audioversion beizubehalten.",
+  "Configuration d’upload audio indisponible.": "Die Audio-Upload-Konfiguration ist nicht verfügbar.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Die hochgeladene Datei enthält keinen gültigen MP3-Datenstrom."
 }

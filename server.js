@@ -8,9 +8,9 @@ const multer = require("multer");
 
 
 
-const AdmZip = require("adm-zip");
 const path = require("path");
 const crypto = require("crypto");
+const { pipeline } = require("stream/promises");
 const { registerSonaraSyncEngine } = require("./sync-engine");
 const { installDataProtection, rejectUnsafeJsonKeys, sanitizeAccountSecrets } = require("./backend/security/data-protection");
 const { registerFounderFinance } = require("./backend/features/finance/founder-finance");
@@ -32,6 +32,8 @@ require("dotenv").config({
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
+const { validateMp3Upload, MAX_MP3_FILE_SIZE_BYTES, MAX_MP3_FILE_SIZE_MB, MP3_MIME_TYPES, hasMp3Extension, hasAllowedMp3MimeType } = require("./backend/features/audio/mp3-validation");
+const { createZipFromPaths } = require("./backend/features/audio/streaming-zip");
 const { createPreviewWorkspace, renderAudioPreview, renderPromoVideo, previewDownloadName, coverDownloadName, promoVideoDownloadName } = require("./backend/features/audio/preview-export");
 const { appendAcquisitionHistory, buildCreatorAcquisitionAnalytics } = require("./backend/features/creator/creator-analytics");
 const { registerAutoPlaylistRoutes } = require("./backend/features/playlists/auto-playlist-routes");
@@ -103,30 +105,39 @@ const r2 = new S3Client({
 
 async function uploadToR2(file, folder) {
   const key = `${folder}/${Date.now()}-${file.originalname}`;
+  const bodyStream = fs.createReadStream(file.path);
 
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-      Body: fs.createReadStream(file.path),
-      ContentType: file.mimetype,
-    })
-  );
-
-  return key;
+  try {
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        Body: bodyStream,
+        ContentType: file.mimetype,
+      })
+    );
+    return key;
+  } finally {
+    if (!bodyStream.destroyed) bodyStream.destroy();
+  }
 }
 
 async function uploadLocalFileToR2(filePath, key, contentType = "application/zip") {
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-      Body: fs.createReadStream(filePath),
-      ContentType: contentType
-    })
-  );
+  const bodyStream = fs.createReadStream(filePath);
 
-  return key;
+  try {
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        Body: bodyStream,
+        ContentType: contentType
+      })
+    );
+    return key;
+  } finally {
+    if (!bodyStream.destroyed) bodyStream.destroy();
+  }
 }
 
 function normalizePackR2Key(value) {
@@ -150,15 +161,13 @@ async function downloadPackR2File(key, filePath) {
     throw new Error("Flux audio R2 introuvable.");
   }
 
-  await new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(filePath);
-    object.Body.on("error", reject);
-    output.on("error", reject);
-    output.on("finish", resolve);
-    object.Body.pipe(output);
-  });
-
-  return filePath;
+  try {
+    await pipeline(object.Body, fs.createWriteStream(filePath));
+    return filePath;
+  } catch (error) {
+    await removeFileIfExists(filePath);
+    throw error;
+  }
 }
 
 async function deletePackR2KeysBestEffort(keys) {
@@ -695,7 +704,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const PACK_MAX_TRACKS = 20;
 const PACK_MAX_IMAGE_SIZE = 8 * 1024 * 1024;
-const PACK_MAX_AUDIO_SIZE = 250 * 1024 * 1024;
+const PACK_MAX_AUDIO_SIZE = MAX_MP3_FILE_SIZE_BYTES;
 const PACK_MAX_RESOURCES = 20;
 const PACK_MAX_RESOURCE_SIZE = 250 * 1024 * 1024;
 const PACK_MAX_EVIDENCE_FILES = 8;
@@ -708,15 +717,7 @@ const PACK_IMAGE_TYPES = new Set([
   "image/webp"
 ]);
 
-const PACK_AUDIO_TYPES = new Set([
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/flac",
-  "audio/x-flac",
-  "application/octet-stream"
-]);
+const PACK_AUDIO_TYPES = new Set(MP3_MIME_TYPES);
 
 function isPackImageField(fieldname) {
   return fieldname === "coverPack" || /^trackCover_\d+$/.test(fieldname) || /^resourceCover_\d+$/.test(fieldname);
@@ -749,10 +750,11 @@ function packFileFilter(req, file, cb) {
   }
 
   if (isPackAudioField(file.fieldname)) {
-    const extension = path.extname(file.originalname || "").toLowerCase();
-    const validExtension = [".mp3", ".wav", ".flac"].includes(extension);
+    const validExtension = hasMp3Extension(file.originalname);
+    const validMime = PACK_AUDIO_TYPES.has(String(file.mimetype || "").toLowerCase()) &&
+      hasAllowedMp3MimeType(file.mimetype);
 
-    if (!PACK_AUDIO_TYPES.has(file.mimetype) && !validExtension) {
+    if (!validExtension || !validMime) {
       return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
     }
     return cb(null, true);
@@ -773,7 +775,7 @@ const packUpload = multer({
   storage,
   limits: {
     files: PACK_MAX_FILES,
-    fileSize: PACK_MAX_AUDIO_SIZE,
+    fileSize: Math.max(PACK_MAX_AUDIO_SIZE, PACK_MAX_RESOURCE_SIZE, PACK_MAX_EVIDENCE_SIZE),
     fields: 4,
     fieldSize: 2 * 1024 * 1024
   },
@@ -784,10 +786,16 @@ function handlePackUpload(req, res, next) {
   packUpload.any()(req, res, (error) => {
     if (!error) return next();
 
+    for (const file of Array.isArray(req.files) ? req.files : []) {
+      removeFileIfExists(file.path);
+    }
+
     const messages = {
       LIMIT_FILE_SIZE: "Un fichier dépasse la taille autorisée.",
       LIMIT_FILE_COUNT: "Le pack contient trop de fichiers.",
-      LIMIT_UNEXPECTED_FILE: "Un fichier, un format ou un champ envoyé n’est pas autorisé.",
+      LIMIT_UNEXPECTED_FILE: isPackAudioField(error.field)
+        ? "Sonara Pack accepte actuellement uniquement les fichiers MP3."
+        : "Le serveur a refusé un fichier du pack.",
       LIMIT_FIELD_VALUE: "Les informations du pack sont trop volumineuses."
     };
 
@@ -820,10 +828,14 @@ function handlePackRevisionUpload(req, res, next) {
   packRevisionUpload.any()(req, res, (error) => {
     if (!error) return next();
 
+    for (const file of Array.isArray(req.files) ? req.files : []) {
+      removeFileIfExists(file.path);
+    }
+
     const messages = {
-      LIMIT_FILE_SIZE: "Une nouvelle version audio dépasse 250 Mo.",
+      LIMIT_FILE_SIZE: `Une nouvelle version MP3 dépasse ${MAX_MP3_FILE_SIZE_MB} Mo.`,
       LIMIT_FILE_COUNT: "Trop de versions audio ont été envoyées.",
-      LIMIT_UNEXPECTED_FILE: "Un fichier, un format ou un champ audio n’est pas autorisé.",
+      LIMIT_UNEXPECTED_FILE: "Sonara Pack accepte actuellement uniquement les fichiers MP3.",
       LIMIT_FIELD_VALUE: "Les informations de modification sont trop volumineuses."
     };
 
@@ -1017,7 +1029,7 @@ function removeFileIfExists(filePath) {
   }
 }
 
-function validatePendingPackRequest(req) {
+async function validatePendingPackRequest(req) {
   if (!req.body?.packData) {
     return { valid: false, status: 400, message: "Les informations du pack sont absentes." };
   }
@@ -1142,7 +1154,9 @@ function validatePendingPackRequest(req) {
       if (!cover) return { valid: false, status: 400, message: `La cover de la track ${index + 1} est obligatoire.` };
       if (!usesPackCover && cover.size > PACK_MAX_IMAGE_SIZE) return { valid: false, status: 400, message: `La cover de la track ${index + 1} dépasse 8 Mo.` };
       if (!audio) return { valid: false, status: 400, message: `Le fichier audio de la track ${index + 1} est obligatoire.` };
-      if (audio.size > PACK_MAX_AUDIO_SIZE) return { valid: false, status: 400, message: `Le fichier audio de la track ${index + 1} dépasse 250 Mo.` };
+      if (audio.size > PACK_MAX_AUDIO_SIZE) return { valid: false, status: 400, code: "MP3_TOO_LARGE", message: `Le fichier MP3 de la track ${index + 1} dépasse ${MAX_MP3_FILE_SIZE_MB} Mo.` };
+      const mp3Validation = await validateMp3Upload(audio);
+      if (!mp3Validation.valid) return { valid: false, status: 400, code: mp3Validation.code, message: mp3Validation.message };
     }
   } else {
     const blockedDawExtensions = new Set([".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".js", ".mjs", ".cjs", ".html", ".htm", ".php", ".py", ".sh", ".ps1"]);
@@ -1212,25 +1226,6 @@ function validatePendingPackRequest(req) {
 
   return { valid: true, pack, fileByField };
 }
-function createZipFromPaths(zipPath, filePaths) {
-  const zip = new AdmZip();
-
-  for (const filePath of filePaths) {
-    if (!filePath || !fs.existsSync(filePath)) {
-      throw new Error(`Fichier ZIP introuvable : ${filePath || "chemin vide"}`);
-    }
-
-    zip.addLocalFile(filePath);
-  }
-
-  zip.writeZip(zipPath);
-
-  if (fs.statSync(zipPath).size <= 0) {
-    throw new Error("Le ZIP généré est vide.");
-  }
-}
-
-
 const downloadsPath = path.join(__dirname, "downloads");
 const packsZipPath = path.join(downloadsPath, "packs");
 const tracksZipPath = path.join(downloadsPath, "tracks");
@@ -4256,14 +4251,21 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
         return res.status(400).json({ success: false, message: "La version audio ne correspond à aucun son du pack." });
       }
 
+      const mp3Validation = await validateMp3Upload(file);
+      if (!mp3Validation.valid) {
+        return res.status(400).json({
+          success: false,
+          code: mp3Validation.code,
+          message: mp3Validation.message
+        });
+      }
+
       const track = tracks[trackIndex];
       const previousAudioName = track.audioName;
       const previousDownloadZip = track.downloadZip;
-      const [audioKey, preview, originalFileHash] = await Promise.all([
-        uploadToR2(file, "tracks/audio"),
-        analyzeAudioPreview(file.path),
-        hashFileSha256(file.path)
-      ]);
+      const audioKey = await uploadToR2(file, "tracks/audio");
+      const originalFileHash = await hashFileSha256(file.path);
+      const preview = await analyzeAudioPreview(file.path);
       newR2Keys.push(audioKey);
       track.audioName = audioKey;
       track.audioVersion = Math.max(1, Number.parseInt(track.audioVersion, 10) || 1) + 1;
@@ -4307,7 +4309,7 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
       }
 
       const packZipPath = path.join(packsZipPath, `${pack.id}-${revisionId}.zip`);
-      createZipFromPaths(packZipPath, localAudioPaths);
+      await createZipFromPaths(packZipPath, localAudioPaths);
       temporaryZips.push(packZipPath);
       const packZipKey = `zips/packs/${pack.id}-${revisionId}.zip`;
       await uploadLocalFileToR2(packZipPath, packZipKey);
@@ -4319,7 +4321,7 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
         const track = tracks[replacement.index];
         const trackId = track.id || `${pack.id}-${replacement.index}`;
         const trackZipPath = path.join(tracksZipPath, `${trackId}-${revisionId}.zip`);
-        createZipFromPaths(trackZipPath, [replacement.file.path]);
+        await createZipFromPaths(trackZipPath, [replacement.file.path]);
         temporaryZips.push(trackZipPath);
         const trackZipKey = `zips/tracks/${trackId}-${revisionId}.zip`;
         await uploadLocalFileToR2(trackZipPath, trackZipKey);
@@ -4835,30 +4837,6 @@ app.post("/api/packs/:id/preview-analysis", async (req, res) => {
   }
 });
 
-function createZip(zipPath, files) {
-
-  const zip = new AdmZip();
-
-  files.forEach(fileName => {
-
-    if (!fileName) return;
-
-    const filePath = path.join(
-      __dirname,
-      "uploads",
-      fileName
-    );
-
-    if (fs.existsSync(filePath)) {
-      zip.addLocalFile(filePath);
-    }
-
-  });
-
-  zip.writeZip(zipPath);
-
-}
-
 
 app.post(
   "/api/packs/pending",
@@ -4871,7 +4849,7 @@ app.post(
     const temporaryZips = [];
 
     try {
-      const validation = validatePendingPackRequest(req);
+      const validation = await validatePendingPackRequest(req);
 
       if (!validation.valid) {
         return res.status(validation.status).json({
@@ -4988,12 +4966,12 @@ app.post(
           const usesPackCover = track?.coverMode !== "custom";
           const trackCoverFile = fileByField.get(`trackCover_${index}`);
           const trackAudioFile = fileByField.get(`trackAudio_${index}`);
-          const [trackCoverKey, trackAudioKey, preview, originalFileHash] = await Promise.all([
-            usesPackCover ? Promise.resolve(packCoverKey) : uploadToR2(trackCoverFile, "tracks/covers"),
-            uploadToR2(trackAudioFile, "tracks/audio"),
-            analyzeAudioPreview(trackAudioFile.path),
-            hashFileSha256(trackAudioFile.path)
-          ]);
+          const trackCoverKey = usesPackCover
+            ? packCoverKey
+            : await uploadToR2(trackCoverFile, "tracks/covers");
+          const trackAudioKey = await uploadToR2(trackAudioFile, "tracks/audio");
+          const originalFileHash = await hashFileSha256(trackAudioFile.path);
+          const preview = await analyzeAudioPreview(trackAudioFile.path);
           preparedTracks.push({
             ...track,
             coverPack: trackCoverKey,
@@ -5068,7 +5046,7 @@ app.post(
       const packContentPaths = newPack.contentType === "audio"
         ? newPack.tracks.map((track) => track._audioLocalPath)
         : newPack.resources.map((resource) => resource._resourceLocalPath);
-      createZipFromPaths(packZipFullPath, packContentPaths);
+      await createZipFromPaths(packZipFullPath, packContentPaths);
 
       newPack.downloadZip = await uploadLocalFileToR2(
         packZipFullPath,
@@ -5080,7 +5058,7 @@ app.post(
           const trackZipName = `${track.id}.zip`;
           const trackZipFullPath = path.join(tracksZipPath, trackZipName);
           temporaryZips.push(trackZipFullPath);
-          createZipFromPaths(trackZipFullPath, [track._audioLocalPath]);
+          await createZipFromPaths(trackZipFullPath, [track._audioLocalPath]);
           track.downloadZip = await uploadLocalFileToR2(trackZipFullPath, `zips/tracks/${trackZipName}`);
           delete track._audioLocalPath;
         }

@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Copiază creditul",
   "Crédit copié": "Credit copiat",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Muzică: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Noutăți"
+  "Nouveautés": "Noutăți",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack acceptă în prezent numai fișiere MP3.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Acest fișier MP3 depășește {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Fișierul MP3 al track-ului {1} depășește {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "O versiune MP3 nouă depășește {1} MB.",
+  "MP3 uniquement · {1} Mo max": "Doar MP3 · maximum {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Doar MP3 · maximum {1} MB. Lasă gol pentru a păstra versiunea audio actuală.",
+  "Configuration d’upload audio indisponible.": "Configurația de încărcare audio nu este disponibilă.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Fișierul trimis nu conține un flux MP3 valid."
 }

@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Скопировать указание авторства",
   "Crédit copié": "Указание авторства скопировано",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Музыка: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Новинки"
+  "Nouveautés": "Новинки",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack сейчас принимает только файлы MP3.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Размер этого MP3-файла превышает {1} МБ.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "MP3-файл трека {1} превышает {2} МБ.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Новая версия MP3 превышает {1} МБ.",
+  "MP3 uniquement · {1} Mo max": "Только MP3 · максимум {1} МБ",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Только MP3 · максимум {1} МБ. Оставьте пустым, чтобы сохранить текущую аудиоверсию.",
+  "Configuration d’upload audio indisponible.": "Конфигурация загрузки аудио недоступна.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Отправленный файл не содержит корректного потока MP3."
 }

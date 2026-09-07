@@ -2790,5 +2790,13 @@
   "Copier le crédit": "نسخ نسب الموسيقى",
   "Crédit copié": "تم نسخ النسب",
   "Musique : {0} — {1} | Sonara Pack — {2}": "الموسيقى: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "الجديد"
+  "Nouveautés": "الجديد",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "يقبل Sonara Pack حاليًا ملفات MP3 فقط.",
+  "Ce fichier MP3 dépasse {1} Mo.": "يتجاوز ملف MP3 هذا {1} ميغابايت.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "يتجاوز ملف MP3 للمسار {1} حجم {2} ميغابايت.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "يتجاوز إصدار MP3 الجديد {1} ميغابايت.",
+  "MP3 uniquement · {1} Mo max": "MP3 فقط · الحد الأقصى {1} ميغابايت",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "MP3 فقط · الحد الأقصى {1} ميغابايت. اتركه فارغًا للاحتفاظ بإصدار الصوت الحالي.",
+  "Configuration d’upload audio indisponible.": "إعداد رفع الصوت غير متاح.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "الملف المرسل لا يحتوي على تدفق MP3 صالح."
 }

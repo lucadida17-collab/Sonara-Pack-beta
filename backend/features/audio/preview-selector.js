@@ -11,7 +11,8 @@ try {
 
 const DEFAULT_PREVIEW_DURATION = 30;
 const ANALYSIS_SAMPLE_RATE = 1000;
-const ANALYSIS_VERSION = 1;
+const ANALYSIS_VERSION = 2;
+const MAX_ANALYSIS_BYTES = 32 * 1024 * 1024;
 
 function safeNumber(value, fallback = 0) {
   const number = Number(value);
@@ -22,35 +23,67 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function decodeMonoEnergy(buffer, sampleRate = ANALYSIS_SAMPLE_RATE) {
-  if (!Buffer.isBuffer(buffer) || buffer.length < 4) return [];
+function createEnergyAccumulator(sampleRate = ANALYSIS_SAMPLE_RATE) {
+  const sumSquares = [];
+  const peaks = [];
+  const counts = [];
+  let sampleIndex = 0;
+  const pendingSample = Buffer.allocUnsafe(4);
+  let pendingLength = 0;
 
-  const sampleCount = Math.floor(buffer.length / 4);
-  const secondCount = Math.ceil(sampleCount / sampleRate);
-  const sumSquares = new Float64Array(secondCount);
-  const peaks = new Float64Array(secondCount);
-  const counts = new Uint32Array(secondCount);
-
-  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
-    const byteIndex = sampleIndex * 4;
-    const sample = buffer.readFloatLE(byteIndex);
-    if (!Number.isFinite(sample)) continue;
-
+  function accumulateSample(sample) {
     const secondIndex = Math.floor(sampleIndex / sampleRate);
+    sampleIndex += 1;
+    if (!Number.isFinite(sample)) return;
+
     const absolute = Math.abs(sample);
-    sumSquares[secondIndex] += sample * sample;
-    counts[secondIndex] += 1;
-    if (absolute > peaks[secondIndex]) peaks[secondIndex] = absolute;
+    sumSquares[secondIndex] = (sumSquares[secondIndex] || 0) + sample * sample;
+    counts[secondIndex] = (counts[secondIndex] || 0) + 1;
+    peaks[secondIndex] = Math.max(peaks[secondIndex] || 0, absolute);
   }
 
-  return Array.from({ length: secondCount }, (_, index) => {
-    const count = counts[index] || 1;
-    const rms = Math.sqrt(sumSquares[index] / count);
-    return {
-      rms,
-      peak: peaks[index]
-    };
-  });
+  function pushChunk(chunk) {
+    if (!Buffer.isBuffer(chunk) || chunk.length === 0) return;
+
+    let byteIndex = 0;
+
+    if (pendingLength) {
+      const needed = 4 - pendingLength;
+      const copied = Math.min(needed, chunk.length);
+      chunk.copy(pendingSample, pendingLength, 0, copied);
+      pendingLength += copied;
+      byteIndex += copied;
+      if (pendingLength === 4) {
+        accumulateSample(pendingSample.readFloatLE(0));
+        pendingLength = 0;
+      }
+    }
+
+    const remainingBytes = chunk.length - byteIndex;
+    const completeBytes = remainingBytes - (remainingBytes % 4);
+    const completeEnd = byteIndex + completeBytes;
+
+    for (; byteIndex < completeEnd; byteIndex += 4) {
+      accumulateSample(chunk.readFloatLE(byteIndex));
+    }
+
+    if (byteIndex < chunk.length) {
+      pendingLength = chunk.length - byteIndex;
+      chunk.copy(pendingSample, 0, byteIndex);
+    }
+  }
+
+  function finish() {
+    return Array.from({ length: counts.length }, (_, index) => {
+      const count = counts[index] || 1;
+      return {
+        rms: Math.sqrt((sumSquares[index] || 0) / count),
+        peak: peaks[index] || 0
+      };
+    });
+  }
+
+  return { pushChunk, finish };
 }
 
 function scorePreviewWindows(energy, previewDuration = DEFAULT_PREVIEW_DURATION) {
@@ -85,20 +118,16 @@ function scorePreviewWindows(energy, previewDuration = DEFAULT_PREVIEW_DURATION)
     const activityRatio = activeSeconds / previewSeconds;
     const dynamicRatio = variation / Math.max(1, previewSeconds - 1);
 
-    // Le cœur de la sélection privilégie une zone pleine et musicale :
-    // énergie moyenne + présence continue + quelques variations/transitoires.
     let score =
       averageRms * 0.58 +
       averagePeak * 0.17 +
       activityRatio * 0.20 +
       dynamicRatio * 0.05;
 
-    // Une intro silencieuse ne doit pas gagner juste parce qu'un pic arrive à sa fin.
     if (start < 5 && durationSeconds > previewSeconds + 10) {
       score *= 0.92;
     }
 
-    // Évite autant que possible une fenêtre collée à la toute fin du fichier.
     if (start + previewSeconds > durationSeconds - 2) {
       score *= 0.96;
     }
@@ -145,47 +174,59 @@ function analyzeAudioPreview(filePath, { previewDuration = DEFAULT_PREVIEW_DURAT
       stdio: ["ignore", "pipe", "pipe"]
     });
 
-    const chunks = [];
+    const accumulator = createEnergyAccumulator();
     let outputBytes = 0;
     let stderr = "";
-    const MAX_ANALYSIS_BYTES = 64 * 1024 * 1024;
+    let settled = false;
+    let killedForLimit = false;
+
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
 
     child.stdout.on("data", (chunk) => {
       outputBytes += chunk.length;
       if (outputBytes > MAX_ANALYSIS_BYTES) {
+        killedForLimit = true;
         child.kill("SIGKILL");
         return;
       }
-      chunks.push(chunk);
+      accumulator.pushChunk(chunk);
     });
 
     child.stderr.on("data", (chunk) => {
       if (stderr.length < 4000) stderr += chunk.toString("utf8");
     });
 
-    child.on("error", () => resolve(fallback));
+    child.on("error", () => settle(fallback));
 
     child.on("close", (code) => {
-      if (code !== 0 || !chunks.length || outputBytes > MAX_ANALYSIS_BYTES) {
+      if (code !== 0 || outputBytes === 0 || killedForLimit) {
         if (stderr.trim()) {
           console.warn("Analyse preview audio indisponible :", stderr.trim().slice(0, 600));
         }
-        resolve(fallback);
+        settle(fallback);
         return;
       }
 
       try {
-        const energy = decodeMonoEnergy(Buffer.concat(chunks));
+        const energy = accumulator.finish();
+        if (!energy.length) {
+          settle(fallback);
+          return;
+        }
         const selection = scorePreviewWindows(energy, previewDuration);
-        resolve({
+        settle({
           previewStart: Number(selection.start.toFixed(2)),
           previewDuration: Math.min(previewDuration, Math.max(1, selection.duration)),
           previewAnalysisVersion: ANALYSIS_VERSION,
-          previewAnalysisMethod: "sonara-energy-v1"
+          previewAnalysisMethod: "sonara-energy-stream-v2"
         });
       } catch (error) {
         console.warn("Analyse preview audio échouée :", error.message);
-        resolve(fallback);
+        settle(fallback);
       }
     });
   });

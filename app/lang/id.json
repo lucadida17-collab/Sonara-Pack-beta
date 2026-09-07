@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Salin kredit",
   "Crédit copié": "Kredit disalin",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Musik: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Terbaru"
+  "Nouveautés": "Terbaru",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack saat ini hanya menerima file MP3.",
+  "Ce fichier MP3 dépasse {1} Mo.": "File MP3 ini melebihi {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "File MP3 untuk track {1} melebihi {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Versi MP3 baru melebihi {1} MB.",
+  "MP3 uniquement · {1} Mo max": "Hanya MP3 · maks. {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Hanya MP3 · maks. {1} MB. Biarkan kosong untuk mempertahankan versi audio saat ini.",
+  "Configuration d’upload audio indisponible.": "Konfigurasi unggahan audio tidak tersedia.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "File yang dikirim tidak berisi aliran MP3 yang valid."
 }

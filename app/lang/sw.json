@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Nakili utambulisho wa muziki",
   "Crédit copié": "Utambulisho umenakiliwa",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Muziki: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Mapya"
+  "Nouveautés": "Mapya",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack kwa sasa inakubali faili za MP3 pekee.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Faili hii ya MP3 imezidi {1} MB.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "Faili ya MP3 ya track {1} imezidi {2} MB.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Toleo jipya la MP3 limezidi {1} MB.",
+  "MP3 uniquement · {1} Mo max": "MP3 pekee · kiwango cha juu {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "MP3 pekee · kiwango cha juu {1} MB. Acha wazi ili kuhifadhi toleo la sasa la sauti.",
+  "Configuration d’upload audio indisponible.": "Mipangilio ya kupakia sauti haipatikani.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Faili iliyotumwa haina mtiririko halali wa MP3."
 }

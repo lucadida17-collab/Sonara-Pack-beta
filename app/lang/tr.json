@@ -2790,5 +2790,13 @@
   "Copier le crédit": "Krediyi kopyala",
   "Crédit copié": "Kredi kopyalandı",
   "Musique : {0} — {1} | Sonara Pack — {2}": "Müzik: {0} — {1} | Sonara Pack — {2}",
-  "Nouveautés": "Yenilikler"
+  "Nouveautés": "Yenilikler",
+  "Sonara Pack accepte actuellement uniquement les fichiers MP3.": "Sonara Pack şu anda yalnızca MP3 dosyalarını kabul ediyor.",
+  "Ce fichier MP3 dépasse {1} Mo.": "Bu MP3 dosyası {1} MB sınırını aşıyor.",
+  "Le fichier MP3 de la track {1} dépasse {2} Mo.": "{1}. parçanın MP3 dosyası {2} MB sınırını aşıyor.",
+  "Une nouvelle version MP3 dépasse {1} Mo.": "Yeni MP3 sürümü {1} MB sınırını aşıyor.",
+  "MP3 uniquement · {1} Mo max": "Yalnızca MP3 · en fazla {1} MB",
+  "MP3 uniquement · {1} Mo max. Laissez vide pour conserver la version audio actuelle.": "Yalnızca MP3 · en fazla {1} MB. Mevcut ses sürümünü korumak için boş bırakın.",
+  "Configuration d’upload audio indisponible.": "Ses yükleme yapılandırması kullanılamıyor.",
+  "Le fichier envoyé ne contient pas un flux MP3 valide.": "Gönderilen dosyada geçerli bir MP3 akışı bulunmuyor."
 }
