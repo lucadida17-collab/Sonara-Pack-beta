@@ -147,6 +147,20 @@ function visibleSemanticMarkup(semantic = {}) {
   </section>`;
 }
 
+function promoImageMarkup(item = {}, canonical = "") {
+  const promoUrl = String(item.promoImageUrl || "").trim();
+  const coverUrl = String(item.coverUrl || "").trim();
+  if (!promoUrl || promoUrl === coverUrl) return "";
+  const title = String(item.title || "Sonara Pack").trim();
+  const artist = String(item.artist || "Artiste Sonara").trim();
+  const alt = `${title} by ${artist} – Sonara Pack promotional visual`;
+  return `<figure class="public-catalog-promo-figure">
+    <a class="public-catalog-promo-link" href="${escapeHtml(canonical)}" aria-label="${escapeHtml(title)}" data-user-content>
+      <img class="public-catalog-promo-image" src="${escapeHtml(promoUrl)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" data-user-content>
+    </a>
+  </figure>`;
+}
+
 function sharedHead({ title, description, canonical, image, imageAlt = "", ogType, robots, structuredData }) {
   return `<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -167,7 +181,7 @@ function sharedHead({ title, description, canonical, image, imageAlt = "", ogTyp
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/app/css/catalog/public-catalog.css?v=public-square-cover-v1">
+  <link rel="stylesheet" href="/app/css/catalog/public-catalog.css?v=public-multi-image-v1">
   <link rel="stylesheet" href="/app/css/core/i18n.css">
   <script type="application/ld+json">${jsonForHtml(structuredData)}</script>`;
 }
@@ -184,7 +198,7 @@ function shell({ event, apiBase, head, markup, type }) {
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
   <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
-  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v8-square-cover"></script>
+  <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v9-multi-image"></script>
   <script src="/app/js/core/i18n.js?v=organic-visibility-v1" defer></script>
 </body>
 </html>`;
@@ -209,7 +223,7 @@ function renderPackPage(event, apiBase, pack) {
     byArtist: { "@type": "MusicGroup", name: pack.artist },
     genre: (pack.semantic?.genres?.length ? pack.semantic.genres : pack.categories) || [],
     numTracks: Number(pack.trackCount || 0),
-    image: pack.coverUrl || undefined,
+    image: [pack.coverUrl, pack.promoImageUrl].filter(Boolean),
     url: canonical,
     track: tracks.slice(0, 25).map((track) => ({
       "@type": "MusicRecording",
@@ -231,6 +245,7 @@ function renderPackPage(event, apiBase, pack) {
       <div class="public-catalog-meta"><span>Catégorie · <b data-user-content>${escapeHtml(category)}</b></span><span>Nombre de titres · ${escapeHtml(countLabel(pack.trackCount))}</span></div>
       ${semanticLinksMarkup(pack.seoLinks)}
       ${visibleSemanticMarkup(pack.semantic)}
+      ${promoImageMarkup(pack, canonical)}
       <section class="public-catalog-section"><h2>Aperçu audio</h2><div class="public-catalog-audio-list">${previews}</div></section>
       <section class="public-catalog-section public-catalog-license"><h2>Licence</h2><p>${escapeHtml(pack.license?.name || "Licence standard Sonara")}</p></section>
       <div class="public-catalog-actions"><a class="public-catalog-action primary" href="${escapeHtml(onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}`))}">Découvrir sur Sonara Pack</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
@@ -262,7 +277,7 @@ function renderTrackPage(event, apiBase, pack, track) {
     byArtist: { "@type": "MusicGroup", name: track.artist },
     genre: (track.semantic?.genres?.length ? track.semantic.genres : pack.categories) || [],
     inAlbum: pack.title ? { "@type": "MusicAlbum", name: pack.title, url: pack.canonicalUrl || undefined } : undefined,
-    image: track.coverUrl || undefined,
+    image: [track.coverUrl, track.promoImageUrl].filter(Boolean),
     url: canonical,
     audio: audioObject(track)
   };
@@ -276,6 +291,7 @@ function renderTrackPage(event, apiBase, pack, track) {
       <div class="public-catalog-meta"><span>Catégorie · <b data-user-content>${escapeHtml(category)}</b></span><span>Pack · <a class="public-catalog-inline-link" href="${escapeHtml(pack.canonicalUrl || `/catalog/packs/${encodeURIComponent(pack.id)}`)}" data-user-content>${escapeHtml(pack.title || "Sonara Pack")}</a></span></div>
       ${semanticLinksMarkup(pack.seoLinks)}
       ${visibleSemanticMarkup(track.semantic)}
+      ${promoImageMarkup(track, canonical)}
       <section class="public-catalog-section"><h2>Aperçu audio</h2><div class="public-catalog-audio-list">${audioMarkup(track) || "<p>Aucun aperçu audio disponible.</p>"}</div></section>
       <div class="public-catalog-actions"><a class="public-catalog-action primary" href="${escapeHtml(onboardingHref(`/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}&trackId=${encodeURIComponent(track.id)}`))}">Ouvrir le pack complet</a><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
     </div>

@@ -15,8 +15,15 @@ function validLastmod(value) {
 }
 
 function imageXml(item = {}) {
-  if (!item.imageUrl) return "";
-  return `\n    <image:image>\n      <image:loc>${xml(item.imageUrl)}</image:loc>${item.imageTitle ? `\n      <image:title>${xml(item.imageTitle)}</image:title>` : ""}${item.imageCaption ? `\n      <image:caption>${xml(item.imageCaption)}</image:caption>` : ""}\n    </image:image>`;
+  const candidates = Array.isArray(item.images) && item.images.length
+    ? item.images
+    : (item.imageUrl ? [{ url: item.imageUrl, title: item.imageTitle, caption: item.imageCaption }] : []);
+  const seen = new Set();
+  return candidates
+    .filter((image) => image?.url && !seen.has(image.url) && seen.add(image.url))
+    .slice(0, 10)
+    .map((image) => `\n    <image:image>\n      <image:loc>${xml(image.url)}</image:loc>${image.title ? `\n      <image:title>${xml(image.title)}</image:title>` : ""}${image.caption ? `\n      <image:caption>${xml(image.caption)}</image:caption>` : ""}\n    </image:image>`)
+    .join("");
 }
 
 exports.handler = async (event) => {

@@ -1476,23 +1476,51 @@ function registerOrganicVisibility({
         const normalized = publicPack(pack);
         if (!normalized.id) continue;
         normalizedById.set(normalized.id, normalized);
+        const packCoverUrl = mediaUrl(req, normalized.coverPack);
+        const packPromoUrl = mediaUrl(req, normalized.promoImage);
         packEntries.push({
           url: publicPackUrl(normalizedPublicOrigin, normalized.id),
           updatedAt: normalized.publishedAt,
-          imageUrl: mediaUrl(req, normalized.coverPack),
+          imageUrl: packCoverUrl,
           imageTitle: normalized.seo?.imageAlt || normalized.title,
-          imageCaption: normalized.seo?.description || ""
+          imageCaption: normalized.seo?.description || "",
+          images: [
+            packCoverUrl ? {
+              url: packCoverUrl,
+              title: normalized.seo?.imageAlt || normalized.title,
+              caption: normalized.seo?.description || ""
+            } : null,
+            packPromoUrl && packPromoUrl !== packCoverUrl ? {
+              url: packPromoUrl,
+              title: `${normalized.title} by ${normalized.artist} – Sonara Pack promotional visual`,
+              caption: normalized.seo?.description || ""
+            } : null
+          ].filter(Boolean)
         });
 
         for (const sourceTrack of Array.isArray(pack.tracks) ? pack.tracks : []) {
           if (!trackSeoEligible(pack, sourceTrack) || !sourceTrack?.id) continue;
           const track = publicTrack(sourceTrack, pack);
+          const trackCoverUrl = mediaUrl(req, track.coverPack);
+          const trackPromoUrl = mediaUrl(req, track.promoImage);
           trackEntries.push({
             url: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
             updatedAt: normalized.publishedAt,
-            imageUrl: mediaUrl(req, track.coverPack),
+            imageUrl: trackCoverUrl,
             imageTitle: track.seo?.imageAlt || track.title,
-            imageCaption: track.seo?.description || ""
+            imageCaption: track.seo?.description || "",
+            images: [
+              trackCoverUrl ? {
+                url: trackCoverUrl,
+                title: track.seo?.imageAlt || track.title,
+                caption: track.seo?.description || ""
+              } : null,
+              trackPromoUrl && trackPromoUrl !== trackCoverUrl ? {
+                url: trackPromoUrl,
+                title: `${track.title} by ${track.artist || normalized.artist} – Sonara Pack promotional visual`,
+                caption: track.seo?.description || ""
+              } : null
+            ].filter(Boolean)
           });
         }
       }

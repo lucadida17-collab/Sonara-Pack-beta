@@ -125,7 +125,9 @@ function renderPromoVideo({ framePath, audioPath, outputPath, duration = 30 }) {
       "-map_metadata", "-1",
       "-vf", "scale=1080:1920:flags=lanczos,setsar=1",
       "-c:v", "libx264",
-      "-preset", "medium",
+      // Cette vidéo n'anime qu'une image fixe. Le preset medium surcharge
+      // inutilement le CPU de Render et pouvait dépasser le délai Founder.
+      "-preset", "veryfast",
       "-crf", "18",
       "-pix_fmt", "yuv420p",
       "-r", "30",
