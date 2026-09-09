@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "node --test backend/features/licenses/license-protection.test.js backend/security/data-protection.test.js backend/features/growth/seo-radar.test.js backend/features/growth/seo-pillars.test.js",
+    "test": "node --test backend/features/licenses/license-protection.test.js backend/security/data-protection.test.js backend/features/growth/seo-radar.test.js backend/features/growth/seo-pillars.test.js backend/features/growth/seo-multilingual.test.js backend/features/growth/platform-growth.test.js",
     "start": "node server.js"
   },
   "repository": {

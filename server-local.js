@@ -6313,6 +6313,7 @@ registerPlatformGrowth({
   environment: "local",
   requireFounder: requireFounderKey,
   getAccounts: async () => getLocalFounderState().accounts,
+  getPacks: async () => getLocalFounderState().packs,
   recordActivity: async (accountId, occurredAt) =>
     recordLocalPlatformActivity(accountId, occurredAt),
   financeApi: founderFinance
@@ -6914,7 +6915,8 @@ app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, (
   const { packs } = getLocalFounderState();
   const pack = packs.find((item) =>
     String(item?.id || item?.packId || "") === String(req.params.id) &&
-    String(item?.status || "") === "pending"
+    ["pending", "approved"].includes(String(item?.status || "").toLowerCase()) &&
+    item?.moderationHidden !== true
   );
 
   if (!pack) {

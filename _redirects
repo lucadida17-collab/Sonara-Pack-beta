@@ -1,3 +1,20 @@
+# SONARA SEO MULTILINGUE — fichiers rangés sous /seo-languages, URLs publiques inchangées
+/:lang/how-it-works                    /seo-languages/:lang/how-it-works.html 200
+/:lang/for-creators                    /seo-languages/:lang/for-creators.html 200
+/:lang/for-artists                     /seo-languages/:lang/for-artists.html 200
+/:lang/licensing                       /seo-languages/:lang/licensing.html 200
+/:lang/pre-v1                          /seo-languages/:lang/pre-v1.html 200
+/:lang/how-it-works.html               /:lang/how-it-works 301!
+/:lang/for-creators.html               /:lang/for-creators 301!
+/:lang/for-artists.html                /:lang/for-artists 301!
+/:lang/licensing.html                  /:lang/licensing 301!
+/:lang/pre-v1.html                     /:lang/pre-v1 301!
+/seo-languages/:lang/how-it-works.html /:lang/how-it-works 301!
+/seo-languages/:lang/for-creators.html /:lang/for-creators 301!
+/seo-languages/:lang/for-artists.html  /:lang/for-artists 301!
+/seo-languages/:lang/licensing.html    /:lang/licensing 301!
+/seo-languages/:lang/pre-v1.html       /:lang/pre-v1 301!
+
 # SONARA SEO — pages piliers publiques (réécriture sans toucher à index.html)
 /how-it-works                       /how-it-works.html 200
 /for-creators                       /for-creators.html 200

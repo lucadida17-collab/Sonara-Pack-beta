@@ -125,8 +125,10 @@ function renderPromoVideo({ framePath, audioPath, outputPath, duration = 30 }) {
       "-map_metadata", "-1",
       "-vf", "scale=1080:1920:flags=lanczos,setsar=1",
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "18",
+      // Image fixe : veryfast réduit fortement le temps CPU Render sans changer le format final.
+      "-preset", "veryfast",
+      "-tune", "stillimage",
+      "-crf", "20",
       "-pix_fmt", "yuv420p",
       "-r", "30",
       "-c:a", "aac",

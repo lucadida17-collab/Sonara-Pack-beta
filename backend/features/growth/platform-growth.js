@@ -216,35 +216,61 @@ function uniqueIds(values) {
   );
 }
 
-function buildDownloadStatistics(accounts = []) {
-  let packs = 0;
-  let tracks = 0;
+function buildPackTrackIndex(packs = []) {
+  const index = new Map();
+  for (const pack of Array.isArray(packs) ? packs : []) {
+    const packId = String(pack?.id || pack?.packId || "").trim();
+    if (!packId) continue;
+    const trackIds = uniqueIds(
+      (Array.isArray(pack?.tracks) ? pack.tracks : []).map((track) =>
+        track?.id || track?.trackId || track?._id
+      )
+    );
+    index.set(packId, trackIds);
+  }
+  return index;
+}
+
+function buildDownloadStatistics(accounts = [], packs = []) {
+  let downloadedPackCount = 0;
+  let downloadedTrackCount = 0;
   let uniqueAccounts = 0;
+  const packTrackIndex = buildPackTrackIndex(packs);
 
   for (const account of Array.isArray(accounts) ? accounts : []) {
     const downloadedPacks = uniqueIds(account?.downloadedPacks);
-    const downloadedTracks = uniqueIds(account?.downloadedTracks);
+    const obtainedTracks = uniqueIds(account?.downloadedTracks);
 
-    packs += downloadedPacks.size;
-    tracks += downloadedTracks.size;
+    // Télécharger un pack donne réellement accès à tous ses morceaux.
+    // Les morceaux sont donc comptés eux aussi, sans double-compter un morceau
+    // ensuite téléchargé à l'unité par le même compte.
+    for (const packId of downloadedPacks) {
+      const packTracks = packTrackIndex.get(String(packId));
+      if (!packTracks) continue;
+      for (const trackId of packTracks) obtainedTracks.add(trackId);
+    }
 
-    if (downloadedPacks.size > 0 || downloadedTracks.size > 0) {
+    downloadedPackCount += downloadedPacks.size;
+    downloadedTrackCount += obtainedTracks.size;
+
+    if (downloadedPacks.size > 0 || obtainedTracks.size > 0) {
       uniqueAccounts += 1;
     }
   }
 
   return {
-    packs,
-    tracks,
-    total: packs + tracks,
+    packs: downloadedPackCount,
+    tracks: downloadedTrackCount,
+    total: downloadedPackCount + downloadedTrackCount,
     uniqueAccounts,
-    countingRule: "Un pack ou morceau est compté une fois par compte"
+    countingRule: "Packs : une fois par compte. Morceaux : tous les morceaux obtenus via packs ou à l'unité, dédupliqués par compte."
   };
 }
 
 async function buildPlatformGrowth({
   environment,
   getAccounts,
+  getPacks = async () => [],
   financeApi,
   now = new Date(),
   timeZone = TIME_ZONE
@@ -256,12 +282,12 @@ async function buildPlatformGrowth({
   const pointsByDay = new Map(keys.map((key) => [key, emptyPoint(key)]));
   const returningByDay = new Map(keys.map((key) => [key, new Set()]));
   const returningArtistsByDay = new Map(keys.map((key) => [key, new Set()]));
-  const loadedAccounts = await getAccounts();
+  const [loadedAccounts, loadedPacks] = await Promise.all([getAccounts(), getPacks()]);
   const internalAccounts = internalAccountIds(runtimeEnvironment);
   const accounts = (Array.isArray(loadedAccounts) ? loadedAccounts : []).filter(
     (account) => !internalAccounts.has(accountId(account))
   );
-  const downloads = buildDownloadStatistics(accounts);
+  const downloads = buildDownloadStatistics(accounts, loadedPacks);
 
   for (const account of accounts) {
     const created = dayKey(account.createdAt || account.registeredAt || account.updatedAt, timeZone);
@@ -339,6 +365,7 @@ function registerPlatformGrowth({
   environment,
   requireFounder,
   getAccounts,
+  getPacks = async () => [],
   recordActivity,
   financeApi,
   timeZone = TIME_ZONE
@@ -391,6 +418,7 @@ function registerPlatformGrowth({
       return res.json(await buildPlatformGrowth({
         environment: runtimeEnvironment,
         getAccounts,
+        getPacks,
         financeApi,
         now: new Date(),
         timeZone

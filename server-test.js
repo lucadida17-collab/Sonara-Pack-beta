@@ -6496,6 +6496,7 @@ registerPlatformGrowth({
   environment: "test",
   requireFounder: requireFounderKey,
   getAccounts: getRemoteFounderAccounts,
+  getPacks: async () => packsCollection.find({}).toArray(),
   recordActivity: recordMongoPlatformActivity,
   financeApi: founderFinance
 });
@@ -7096,7 +7097,8 @@ app.get("/api/founder/moderation/packs/:id/audio/:trackId", requireFounderKey, a
   try {
     const pack = await packsCollection.findOne({
       id: String(req.params.id),
-      status: "pending"
+      status: { $in: ["pending", "approved"] },
+      moderationHidden: { $ne: true }
     });
     if (!pack) {
       return res.status(404).json({ success: false, message: "Pack introuvable." });

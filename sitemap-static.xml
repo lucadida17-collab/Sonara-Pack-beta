@@ -1,18 +1,1693 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sonarapack.com/</loc>
-    <lastmod>2026-09-08</lastmod>
+    <lastmod>2026-09-09</lastmod>
     <image:image>
       <image:loc>https://sonarapack.com/assets/image/logo-sonara-pack.PNG</image:loc>
       <image:title>Sonara Pack</image:title>
       <image:caption>Sonara Pack official logo</image:caption>
     </image:image>
   </url>
-  <url><loc>https://sonarapack.com/home.html</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://sonarapack.com/how-it-works</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://sonarapack.com/for-creators</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://sonarapack.com/for-artists</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://sonarapack.com/licensing</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://sonarapack.com/pre-v1</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://sonarapack.com/home.html</loc><lastmod>2026-09-09</lastmod></url>
+  <url>
+    <loc>https://sonarapack.com/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/en/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sq/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ar/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/tr/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/id/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/es/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/de/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/it/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pt/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/nl/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pl/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ro/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ru/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/zh/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sw/how-it-works</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/how-it-works"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/en/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sq/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ar/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/tr/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/id/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/es/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/de/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/it/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pt/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/nl/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pl/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ro/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ru/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/zh/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sw/for-creators</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-creators"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-creators"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/en/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sq/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ar/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/tr/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/id/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/es/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/de/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/it/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pt/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/nl/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pl/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ro/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ru/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/zh/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sw/for-artists</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/for-artists"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/for-artists"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/en/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sq/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ar/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/tr/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/id/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/es/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/de/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/it/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pt/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/nl/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pl/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ro/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ru/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/zh/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sw/licensing</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/licensing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/licensing"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/licensing"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/licensing"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/licensing"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/licensing"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/licensing"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/licensing"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/licensing"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/licensing"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/licensing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/licensing"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/en/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sq/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ar/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/tr/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/id/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/es/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/de/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/it/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pt/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/nl/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/pl/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ro/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/ru/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/zh/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
+  <url>
+    <loc>https://sonarapack.com/sw/pre-v1</loc>
+    <lastmod>2026-09-09</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://sonarapack.com/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonarapack.com/en/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://sonarapack.com/id/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://sonarapack.com/es/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://sonarapack.com/de/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://sonarapack.com/it/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/pre-v1"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonarapack.com/pre-v1"/>
+  </url>
 </urlset>
