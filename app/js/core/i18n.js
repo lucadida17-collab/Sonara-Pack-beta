@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-09-04-visibility-loops-v1";
+    "2026-09-08-seo-pillars-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;

@@ -1,4 +1,17 @@
+# SONARA SEO — pages piliers publiques (réécriture sans toucher à index.html)
+/how-it-works                       /how-it-works.html 200
+/for-creators                       /for-creators.html 200
+/for-artists                        /for-artists.html 200
+/licensing                           /licensing.html 200
+/pre-v1                              /pre-v1.html 200
+/how-it-works.html                   /how-it-works 301!
+/for-creators.html                   /for-creators 301!
+/for-artists.html                    /for-artists 301!
+/licensing.html                      /licensing 301!
+/pre-v1.html                         /pre-v1 301!
+
 # SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
+/catalog                             /.netlify/functions/catalog-index 200
 /catalog/categories/*               /.netlify/functions/catalog-facet?path=categories/:splat  200
 /catalog/genres/*                   /.netlify/functions/catalog-facet?path=genres/:splat      200
 /catalog/moods/*                    /.netlify/functions/catalog-facet?path=moods/:splat       200
@@ -7,6 +20,7 @@
 /catalog/packs/*                    /.netlify/functions/catalog-pack?path=:splat   200
 /catalog/tracks/*                   /.netlify/functions/catalog-track?path=:splat  200
 /robots.txt             /.netlify/functions/seo-robots   200
+/indexnow-key.txt       /.netlify/functions/seo-indexnow-key 200
 /sitemap-catalog.xml    /.netlify/functions/seo-sitemap 200
 
 # SONARA — fichiers serveur / secrets jamais publiables par Netlify

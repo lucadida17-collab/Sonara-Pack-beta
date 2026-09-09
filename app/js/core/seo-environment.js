@@ -7,5 +7,5 @@
     robots.name = 'robots';
     document.head.appendChild(robots);
   }
-  robots.content = isMain ? 'index, follow' : 'noindex, nofollow';
+  robots.content = isMain ? 'index, follow, max-image-preview:large' : 'noindex, nofollow';
 })();

@@ -2439,6 +2439,8 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     border-radius: 16px;
     background:
       rgba(255, 255, 255, 0.025);
+    text-decoration: none;
+    color: inherit;
   }
 
   .desktop-status-dot {

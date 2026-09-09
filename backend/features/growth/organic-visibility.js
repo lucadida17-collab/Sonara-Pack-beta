@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { createSeoRadar } = require("./seo-radar");
 
 let existingOwnerAccounts = {};
 try {
@@ -8,6 +9,16 @@ try {
 } catch {
   existingOwnerAccounts = {};
 }
+
+const SEO_PROMO_IMAGE_LIMIT = 8;
+
+const SEO_PILLAR_PAGES = Object.freeze([
+  { path: "/how-it-works", title: "How Sonara Pack Works" },
+  { path: "/for-creators", title: "Sonara Pack for Creators" },
+  { path: "/for-artists", title: "Sonara Pack for Artists" },
+  { path: "/licensing", title: "Sonara Pack Music Licensing" },
+  { path: "/pre-v1", title: "Sonara Pack Pre-V1" }
+]);
 
 const ORGANIC_SOURCES = Object.freeze([
   "Google",
@@ -1206,6 +1217,101 @@ function registerOrganicVisibility({
     return Array.isArray(packs) ? packs : [];
   }
 
+  async function seoRadarPages() {
+    const packs = await visiblePacks();
+    const readiness = buildSeoFacetReadiness(packs);
+    const pages = [];
+    const catalogUrl = `${normalizedPublicOrigin}/catalog`;
+    pages.push({
+      url: catalogUrl,
+      kind: "catalog",
+      sourceId: "catalog",
+      title: "Sonara Pack Music Catalog",
+      publishedAt: packs.map((pack) => safeDate(pack?.publishedAt || pack?.moderatedAt || pack?.createdAt)?.getTime() || 0).sort((a, b) => b - a)[0] ? new Date(packs.map((pack) => safeDate(pack?.publishedAt || pack?.moderatedAt || pack?.createdAt)?.getTime() || 0).sort((a, b) => b - a)[0]).toISOString() : "",
+      expectedCanonical: catalogUrl,
+      parentUrls: [`${normalizedPublicOrigin}/home.html`]
+    });
+
+    for (const pillar of SEO_PILLAR_PAGES) {
+      const url = `${normalizedPublicOrigin}${pillar.path}`;
+      pages.push({
+        url,
+        kind: "pillar",
+        sourceId: pillar.path.slice(1),
+        title: pillar.title,
+        publishedAt: "",
+        expectedCanonical: url,
+        parentUrls: [catalogUrl]
+      });
+    }
+
+    const facetUrlsByPack = new Map();
+    const facetCollections = [readiness.artists, readiness.categories, readiness.genres, readiness.moods, readiness.usages];
+    for (const collection of facetCollections) {
+      for (const entry of Array.isArray(collection) ? collection : []) {
+        if (entry?.eligible !== true || !entry.plannedPath) continue;
+        const url = `${normalizedPublicOrigin}${entry.plannedPath}`;
+        pages.push({
+          url,
+          kind: entry.type === "artist" ? "artist" : "facet",
+          sourceId: `${entry.type}:${entry.slug}`,
+          title: entry.label,
+          publishedAt: "",
+          expectedCanonical: url,
+          parentUrls: [catalogUrl]
+        });
+        for (const packId of Array.isArray(entry.packIds) ? entry.packIds : []) {
+          const links = facetUrlsByPack.get(String(packId)) || [];
+          links.push(url);
+          facetUrlsByPack.set(String(packId), links);
+        }
+      }
+    }
+
+    for (const pack of packs) {
+      const normalized = publicPack(pack);
+      if (!normalized.id) continue;
+      const packUrl = publicPackUrl(normalizedPublicOrigin, normalized.id);
+      pages.push({
+        url: packUrl,
+        kind: "pack",
+        sourceId: normalized.id,
+        title: normalized.title,
+        artist: normalized.artist,
+        publishedAt: normalized.publishedAt,
+        expectedCanonical: packUrl,
+        parentUrls: [catalogUrl, ...(facetUrlsByPack.get(normalized.id) || [])]
+      });
+      for (const sourceTrack of Array.isArray(pack.tracks) ? pack.tracks : []) {
+        if (!sourceTrack?.id || !trackSeoEligible(pack, sourceTrack)) continue;
+        const normalizedTrack = publicTrack(sourceTrack, pack);
+        const trackUrl = publicTrackUrl(normalizedPublicOrigin, normalized.id, normalizedTrack.id);
+        pages.push({
+          url: trackUrl,
+          kind: "track",
+          sourceId: `${normalized.id}:${normalizedTrack.id}`,
+          packId: normalized.id,
+          trackId: normalizedTrack.id,
+          title: normalizedTrack.title,
+          artist: normalizedTrack.artist,
+          publishedAt: normalized.publishedAt,
+          expectedCanonical: trackUrl,
+          parentUrls: [packUrl]
+        });
+      }
+    }
+    return pages.filter((page, index, all) => page.url && all.findIndex((candidate) => candidate.url === page.url) === index);
+  }
+
+  const seoRadar = createSeoRadar({
+    environment: runtimeEnvironment,
+    db,
+    dataDir,
+    publicOrigin: normalizedPublicOrigin,
+    getPages: seoRadarPages
+  });
+  app.locals.seoRadar = seoRadar;
+
   function recordsWithKnownInternalAccounts(records = []) {
     return (Array.isArray(records) ? records : []).map((record) => (
       record?.accountId && internalAccounts.has(String(record.accountId))
@@ -1430,7 +1536,7 @@ function registerOrganicVisibility({
           id: normalized.id,
           url: publicPackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id),
           canonicalUrl: publicPackUrl(normalizedPublicOrigin, normalized.id),
-          updatedAt: normalized.publishedAt,
+          updatedAt: pack?.updatedAt || pack?.moderatedAt || normalized.publishedAt,
           imageUrl: mediaUrl(req, normalized.coverPack),
           imageTitle: normalized.seo?.imageAlt || normalized.title
         });
@@ -1443,7 +1549,7 @@ function registerOrganicVisibility({
             trackId: track.id,
             url: publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id, track.id),
             canonicalUrl: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
-            updatedAt: normalized.publishedAt,
+            updatedAt: pack?.updatedAt || pack?.moderatedAt || normalized.publishedAt,
             imageUrl: mediaUrl(req, track.coverPack),
             imageTitle: track.seo?.imageAlt || track.title
           });
@@ -1453,6 +1559,10 @@ function registerOrganicVisibility({
       return res.json({
         success: true,
         environment: runtimeEnvironment,
+        index: [{
+          url: `${normalizedPublicOrigin}/catalog`,
+          updatedAt: packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0] ? new Date(packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0]).toISOString() : ""
+        }],
         packs: packEntries,
         tracks: trackEntries,
         facets: readiness,
@@ -1464,6 +1574,29 @@ function registerOrganicVisibility({
     }
   });
 
+  app.get("/api/public/catalog/index", async (req, res) => {
+    try {
+      const packs = await visiblePacks();
+      const readiness = buildSeoFacetReadiness(packs);
+      const ordered = packs
+        .slice()
+        .sort((a, b) => (safeDate(b?.publishedAt || b?.moderatedAt || b?.createdAt)?.getTime() || 0) - (safeDate(a?.publishedAt || a?.moderatedAt || a?.createdAt)?.getTime() || 0));
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        catalog: {
+          label: "Sonara Pack Music Catalog",
+          description: "Explore public Sonara Pack music releases, artists and licensed tracks for creative projects.",
+          canonicalUrl: `${normalizedPublicOrigin}/catalog`
+        },
+        packs: ordered.map((pack) => publicPackForRequest(req, pack, readiness))
+      });
+    } catch (error) {
+      console.error("Public catalog index impossible :", error);
+      return res.status(500).json({ success: false, message: "Catalogue public indisponible." });
+    }
+  });
+
   app.get("/api/public/catalog/sitemap", async (req, res) => {
     try {
       const packs = await visiblePacks();
@@ -1471,16 +1604,24 @@ function registerOrganicVisibility({
       const normalizedById = new Map();
       const packEntries = [];
       const trackEntries = [];
+      const promoPackIds = new Set(
+        packs
+          .map((pack) => publicPack(pack))
+          .filter((pack) => pack.id && pack.promoImage)
+          .sort((a, b) => (safeDate(b.publishedAt)?.getTime() || 0) - (safeDate(a.publishedAt)?.getTime() || 0))
+          .slice(0, SEO_PROMO_IMAGE_LIMIT)
+          .map((pack) => pack.id)
+      );
 
       for (const pack of packs) {
         const normalized = publicPack(pack);
         if (!normalized.id) continue;
         normalizedById.set(normalized.id, normalized);
         const packCoverUrl = mediaUrl(req, normalized.coverPack);
-        const packPromoUrl = mediaUrl(req, normalized.promoImage);
+        const packPromoUrl = promoPackIds.has(normalized.id) ? mediaUrl(req, normalized.promoImage) : "";
         packEntries.push({
           url: publicPackUrl(normalizedPublicOrigin, normalized.id),
-          updatedAt: normalized.publishedAt,
+          updatedAt: pack?.updatedAt || pack?.moderatedAt || normalized.publishedAt,
           imageUrl: packCoverUrl,
           imageTitle: normalized.seo?.imageAlt || normalized.title,
           imageCaption: normalized.seo?.description || "",
@@ -1502,10 +1643,9 @@ function registerOrganicVisibility({
           if (!trackSeoEligible(pack, sourceTrack) || !sourceTrack?.id) continue;
           const track = publicTrack(sourceTrack, pack);
           const trackCoverUrl = mediaUrl(req, track.coverPack);
-          const trackPromoUrl = mediaUrl(req, track.promoImage);
           trackEntries.push({
             url: publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id),
-            updatedAt: normalized.publishedAt,
+            updatedAt: pack?.updatedAt || pack?.moderatedAt || normalized.publishedAt,
             imageUrl: trackCoverUrl,
             imageTitle: track.seo?.imageAlt || track.title,
             imageCaption: track.seo?.description || "",
@@ -1513,11 +1653,6 @@ function registerOrganicVisibility({
               trackCoverUrl ? {
                 url: trackCoverUrl,
                 title: track.seo?.imageAlt || track.title,
-                caption: track.seo?.description || ""
-              } : null,
-              trackPromoUrl && trackPromoUrl !== trackCoverUrl ? {
-                url: trackPromoUrl,
-                title: `${track.title} by ${track.artist || normalized.artist} – Sonara Pack promotional visual`,
                 caption: track.seo?.description || ""
               } : null
             ].filter(Boolean)
@@ -1543,6 +1678,10 @@ function registerOrganicVisibility({
       return res.json({
         success: true,
         environment: runtimeEnvironment,
+        index: [{
+          url: `${normalizedPublicOrigin}/catalog`,
+          updatedAt: packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0] ? new Date(packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0]).toISOString() : ""
+        }],
         packs: packEntries,
         tracks: trackEntries,
         facets: [
@@ -1737,6 +1876,27 @@ function registerOrganicVisibility({
     }
   });
 
+  app.get("/api/founder/seo-radar", requireFounderKey, async (_req, res) => {
+    try {
+      return res.json(await seoRadar.snapshot({ kickBackground: true }));
+    } catch (error) {
+      console.error("Founder SEO Radar impossible :", error);
+      return res.status(500).json({ success: false, message: "SEO Radar indisponible.", error: error.message });
+    }
+  });
+
+  app.post("/api/founder/seo-radar/refresh", requireFounderKey, async (req, res) => {
+    try {
+      const requested = Array.isArray(req.body?.urls) ? req.body.urls.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 30) : [];
+      const result = await seoRadar.refresh({ forceGoogle: true, urls: requested, manual: true });
+      const snapshot = await seoRadar.snapshot({ kickBackground: false });
+      return res.json({ ...snapshot, refresh: result });
+    } catch (error) {
+      console.error("Actualisation SEO Radar impossible :", error);
+      return res.status(500).json({ success: false, message: "Actualisation Google impossible.", error: error.message });
+    }
+  });
+
   app.get("/api/founder/organic-visibility", requireFounderKey, async (req, res) => {
     try {
       const [rawRecords, packs] = await Promise.all([store.list(), visiblePacks()]);
@@ -1765,7 +1925,8 @@ function registerOrganicVisibility({
   return {
     environment: runtimeEnvironment,
     sourceLabels: ORGANIC_SOURCES,
-    trackSeoEligible
+    trackSeoEligible,
+    seoRadar
   };
 }
 

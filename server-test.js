@@ -5926,6 +5926,12 @@ app.patch("/api/packs/:id/status", requireFounderKey, async (req, res) => {
         pack: publishedPack,
         publishedAt: moderatedAt
       });
+      if (app.locals.seoRadar) {
+        const seoPackUrl = `${String(frontUrl || "").replace(/\/+$/, "")}/catalog/packs/${encodeURIComponent(packId)}`;
+        Promise.resolve(app.locals.seoRadar.registerPublishedUrls([seoPackUrl])).catch((error) => {
+          console.error("SEO Radar publication queue impossible :", error?.message || error);
+        });
+      }
     }
     await founderNotificationsCollection.deleteMany({
       $or: [
