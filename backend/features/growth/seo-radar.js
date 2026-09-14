@@ -318,6 +318,7 @@ function createGoogleClient({ environment, fetchImpl = global.fetch }) {
     if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Search Analytics ${response.status}`), { status: response.status, payload: data });
     const row = Array.isArray(data.rows) ? data.rows[0] || {} : {};
     return {
+      available: true,
       periodDays: days,
       startDate: fmt(start),
       endDate: fmt(end),
@@ -609,7 +610,16 @@ ${staticSitemapXml}`;
         if (error.status === 429) break;
       }
     }
-    await refreshGooglePerformance({ force }).catch(() => null);
+    try {
+      const performance = await refreshGooglePerformance({ force });
+      if (performance) await store.setMeta('googlePerformanceError', null);
+    } catch (error) {
+      await store.setMeta('googlePerformanceError', {
+        message: error.message || 'SEARCH_ANALYTICS_FAILED',
+        status: Number(error.status || 0) || null,
+        failedAt: nowIso()
+      });
+    }
     return { inspected, errors };
   }
 
@@ -665,6 +675,7 @@ ${staticSitemapXml}`;
     await syncPages();
     const pages = (await store.listPages()).filter((page) => page.active !== false).sort((a, b) => new Date(b.publishedAt || b.discoveredAt || 0) - new Date(a.publishedAt || a.discoveredAt || 0));
     const performance = await store.getMeta('googlePerformance');
+    const performanceError = await store.getMeta('googlePerformanceError');
     const siteAudit = await store.getMeta('siteAudit');
     const titleCounts = new Map();
     const descriptionCounts = new Map();
@@ -695,7 +706,17 @@ ${staticSitemapXml}`;
         reason: google.config.reason,
         inspectionApi: GOOGLE_INSPECTION_ENDPOINT,
         indexingApiUsed: false,
-        performance: performance || { clicks: 0, impressions: 0, periodDays: 28 }
+        performance: performance
+          ? { ...performance, available: true, lastError: performanceError || null }
+          : {
+              available: false,
+              periodDays: 28,
+              reason: google.config.enabled
+                ? (performanceError?.message || 'SEARCH_CONSOLE_NOT_FETCHED_YET')
+                : google.config.reason,
+              fetchedAt: null,
+              lastError: performanceError || null
+            }
       },
       indexNow: { enabled: env === 'main' && Boolean(String(process.env.INDEXNOW_KEY || '').trim()), google: false },
       siteAudit: siteAudit || null,

@@ -863,6 +863,7 @@ function summarizeAttribution(records = []) {
 
   const bySource = ORGANIC_SOURCES.map((source) => {
     const row = sourceMap.get(source);
+    row.pageViews = Math.max(0, Number(row.visits || 0));
     row.conversionRate = row.visitors > 0 ? Number(((row.signups / row.visitors) * 100).toFixed(2)) : 0;
     return row;
   });
@@ -950,13 +951,23 @@ function summarizeAttribution(records = []) {
 
   return {
     visitors: externalVisitorCount,
+    // Compatibilité historique : `visits` était le nom exposé avant l’audit 2026-09.
+    // La valeur est en réalité un compteur de chargements de pages publiques suivies,
+    // pas un compteur de sessions. `pageViews` est désormais le nom explicite.
     visits: externalVisitCount,
+    pageViews: externalVisitCount,
     attributedSignups: accountSources.size,
     linkedAccounts: linkedAccounts.size,
     internalTraffic: {
       visitors: internalVisitorCount,
       visits: internalVisitCount,
+      pageViews: internalVisitCount,
       linkedAccounts: internalAccountSet.size
+    },
+    definitions: {
+      visitors: "visitorId persistant dans le navigateur ; un même visitorId reste un visiteur unique tant que le stockage local n’est pas supprimé.",
+      pageViews: "Chargements des pages publiques/onboarding instrumentées ; ce n’est pas une session.",
+      attributedSignups: "Comptes réels reliés à une arrivée suivie et créés dans la fenêtre d’attribution ; ce n’est pas le total brut des comptes."
     },
     bySource,
     accountAttributions,
