@@ -260,6 +260,115 @@ function createLibraryDownloadUrl({
     return targetUrl.href;
 }
 
+
+
+function libraryTranslate(value) {
+    return window.SonaraI18n?.t?.(value) || value;
+}
+
+function libraryEnvironment() {
+    try {
+        return typeof SONARA_ENV !== "undefined"
+            ? String(SONARA_ENV || "")
+            : "";
+    } catch {
+        return "";
+    }
+}
+
+function libraryPublicPackUrl(packId) {
+    const safeId = encodeURIComponent(String(packId || ""));
+
+    if (libraryEnvironment() === "local") {
+        return `${window.location.origin}/app/pages/catalog/public-pack.html?id=${safeId}`;
+    }
+
+    return `${window.location.origin}/catalog/packs/${safeId}`;
+}
+
+function libraryPackShareText(pack = {}) {
+    const template = libraryTranslate("{0} — {1}, disponible sur Sonara Pack");
+    return template
+        .replace("{0}", String(pack.title || pack.name || "Sonara Pack"))
+        .replace("{1}", String(pack.artist || pack.pseudo || "Artiste Sonara"));
+}
+
+function copyLibraryTextFallback(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    textarea.style.left = "-9999px";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    let copied = false;
+    try {
+        copied = document.execCommand("copy");
+    } finally {
+        textarea.remove();
+    }
+
+    return copied;
+}
+
+async function copyLibraryPackLink(pack = {}, button = null) {
+    const url = libraryPublicPackUrl(pack.id);
+
+    try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            await navigator.clipboard.writeText(url);
+        } else if (!copyLibraryTextFallback(url)) {
+            throw new Error("Copie indisponible");
+        }
+
+        if (button) {
+            const original = libraryTranslate("Copier le lien");
+            button.textContent = libraryTranslate("Lien du pack copié.");
+            window.setTimeout(() => {
+                if (button.isConnected) button.textContent = original;
+            }, 1800);
+        }
+
+        return true;
+    } catch (error) {
+        console.warn("Partage Library : copie du lien impossible", error);
+        return false;
+    }
+}
+
+async function shareLibraryPack(pack = {}, button = null) {
+    const url = libraryPublicPackUrl(pack.id);
+    const shareData = {
+        title: String(pack.title || pack.name || "Sonara Pack"),
+        text: libraryPackShareText(pack),
+        url
+    };
+
+    if (typeof navigator.share === "function") {
+        try {
+            await navigator.share(shareData);
+            return;
+        } catch (error) {
+            if (error?.name === "AbortError") return;
+            console.warn("Partage Library natif indisponible, copie du lien utilisée.", error);
+        }
+    }
+
+    const copied = await copyLibraryPackLink(pack, button);
+    if (copied && button) {
+        const original = libraryTranslate("Partager");
+        button.textContent = libraryTranslate("Lien du pack copié.");
+        window.setTimeout(() => {
+            if (button.isConnected) button.textContent = original;
+        }, 1800);
+    }
+}
+
 function navigateToLibraryDownload(
     downloadPage
 ) {
@@ -1280,7 +1389,12 @@ function renderDownloadedPack(packId) {
                 packId:
                     packData.id
             })
-        )}">Télécharger</button>    
+        )}">Télécharger</button>
+
+        <div class="library-pack-share-actions" aria-label="Partage du pack">
+          <button type="button" class="library-pack-share-button js-share-library-pack">Partager</button>
+          <button type="button" class="library-pack-share-button secondary js-copy-library-pack-link">Copier le lien</button>
+        </div>
       </div>
     </div>
    <div class="track-row-separator"></div>
@@ -1922,6 +2036,21 @@ grandControlNext.addEventListener("click", (e) => {
 
 
     }
+
+    const sharePackButton = document.querySelector(".js-share-library-pack");
+    const copyPackLinkButton = document.querySelector(".js-copy-library-pack-link");
+
+    sharePackButton?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await shareLibraryPack(packData, sharePackButton);
+    });
+
+    copyPackLinkButton?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await copyLibraryPackLink(packData, copyPackLinkButton);
+    });
 
     const packDownloadBtns = document.querySelectorAll(".js-download-pack, .js-download-pack-desktop");
 

@@ -3647,3 +3647,50 @@ body.library .pack-card p {
     font-size: 12px;
   }
 }
+
+
+/* =========================================================
+   Partage utilisateur — pack déjà obtenu
+   Réutilise la page publique existante, aucun analytics parallèle.
+========================================================= */
+body.library .library-pack-share-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+body.library .library-pack-share-button {
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.library .library-pack-share-button.secondary {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.library .library-pack-share-button:hover {
+  background: #fff;
+  color: #000;
+}
+
+@media (max-width: 899px) {
+  body.library .library-pack-share-actions {
+    width: 100%;
+    justify-content: center;
+    margin-top: 14px;
+  }
+
+  body.library .library-pack-share-button {
+    min-width: 132px;
+  }
+}
