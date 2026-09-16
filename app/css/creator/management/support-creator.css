@@ -10,7 +10,7 @@ html,
 body {
   width: 100%;
   min-height: 100%;
-    width: 100%;
+  width: 100%;
   min-height: 100vh;
 
   background: #000000;
@@ -516,7 +516,6 @@ textarea.support-input {
   }
 }
 
-
 .support-help-content {
   margin-top: 32px;
 }
@@ -590,7 +589,6 @@ textarea.support-input {
 .support-help-contact:hover {
   background: #ffffff;
 }
-
 
 .support-conversation {
   display: grid;

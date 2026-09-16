@@ -96,7 +96,10 @@ svg {
   .creator-page,
   .create-pack,
   .manage-pack-root {
-    width: min(calc(100% - (var(--sonara-fluid-gutter) * 2)), 1540px) !important;
+    width: min(
+      calc(100% - (var(--sonara-fluid-gutter) * 2)),
+      1540px
+    ) !important;
     margin-inline: auto !important;
     box-sizing: border-box;
   }
@@ -139,7 +142,10 @@ svg {
   body.settings .settings-page,
   body.profile .profile-page,
   body.profile .edit-profile-page {
-    width: min(calc(100% - (var(--sonara-fluid-gutter) * 2)), 1100px) !important;
+    width: min(
+      calc(100% - (var(--sonara-fluid-gutter) * 2)),
+      1100px
+    ) !important;
     max-width: 1100px !important;
     margin-inline: auto !important;
     box-sizing: border-box;
@@ -250,7 +256,7 @@ svg {
 
   body.home .card .artist,
   body.home .artist {
-    font-size: clamp(13px, .72vw, 15px) !important;
+    font-size: clamp(13px, 0.72vw, 15px) !important;
   }
 
   /* LIBRARY : plus de mini-grille bloquée à 900/1040px. */
@@ -287,7 +293,9 @@ svg {
 
   body.library .download-pack-page .track-list,
   body.library .download-pack-page .track-row {
-    grid-template-columns: 48px minmax(260px, 1.45fr) minmax(220px, 1fr) 120px minmax(40px, .6fr) 116px !important;
+    grid-template-columns:
+      48px minmax(260px, 1.45fr) minmax(220px, 1fr)
+      120px minmax(40px, 0.6fr) 116px !important;
     column-gap: clamp(14px, 1.25vw, 24px) !important;
   }
 

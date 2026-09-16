@@ -11,7 +11,11 @@ body.Download {
   font-family: Arial, Helvetica, sans-serif;
   background:
     radial-gradient(circle at top, rgba(0, 140, 255, 0.22), transparent 38%),
-    radial-gradient(circle at bottom right, rgba(90, 0, 255, 0.18), transparent 35%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(90, 0, 255, 0.18),
+      transparent 35%
+    ),
     linear-gradient(180deg, #020817 0%, #050b18 45%, #02040a 100%);
   color: white;
   overflow-x: hidden;
@@ -41,8 +45,11 @@ body.Download {
   padding: 34px 24px;
   border: 1px solid rgba(120, 200, 255, 0.35);
   border-radius: 28px;
-  background:
-    linear-gradient(145deg, rgba(8, 22, 45, 0.95), rgba(2, 8, 20, 0.96));
+  background: linear-gradient(
+    145deg,
+    rgba(8, 22, 45, 0.95),
+    rgba(2, 8, 20, 0.96)
+  );
   box-shadow:
     0 0 35px rgba(0, 132, 255, 0.22),
     inset 0 0 25px rgba(0, 180, 255, 0.05);
@@ -56,7 +63,12 @@ body.Download {
   content: "";
   position: absolute;
   inset: -2px;
-  background: linear-gradient(120deg, transparent, rgba(0, 200, 255, 0.22), transparent);
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 200, 255, 0.22),
+    transparent
+  );
   opacity: 0.6;
   pointer-events: none;
 }
@@ -126,8 +138,7 @@ body.Download {
 /* DESKTOP */
 
 @media (min-width: 769px) {
-
-   .finger-cursor {
+  .finger-cursor {
     position: fixed;
     left: 0;
     top: 0;
@@ -144,12 +155,12 @@ body.Download {
     transform: translate(-50%, -50%);
 
     transition:
-        width .15s,
-        height .15s,
-        border .15s;
+      width 0.15s,
+      height 0.15s,
+      border 0.15s;
 
     display: none;
-}
+  }
 
   .download-mobile {
     display: none;
@@ -200,13 +211,23 @@ body.Download {
 .download-after-shell {
   width: min(100%, 1080px);
   padding: clamp(22px, 4vw, 44px);
-  border: 1px solid rgba(109, 217, 255, .24);
+  border: 1px solid rgba(109, 217, 255, 0.24);
   border-radius: 32px;
   background:
-    radial-gradient(circle at 86% 0%, rgba(52, 167, 255, .19), transparent 30%),
-    radial-gradient(circle at 0% 100%, rgba(109, 74, 255, .12), transparent 32%),
-    linear-gradient(145deg, rgba(8, 22, 45, .96), rgba(3, 8, 20, .98));
-  box-shadow: 0 30px 100px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06);
+    radial-gradient(
+      circle at 86% 0%,
+      rgba(52, 167, 255, 0.19),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(109, 74, 255, 0.12),
+      transparent 32%
+    ),
+    linear-gradient(145deg, rgba(8, 22, 45, 0.96), rgba(3, 8, 20, 0.98));
+  box-shadow:
+    0 30px 100px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .download-after-header {
@@ -217,28 +238,28 @@ body.Download {
   width: 48px;
   height: 48px;
   margin-bottom: 16px;
-  border: 1px solid rgba(103, 242, 214, .28);
+  border: 1px solid rgba(103, 242, 214, 0.28);
   border-radius: 16px;
   display: grid;
   place-items: center;
   color: #75f0d3;
-  background: rgba(60, 218, 184, .10);
+  background: rgba(60, 218, 184, 0.1);
   font-size: 23px;
   font-weight: 900;
-  box-shadow: 0 0 28px rgba(71, 235, 199, .10);
+  box-shadow: 0 0 28px rgba(71, 235, 199, 0.1);
 }
 
 .download-after-header h1 {
   margin: 0;
   font-size: clamp(32px, 5vw, 58px);
-  line-height: .98;
-  letter-spacing: -.05em;
+  line-height: 0.98;
+  letter-spacing: -0.05em;
 }
 
 .download-after-header > p:last-child {
   max-width: 760px;
   margin: 14px 0 0;
-  color: rgba(255,255,255,.58);
+  color: rgba(255, 255, 255, 0.58);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -254,23 +275,31 @@ body.Download {
   min-width: 0;
   min-height: 112px;
   padding: 15px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   display: flex;
   align-items: flex-start;
   gap: 11px;
   text-align: left;
-  background: rgba(255,255,255,.025);
-  color: rgba(255,255,255,.67);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.67);
   cursor: pointer;
-  transition: border-color .18s ease, background .18s ease, transform .18s ease, color .18s ease;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
 }
 
 .download-project-choice:hover,
 .download-project-choice.active {
   color: #fff;
-  border-color: rgba(83, 218, 255, .28);
-  background: linear-gradient(145deg, rgba(29, 166, 255, .13), rgba(84, 75, 255, .06));
+  border-color: rgba(83, 218, 255, 0.28);
+  background: linear-gradient(
+    145deg,
+    rgba(29, 166, 255, 0.13),
+    rgba(84, 75, 255, 0.06)
+  );
   transform: translateY(-1px);
 }
 
@@ -293,7 +322,7 @@ body.Download {
 }
 
 .download-project-choice small {
-  color: rgba(255,255,255,.40);
+  color: rgba(255, 255, 255, 0.4);
   font-size: 9px;
   line-height: 1.45;
 }
@@ -301,9 +330,9 @@ body.Download {
 .download-integration-guide {
   margin-top: 14px;
   padding: 20px;
-  border: 1px solid rgba(255,255,255,.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 20px;
-  background: rgba(0,0,0,.16);
+  background: rgba(0, 0, 0, 0.16);
   text-align: left;
 }
 
@@ -312,13 +341,13 @@ body.Download {
   color: #62ddff;
   font-size: 9px;
   font-weight: 850;
-  letter-spacing: .16em;
+  letter-spacing: 0.16em;
 }
 
 .download-integration-guide h2 {
   margin: 0;
   font-size: 18px;
-  letter-spacing: -.025em;
+  letter-spacing: -0.025em;
 }
 
 .download-integration-guide ol {
@@ -326,7 +355,7 @@ body.Download {
   padding-left: 20px;
   display: grid;
   gap: 10px;
-  color: rgba(255,255,255,.60);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 11px;
   line-height: 1.55;
 }
@@ -354,7 +383,7 @@ body.Download {
 }
 
 .download-montage-button {
-  border: 1px solid rgba(92, 222, 255, .32);
+  border: 1px solid rgba(92, 222, 255, 0.32);
   background: linear-gradient(135deg, #3adeff, #3f8aff 58%, #735cff);
   color: #04101d;
   font-weight: 850;
@@ -368,8 +397,8 @@ body.Download {
 
 .download-credit-button,
 .download-library-button {
-  border: 1px solid rgba(255,255,255,.11);
-  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.045);
   color: #fff;
   font-weight: 780;
   cursor: pointer;

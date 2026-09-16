@@ -75,8 +75,7 @@
 
   .sonara-shell-page .desktop-shell {
     display: grid;
-    grid-template-columns:
-      var(--sonara-shell-panel-width) minmax(0, 1fr);
+    grid-template-columns: var(--sonara-shell-panel-width) minmax(0, 1fr);
     width: 100%;
     height: 100dvh;
     min-height: 0;
@@ -98,11 +97,7 @@
         rgba(0, 188, 255, 0.12),
         transparent 28%
       ),
-      linear-gradient(
-        180deg,
-        rgba(10, 15, 26, 0.98),
-        rgba(5, 8, 15, 0.99)
-      );
+      linear-gradient(180deg, rgba(10, 15, 26, 0.98), rgba(5, 8, 15, 0.99));
     box-shadow: 20px 0 54px rgba(0, 0, 0, 0.26);
   }
 
@@ -124,12 +119,11 @@
     overflow: hidden;
     border: 1px solid rgba(79, 220, 255, 0.22);
     border-radius: 15px;
-    background:
-      linear-gradient(
-        145deg,
-        rgba(38, 184, 255, 0.15),
-        rgba(69, 85, 255, 0.07)
-      );
+    background: linear-gradient(
+      145deg,
+      rgba(38, 184, 255, 0.15),
+      rgba(69, 85, 255, 0.07)
+    );
     box-shadow:
       0 10px 24px rgba(0, 92, 195, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -235,12 +229,11 @@
   .sonara-shell-page .desktop-nav-btn.active {
     color: var(--sonara-shell-cyan);
     border-color: rgba(77, 218, 255, 0.23);
-    background:
-      linear-gradient(
-        135deg,
-        rgba(23, 179, 255, 0.14),
-        rgba(74, 91, 255, 0.075)
-      );
+    background: linear-gradient(
+      135deg,
+      rgba(23, 179, 255, 0.14),
+      rgba(74, 91, 255, 0.075)
+    );
     box-shadow:
       0 15px 34px rgba(0, 76, 158, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.07);
@@ -354,12 +347,11 @@
 
   .sonara-shell-page .desktop-workspace .scroll-zone::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(60, 225, 255, 0.75),
-        rgba(56, 102, 255, 0.68)
-      );
+    background: linear-gradient(
+      180deg,
+      rgba(60, 225, 255, 0.75),
+      rgba(56, 102, 255, 0.68)
+    );
   }
 
   .sonara-shell-page .shell-content {
@@ -371,8 +363,10 @@
 
 @media (min-width: 900px) and (max-width: 1120px) {
   .sonara-shell-page .desktop-shell {
-    grid-template-columns:
-      var(--sonara-shell-panel-width-compact) minmax(0, 1fr);
+    grid-template-columns: var(--sonara-shell-panel-width-compact) minmax(
+        0,
+        1fr
+      );
   }
 
   .sonara-shell-page .desktop-side-panel {

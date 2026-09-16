@@ -33,15 +33,23 @@ body.pre-v1-notice-open {
   border: 1px solid rgba(123, 213, 255, 0.24);
   border-radius: 32px;
   background:
-    radial-gradient(circle at 86% 5%, rgba(41, 177, 255, 0.22), transparent 35%),
-    radial-gradient(circle at 8% 100%, rgba(49, 97, 255, 0.16), transparent 38%),
+    radial-gradient(
+      circle at 86% 5%,
+      rgba(41, 177, 255, 0.22),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 8% 100%,
+      rgba(49, 97, 255, 0.16),
+      transparent 38%
+    ),
     linear-gradient(145deg, rgba(20, 31, 49, 0.98), rgba(8, 12, 21, 0.99));
   box-shadow:
     0 34px 90px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   color: #fff;
   transform: translateY(18px) scale(0.98);
-  transition: transform 260ms cubic-bezier(.22,.8,.27,1);
+  transition: transform 260ms cubic-bezier(0.22, 0.8, 0.27, 1);
 }
 
 .pre-v1-commercial-notice.show .pre-v1-commercial-notice-card {
@@ -77,7 +85,11 @@ body.pre-v1-notice-open {
   margin-bottom: 20px;
   border: 1px solid rgba(83, 213, 255, 0.27);
   border-radius: 21px;
-  background: linear-gradient(145deg, rgba(27, 191, 255, 0.21), rgba(29, 102, 255, 0.1));
+  background: linear-gradient(
+    145deg,
+    rgba(27, 191, 255, 0.21),
+    rgba(29, 102, 255, 0.1)
+  );
   color: #36d8ff;
   box-shadow: 0 16px 40px rgba(0, 139, 255, 0.12);
 }
@@ -201,7 +213,9 @@ body.pre-v1-notice-open {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 18px 38px rgba(15, 140, 255, 0.2);
-  transition: transform 170ms ease, filter 170ms ease;
+  transition:
+    transform 170ms ease,
+    filter 170ms ease;
   white-space: normal;
 }
 

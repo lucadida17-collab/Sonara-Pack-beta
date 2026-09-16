@@ -23,7 +23,9 @@ body.sonara-cinematic-running #sonara-language-switcher {
   visibility: visible;
   opacity: 1;
   pointer-events: none;
-  transition: opacity .65s ease, visibility 0s linear 0s;
+  transition:
+    opacity 0.65s ease,
+    visibility 0s linear 0s;
 }
 
 .sonara-cinematic {
@@ -56,8 +58,12 @@ body.sonara-cinematic-running #sonara-language-switcher {
   color: var(--cinematic-white);
   font-family: "Inter", Arial, sans-serif;
   background:
-    radial-gradient(circle at 50% 46%, rgba(24, 111, 199, .32), transparent 38%),
-    radial-gradient(circle at 20% 20%, rgba(10, 65, 132, .20), transparent 40%),
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(24, 111, 199, 0.32),
+      transparent 38%
+    ),
+    radial-gradient(circle at 20% 20%, rgba(10, 65, 132, 0.2), transparent 40%),
     linear-gradient(155deg, #01050e 0%, #020b20 54%, #00030b 100%);
   contain: layout paint style;
   opacity: 1;
@@ -76,21 +82,40 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 .sonara-cinematic::before {
   opacity: var(--void-progress);
-  background:
-    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, .72), #000 45%, #000 100%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0.72),
+    #000 45%,
+    #000 100%
+  );
 }
 
 .sonara-cinematic::after {
   inset: -12%;
-  opacity: clamp(0, calc(var(--space-progress) * .88), .88);
+  opacity: clamp(0, calc(var(--space-progress) * 0.88), 0.88);
   background:
-    radial-gradient(ellipse at 19% 63%, rgba(255, 48, 183, .22), transparent 32%),
-    radial-gradient(ellipse at 78% 28%, rgba(113, 68, 255, .30), transparent 36%),
-    radial-gradient(ellipse at 50% 52%, rgba(35, 137, 255, .22), transparent 29%),
-    radial-gradient(ellipse at 50% 50%, rgba(5, 9, 34, .18), rgba(0, 0, 8, .88) 72%);
-  transform:
-    rotate(calc(var(--travel-progress) * 18deg))
-    scale(calc(.94 + var(--space-progress) * .09));
+    radial-gradient(
+      ellipse at 19% 63%,
+      rgba(255, 48, 183, 0.22),
+      transparent 32%
+    ),
+    radial-gradient(
+      ellipse at 78% 28%,
+      rgba(113, 68, 255, 0.3),
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 50% 52%,
+      rgba(35, 137, 255, 0.22),
+      transparent 29%
+    ),
+    radial-gradient(
+      ellipse at 50% 50%,
+      rgba(5, 9, 34, 0.18),
+      rgba(0, 0, 8, 0.88) 72%
+    );
+  transform: rotate(calc(var(--travel-progress) * 18deg))
+    scale(calc(0.94 + var(--space-progress) * 0.09));
 }
 
 .sonara-cinematic[hidden],
@@ -100,11 +125,11 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 .sonara-cinematic.is-finishing {
   opacity: 0 !important;
-  transition: opacity .72s cubic-bezier(.5, 0, .8, 1);
+  transition: opacity 0.72s cubic-bezier(0.5, 0, 0.8, 1);
 }
 
 .sonara-cinematic[data-scene="loader"] {
-  opacity: calc(1 - var(--scene-progress) * .92);
+  opacity: calc(1 - var(--scene-progress) * 0.92);
 }
 
 #sonaraCinematicCanvas,
@@ -130,29 +155,28 @@ body.sonara-cinematic-running #sonara-language-switcher {
 /* Au moment de l'aspiration, les couleurs perdent leur netteté avant que
    l'image se transforme en spirale stellaire. */
 .sonara-cinematic[data-scene="suction"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 9px))
-    saturate(calc(1 + var(--color-warp-progress) * .38 - var(--void-progress) * 1.12))
-    brightness(calc(1 - var(--void-progress) * .62))
-    contrast(calc(1 + var(--color-warp-progress) * .34))
+  filter: blur(calc(var(--color-warp-progress) * 9px))
+    saturate(
+      calc(1 + var(--color-warp-progress) * 0.38 - var(--void-progress) * 1.12)
+    )
+    brightness(calc(1 - var(--void-progress) * 0.62))
+    contrast(calc(1 + var(--color-warp-progress) * 0.34))
     hue-rotate(calc(var(--color-warp-progress) * 22deg));
-  transform: scale(calc(1 + var(--color-warp-progress) * .09));
+  transform: scale(calc(1 + var(--color-warp-progress) * 0.09));
 }
 
 .sonara-cinematic[data-scene="travel"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 6px))
-    saturate(calc(1.10 + var(--space-progress) * .50))
-    contrast(calc(1.04 + var(--space-progress) * .20));
-  transform: scale(calc(1 + var(--color-warp-progress) * .07));
+  filter: blur(calc(var(--color-warp-progress) * 6px))
+    saturate(calc(1.1 + var(--space-progress) * 0.5))
+    contrast(calc(1.04 + var(--space-progress) * 0.2));
+  transform: scale(calc(1 + var(--color-warp-progress) * 0.07));
 }
 
 .sonara-cinematic[data-scene="ejection"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--ejection-flash-progress) * 2.4px))
-    saturate(calc(1.28 - var(--ejection-progress) * .12))
-    brightness(calc(1 + var(--ejection-flash-progress) * .28));
-  transform: scale(calc(1.09 - var(--ejection-progress) * .09));
+  filter: blur(calc(var(--ejection-flash-progress) * 2.4px))
+    saturate(calc(1.28 - var(--ejection-progress) * 0.12))
+    brightness(calc(1 + var(--ejection-flash-progress) * 0.28));
+  transform: scale(calc(1.09 - var(--ejection-progress) * 0.09));
 }
 
 .sonara-cinematic-aurora {
@@ -163,23 +187,35 @@ body.sonara-cinematic-running #sonara-language-switcher {
   opacity: clamp(
     0,
     calc(
-      .13 - var(--void-progress) * .13
-      + var(--space-progress) * .48
-      + var(--galaxy-visibility) * .12
-      + var(--approach-progress) * .08
+      0.13 - var(--void-progress) * 0.13 + var(--space-progress) * 0.48 +
+        var(--galaxy-visibility) * 0.12 + var(--approach-progress) * 0.08
     ),
-    .76
+    0.76
   );
   background:
-    radial-gradient(ellipse at 18% 42%, rgba(0, 211, 255, .30), transparent 35%),
-    radial-gradient(ellipse at 78% 55%, rgba(28, 121, 255, .26), transparent 34%),
-    radial-gradient(ellipse at 52% 22%, rgba(71, 112, 255, .28), transparent 32%);
-  filter:
-    blur(calc(66px + var(--space-progress) * 24px))
-    saturate(calc(1.28 + var(--space-progress) * .72));
-  transform:
-    rotate(calc(var(--cinematic-progress) * 28deg + var(--travel-progress) * 42deg))
-    scale(calc(.92 + var(--space-progress) * .25 + var(--approach-progress) * .10));
+    radial-gradient(
+      ellipse at 18% 42%,
+      rgba(0, 211, 255, 0.3),
+      transparent 35%
+    ),
+    radial-gradient(
+      ellipse at 78% 55%,
+      rgba(28, 121, 255, 0.26),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 52% 22%,
+      rgba(71, 112, 255, 0.28),
+      transparent 32%
+    );
+  filter: blur(calc(66px + var(--space-progress) * 24px))
+    saturate(calc(1.28 + var(--space-progress) * 0.72));
+  transform: rotate(
+      calc(var(--cinematic-progress) * 28deg + var(--travel-progress) * 42deg)
+    )
+    scale(
+      calc(0.92 + var(--space-progress) * 0.25 + var(--approach-progress) * 0.1)
+    );
 }
 
 .sonara-cinematic[data-scene="travel"] .sonara-cinematic-aurora,
@@ -190,9 +226,21 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic[data-scene="climax"] .sonara-cinematic-aurora,
 .sonara-cinematic[data-scene="loader"] .sonara-cinematic-aurora {
   background:
-    radial-gradient(ellipse at 16% 64%, rgba(255, 47, 186, .30), transparent 35%),
-    radial-gradient(ellipse at 82% 34%, rgba(113, 68, 255, .34), transparent 36%),
-    radial-gradient(ellipse at 48% 48%, rgba(31, 180, 255, .27), transparent 31%);
+    radial-gradient(
+      ellipse at 16% 64%,
+      rgba(255, 47, 186, 0.3),
+      transparent 35%
+    ),
+    radial-gradient(
+      ellipse at 82% 34%,
+      rgba(113, 68, 255, 0.34),
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 48% 48%,
+      rgba(31, 180, 255, 0.27),
+      transparent 31%
+    );
 }
 
 .sonara-cinematic-grid {
@@ -200,44 +248,60 @@ body.sonara-cinematic-running #sonara-language-switcher {
   inset: 44% -35% -60%;
   width: 170%;
   height: 116%;
-  opacity: calc((1 - var(--void-progress)) * .10);
+  opacity: calc((1 - var(--void-progress)) * 0.1);
   background: repeating-radial-gradient(
     ellipse at 50% 0%,
     transparent 0 42px,
-    rgba(82, 241, 255, .18) 43px 44px,
+    rgba(82, 241, 255, 0.18) 43px 44px,
     transparent 45px 82px
   );
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 76%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 76%);
   transform: perspective(700px) rotateX(69deg) translateY(6%);
   transform-origin: top center;
 }
 
 .sonara-cinematic-vignette {
   z-index: 8;
-  background: radial-gradient(circle, transparent 33%, rgba(0, 2, 8, .38) 73%, rgba(0, 1, 5, .92) 115%);
+  background: radial-gradient(
+    circle,
+    transparent 33%,
+    rgba(0, 2, 8, 0.38) 73%,
+    rgba(0, 1, 5, 0.92) 115%
+  );
 }
 
 .sonara-cinematic-grain {
   z-index: 9;
-  opacity: .055;
+  opacity: 0.055;
   background-image:
-    radial-gradient(circle at 18% 21%, #fff 0 .55px, transparent .75px),
-    radial-gradient(circle at 74% 31%, #fff 0 .45px, transparent .65px),
-    radial-gradient(circle at 42% 73%, #fff 0 .5px, transparent .7px);
-  background-size: 17px 19px, 23px 29px, 31px 27px;
+    radial-gradient(circle at 18% 21%, #fff 0 0.55px, transparent 0.75px),
+    radial-gradient(circle at 74% 31%, #fff 0 0.45px, transparent 0.65px),
+    radial-gradient(circle at 42% 73%, #fff 0 0.5px, transparent 0.7px);
+  background-size:
+    17px 19px,
+    23px 29px,
+    31px 27px;
   mix-blend-mode: soft-light;
-  animation: sonaraCinematicGrain .22s steps(2) infinite;
+  animation: sonaraCinematicGrain 0.22s steps(2) infinite;
 }
 
 .sonara-cinematic-flash {
   z-index: 12;
   opacity: clamp(
     0,
-    calc(var(--ejection-flash-progress) * .88 + (var(--climax-progress) - .55) * 2.7),
-    .90
+    calc(
+      var(--ejection-flash-progress) * 0.88 + (var(--climax-progress) - 0.55) *
+        2.7
+    ),
+    0.9
   );
-  background:
-    radial-gradient(circle at center, rgba(255,255,255,.98) 0 2%, rgba(104,237,255,.7) 9%, rgba(79,72,255,.18) 30%, transparent 58%);
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.98) 0 2%,
+    rgba(104, 237, 255, 0.7) 9%,
+    rgba(79, 72, 255, 0.18) 30%,
+    transparent 58%
+  );
   mix-blend-mode: screen;
 }
 
@@ -251,12 +315,10 @@ body.sonara-cinematic-running #sonara-language-switcher {
   justify-items: center;
   text-align: center;
   opacity: calc(1 - var(--suction-progress));
-  filter:
-    blur(calc(var(--suction-progress) * 13px))
-    contrast(calc(1 + var(--countdown-progress) * .32));
-  transform:
-    translate(-50%, -50%)
-    scale(calc(1 - var(--suction-progress) * .91))
+  filter: blur(calc(var(--suction-progress) * 13px))
+    contrast(calc(1 + var(--countdown-progress) * 0.32));
+  transform: translate(-50%, -50%)
+    scale(calc(1 - var(--suction-progress) * 0.91))
     rotate(calc(var(--suction-progress) * 24deg));
   transform-origin: center;
   will-change: transform, opacity, filter;
@@ -275,33 +337,46 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic-kicker {
   margin: 0 0 20px;
   color: var(--cinematic-cyan);
-  font-size: clamp(.69rem, 1.6vw, .86rem);
+  font-size: clamp(0.69rem, 1.6vw, 0.86rem);
   font-weight: 900;
-  letter-spacing: .42em;
-  text-indent: .42em;
-  text-shadow: 0 0 24px rgba(82, 241, 255, .5);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-shadow: 0 0 24px rgba(82, 241, 255, 0.5);
 }
 
 .sonara-cinematic-countdown-label {
   margin: 0 0 18px;
-  color: rgba(225, 241, 255, .46);
-  font-size: clamp(.66rem, 1.3vw, .78rem);
+  color: rgba(225, 241, 255, 0.46);
+  font-size: clamp(0.66rem, 1.3vw, 0.78rem);
   font-weight: 700;
-  letter-spacing: .21em;
-  text-indent: .21em;
+  letter-spacing: 0.21em;
+  text-indent: 0.21em;
 }
 
 .sonara-cinematic-time {
   margin: 0;
   font-size: clamp(3.1rem, 12vw, 9.5rem);
   font-weight: 800;
-  line-height: .9;
-  letter-spacing: -.065em;
+  line-height: 0.9;
+  letter-spacing: -0.065em;
   text-shadow:
-    0 0 calc(12px + var(--countdown-progress) * 22px + var(--countdown-hold-progress) * 18px) rgba(101, 240, 255, .27),
-    0 0 calc(var(--countdown-progress) * 50px + var(--countdown-hold-progress) * 32px) rgba(114, 91, 255, .35);
-  transform:
-    scale(calc(1 + var(--countdown-progress) * .025 + var(--countdown-hold-progress) * .022))
+    0 0
+      calc(
+        12px + var(--countdown-progress) * 22px +
+          var(--countdown-hold-progress) * 18px
+      )
+      rgba(101, 240, 255, 0.27),
+    0 0
+      calc(
+        var(--countdown-progress) * 50px + var(--countdown-hold-progress) * 32px
+      )
+      rgba(114, 91, 255, 0.35);
+  transform: scale(
+      calc(
+        1 + var(--countdown-progress) * 0.025 + var(--countdown-hold-progress) *
+          0.022
+      )
+    )
     translateY(calc(var(--countdown-hold-progress) * -2px));
 }
 
@@ -310,7 +385,12 @@ body.sonara-cinematic-running #sonara-language-switcher {
   height: 1px;
   margin-top: 32px;
   overflow: visible;
-  background: linear-gradient(90deg, transparent, rgba(84,238,255,.12), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(84, 238, 255, 0.12),
+    transparent
+  );
 }
 
 .sonara-cinematic-signal::after {
@@ -320,12 +400,20 @@ body.sonara-cinematic-running #sonara-language-switcher {
   max-width: 100%;
   height: 1px;
   margin: 0 auto;
-  background: linear-gradient(90deg, transparent, var(--cinematic-cyan), var(--cinematic-violet), transparent);
-  box-shadow: 0 0 16px rgba(82,241,255,.65);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--cinematic-cyan),
+    var(--cinematic-violet),
+    transparent
+  );
+  box-shadow: 0 0 16px rgba(82, 241, 255, 0.65);
 }
 
 .sonara-black-hole {
-  --black-hole-scale: calc(.22 + var(--black-hole-progress) * .78 + var(--suction-progress) * .27);
+  --black-hole-scale: calc(
+    0.22 + var(--black-hole-progress) * 0.78 + var(--suction-progress) * 0.27
+  );
   position: absolute;
   z-index: 4;
   left: 50%;
@@ -334,16 +422,20 @@ body.sonara-cinematic-running #sonara-language-switcher {
   min-width: 250px;
   aspect-ratio: 1;
   opacity: clamp(0, calc(var(--black-hole-progress) * 1.7), 1);
-  filter:
-    saturate(calc(1 + var(--black-hole-progress) * .42 - var(--suction-progress) * 1.12))
-    brightness(calc(1 - var(--suction-progress) * .48));
+  filter: saturate(
+      calc(
+        1 + var(--black-hole-progress) * 0.42 - var(--suction-progress) * 1.12
+      )
+    )
+    brightness(calc(1 - var(--suction-progress) * 0.48));
   transform: translate(-50%, -50%) scale(var(--black-hole-scale));
   will-change: transform, opacity;
 }
 
 .sonara-cinematic[data-scene="travel"] .sonara-black-hole {
   opacity: calc(1 - var(--tunnel-entry-progress));
-  transform: translate(-50%, -50%) scale(calc(1.27 + var(--tunnel-entry-progress) * 7));
+  transform: translate(-50%, -50%)
+    scale(calc(1.27 + var(--tunnel-entry-progress) * 7));
 }
 
 .sonara-cinematic[data-scene="ejection"] .sonara-black-hole,
@@ -366,27 +458,27 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 .sonara-black-hole-halo {
-  --disc-scale-y: .55;
+  --disc-scale-y: 0.55;
   --disc-angle: 0deg;
   width: 122%;
   aspect-ratio: 1;
-  opacity: .82;
+  opacity: 0.82;
   background: conic-gradient(
     from 70deg,
-    rgba(0,225,255,.02),
-    rgba(0,225,255,.55),
-    rgba(81,77,255,.18),
-    rgba(255,39,204,.68),
-    rgba(141,71,255,.16),
-    rgba(0,225,255,.02)
+    rgba(0, 225, 255, 0.02),
+    rgba(0, 225, 255, 0.55),
+    rgba(81, 77, 255, 0.18),
+    rgba(255, 39, 204, 0.68),
+    rgba(141, 71, 255, 0.16),
+    rgba(0, 225, 255, 0.02)
   );
   filter: blur(32px);
-  transform: translate(-50%, -50%) scaleY(.55) rotate(0deg);
+  transform: translate(-50%, -50%) scaleY(0.55) rotate(0deg);
   animation: sonaraBlackHoleSpin 8s linear infinite;
 }
 
 .sonara-black-hole-disc {
-  --disc-scale-y: .60;
+  --disc-scale-y: 0.6;
   --disc-angle: 8deg;
   width: 111%;
   aspect-ratio: 1;
@@ -394,40 +486,46 @@ body.sonara-cinematic-running #sonara-language-switcher {
   background: conic-gradient(
     from 0deg,
     transparent 0 8%,
-    rgba(70,242,255,.95) 18%,
-    rgba(34,119,255,.74) 33%,
+    rgba(70, 242, 255, 0.95) 18%,
+    rgba(34, 119, 255, 0.74) 33%,
     transparent 44%,
-    rgba(142,64,255,.76) 59%,
-    rgba(255,44,200,.94) 73%,
+    rgba(142, 64, 255, 0.76) 59%,
+    rgba(255, 44, 200, 0.94) 73%,
     transparent 88%
   );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
-  box-shadow: 0 0 25px rgba(80,235,255,.35), inset 0 0 22px rgba(255,54,211,.28);
-  transform: translate(-50%, -50%) scaleY(.60) rotate(8deg);
+  box-shadow:
+    0 0 25px rgba(80, 235, 255, 0.35),
+    inset 0 0 22px rgba(255, 54, 211, 0.28);
+  transform: translate(-50%, -50%) scaleY(0.6) rotate(8deg);
   animation: sonaraBlackHoleSpin 4.2s linear infinite;
 }
 
 .sonara-black-hole-disc-two {
-  --disc-scale-y: .74;
+  --disc-scale-y: 0.74;
   --disc-angle: -18deg;
   width: 93%;
-  opacity: .72;
+  opacity: 0.72;
   filter: blur(3px);
-  transform: translate(-50%, -50%) scaleY(.74) rotate(-18deg);
+  transform: translate(-50%, -50%) scaleY(0.74) rotate(-18deg);
   animation-duration: 3.1s;
   animation-direction: reverse;
 }
 
 .sonara-black-hole-disc-three {
-  --disc-scale-y: .39;
+  --disc-scale-y: 0.39;
   --disc-angle: 28deg;
   width: 136%;
-  opacity: .26;
+  opacity: 0.26;
   filter: blur(9px);
-  transform: translate(-50%, -50%) scaleY(.39) rotate(28deg);
+  transform: translate(-50%, -50%) scaleY(0.39) rotate(28deg);
   animation-duration: 6.8s;
 }
 
@@ -435,11 +533,17 @@ body.sonara-cinematic-running #sonara-language-switcher {
   width: 55%;
   aspect-ratio: 1;
   background:
-    radial-gradient(circle at 48% 44%, #000 0 44%, #010207 67%, rgba(0,0,0,.92) 74%, transparent 75%),
+    radial-gradient(
+      circle at 48% 44%,
+      #000 0 44%,
+      #010207 67%,
+      rgba(0, 0, 0, 0.92) 74%,
+      transparent 75%
+    ),
     #000;
   box-shadow:
     0 0 18px 10px #000,
-    0 0 35px 16px rgba(0,0,0,.95),
+    0 0 35px 16px rgba(0, 0, 0, 0.95),
     inset 0 0 28px #000;
   transform: translate(-50%, -50%);
 }
@@ -450,12 +554,17 @@ body.sonara-cinematic-running #sonara-language-switcher {
   inset: 0;
   opacity: clamp(0, calc(var(--music-progress) * 1.8), 1);
   filter: blur(calc((1 - var(--music-progress)) * 5px));
-  transform: scale(calc(.84 + var(--galaxy-progress) * .16));
+  transform: scale(calc(0.84 + var(--galaxy-progress) * 0.16));
   transform-origin: center;
   pointer-events: none;
 }
 
-.sonara-cinematic:not([data-scene="music-world"]):not([data-scene="reveal"]):not([data-scene="pre-v1"]):not([data-scene="climax"]):not([data-scene="loader"]) .sonara-music-world {
+.sonara-cinematic:not([data-scene="music-world"]):not(
+    [data-scene="reveal"]
+  ):not([data-scene="pre-v1"]):not([data-scene="climax"]):not(
+    [data-scene="loader"]
+  )
+  .sonara-music-world {
   visibility: hidden;
 }
 
@@ -468,8 +577,8 @@ body.sonara-cinematic-running #sonara-language-switcher {
   overflow: visible;
   fill: none;
   stroke: url(#none);
-  opacity: calc(.20 * (1 - var(--music-convergence)));
-  transform: translateY(-50%) scaleX(calc(1 - var(--music-convergence) * .65));
+  opacity: calc(0.2 * (1 - var(--music-convergence)));
+  transform: translateY(-50%) scaleX(calc(1 - var(--music-convergence) * 0.65));
   transform-origin: center;
 }
 
@@ -478,20 +587,21 @@ body.sonara-cinematic-running #sonara-language-switcher {
   stroke: var(--cinematic-cyan);
   stroke-width: 2;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 9px rgba(82,241,255,.85));
+  filter: drop-shadow(0 0 9px rgba(82, 241, 255, 0.85));
   stroke-dasharray: 1500;
   stroke-dashoffset: calc(1500px * (1 - var(--music-progress)));
 }
 
 .sonara-wave-two {
   top: 54%;
-  opacity: calc(.16 * (1 - var(--music-convergence)));
-  transform: translateY(-50%) scaleX(calc(1 - var(--music-convergence) * .72)) scaleY(-.68);
+  opacity: calc(0.16 * (1 - var(--music-convergence)));
+  transform: translateY(-50%) scaleX(calc(1 - var(--music-convergence) * 0.72))
+    scaleY(-0.68);
 }
 
 .sonara-wave-two path {
   stroke: var(--cinematic-pink);
-  filter: drop-shadow(0 0 10px rgba(255,61,200,.7));
+  filter: drop-shadow(0 0 10px rgba(255, 61, 200, 0.7));
 }
 
 .sonara-music-orbit {
@@ -500,23 +610,21 @@ body.sonara-cinematic-running #sonara-language-switcher {
   top: 50%;
   width: min(76vw, 960px);
   aspect-ratio: 1.8;
-  border: 1px solid rgba(80,235,255,.16);
+  border: 1px solid rgba(80, 235, 255, 0.16);
   border-radius: 50%;
-  transform:
-    translate(-50%, -50%)
-    scale(calc(1 - var(--music-convergence) * .72))
-    rotate(-9deg);
-  box-shadow: inset 0 0 55px rgba(41,124,255,.05), 0 0 34px rgba(69,223,255,.06);
+  transform: translate(-50%, -50%)
+    scale(calc(1 - var(--music-convergence) * 0.72)) rotate(-9deg);
+  box-shadow:
+    inset 0 0 55px rgba(41, 124, 255, 0.05),
+    0 0 34px rgba(69, 223, 255, 0.06);
 }
 
 .sonara-music-orbit-two {
   width: min(60vw, 720px);
-  opacity: .75;
-  border-color: rgba(255,61,200,.19);
-  transform:
-    translate(-50%, -50%)
-    scale(calc(1 - var(--music-convergence) * .69))
-    rotate(18deg);
+  opacity: 0.75;
+  border-color: rgba(255, 61, 200, 0.19);
+  transform: translate(-50%, -50%)
+    scale(calc(1 - var(--music-convergence) * 0.69)) rotate(18deg);
 }
 
 .sonara-music-orbit span {
@@ -525,13 +633,31 @@ body.sonara-cinematic-running #sonara-language-switcher {
   height: 7px;
   border-radius: 50%;
   background: #d8fdff;
-  box-shadow: 0 0 9px #fff, 0 0 24px var(--cinematic-cyan);
+  box-shadow:
+    0 0 9px #fff,
+    0 0 24px var(--cinematic-cyan);
 }
 
-.sonara-music-orbit span:nth-child(1) { left: 12%; top: 18%; }
-.sonara-music-orbit span:nth-child(2) { right: 9%; top: 45%; background: #ffd9f7; box-shadow: 0 0 9px #fff, 0 0 24px var(--cinematic-pink); }
-.sonara-music-orbit span:nth-child(3) { left: 38%; bottom: -3px; }
-.sonara-music-orbit span:nth-child(4) { left: 51%; top: -4px; }
+.sonara-music-orbit span:nth-child(1) {
+  left: 12%;
+  top: 18%;
+}
+.sonara-music-orbit span:nth-child(2) {
+  right: 9%;
+  top: 45%;
+  background: #ffd9f7;
+  box-shadow:
+    0 0 9px #fff,
+    0 0 24px var(--cinematic-pink);
+}
+.sonara-music-orbit span:nth-child(3) {
+  left: 38%;
+  bottom: -3px;
+}
+.sonara-music-orbit span:nth-child(4) {
+  left: 51%;
+  top: -4px;
+}
 
 .sonara-track {
   position: absolute;
@@ -540,12 +666,18 @@ body.sonara-cinematic-running #sonara-language-switcher {
   gap: 7px;
   height: 46px;
   padding: 0 15px;
-  border: 1px solid rgba(255,255,255,.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(18,61,104,.28), rgba(4,10,27,.48));
-  box-shadow: 0 16px 45px rgba(0,0,0,.28), inset 0 0 22px rgba(80,232,255,.035);
+  background: linear-gradient(
+    135deg,
+    rgba(18, 61, 104, 0.28),
+    rgba(4, 10, 27, 0.48)
+  );
+  box-shadow:
+    0 16px 45px rgba(0, 0, 0, 0.28),
+    inset 0 0 22px rgba(80, 232, 255, 0.035);
   backdrop-filter: blur(8px);
-  opacity: calc((1 - var(--music-convergence)) * .54);
+  opacity: calc((1 - var(--music-convergence)) * 0.54);
 }
 
 .sonara-track i {
@@ -553,38 +685,49 @@ body.sonara-cinematic-running #sonara-language-switcher {
   width: 3px;
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(#d7feff, var(--cinematic-cyan), var(--cinematic-violet));
-  box-shadow: 0 0 7px rgba(82,241,255,.7);
+  background: linear-gradient(
+    #d7feff,
+    var(--cinematic-cyan),
+    var(--cinematic-violet)
+  );
+  box-shadow: 0 0 7px rgba(82, 241, 255, 0.7);
 }
 
-.sonara-track i:nth-child(2n) { height: 24px; }
-.sonara-track i:nth-child(3n) { height: 15px; }
+.sonara-track i:nth-child(2n) {
+  height: 24px;
+}
+.sonara-track i:nth-child(3n) {
+  height: 15px;
+}
 
 .sonara-track-one {
   left: 13%;
   top: 24%;
   transform: translate(
-    calc(var(--music-convergence) * 33vw),
-    calc(var(--music-convergence) * 26vh)
-  ) rotate(-8deg) scale(calc(1 - var(--music-convergence) * .75));
+      calc(var(--music-convergence) * 33vw),
+      calc(var(--music-convergence) * 26vh)
+    )
+    rotate(-8deg) scale(calc(1 - var(--music-convergence) * 0.75));
 }
 
 .sonara-track-two {
   right: 10%;
   top: 31%;
   transform: translate(
-    calc(var(--music-convergence) * -34vw),
-    calc(var(--music-convergence) * 19vh)
-  ) rotate(10deg) scale(calc(1 - var(--music-convergence) * .75));
+      calc(var(--music-convergence) * -34vw),
+      calc(var(--music-convergence) * 19vh)
+    )
+    rotate(10deg) scale(calc(1 - var(--music-convergence) * 0.75));
 }
 
 .sonara-track-three {
   left: 28%;
   bottom: 19%;
   transform: translate(
-    calc(var(--music-convergence) * 22vw),
-    calc(var(--music-convergence) * -29vh)
-  ) rotate(5deg) scale(calc(1 - var(--music-convergence) * .75));
+      calc(var(--music-convergence) * 22vw),
+      calc(var(--music-convergence) * -29vh)
+    )
+    rotate(5deg) scale(calc(1 - var(--music-convergence) * 0.75));
 }
 
 .sonara-cinematic-identity {
@@ -598,9 +741,10 @@ body.sonara-cinematic-running #sonara-language-switcher {
   text-align: center;
   opacity: 0;
   filter: blur(calc((1 - var(--reveal-progress)) * 8px));
-  transform:
-    translate(-50%, -50%)
-    scale(calc(.82 + var(--reveal-progress) * .18 + var(--climax-progress) * .08));
+  transform: translate(-50%, -50%)
+    scale(
+      calc(0.82 + var(--reveal-progress) * 0.18 + var(--climax-progress) * 0.08)
+    );
   will-change: opacity, transform, filter;
 }
 
@@ -613,7 +757,8 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 .sonara-cinematic[data-scene="loader"] .sonara-cinematic-identity {
   opacity: calc(1 - var(--scene-progress));
-  transform: translate(-50%, -50%) scale(calc(1.08 - var(--scene-progress) * .68));
+  transform: translate(-50%, -50%)
+    scale(calc(1.08 - var(--scene-progress) * 0.68));
 }
 
 .sonara-cinematic-mark {
@@ -625,28 +770,45 @@ body.sonara-cinematic-running #sonara-language-switcher {
   gap: 8px;
   margin-bottom: clamp(22px, 4vh, 38px);
   padding: 19px;
-  border: 1px solid rgba(120,244,255,.58);
+  border: 1px solid rgba(120, 244, 255, 0.58);
   border-radius: 27%;
-  background: linear-gradient(145deg, rgba(11,64,126,.72), rgba(1,9,26,.88));
+  background: linear-gradient(
+    145deg,
+    rgba(11, 64, 126, 0.72),
+    rgba(1, 9, 26, 0.88)
+  );
   box-shadow:
-    0 0 25px rgba(82,241,255,.18),
-    0 0 65px rgba(81,66,255,.2),
-    inset 0 1px 0 rgba(255,255,255,.2);
+    0 0 25px rgba(82, 241, 255, 0.18),
+    0 0 65px rgba(81, 66, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   opacity: var(--reveal-progress);
-  transform: rotate(calc((1 - var(--reveal-progress)) * -26deg)) scale(calc(.72 + var(--reveal-progress) * .28));
+  transform: rotate(calc((1 - var(--reveal-progress)) * -26deg))
+    scale(calc(0.72 + var(--reveal-progress) * 0.28));
 }
 
 .sonara-cinematic-mark span {
   width: 100%;
   border-radius: 999px;
-  background: linear-gradient(180deg, #e8ffff, var(--cinematic-cyan) 38%, var(--cinematic-blue) 73%, var(--cinematic-violet));
-  box-shadow: 0 0 15px rgba(82,241,255,.76);
+  background: linear-gradient(
+    180deg,
+    #e8ffff,
+    var(--cinematic-cyan) 38%,
+    var(--cinematic-blue) 73%,
+    var(--cinematic-violet)
+  );
+  box-shadow: 0 0 15px rgba(82, 241, 255, 0.76);
   transform-origin: bottom;
 }
 
-.sonara-cinematic-mark span:nth-child(1) { height: 45%; }
-.sonara-cinematic-mark span:nth-child(2) { height: 100%; }
-.sonara-cinematic-mark span:nth-child(3) { height: 68%; }
+.sonara-cinematic-mark span:nth-child(1) {
+  height: 45%;
+}
+.sonara-cinematic-mark span:nth-child(2) {
+  height: 100%;
+}
+.sonara-cinematic-mark span:nth-child(3) {
+  height: 68%;
+}
 
 .sonara-cinematic-identity h1 {
   display: flex;
@@ -657,15 +819,17 @@ body.sonara-cinematic-running #sonara-language-switcher {
   color: #f5fdff;
   font-size: clamp(2.45rem, 8.2vw, 7.8rem);
   font-weight: 900;
-  line-height: .86;
-  letter-spacing: -.064em;
-  text-shadow: 0 0 28px rgba(82,241,255,.19), 0 0 70px rgba(117,75,255,.14);
+  line-height: 0.86;
+  letter-spacing: -0.064em;
+  text-shadow:
+    0 0 28px rgba(82, 241, 255, 0.19),
+    0 0 70px rgba(117, 75, 255, 0.14);
 }
 
 .sonara-cinematic-identity h1 span {
   display: inline-block;
   opacity: 0;
-  transform: translateY(30px) scale(.72);
+  transform: translateY(30px) scale(0.72);
 }
 
 .sonara-cinematic-identity h1 i {
@@ -677,29 +841,49 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic[data-scene="pre-v1"] .sonara-cinematic-identity h1 span,
 .sonara-cinematic[data-scene="climax"] .sonara-cinematic-identity h1 span,
 .sonara-cinematic[data-scene="loader"] .sonara-cinematic-identity h1 span {
-  animation: sonaraLetterReveal .78s cubic-bezier(.2, .85, .25, 1) forwards;
+  animation: sonaraLetterReveal 0.78s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
 }
 
-.sonara-cinematic-identity h1 span:nth-child(1) { animation-delay: .03s !important; }
-.sonara-cinematic-identity h1 span:nth-child(2) { animation-delay: .09s !important; }
-.sonara-cinematic-identity h1 span:nth-child(3) { animation-delay: .15s !important; }
-.sonara-cinematic-identity h1 span:nth-child(4) { animation-delay: .21s !important; }
-.sonara-cinematic-identity h1 span:nth-child(5) { animation-delay: .27s !important; }
-.sonara-cinematic-identity h1 span:nth-child(6) { animation-delay: .33s !important; }
-.sonara-cinematic-identity h1 span:nth-child(8) { animation-delay: .45s !important; }
-.sonara-cinematic-identity h1 span:nth-child(9) { animation-delay: .51s !important; }
-.sonara-cinematic-identity h1 span:nth-child(10) { animation-delay: .57s !important; }
-.sonara-cinematic-identity h1 span:nth-child(11) { animation-delay: .63s !important; }
+.sonara-cinematic-identity h1 span:nth-child(1) {
+  animation-delay: 0.03s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(2) {
+  animation-delay: 0.09s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(3) {
+  animation-delay: 0.15s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(4) {
+  animation-delay: 0.21s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(5) {
+  animation-delay: 0.27s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(6) {
+  animation-delay: 0.33s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(8) {
+  animation-delay: 0.45s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(9) {
+  animation-delay: 0.51s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(10) {
+  animation-delay: 0.57s !important;
+}
+.sonara-cinematic-identity h1 span:nth-child(11) {
+  animation-delay: 0.63s !important;
+}
 
 .sonara-cinematic-identity > p {
   margin: clamp(20px, 3.5vh, 34px) 0 0;
   color: var(--cinematic-cyan);
-  font-size: clamp(.78rem, 1.8vw, 1.12rem);
+  font-size: clamp(0.78rem, 1.8vw, 1.12rem);
   font-weight: 900;
-  letter-spacing: .48em;
-  text-indent: .48em;
+  letter-spacing: 0.48em;
+  text-indent: 0.48em;
   opacity: 0;
-  text-shadow: 0 0 18px rgba(82,241,255,.72);
+  text-shadow: 0 0 18px rgba(82, 241, 255, 0.72);
   transform: translateY(14px);
 }
 
@@ -708,7 +892,9 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic[data-scene="loader"] .sonara-cinematic-identity > p {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .sonara-cinematic-dev-hud {
@@ -721,14 +907,14 @@ body.sonara-cinematic-running #sonara-language-switcher {
   gap: 5px 16px;
   align-items: center;
   padding: 10px 12px;
-  border: 1px solid rgba(127,238,255,.13);
+  border: 1px solid rgba(127, 238, 255, 0.13);
   border-radius: 12px;
-  color: rgba(223,245,255,.57);
-  background: rgba(1,8,20,.48);
+  color: rgba(223, 245, 255, 0.57);
+  background: rgba(1, 8, 20, 0.48);
   backdrop-filter: blur(10px);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   pointer-events: none;
 }
 
@@ -738,7 +924,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 .sonara-cinematic-dev-hud span:last-child {
   grid-column: 1 / -1;
-  color: rgba(215,234,247,.34);
+  color: rgba(215, 234, 247, 0.34);
   font-size: 8px;
 }
 
@@ -756,12 +942,15 @@ body.sonara-cinematic-running #sonara-language-switcher {
   gap: 8px;
   max-width: min(290px, calc(100% - 32px));
   opacity: 1;
-  transition: opacity .18s ease, visibility .18s ease;
+  transition:
+    opacity 0.18s ease,
+    visibility 0.18s ease;
 }
 
 .sonara-cinematic:not(.has-recording-controls) .sonara-cinematic-recorder,
 .sonara-cinematic.is-recording-cinematic .sonara-cinematic-recorder,
-.sonara-cinematic[data-scene="loader"]:not(.is-system-recording-finished) .sonara-cinematic-recorder {
+.sonara-cinematic[data-scene="loader"]:not(.is-system-recording-finished)
+  .sonara-cinematic-recorder {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -770,11 +959,11 @@ body.sonara-cinematic-running #sonara-language-switcher {
 .sonara-cinematic-recorder-hint {
   margin: 0;
   padding: 9px 11px;
-  border: 1px solid rgba(121, 235, 255, .18);
+  border: 1px solid rgba(121, 235, 255, 0.18);
   border-radius: 11px;
-  color: rgba(235, 250, 255, .82);
-  background: rgba(1, 8, 20, .88);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .34);
+  color: rgba(235, 250, 255, 0.82);
+  background: rgba(1, 8, 20, 0.88);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
   font-size: 10px;
   font-weight: 650;
   line-height: 1.45;
@@ -787,11 +976,13 @@ body.sonara-cinematic-running #sonara-language-switcher {
   align-items: center;
   gap: 8px;
   padding: 0 13px;
-  border: 1px solid rgba(126, 235, 255, .25);
+  border: 1px solid rgba(126, 235, 255, 0.25);
   border-radius: 999px;
   color: #edfbff;
-  background: rgba(1, 9, 24, .82);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .08);
+  background: rgba(1, 9, 24, 0.82);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -804,13 +995,13 @@ body.sonara-cinematic-running #sonara-language-switcher {
   flex: 0 0 auto;
   border-radius: 50%;
   background: #ff3f63;
-  box-shadow: 0 0 13px rgba(255, 63, 99, .76);
+  box-shadow: 0 0 13px rgba(255, 63, 99, 0.76);
 }
 
 .sonara-cinematic-record-button strong {
   font-size: 9px;
   font-weight: 850;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
 }
 
 .sonara-cinematic-record-button:focus-visible {
@@ -820,7 +1011,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 .sonara-cinematic-record-button:disabled {
   cursor: wait;
-  opacity: .58;
+  opacity: 0.58;
 }
 
 .sonara-cinematic-status {
@@ -829,14 +1020,14 @@ body.sonara-cinematic-running #sonara-language-switcher {
   top: max(18px, env(safe-area-inset-top));
   left: 50%;
   margin: 0;
-  color: rgba(231,250,255,.74);
+  color: rgba(231, 250, 255, 0.74);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0;
   transform: translateX(-50%);
-  transition: opacity .2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .sonara-cinematic.is-paused .sonara-cinematic-status {
@@ -844,22 +1035,49 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 @keyframes sonaraBlackHoleSpin {
-  from { transform: translate(-50%, -50%) scaleY(var(--disc-scale-y, .58)) rotate(var(--disc-angle, 0deg)); }
-  to { transform: translate(-50%, -50%) scaleY(var(--disc-scale-y, .58)) rotate(calc(var(--disc-angle, 0deg) + 360deg)); }
+  from {
+    transform: translate(-50%, -50%) scaleY(var(--disc-scale-y, 0.58))
+      rotate(var(--disc-angle, 0deg));
+  }
+  to {
+    transform: translate(-50%, -50%) scaleY(var(--disc-scale-y, 0.58))
+      rotate(calc(var(--disc-angle, 0deg) + 360deg));
+  }
 }
 
 @keyframes sonaraLetterReveal {
-  0% { opacity: 0; transform: translateY(30px) scale(.72); filter: blur(8px); }
-  58% { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.72);
+    filter: blur(8px);
+  }
+  58% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 @keyframes sonaraCinematicGrain {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(-1%, 1%); }
-  50% { transform: translate(1%, -1%); }
-  75% { transform: translate(.5%, 1%); }
-  100% { transform: translate(-.5%, -.5%); }
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-1%, 1%);
+  }
+  50% {
+    transform: translate(1%, -1%);
+  }
+  75% {
+    transform: translate(0.5%, 1%);
+  }
+  100% {
+    transform: translate(-0.5%, -0.5%);
+  }
 }
 
 /* Profil mobile anti-rechargement Safari : on conserve toute la narration,
@@ -882,40 +1100,46 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
 /* Les filtres mobiles restent volontairement légers : la narration est
    conservée sans réintroduire les couches GPU qui faisaient recharger Safari. */
-.sonara-cinematic.is-mobile-optimized[data-scene="suction"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 1.45px))
-    saturate(calc(1 + var(--color-warp-progress) * .20 - var(--void-progress) * .82))
-    brightness(calc(1 - var(--void-progress) * .48))
-    contrast(calc(1 + var(--color-warp-progress) * .08));
-  transform: scale(calc(1 + var(--color-warp-progress) * .025));
+.sonara-cinematic.is-mobile-optimized[data-scene="suction"]
+  #sonaraCinematicCanvas {
+  filter: blur(calc(var(--color-warp-progress) * 1.45px))
+    saturate(
+      calc(1 + var(--color-warp-progress) * 0.2 - var(--void-progress) * 0.82)
+    )
+    brightness(calc(1 - var(--void-progress) * 0.48))
+    contrast(calc(1 + var(--color-warp-progress) * 0.08));
+  transform: scale(calc(1 + var(--color-warp-progress) * 0.025));
 }
 
-.sonara-cinematic.is-mobile-optimized[data-scene="travel"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--color-warp-progress) * 1.20px))
-    saturate(calc(1.06 + var(--space-progress) * .30))
-    contrast(calc(1.02 + var(--space-progress) * .08));
-  transform: scale(calc(1 + var(--color-warp-progress) * .022));
+.sonara-cinematic.is-mobile-optimized[data-scene="travel"]
+  #sonaraCinematicCanvas {
+  filter: blur(calc(var(--color-warp-progress) * 1.2px))
+    saturate(calc(1.06 + var(--space-progress) * 0.3))
+    contrast(calc(1.02 + var(--space-progress) * 0.08));
+  transform: scale(calc(1 + var(--color-warp-progress) * 0.022));
 }
 
-.sonara-cinematic.is-mobile-optimized[data-scene="ejection"] #sonaraCinematicCanvas {
-  filter:
-    blur(calc(var(--ejection-flash-progress) * .75px))
-    saturate(1.14)
-    brightness(calc(1 + var(--ejection-flash-progress) * .12));
-  transform: scale(calc(1.035 - var(--ejection-progress) * .035));
+.sonara-cinematic.is-mobile-optimized[data-scene="ejection"]
+  #sonaraCinematicCanvas {
+  filter: blur(calc(var(--ejection-flash-progress) * 0.75px)) saturate(1.14)
+    brightness(calc(1 + var(--ejection-flash-progress) * 0.12));
+  transform: scale(calc(1.035 - var(--ejection-progress) * 0.035));
 }
 
-.sonara-cinematic.is-mobile-optimized[data-scene="suction"] .sonara-cinematic-aurora {
-  opacity: calc(.13 - var(--void-progress) * .13);
+.sonara-cinematic.is-mobile-optimized[data-scene="suction"]
+  .sonara-cinematic-aurora {
+  opacity: calc(0.13 - var(--void-progress) * 0.13);
   filter: blur(22px) saturate(1.04);
 }
 
-.sonara-cinematic.is-mobile-optimized[data-scene="travel"] .sonara-cinematic-aurora,
-.sonara-cinematic.is-mobile-optimized[data-scene="ejection"] .sonara-cinematic-aurora {
-  opacity: calc(.10 + var(--space-progress) * .34 + var(--galaxy-visibility) * .08);
-  filter: blur(24px) saturate(calc(1.08 + var(--space-progress) * .24));
+.sonara-cinematic.is-mobile-optimized[data-scene="travel"]
+  .sonara-cinematic-aurora,
+.sonara-cinematic.is-mobile-optimized[data-scene="ejection"]
+  .sonara-cinematic-aurora {
+  opacity: calc(
+    0.1 + var(--space-progress) * 0.34 + var(--galaxy-visibility) * 0.08
+  );
+  filter: blur(24px) saturate(calc(1.08 + var(--space-progress) * 0.24));
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-cinematic-grid,
@@ -938,27 +1162,33 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 .sonara-cinematic.is-mobile-optimized[data-scene="suction"] .sonara-black-hole {
-  opacity: clamp(0, calc(var(--black-hole-progress) * 1.7 - var(--suction-progress) * 1.05), 1);
+  opacity: clamp(
+    0,
+    calc(var(--black-hole-progress) * 1.7 - var(--suction-progress) * 1.05),
+    1
+  );
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-black-hole-halo {
-  opacity: .56;
+  opacity: 0.56;
   filter: blur(13px);
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-black-hole-disc {
   padding: 0;
-  border: 2px solid rgba(82, 241, 255, .74);
+  border: 2px solid rgba(82, 241, 255, 0.74);
   background: transparent;
   -webkit-mask: none;
   mask: none;
   filter: none;
-  box-shadow: 0 0 18px rgba(82, 241, 255, .32), inset 0 0 14px rgba(113, 91, 255, .18);
+  box-shadow:
+    0 0 18px rgba(82, 241, 255, 0.32),
+    inset 0 0 14px rgba(113, 91, 255, 0.18);
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-black-hole-disc-two {
-  border-color: rgba(255, 61, 200, .62);
-  box-shadow: 0 0 16px rgba(255, 61, 200, .24);
+  border-color: rgba(255, 61, 200, 0.62);
+  box-shadow: 0 0 16px rgba(255, 61, 200, 0.24);
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-black-hole-disc-three,
@@ -973,7 +1203,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-music-world {
-  transform: scale(calc(.90 + var(--galaxy-progress) * .10));
+  transform: scale(calc(0.9 + var(--galaxy-progress) * 0.1));
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-wave path {
@@ -988,11 +1218,13 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-track {
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-cinematic-mark {
-  box-shadow: 0 0 24px rgba(82, 241, 255, .16), inset 0 1px 0 rgba(255,255,255,.16);
+  box-shadow:
+    0 0 24px rgba(82, 241, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .sonara-cinematic.is-mobile-optimized .sonara-cinematic-identity,
@@ -1001,10 +1233,13 @@ body.sonara-cinematic-running #sonara-language-switcher {
   filter: none !important;
 }
 
-.sonara-cinematic.is-mobile-optimized[data-scene="loader"] .sonara-cinematic-aurora,
+.sonara-cinematic.is-mobile-optimized[data-scene="loader"]
+  .sonara-cinematic-aurora,
 .sonara-cinematic.is-mobile-optimized[data-scene="loader"] .sonara-music-world,
-.sonara-cinematic.is-mobile-optimized[data-scene="loader"] .sonara-cinematic-flash,
-.sonara-cinematic.is-mobile-optimized[data-scene="loader"] .sonara-cinematic-vignette {
+.sonara-cinematic.is-mobile-optimized[data-scene="loader"]
+  .sonara-cinematic-flash,
+.sonara-cinematic.is-mobile-optimized[data-scene="loader"]
+  .sonara-cinematic-vignette {
   display: none;
 }
 
@@ -1029,39 +1264,50 @@ body.sonara-cinematic-running #sonara-language-switcher {
     box-shadow: 0 0 0 100vmax #000;
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-countdown {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-countdown {
     width: calc(100% - 20px);
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-kicker,
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-countdown-label {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-kicker,
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-countdown-label {
     margin-bottom: 8px;
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-time {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-time {
     font-size: clamp(2.7rem, 14vw, 4.6rem);
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-signal {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-signal {
     margin-top: 14px;
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-black-hole {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-black-hole {
     width: min(46vw, 220px);
     min-width: 0;
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-mark {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-mark {
     width: 54px;
     margin-bottom: 13px;
     padding: 11px;
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-identity h1 {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-identity
+    h1 {
     font-size: clamp(1.8rem, 9vw, 3.4rem);
   }
 
-  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame .sonara-cinematic-identity > p {
+  .sonara-cinematic.is-mobile-optimized.is-mobile-cinema-frame
+    .sonara-cinematic-identity
+    > p {
     margin-top: 12px;
   }
 }
@@ -1103,9 +1349,18 @@ body.sonara-cinematic-running #sonara-language-switcher {
     padding: 0 11px;
   }
 
-  .sonara-track-one { left: 4%; top: 25%; }
-  .sonara-track-two { right: 3%; top: 34%; }
-  .sonara-track-three { left: 16%; bottom: 21%; }
+  .sonara-track-one {
+    left: 4%;
+    top: 25%;
+  }
+  .sonara-track-two {
+    right: 3%;
+    top: 34%;
+  }
+  .sonara-track-three {
+    left: 16%;
+    bottom: 21%;
+  }
 
   .sonara-music-orbit {
     width: 102vw;
@@ -1122,7 +1377,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
 
   .sonara-cinematic-identity h1 {
     font-size: clamp(2.15rem, 12vw, 4rem);
-    letter-spacing: -.073em;
+    letter-spacing: -0.073em;
   }
 
   .sonara-cinematic-identity h1 i {
@@ -1139,12 +1394,26 @@ body.sonara-cinematic-running #sonara-language-switcher {
 }
 
 @media (max-height: 560px) and (orientation: landscape) {
-  .sonara-cinematic-kicker { margin-bottom: 10px; }
-  .sonara-cinematic-countdown-label { margin-bottom: 10px; }
-  .sonara-cinematic-signal { margin-top: 18px; }
-  .sonara-cinematic-mark { width: 58px; margin-bottom: 16px; padding: 13px; }
-  .sonara-cinematic-identity h1 { font-size: clamp(2rem, 9vw, 4.8rem); }
-  .sonara-cinematic-identity > p { margin-top: 16px; }
+  .sonara-cinematic-kicker {
+    margin-bottom: 10px;
+  }
+  .sonara-cinematic-countdown-label {
+    margin-bottom: 10px;
+  }
+  .sonara-cinematic-signal {
+    margin-top: 18px;
+  }
+  .sonara-cinematic-mark {
+    width: 58px;
+    margin-bottom: 16px;
+    padding: 13px;
+  }
+  .sonara-cinematic-identity h1 {
+    font-size: clamp(2rem, 9vw, 4.8rem);
+  }
+  .sonara-cinematic-identity > p {
+    margin-top: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1162,7 +1431,7 @@ body.sonara-cinematic-running #sonara-language-switcher {
   .sonara-cinematic-identity,
   .sonara-cinematic-identity > p,
   .sonara-entry-loader.is-cinematic-arriving {
-    transition-duration: .01ms !important;
+    transition-duration: 0.01ms !important;
   }
 
   .sonara-cinematic[data-scene="reveal"] .sonara-cinematic-identity h1 span,

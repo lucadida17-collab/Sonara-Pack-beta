@@ -57,7 +57,9 @@ body.artist-public-page .artist-public-content {
 }
 
 @keyframes artist-public-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .artist-public-state-icon {
@@ -119,8 +121,16 @@ body.artist-public-page .artist-public-content {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 30px;
   background:
-    radial-gradient(circle at 12% 18%, rgba(58, 198, 255, 0.18), transparent 37%),
-    radial-gradient(circle at 90% 10%, rgba(133, 64, 255, 0.14), transparent 35%),
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(58, 198, 255, 0.18),
+      transparent 37%
+    ),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(133, 64, 255, 0.14),
+      transparent 35%
+    ),
     linear-gradient(145deg, #15171c 0%, #0f1014 62%, #0c0c0e 100%);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
 }
@@ -174,7 +184,11 @@ body.artist-public-page .artist-public-content {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 34% 24%, rgba(73, 214, 255, 0.24), transparent 40%),
+    radial-gradient(
+      circle at 34% 24%,
+      rgba(73, 214, 255, 0.24),
+      transparent 40%
+    ),
     #17181c;
   color: rgba(255, 255, 255, 0.76);
   font-size: clamp(48px, 9vw, 96px);
@@ -365,7 +379,9 @@ body.artist-public-page .artist-public-content {
 
 .artist-track-row {
   display: grid;
-  grid-template-columns: 42px 52px minmax(0, 1fr) minmax(110px, 0.55fr) 72px 88px;
+  grid-template-columns:
+    42px 52px minmax(0, 1fr) minmax(110px, 0.55fr)
+    72px 88px;
   gap: 12px;
   align-items: center;
   min-height: 70px;
@@ -537,7 +553,9 @@ body.artist-public-page .artist-public-content {
   overflow: hidden;
   border-radius: 15px;
   background: #17181c;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .artist-pack-card:hover .artist-pack-cover {
@@ -662,8 +680,7 @@ body.artist-public-page .artist-public-content {
   }
 
   body.artist-public-page .main-content {
-    padding-bottom:
-      calc(84px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 
   body.artist-public-page .scroll-zone {
@@ -672,8 +689,7 @@ body.artist-public-page .artist-public-content {
   }
 
   body.artist-public-page .artist-public-content {
-    padding: 0 16px
-      calc(28px + env(safe-area-inset-bottom, 0px));
+    padding: 0 16px calc(28px + env(safe-area-inset-bottom, 0px));
   }
 
   /*
@@ -803,10 +819,7 @@ body.artist-public-page .artist-public-content {
     width: 100%;
     min-height: 66px;
     margin: 0;
-    padding:
-      10px
-      10px
-      calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
     display: flex !important;
     align-items: center;
@@ -814,12 +827,11 @@ body.artist-public-page .artist-public-content {
     border: 0;
     border-top: 1px solid rgba(103, 219, 255, 0.2);
     border-radius: 0;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(7, 15, 31, 0.93),
-        rgba(4, 9, 20, 0.98)
-      );
+    background: linear-gradient(
+      180deg,
+      rgba(7, 15, 31, 0.93),
+      rgba(4, 9, 20, 0.98)
+    );
     box-shadow:
       0 -12px 34px rgba(0, 0, 0, 0.36),
       0 -1px 18px rgba(0, 157, 255, 0.1);
@@ -1006,12 +1018,32 @@ body.artist-public-page .artist-public-content {
   }
 
   .artist-track-row {
-    grid-template-columns: 48px 64px minmax(0, 1fr) minmax(180px, 0.45fr) 104px 104px;
+    grid-template-columns:
+      48px 64px minmax(0, 1fr) minmax(180px, 0.45fr)
+      104px 104px;
   }
 }
 
-
-.artist-public-reward-badge{width:22px;height:22px;object-fit:contain;flex:0 0 auto;}
-.artist-public-reward-title{display:flex;align-items:center;gap:7px;margin:6px 0 0;font-size:14px;font-weight:650;opacity:.88;}
-.artist-public-reward-title .artist-public-reward-badge{width:17px;height:17px;}
-.artist-pack-meta .artist-public-reward-badge{width:16px;height:16px;}
+.artist-public-reward-badge {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.artist-public-reward-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 650;
+  opacity: 0.88;
+}
+.artist-public-reward-title .artist-public-reward-badge {
+  width: 17px;
+  height: 17px;
+}
+.artist-pack-meta .artist-public-reward-badge {
+  width: 16px;
+  height: 16px;
+}

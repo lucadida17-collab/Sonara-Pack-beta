@@ -21,14 +21,14 @@
   inset: 0;
   justify-content: center;
   align-items: center;
-  background: rgba( 0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.82);
   z-index: 999999;
 }
 .update-modal-box {
   position: relative;
   width: 85%;
   max-height: 80vh;
-overflow-y: auto;
+  overflow-y: auto;
 
   height: auto;
   border-radius: 28px;
@@ -36,7 +36,6 @@ overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 28px 22px;
   color: white;
-   
 }
 .update-modal-close {
   position: absolute;
@@ -63,19 +62,16 @@ overflow-y: auto;
 
 .update-modal-title {
   font-size: 20px;
-   font-weight: 600;
+  font-weight: 600;
   margin-bottom: 30px;
   text-align: center;
-  
 }
 
 .update-modal-box h2 {
-
   font-size: 24px;
-   font-weight: 500;
+  font-weight: 500;
   margin-bottom: 18px;
   text-align: center;
-  
 }
 
 .update-modal-box li {
@@ -97,12 +93,11 @@ overflow-y: auto;
   white-space: pre-line;
   opacity: 0.9;
   text-align: center;
-
 }
 
 .update-modal-note {
   margin-top: -10px;
- margin: 10px;
+  margin: 10px;
   opacity: 1;
   text-align: center;
 }
@@ -114,23 +109,21 @@ overflow-y: auto;
 }
 
 .update-modal-button {
-
-height: 54px;
-text-shadow: 0 0 7px white ;
-border-radius: 999px;
-cursor: pointer;
- width: 90%;
- margin-top: 20px;
- margin-left: 0px;
+  height: 54px;
+  text-shadow: 0 0 7px white;
+  border-radius: 999px;
+  cursor: pointer;
+  width: 90%;
+  margin-top: 20px;
+  margin-left: 0px;
   background: black;
   font-size: 18px;
   border: 1px solid rgb(255, 255, 255);
   color: white;
-
 }
 
 .update-modal-button:hover {
-    background: rgb(255, 255, 255);
+  background: rgb(255, 255, 255);
   color: black;
   text-shadow: 0 0 8px rgb(153, 0, 255);
   box-shadow: 0 0 50px rgb(255, 0, 255);
@@ -140,88 +133,83 @@ h1 {
   font-size: 28px;
 }
 
-
-html, body {
+html,
+body {
   overflow: hidden;
   height: 100%;
   width: 100%;
 }
 
-
-body{
-  overflow-y: scroll; 
+body {
+  overflow-y: scroll;
   position: fixed;
   width: 98%;
- height: 90%;
+  height: 90%;
   margin: 2px;
-    background: url("/app/css/image.jpg") center center / cover no-repeat;
+  background: url("/app/css/image.jpg") center center / cover no-repeat;
 
   background: #0f0f10;
-    color: White;
-  font-family: inter, Arial, sans-serif; 
- 
+  color: White;
+  font-family: inter, Arial, sans-serif;
 }
-
 
 .side-panel {
   display: flex;
 }
 
-  .mobile-bottom-bar {
-    position: fixed;
-    left: 0px;
-    right: 0px;
-    bottom: 0px;
-    z-index: 9999;
+.mobile-bottom-bar {
+  position: fixed;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  z-index: 9999;
 
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
 
-    padding: 10px 8px;
-    
+  padding: 10px 8px;
 
-    background: rgba(6, 14, 32, 0.92);
-    backdrop-filter: blur(18px);
-    border: 1px solid rgba(120, 210, 255, 0.18);
-    box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
-  }
+  background: rgba(6, 14, 32, 0.92);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(120, 210, 255, 0.18);
+  box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
+}
 
+.nav-mobile-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.72);
 
-  .nav-mobile-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
 
-    font-size: 11px;
-    font-weight: 700;
-  }
+.nav-mobile-btn i,
+.nav-mobile-btn svg {
+  width: 22px;
+  height: 22px;
+}
 
-  .nav-mobile-btn i,
-  .nav-mobile-btn svg {
-    width: 22px;
-    height: 22px;
-  }
+.nav-mobile-btn.active {
+  color: #00d9ff;
+}
 
-  .nav-mobile-btn.active{
-    color: #00d9ff;
-  }
-
-  .main-content {
-    padding-bottom: 0px;
-  }
+.main-content {
+  padding-bottom: 0px;
+}
 
 .loader {
   position: fixed;
   top: 0;
   left: 0;
   background: rgb(0, 0, 0);
-  z-index:9999;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -233,18 +221,17 @@ body{
   width: 100vw;
   border-radius: 39px;
 
-  transition: opacity 0.50s ease;
+  transition: opacity 0.5s ease;
 }
-
 
 .spinner {
   width: 30px;
   height: 30px;
   border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top: 2px solid #ffffff;
+  border-top: 2px solid #ffffff;
   border-radius: 100%;
-  animation: spin 0.70s linear infinite;
-  transition: opacity 0.50s ease;
+  animation: spin 0.7s linear infinite;
+  transition: opacity 0.5s ease;
   opacity: 1;
 }
 
@@ -252,10 +239,8 @@ body{
   margin-top: 20px;
   font-size: 14px;
   opacity: 0.3;
-  transition: opacity 0.50s ease;
-  
+  transition: opacity 0.5s ease;
 }
-
 
 .pack-categorie {
   padding: 0px;
@@ -280,26 +265,25 @@ body{
 
 .card {
   display: flex;
-    justify-content: left;
-    padding: 0px;
-    align-content: left;
-    align-items: left;
-    
-    
-    margin-left: 0;
-    gap: 13px;
-    max-width: 160px;
-    padding-top: -10px;
-    margin-top: 0px;
-    border-radius: 20px;
-    margin-right: 0px;
-    margin-bottom: 0px;
-    background: black;
-    color: white;
-    font-family: 'inter', sans-serif;
-    cursor: pointer;
-    all: unset;
-    display: block;
+  justify-content: left;
+  padding: 0px;
+  align-content: left;
+  align-items: left;
+
+  margin-left: 0;
+  gap: 13px;
+  max-width: 160px;
+  padding-top: -10px;
+  margin-top: 0px;
+  border-radius: 20px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  background: black;
+  color: white;
+  font-family: "inter", sans-serif;
+  cursor: pointer;
+  all: unset;
+  display: block;
 }
 
 .scroll-controls,
@@ -319,19 +303,19 @@ body{
 .image-cover {
   width: 100%;
   height: 100%;
-overflow: hidden;
+  overflow: hidden;
 }
 
 .info {
-    color: '#ffffff';
+  color: "#ffffff";
   margin: 0;
   margin-top: 10px;
-  margin-left: 20px, 
+  margin-left: 20px;
 }
 
 .title {
-    font-size: 18px;
-      margin-top: 0px;
+  font-size: 18px;
+  margin-top: 0px;
 }
 
 .artist {
@@ -344,19 +328,17 @@ overflow: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3;
- }
+}
 
-   .mobile-bottom-bar {
-    display: flex;
-  }
+.mobile-bottom-bar {
+  display: flex;
+}
 
- 
- @keyframes spin {
+@keyframes spin {
   to {
     transform: rotate(360deg);
   }
- }
-
+}
 
 /* ==========================================================
    HOME MOBILE — STABILISATION V5.3.8.52
@@ -390,16 +372,8 @@ overflow: hidden;
   color: rgba(226, 242, 255, 0.76);
   text-align: center;
   background:
-    radial-gradient(
-      circle at 50% 32%,
-      rgba(0, 184, 255, 0.2),
-      transparent 42%
-    ),
-    linear-gradient(
-      145deg,
-      #07101e,
-      #02050c 72%
-    );
+    radial-gradient(circle at 50% 32%, rgba(0, 184, 255, 0.2), transparent 42%),
+    linear-gradient(145deg, #07101e, #02050c 72%);
   transition:
     opacity 220ms ease,
     visibility 220ms ease;
@@ -422,10 +396,7 @@ overflow: hidden;
   stroke-width: 1.45;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter:
-    drop-shadow(
-      0 0 14px rgba(48, 201, 255, 0.42)
-    );
+  filter: drop-shadow(0 0 14px rgba(48, 201, 255, 0.42));
 }
 
 .home-cover-fallback span {
@@ -563,7 +534,6 @@ body.home .home-playlist-track-count {
   line-height: 1.5;
 }
 
-
 /* ==========================================================
    HOME DESKTOP PROFESSIONNEL — V5.3.8.54
    Ce bloc ne s'applique jamais au mobile.
@@ -581,7 +551,6 @@ body.home .home-playlist-track-count {
 .category-count {
   display: none;
 }
-
 
 /* ==========================================================
    HOME — DISTRIBUTION V1 / IDENTITÉ ARTISTE
@@ -651,11 +620,9 @@ body.home .home-playlist-track-count {
   transition: opacity 160ms ease;
 }
 
-.home-artist-avatar.has-image
-.home-artist-avatar-image {
+.home-artist-avatar.has-image .home-artist-avatar-image {
   opacity: 1;
 }
-
 
 /* ==========================================================
    HOME — DISTRIBUTION V1.1 / COLLECTIONS DYNAMIQUES
@@ -768,7 +735,6 @@ body.home .home-distribution-exploration .pack-row {
   scroll-padding-inline: 4px;
 }
 
-
 /* ==========================================================
    HOME — PROFIL ARTISTE PUBLIC
    L'avatar + le nom deviennent un point d'entrée vers la
@@ -820,7 +786,6 @@ body.home .home-artist-link:focus-visible {
   outline: 2px solid rgba(68, 214, 255, 0.82);
   outline-offset: 4px;
 }
-
 
 /* ==========================================================
    HOME — ARTISTES DU MOMENT
@@ -913,8 +878,7 @@ body.home .home-artist-spotlight-image {
   transition: opacity 180ms ease;
 }
 
-body.home .home-artist-spotlight-avatar.has-image
-.home-artist-spotlight-image {
+body.home .home-artist-spotlight-avatar.has-image .home-artist-spotlight-image {
   opacity: 1;
 }
 
@@ -947,13 +911,11 @@ body.home .home-artist-spotlight-copy small {
   -webkit-box-orient: vertical;
 }
 
-
 body.home .home-artist-spotlight-card:focus-visible {
   outline: 2px solid rgba(72, 218, 255, 0.86);
   outline-offset: 6px;
   border-radius: 18px;
 }
-
 
 /* ==========================================================
    HOME — DISTRIBUTION V1.2.3 / TITRES SIMPLES + ARTISTES
@@ -1004,7 +966,6 @@ body.home .home-artist-spotlight-copy small {
   display: none !important;
 }
 
-
 /* ==========================================================
    PRE-V1 V1.2.7 — FINITIONS RESPONSIVE HOME
    - vrai retrait mobile pour les rails horizontaux
@@ -1025,7 +986,6 @@ body.home .home-distribution-artists {
   gap: clamp(28px, 3vw, 44px);
 }
 
-
 /* ==========================================================
    PRE-V1 V1.2.8 — FINITION MOBILE DISTRIBUTION
    - titres de catégories plus francs
@@ -1037,9 +997,13 @@ body.home .home-distribution-section .categorie-header h2 {
   font-weight: 650 !important;
 }
 
-
-body.home .home-artist-reward-badge{width:18px;height:18px;object-fit:contain;flex:0 0 auto;margin-left:5px;}
-
+body.home .home-artist-reward-badge {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  margin-left: 5px;
+}
 
 /* ==========================================================
    PRE-V1 V1.2.11 — RAILS / TOUT VOIR
@@ -1079,7 +1043,10 @@ body.home .category-view-all {
   gap: 5px;
   background: transparent;
   color: rgba(255, 255, 255, 0.9);
-  font: 700 13px/1 "Inter", Arial, sans-serif;
+  font:
+    700 13px/1 "Inter",
+    Arial,
+    sans-serif;
   letter-spacing: -0.02em;
   cursor: pointer;
   appearance: none;
@@ -1230,7 +1197,6 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   min-width: 0;
 }
 
-
 /* PRE-V1 mobile empty catalogue v2 — centre réel de la zone Home */
 
 /* ==========================================================
@@ -1273,11 +1239,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   .main-content {
     width: 100%;
     min-height: calc(100dvh - 74px);
-    padding: 0 0
-      calc(
-        92px +
-        env(safe-area-inset-bottom)
-      );
+    padding: 0 0 calc(92px + env(safe-area-inset-bottom));
     box-sizing: border-box;
   }
 
@@ -1327,10 +1289,8 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   .card {
     all: unset;
     display: block;
-    flex: 0 0
-      clamp(150px, 43vw, 178px);
-    width:
-      clamp(150px, 43vw, 178px);
+    flex: 0 0 clamp(150px, 43vw, 178px);
+    width: clamp(150px, 43vw, 178px);
     min-width: 0;
     box-sizing: border-box;
     color: #fff;
@@ -1398,27 +1358,19 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     width: 100%;
     min-height: 66px;
     margin: 0;
-    padding:
-      10px
-      10px
-      calc(
-        10px +
-        env(safe-area-inset-bottom)
-      );
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
     box-sizing: border-box;
     display: flex !important;
     align-items: center;
     justify-content: space-around;
     border: 0;
-    border-top:
-      1px solid rgba(103, 219, 255, 0.2);
+    border-top: 1px solid rgba(103, 219, 255, 0.2);
     border-radius: 0;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(7, 15, 31, 0.93),
-        rgba(4, 9, 20, 0.98)
-      );
+    background: linear-gradient(
+      180deg,
+      rgba(7, 15, 31, 0.93),
+      rgba(4, 9, 20, 0.98)
+    );
     box-shadow:
       0 -12px 34px rgba(0, 0, 0, 0.36),
       0 -1px 18px rgba(0, 157, 255, 0.1);
@@ -1665,15 +1617,30 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     margin: 0;
     font-size: clamp(24px, 7vw, 31px);
     line-height: 1.08;
-    letter-spacing: -.035em;
+    letter-spacing: -0.035em;
   }
 
   body.home .home-empty-catalogue p {
     max-width: 340px;
     margin: 0;
-    color: rgba(255, 255, 255, .58);
+    color: rgba(255, 255, 255, 0.58);
     font-size: 14px;
     line-height: 1.45;
+  }
+
+  body.home .home-track-grid {
+    grid-template-rows: repeat(3, auto);
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 86vw);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    padding-bottom: 4px;
+  }
+
+  body.home .home-track-card {
+    scroll-snap-align: start;
   }
 }
 
@@ -1738,13 +1705,12 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     user-drag: none;
   }
 
-
   ::-webkit-scrollbar {
     width: 10px;
   }
 
   ::-webkit-scrollbar-track {
-  background: none;
+    background: none;
   }
 
   ::-webkit-scrollbar-thumb {
@@ -1756,29 +1722,26 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     background: linear-gradient(180deg, #52ecff, #3385ff);
   }
 
-  html, body {
+  html,
+  body {
     overflow: hidden;
     height: 100%;
     width: 100%;
   }
 
-
-  body{
+  body {
     overflow-y: scroll;
     position: fixed;
     width: 97%;
     height: 90%;
     margin: 2px;
 
-      background: url("/app/css/image.jpg") center center / cover no-repeat;
+    background: url("/app/css/image.jpg") center center / cover no-repeat;
 
-   background: #0f0f10;
-      color: White;
+    background: #0f0f10;
+    color: White;
     font-family: inter, Arial, sans-serif;
-
   }
-
-
 
   .update-modal-overlay {
     display: none;
@@ -1787,7 +1750,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     inset: 0;
     justify-content: center;
     align-items: center;
-    background: rgba( 0, 0, 0, 0.82);
+    background: rgba(0, 0, 0, 0.82);
     z-index: 999999;
   }
   .update-modal-box {
@@ -1800,7 +1763,6 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 20px;
     color: white;
-
   }
   .update-modal-close {
     position: absolute;
@@ -1824,12 +1786,10 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   }
 
   .update-modal-box h2 {
-
     font-size: 24px;
-     font-weight: 700;
+    font-weight: 700;
     margin-bottom: 20px;
     text-align: left;
-
   }
 
   .update-modal-box p {
@@ -1839,12 +1799,11 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     white-space: pre-line;
     opacity: 0.9;
     text-align: center;
-
   }
 
   .update-modal-note {
     margin-top: -10px;
-   margin: 30px;
+    margin: 30px;
     opacity: 1;
     text-align: center;
   }
@@ -1857,108 +1816,96 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
   .update-modal-button {
     flex: 1;
-  height: 76px;
-  text-shadow: 0 0 7px white ;
-  border-radius: 999px;
-  cursor: pointer;
-   width: 80%;
-   margin-top: 20px;
-   margin-left: 50px;
+    height: 76px;
+    text-shadow: 0 0 7px white;
+    border-radius: 999px;
+    cursor: pointer;
+    width: 80%;
+    margin-top: 20px;
+    margin-left: 50px;
     background: black;
     font-size: 18px;
     border: 1px solid rgb(255, 255, 255);
     color: white;
-
   }
 
+  .mobile-bottom-bar {
+    position: fixed;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    z-index: 9999;
 
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
 
+    padding: 13.84px 50px;
+    border-radius: 0px;
 
+    background: rgba(6, 14, 32, 0.92);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(120, 210, 255, 0.18);
+    box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
+  }
 
+  .nav-mobile-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.72);
 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 
+    font-size: 11px;
+    font-weight: 700;
+  }
 
-    .mobile-bottom-bar {
-      position: fixed;
-      left: 0px;
-      right: 0px;
-      bottom: 0px;
-      z-index: 9999;
+  .nav-mobile-btn i,
+  .nav-mobile-btn svg {
+    width: 22px;
+    height: 22px;
+  }
 
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-
-      padding: 13.84px 50px;
-      border-radius: 0px;
-
-      background: rgba(6, 14, 32, 0.92);
-      backdrop-filter: blur(18px);
-      border: 1px solid rgba(120, 210, 255, 0.18);
-      box-shadow: 0 0 35px rgba(0, 150, 255, 0.22);
-    }
-
-    .nav-mobile-btn {
-      background: transparent;
-      border: none;
-      color: rgba(255, 255, 255, 0.72);
-
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .nav-mobile-btn i,
-    .nav-mobile-btn svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    .nav-mobile-btn.active{
-      color: #00d9ff;
-    }
-
+  .nav-mobile-btn.active {
+    color: #00d9ff;
+  }
 
   .accueil-btn {
-      display: flex;
-      justify-content: left;
-      text-align: left;
-      align-items: center;
+    display: flex;
+    justify-content: left;
+    text-align: left;
+    align-items: center;
     margin-top: 80px;
     margin-left: 0px;
     height: 30px;
     width: 270px;
-    font-size:  19px;
+    font-size: 19px;
     border-radius: 5px;
     background: transparent;
     gap: 8px;
     cursor: pointer;
     border: none;
     color: white;
-    transition: color 3s ease, text-shadow 3s ease, backdrop-filter 3s ease;
+    transition:
+      color 3s ease,
+      text-shadow 3s ease,
+      backdrop-filter 3s ease;
   }
-
-
-
-
 
   .loader.hide {
     opacity: 0;
-   }
+  }
 
   .spinner.hide {
     opacity: 0;
   }
 
   .loader-text.hide {
-   opacity: 0;
+    opacity: 0;
   }
-
-
 
   .pack-categorie {
     position: relative;
@@ -2083,8 +2030,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
         rgba(255, 255, 255, 0.018)
       ),
       rgba(4, 13, 28, 0.58);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   }
 
   .pack-row {
@@ -2125,34 +2071,30 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     cursor: pointer;
   }
 
-
   .card {
     display: flex;
-      justify-content: left;
-      padding: 0px;
-      align-content: left;
-      align-items: left;
-      flex-wrap: nowrap;
-      flex-direction:column;
-      margin-left: 0;
-      gap: 23px;
-      height: 220px;
-      max-width: 210px;
-      padding-top: -20px;
-      margin-top: 0px;
-      border-radius: 20px;
-      margin-right: 0px;
-      margin-bottom: 0px;
-      background: transparent;
-      color: white;
-      font-family: 'inter', sans-serif;
-      cursor: pointer;
-      all: unset;
-      display: block;
-
+    justify-content: left;
+    padding: 0px;
+    align-content: left;
+    align-items: left;
+    flex-wrap: nowrap;
+    flex-direction: column;
+    margin-left: 0;
+    gap: 23px;
+    height: 220px;
+    max-width: 210px;
+    padding-top: -20px;
+    margin-top: 0px;
+    border-radius: 20px;
+    margin-right: 0px;
+    margin-bottom: 0px;
+    background: transparent;
+    color: white;
+    font-family: "inter", sans-serif;
+    cursor: pointer;
+    all: unset;
+    display: block;
   }
-
-
 
   .cover {
     width: 300px;
@@ -2165,19 +2107,19 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   .image-cover {
     width: 100%;
     height: 100%;
-  overflow: hidden;
+    overflow: hidden;
   }
 
   .info {
-      color: '#ffffff';
+    color: "#ffffff";
     margin: 0;
     margin-top: 10px;
-    margin-left: 20px,
+    margin-left: 20px;
   }
 
   .title {
-      font-size: 18px;
-        margin-top: 0px;
+    font-size: 18px;
+    margin-top: 0px;
   }
 
   .artist {
@@ -2186,30 +2128,23 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     opacity: 0.75;
   }
 
-
-
-
-
-
-    @keyframes alternate {
-      0% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-5px);
-      }
-      100% {
-        transform: translateY(0);
-      }
+  @keyframes alternate {
+    0% {
+      transform: translateY(0);
     }
+    50% {
+      transform: translateY(-5px);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
 
-     @keyframes spin {
+  @keyframes spin {
     to {
       transform: rotate(360deg);
     }
-   }
-
-
+  }
 
   html,
   body {
@@ -2241,8 +2176,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
   .desktop-shell {
     display: grid;
-    grid-template-columns:
-      252px minmax(0, 1fr);
+    grid-template-columns: 252px minmax(0, 1fr);
     width: 100%;
     height: 100dvh;
     min-height: 0;
@@ -2257,21 +2191,15 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     padding: 22px 16px;
     box-sizing: border-box;
     flex-direction: column;
-    border-right:
-      1px solid rgba(255, 255, 255, 0.075);
+    border-right: 1px solid rgba(255, 255, 255, 0.075);
     background:
       radial-gradient(
         circle at 50% 0%,
         rgba(0, 188, 255, 0.12),
         transparent 28%
       ),
-      linear-gradient(
-        180deg,
-        rgba(10, 15, 26, 0.98),
-        rgba(5, 8, 15, 0.99)
-      );
-    box-shadow:
-      20px 0 54px rgba(0, 0, 0, 0.26);
+      linear-gradient(180deg, rgba(10, 15, 26, 0.98), rgba(5, 8, 15, 0.99));
+    box-shadow: 20px 0 54px rgba(0, 0, 0, 0.26);
   }
 
   .desktop-side-brand {
@@ -2280,8 +2208,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     gap: 12px;
     min-height: 64px;
     padding: 8px 10px 22px;
-    border-bottom:
-      1px solid rgba(255, 255, 255, 0.075);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.075);
   }
 
   .desktop-brand-logo {
@@ -2291,15 +2218,13 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     display: grid;
     place-items: center;
     overflow: hidden;
-    border:
-      1px solid rgba(79, 220, 255, 0.22);
+    border: 1px solid rgba(79, 220, 255, 0.22);
     border-radius: 15px;
-    background:
-      linear-gradient(
-        145deg,
-        rgba(38, 184, 255, 0.15),
-        rgba(69, 85, 255, 0.07)
-      );
+    background: linear-gradient(
+      145deg,
+      rgba(38, 184, 255, 0.15),
+      rgba(69, 85, 255, 0.07)
+    );
     box-shadow:
       0 10px 24px rgba(0, 92, 195, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -2347,12 +2272,10 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     padding: 11px 12px;
     box-sizing: border-box;
     display: grid;
-    grid-template-columns:
-      38px minmax(0, 1fr);
+    grid-template-columns: 38px minmax(0, 1fr);
     align-items: center;
     gap: 11px;
-    border:
-      1px solid transparent;
+    border: 1px solid transparent;
     border-radius: 17px;
     color: rgba(255, 255, 255, 0.62);
     text-align: left;
@@ -2399,23 +2322,19 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
   .desktop-nav-btn:hover {
     color: #fff;
-    border-color:
-      rgba(91, 219, 255, 0.18);
-    background:
-      rgba(255, 255, 255, 0.045);
+    border-color: rgba(91, 219, 255, 0.18);
+    background: rgba(255, 255, 255, 0.045);
     transform: translateX(2px);
   }
 
   .desktop-nav-btn.active {
     color: #63e8ff;
-    border-color:
-      rgba(77, 218, 255, 0.23);
-    background:
-      linear-gradient(
-        135deg,
-        rgba(23, 179, 255, 0.14),
-        rgba(74, 91, 255, 0.075)
-      );
+    border-color: rgba(77, 218, 255, 0.23);
+    background: linear-gradient(
+      135deg,
+      rgba(23, 179, 255, 0.14),
+      rgba(74, 91, 255, 0.075)
+    );
     box-shadow:
       0 15px 34px rgba(0, 76, 158, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.07);
@@ -2428,17 +2347,14 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   .desktop-side-footer {
     min-width: 0;
     display: grid;
-    grid-template-columns:
-      10px minmax(0, 1fr);
+    grid-template-columns: 10px minmax(0, 1fr);
     align-items: center;
     gap: 10px;
     margin-top: auto;
     padding: 15px 12px;
-    border:
-      1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
-    background:
-      rgba(255, 255, 255, 0.025);
+    background: rgba(255, 255, 255, 0.025);
     text-decoration: none;
     color: inherit;
   }
@@ -2448,8 +2364,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     height: 8px;
     border-radius: 50%;
     background: #3fe3c0;
-    box-shadow:
-      0 0 16px rgba(63, 227, 192, 0.72);
+    box-shadow: 0 0 16px rgba(63, 227, 192, 0.72);
   }
 
   .desktop-side-footer > span:last-child {
@@ -2475,8 +2390,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
   .desktop-workspace {
     display: grid;
-    grid-template-rows:
-      auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
     height: 100dvh;
     min-height: 0;
@@ -2485,8 +2399,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     overflow: hidden;
   }
 
-  .desktop-workspace
-  .app-layout {
+  .desktop-workspace .app-layout {
     min-width: 0;
     min-height: 0;
     height: 100%;
@@ -2497,8 +2410,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     display: none !important;
   }
 
-  .desktop-workspace
-  .main-content {
+  .desktop-workspace .main-content {
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -2506,8 +2418,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     overflow: hidden;
   }
 
-  .desktop-workspace
-  .scroll-zone {
+  .desktop-workspace .scroll-zone {
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -2516,8 +2427,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    border:
-      1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 29px;
     background:
       radial-gradient(
@@ -2535,30 +2445,25 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
       inset 0 1px 0 rgba(255, 255, 255, 0.045);
   }
 
-  .desktop-workspace
-  .scroll-zone::-webkit-scrollbar {
+  .desktop-workspace .scroll-zone::-webkit-scrollbar {
     display: block;
     width: 7px;
   }
 
-  .desktop-workspace
-  .scroll-zone::-webkit-scrollbar-track {
+  .desktop-workspace .scroll-zone::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .desktop-workspace
-  .scroll-zone::-webkit-scrollbar-thumb {
+  .desktop-workspace .scroll-zone::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(60, 225, 255, 0.75),
-        rgba(56, 102, 255, 0.68)
-      );
+    background: linear-gradient(
+      180deg,
+      rgba(60, 225, 255, 0.75),
+      rgba(56, 102, 255, 0.68)
+    );
   }
 
-  .desktop-workspace
-  .home-content {
+  .desktop-workspace .home-content {
     width: min(100%, 1480px);
     min-width: 0;
     margin: 0 auto;
@@ -2587,8 +2492,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     gap: 12px;
   }
 
-  body.home
-  .categorie-header h2 {
+  body.home .categorie-header h2 {
     margin: 0;
     color: #fff;
     font-size: 28px;
@@ -2634,14 +2538,11 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   body.home .pack-row > .card {
     all: unset;
     display: block;
-    flex: 0 0
-      clamp(205px, 18vw, 258px);
-    width:
-      clamp(205px, 18vw, 258px);
+    flex: 0 0 clamp(205px, 18vw, 258px);
+    width: clamp(205px, 18vw, 258px);
     min-width: 0;
     color: #fff;
-    font-family:
-      "Inter", Arial, sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     cursor: pointer;
     scroll-snap-align: start;
   }
@@ -2658,8 +2559,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     height: auto;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    border:
-      1px solid rgba(255, 255, 255, 0.065);
+    border: 1px solid rgba(255, 255, 255, 0.065);
     border-radius: 21px;
     background: #05070c;
     box-shadow:
@@ -2673,8 +2573,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
   }
 
   body.home .card:hover .cover {
-    border-color:
-      rgba(73, 220, 255, 0.25);
+    border-color: rgba(73, 220, 255, 0.25);
     box-shadow:
       0 25px 56px rgba(0, 0, 0, 0.34),
       0 0 34px rgba(0, 151, 255, 0.09),
@@ -2716,13 +2615,11 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     align-content: center;
     gap: 12px;
     padding: 34px;
-    border:
-      1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
     border-radius: 24px;
     color: #fff;
     text-align: center;
-    background:
-      rgba(255, 255, 255, 0.018);
+    background: rgba(255, 255, 255, 0.018);
   }
 
   .home-empty-icon {
@@ -2732,8 +2629,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
     place-items: center;
     border-radius: 17px;
     color: #55e3ff;
-    background:
-      rgba(48, 196, 255, 0.09);
+    background: rgba(48, 196, 255, 0.09);
   }
 
   .home-empty-icon svg {
@@ -2791,8 +2687,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 
 @media (900px <= width <= 1120px) {
   .desktop-shell {
-    grid-template-columns:
-      214px minmax(0, 1fr);
+    grid-template-columns: 214px minmax(0, 1fr);
   }
 
   .desktop-side-panel {
@@ -2839,8 +2734,7 @@ body.home .home-view-all-grid.is-artists > .home-artist-spotlight-card {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  body.home .home-artist-spotlight-card:hover
-  .home-artist-spotlight-avatar {
+  body.home .home-artist-spotlight-card:hover .home-artist-spotlight-avatar {
     transform: translateY(-4px) scale(1.025);
     border-color: rgba(80, 224, 255, 0.5);
     box-shadow:
@@ -2955,23 +2849,6 @@ body.home .home-track-action {
   color: inherit;
   font-size: 11px;
   font-weight: 700;
-}
-
-@media (width < 900px) {
-  body.home .home-track-grid {
-    grid-template-rows: repeat(3, auto);
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(280px, 86vw);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x proximity;
-    padding-bottom: 4px;
-  }
-
-  body.home .home-track-card {
-    scroll-snap-align: start;
-  }
 }
 
 @media (900px <= width) {

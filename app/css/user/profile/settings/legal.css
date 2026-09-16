@@ -43,10 +43,7 @@ button {
   width: 100%;
   min-height: 100vh;
 
-  padding:
-    max(18px, env(safe-area-inset-top))
-    20px
-    60px;
+  padding: max(18px, env(safe-area-inset-top)) 20px 60px;
 
   background: #000000;
 }

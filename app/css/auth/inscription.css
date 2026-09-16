@@ -95,10 +95,7 @@ button {
   max-width: 760px;
 
   margin: 0 auto;
-  padding:
-    max(118px, calc(env(safe-area-inset-top) + 94px))
-    20px
-    42px;
+  padding: max(118px, calc(env(safe-area-inset-top) + 94px)) 20px 42px;
 
   display: flex;
   flex-direction: column;
@@ -288,10 +285,7 @@ button {
   width: 100%;
   min-height: 100vh;
 
-  padding:
-    max(92px, calc(env(safe-area-inset-top) + 72px))
-    20px
-    64px;
+  padding: max(92px, calc(env(safe-area-inset-top) + 72px)) 20px 64px;
 
   display: flex;
   flex-direction: column;
@@ -663,6 +657,14 @@ button {
     width: 118px;
     height: 118px;
   }
+
+  .registration-validation-field > .formulaire,
+  .password-input-row,
+  .password-input-row > .formulaire {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+  }
 }
 
 @media (max-width: 420px) {
@@ -695,7 +697,6 @@ button {
     padding-right: 14px;
   }
 }
-
 
 /* =========================
    VALIDATION INSTINCTIVE
@@ -829,7 +830,6 @@ button {
   cursor: pointer;
 }
 
-
 /* Bouton de création protégé */
 .create-profil-user:disabled,
 .create-profil-artist:disabled,
@@ -839,7 +839,6 @@ button {
   transform: none;
   pointer-events: none;
 }
-
 
 /* =========================
    V5.0.5.3 - VALIDATION SOUS CHAQUE CHAMP
@@ -886,7 +885,6 @@ button {
 .phone-input {
   min-height: 50px;
 }
-
 
 /* =========================
    V5.0.5.5 - RÉPARATION DIMENSIONS FORMULAIRE
@@ -961,17 +959,6 @@ button {
   transition: background-color 9999s ease-out 0s;
 }
 
-@media (max-width: 720px) {
-  .registration-validation-field > .formulaire,
-  .password-input-row,
-  .password-input-row > .formulaire {
-    height: 56px;
-    min-height: 56px;
-    max-height: 56px;
-  }
-}
-
-
 /* Date de naissance — alignement visuel avec les autres champs */
 .birthdate-field-label {
   display: none;
@@ -1039,7 +1026,6 @@ button {
     opacity: 0.72;
   }
 }
-
 
 /* Date de naissance — iOS/TikTok : même boîte que les autres champs */
 .user-form > input.formulaire.date-input,

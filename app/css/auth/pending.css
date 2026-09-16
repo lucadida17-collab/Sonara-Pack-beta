@@ -8,7 +8,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: Inter, Arial, sans-serif;
- background: #0f0f10;
+  background: #0f0f10;
 
   color: white;
 }
@@ -78,7 +78,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.35;
   }
@@ -114,7 +115,9 @@ body {
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .home-access-btn:hover {

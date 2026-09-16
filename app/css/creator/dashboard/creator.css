@@ -37,8 +37,14 @@ body.creator-dashboard-body {
   border: 0;
   border-top: 1px solid rgba(103, 219, 255, 0.2);
   border-radius: 0;
-  background: linear-gradient(180deg, rgba(7, 15, 31, 0.93), rgba(4, 9, 20, 0.98));
-  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.36), 0 -1px 18px rgba(0, 157, 255, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(7, 15, 31, 0.93),
+    rgba(4, 9, 20, 0.98)
+  );
+  box-shadow:
+    0 -12px 34px rgba(0, 0, 0, 0.36),
+    0 -1px 18px rgba(0, 157, 255, 0.1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   transform: translateZ(0);
@@ -88,7 +94,9 @@ body.creator-dashboard-body {
   background: transparent;
   color: rgba(255, 255, 255, 0.94);
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 
 .creator-header-settings:hover {
@@ -126,9 +134,9 @@ body.creator-dashboard-body {
 .creator-header h1 {
   margin: 0;
   font-size: clamp(2rem, 9vw, 2.8rem);
-  line-height: .95;
+  line-height: 0.95;
   font-weight: 850;
-  letter-spacing: -.045em;
+  letter-spacing: -0.045em;
 }
 
 /* Hero sobre : identité Artist Dashboard sans énorme titre jeu vidéo. */
@@ -143,7 +151,11 @@ body.creator-dashboard-body {
   border-radius: 25px;
   background:
     radial-gradient(circle at 92% 0%, rgba(0, 174, 255, 0.12), transparent 32%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.045),
+      rgba(255, 255, 255, 0.018)
+    );
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
@@ -272,18 +284,29 @@ body.creator-dashboard-body {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.085);
   border-radius: 21px;
-  background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(8, 34, 55, 0.55));
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.84),
+    rgba(8, 34, 55, 0.55)
+  );
   color: #ffffff;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .creator-action:hover {
   transform: translateY(-2px);
   border-color: rgba(95, 224, 255, 0.28);
-  background: linear-gradient(135deg, rgba(17, 39, 65, 0.92), rgba(10, 54, 84, 0.68));
+  background: linear-gradient(
+    135deg,
+    rgba(17, 39, 65, 0.92),
+    rgba(10, 54, 84, 0.68)
+  );
   box-shadow: 0 16px 42px rgba(0, 98, 176, 0.12);
 }
 
@@ -329,7 +352,6 @@ body.creator-dashboard-body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 
 /* PRE-V1 — Bank visible mais indisponible jusqu'à la V1. */
 .stripe-connect-btn.is-locked {
@@ -398,7 +420,11 @@ body.creator-dashboard-body {
   flex-direction: column;
   gap: 6px;
   text-align: center;
-  background: linear-gradient(135deg, rgba(3, 8, 20, 0.64), rgba(2, 21, 42, 0.84));
+  background: linear-gradient(
+    135deg,
+    rgba(3, 8, 20, 0.64),
+    rgba(2, 21, 42, 0.84)
+  );
   backdrop-filter: blur(3px);
 }
 
@@ -432,24 +458,44 @@ body.creator-dashboard-body {
 }
 
 .crée-un-pack.is-unlocking {
-  animation: creatorPackUnlock 1.15s cubic-bezier(.2,.9,.25,1) both;
+  animation: creatorPackUnlock 1.15s cubic-bezier(0.2, 0.9, 0.25, 1) both;
 }
 
 .crée-un-pack.is-unlocking .create-pack-lock-overlay {
   display: flex;
-  animation: creatorLockCurtainOpen .9s cubic-bezier(.65,0,.2,1) forwards;
+  animation: creatorLockCurtainOpen 0.9s cubic-bezier(0.65, 0, 0.2, 1) forwards;
 }
 
 @keyframes creatorLockCurtainOpen {
-  0% { opacity: 1; transform: scale(1); clip-path: inset(0 0 0 0 round 21px); }
-  55% { opacity: .9; transform: scale(1.02); }
-  100% { opacity: 0; transform: scale(1.08); clip-path: inset(50% 0 50% 0 round 21px); pointer-events: none; }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    clip-path: inset(0 0 0 0 round 21px);
+  }
+  55% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+    clip-path: inset(50% 0 50% 0 round 21px);
+    pointer-events: none;
+  }
 }
 
 @keyframes creatorPackUnlock {
-  0% { box-shadow: 0 0 0 rgba(56,189,248,0); }
-  45% { box-shadow: 0 0 70px rgba(56,189,248,.35); transform: translateY(-3px) scale(1.01); }
-  100% { box-shadow: 0 0 25px rgba(56,189,248,.14); transform: none; }
+  0% {
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+  }
+  45% {
+    box-shadow: 0 0 70px rgba(56, 189, 248, 0.35);
+    transform: translateY(-3px) scale(1.01);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.14);
+    transform: none;
+  }
 }
 
 /* Missions */
@@ -466,7 +512,7 @@ body.creator-dashboard-body {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 760;
-  letter-spacing: -.025em;
+  letter-spacing: -0.025em;
 }
 
 .creator-missions-list {
@@ -477,9 +523,9 @@ body.creator-dashboard-body {
 
 .creator-mission-card {
   padding: 17px;
-  border: 1px solid rgba(255,255,255,.075);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 20px;
-  background: rgba(255,255,255,.03);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .creator-mission-topline {
@@ -497,8 +543,8 @@ body.creator-dashboard-body {
 
 .creator-mission-card p {
   margin: 0;
-  color: rgba(255,255,255,.5);
-  font-size: .8rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
   line-height: 1.45;
 }
 
@@ -506,14 +552,14 @@ body.creator-dashboard-body {
   flex: 0 0 auto;
   padding: 6px 9px;
   border-radius: 999px;
-  background: rgba(56,189,248,.09);
+  background: rgba(56, 189, 248, 0.09);
   color: #7dd3fc;
-  font-size: .67rem;
+  font-size: 0.67rem;
   font-weight: 700;
 }
 
 .creator-mission-card.is-completed .creator-mission-status {
-  background: rgba(34,197,94,.11);
+  background: rgba(34, 197, 94, 0.11);
   color: #86efac;
 }
 
@@ -523,7 +569,7 @@ body.creator-dashboard-body {
   justify-content: space-between;
   gap: 12px;
   margin-top: 18px;
-  font-size: .76rem;
+  font-size: 0.76rem;
 }
 
 .creator-mission-progress-row strong {
@@ -531,7 +577,7 @@ body.creator-dashboard-body {
 }
 
 .creator-mission-progress-row span {
-  color: rgba(255,255,255,.46);
+  color: rgba(255, 255, 255, 0.46);
 }
 
 .creator-mission-progress {
@@ -539,7 +585,7 @@ body.creator-dashboard-body {
   margin-top: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .creator-mission-progress > span {
@@ -547,24 +593,24 @@ body.creator-dashboard-body {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #0284c7, #38bdf8);
-  transition: width .35s ease;
+  transition: width 0.35s ease;
 }
 
 .creator-mission-reward {
   display: block;
   margin-top: 12px;
-  color: rgba(255,255,255,.46);
-  font-size: .78rem;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.78rem;
   line-height: 1.35;
 }
 
 .creator-mission-loading,
 .creator-mission-empty {
   padding: 17px;
-  border: 1px solid rgba(255,255,255,.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 18px;
-  color: rgba(255,255,255,.5);
-  background: rgba(255,255,255,.025);
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 /* Management : même shell, retour explicite vers Artist Dashboard. */
@@ -579,21 +625,24 @@ body.creator-dashboard-body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(255,255,255,.09);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 13px;
-  background: rgba(255,255,255,.035);
-  color: rgba(255,255,255,.75);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.75);
   font: inherit;
-  font-size: .78rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background .18s ease, color .18s ease, border-color .18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .creator-management-back:hover {
   color: #ffffff;
-  border-color: rgba(96,224,255,.2);
-  background: rgba(255,255,255,.065);
+  border-color: rgba(96, 224, 255, 0.2);
+  background: rgba(255, 255, 255, 0.065);
 }
 
 .creator-management-back svg {
@@ -618,7 +667,11 @@ body.creator-dashboard-body {
   padding: 14px 20px;
   border: 1px solid rgba(104, 225, 255, 0.2);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(6,20,47,.96), rgba(0,152,196,.94));
+  background: linear-gradient(
+    135deg,
+    rgba(6, 20, 47, 0.96),
+    rgba(0, 152, 196, 0.94)
+  );
   color: #ffffff;
   font-size: 0.86rem;
   font-weight: 760;
@@ -642,10 +695,10 @@ body.creator-dashboard-body {
   padding: 22px;
   display: grid;
   place-items: center;
-  background: rgba(1, 6, 18, .78);
+  background: rgba(1, 6, 18, 0.78);
   backdrop-filter: blur(12px);
   opacity: 0;
-  transition: opacity .3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .creator-unlock-popup.show {
@@ -658,13 +711,19 @@ body.creator-dashboard-body {
   max-height: min(760px, 92vh);
   overflow: auto;
   padding: 38px 28px 30px;
-  border: 1px solid rgba(125, 211, 252, .28);
+  border: 1px solid rgba(125, 211, 252, 0.28);
   border-radius: 27px;
-  background: linear-gradient(145deg, rgba(15,23,42,.98), rgba(5,44,71,.97));
-  box-shadow: 0 24px 100px rgba(0,0,0,.58), 0 0 70px rgba(14,165,233,.15);
+  background: linear-gradient(
+    145deg,
+    rgba(15, 23, 42, 0.98),
+    rgba(5, 44, 71, 0.97)
+  );
+  box-shadow:
+    0 24px 100px rgba(0, 0, 0, 0.58),
+    0 0 70px rgba(14, 165, 233, 0.15);
   text-align: center;
-  transform: translateY(28px) scale(.94);
-  transition: transform .36s cubic-bezier(.2,.9,.25,1);
+  transform: translateY(28px) scale(0.94);
+  transition: transform 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
 .creator-unlock-popup.show .creator-unlock-popup-card {
@@ -679,9 +738,9 @@ body.creator-dashboard-body {
   height: 40px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255,255,255,.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
-  background: rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, 0.05);
   color: white;
   cursor: pointer;
 }
@@ -696,9 +755,9 @@ body.creator-dashboard-body {
 .creator-unlock-label {
   margin: 0 0 8px;
   color: #7dd3fc;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 850;
-  letter-spacing: .16em;
+  letter-spacing: 0.16em;
 }
 
 .creator-unlock-popup h2 {
@@ -707,7 +766,7 @@ body.creator-dashboard-body {
 }
 
 .creator-unlock-popup p {
-  color: rgba(255,255,255,.68);
+  color: rgba(255, 255, 255, 0.68);
   line-height: 1.6;
 }
 
@@ -717,7 +776,7 @@ body.creator-dashboard-body {
   display: grid;
   gap: 10px;
   border-radius: 18px;
-  background: rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, 0.05);
   text-align: left;
 }
 
@@ -726,7 +785,7 @@ body.creator-dashboard-body {
 }
 
 .creator-unlock-tips span {
-  color: rgba(255,255,255,.68);
+  color: rgba(255, 255, 255, 0.68);
   line-height: 1.45;
 }
 
@@ -838,7 +897,6 @@ body.creator-dashboard-body {
     min-height: 84px;
   }
 
-
   .creator-management-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -885,7 +943,6 @@ html {
   background: #2f7cff;
 }
 
-
 /* Visibilité V2 — Achats intégré au Dashboard Artist existant. */
 .creator-purchase-categories,
 .creator-purchase-list {
@@ -905,9 +962,13 @@ html {
   grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(15,23,42,.78), rgba(8,34,55,.46));
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.78),
+    rgba(8, 34, 55, 0.46)
+  );
 }
 
 .creator-purchase-categories article > svg {
@@ -932,8 +993,8 @@ html {
 .creator-purchase-categories small,
 .creator-purchase-copy small,
 .creator-purchase-copy p {
-  color: rgba(255,255,255,.5);
-  font-size: .78rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
   line-height: 1.4;
 }
 
@@ -948,9 +1009,9 @@ html {
   grid-template-columns: 74px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  background: rgba(255,255,255,.03);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .creator-purchase-cover {
@@ -961,7 +1022,7 @@ html {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  background: rgba(56,189,248,.08);
+  background: rgba(56, 189, 248, 0.08);
   color: #6fe8ff;
 }
 
@@ -979,9 +1040,9 @@ html {
   padding: 3px 5px;
   overflow: hidden;
   border-radius: 7px;
-  background: rgba(3,8,20,.78);
+  background: rgba(3, 8, 20, 0.78);
   color: #dff9ff;
-  font-size: .56rem;
+  font-size: 0.56rem;
   font-weight: 780;
   text-align: center;
   text-overflow: ellipsis;
@@ -995,12 +1056,12 @@ html {
 .creator-purchase-open {
   min-height: 38px;
   padding: 0 12px;
-  border: 1px solid rgba(103,232,255,.25);
+  border: 1px solid rgba(103, 232, 255, 0.25);
   border-radius: 12px;
-  background: rgba(56,189,248,.08);
+  background: rgba(56, 189, 248, 0.08);
   color: #8eeaff;
   font: inherit;
-  font-size: .76rem;
+  font-size: 0.76rem;
   font-weight: 780;
   cursor: pointer;
 }
@@ -1011,9 +1072,9 @@ html {
   display: grid;
   place-items: center;
   padding: 18px;
-  border: 1px dashed rgba(255,255,255,.1);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 18px;
-  color: rgba(255,255,255,.48);
+  color: rgba(255, 255, 255, 0.48);
   text-align: center;
 }
 
@@ -1026,8 +1087,8 @@ body.creator-shop-mode {
   --artist-shop-surface: #111111;
   --artist-shop-surface-2: #171717;
   --artist-shop-text: #f7f2e8;
-  --artist-shop-muted: rgba(247, 242, 232, .56);
-  --artist-shop-line: rgba(212, 175, 55, .20);
+  --artist-shop-muted: rgba(247, 242, 232, 0.56);
+  --artist-shop-line: rgba(212, 175, 55, 0.2);
   --artist-shop-accent: #d4af37;
   --artist-shop-accent-2: #f1d77b;
   margin: 0;
@@ -1040,8 +1101,8 @@ body.creator-shop-mode.creator-shop-theme-midi {
   --artist-shop-surface: #ffffff;
   --artist-shop-surface-2: #f4f4f2;
   --artist-shop-text: #0b0b0b;
-  --artist-shop-muted: rgba(11, 11, 11, .58);
-  --artist-shop-line: rgba(11, 11, 11, .14);
+  --artist-shop-muted: rgba(11, 11, 11, 0.58);
+  --artist-shop-line: rgba(11, 11, 11, 0.14);
   --artist-shop-accent: #0b0b0b;
   --artist-shop-accent-2: #303030;
 }
@@ -1052,8 +1113,8 @@ body.creator-shop-mode.creator-shop-theme-audio {
   --artist-shop-surface: #11100d;
   --artist-shop-surface-2: #17140d;
   --artist-shop-text: #f8f1df;
-  --artist-shop-muted: rgba(248, 241, 223, .58);
-  --artist-shop-line: rgba(212, 175, 55, .22);
+  --artist-shop-muted: rgba(248, 241, 223, 0.58);
+  --artist-shop-line: rgba(212, 175, 55, 0.22);
   --artist-shop-accent: #d4af37;
   --artist-shop-accent-2: #f1d77b;
 }
@@ -1092,11 +1153,13 @@ body.creator-shop-mode.creator-shop-theme-midi .scroll-zone {
   scrollbar-color: #111111 #ffffff;
 }
 
-body.creator-shop-mode.creator-shop-theme-midi .scroll-zone::-webkit-scrollbar-track {
+body.creator-shop-mode.creator-shop-theme-midi
+  .scroll-zone::-webkit-scrollbar-track {
   background: #ffffff !important;
 }
 
-body.creator-shop-mode.creator-shop-theme-midi .scroll-zone::-webkit-scrollbar-thumb {
+body.creator-shop-mode.creator-shop-theme-midi
+  .scroll-zone::-webkit-scrollbar-thumb {
   border: 2px solid #ffffff !important;
   background: #111111 !important;
 }
@@ -1107,13 +1170,17 @@ body.creator-shop-mode.creator-shop-theme-audio .scroll-zone {
   scrollbar-color: #d4af37 #080807;
 }
 
-body.creator-shop-mode.creator-shop-theme-daw .scroll-zone::-webkit-scrollbar-track,
-body.creator-shop-mode.creator-shop-theme-audio .scroll-zone::-webkit-scrollbar-track {
+body.creator-shop-mode.creator-shop-theme-daw
+  .scroll-zone::-webkit-scrollbar-track,
+body.creator-shop-mode.creator-shop-theme-audio
+  .scroll-zone::-webkit-scrollbar-track {
   background: #080807 !important;
 }
 
-body.creator-shop-mode.creator-shop-theme-daw .scroll-zone::-webkit-scrollbar-thumb,
-body.creator-shop-mode.creator-shop-theme-audio .scroll-zone::-webkit-scrollbar-thumb {
+body.creator-shop-mode.creator-shop-theme-daw
+  .scroll-zone::-webkit-scrollbar-thumb,
+body.creator-shop-mode.creator-shop-theme-audio
+  .scroll-zone::-webkit-scrollbar-thumb {
   border: 2px solid #080807 !important;
   background: #d4af37 !important;
 }
@@ -1127,10 +1194,16 @@ body.creator-shop-mode .creator-page {
 .artist-shop-shell {
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--artist-shop-accent) 12%, transparent), transparent 27%),
+    radial-gradient(
+      circle at 86% 0%,
+      color-mix(in srgb, var(--artist-shop-accent) 12%, transparent),
+      transparent 27%
+    ),
     var(--artist-shop-bg);
   color: var(--artist-shop-text);
-  transition: background .24s ease, color .24s ease;
+  transition:
+    background 0.24s ease,
+    color 0.24s ease;
 }
 
 .artist-shop-header {
@@ -1165,7 +1238,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 12px;
   background: transparent;
   color: var(--artist-shop-text);
-  font-size: .78rem;
+  font-size: 0.78rem;
   font-weight: 760;
 }
 
@@ -1186,16 +1259,16 @@ body.creator-shop-mode .creator-page {
 
 .artist-shop-brand small {
   color: var(--artist-shop-muted);
-  font-size: .55rem;
+  font-size: 0.55rem;
   font-weight: 800;
-  letter-spacing: .15em;
+  letter-spacing: 0.15em;
 }
 
 .artist-shop-brand strong {
   font-family: Inter, sans-serif;
   font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
 }
 
 .artist-shop-tabs {
@@ -1212,7 +1285,9 @@ body.creator-shop-mode .creator-page {
   scrollbar-width: none;
 }
 
-.artist-shop-tabs::-webkit-scrollbar { display: none; }
+.artist-shop-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .artist-shop-tab {
   min-height: 38px;
@@ -1224,7 +1299,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 999px;
   background: transparent;
   color: var(--artist-shop-muted);
-  font-size: .73rem;
+  font-size: 0.73rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1237,7 +1312,8 @@ body.creator-shop-mode .creator-page {
 .artist-shop-tab.is-active {
   background: var(--artist-shop-text);
   color: var(--artist-shop-bg);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--artist-shop-text) 14%, transparent);
+  box-shadow: 0 8px 24px
+    color-mix(in srgb, var(--artist-shop-text) 14%, transparent);
 }
 
 .artist-shop-owned {
@@ -1250,7 +1326,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 12px;
   background: var(--artist-shop-surface);
   color: var(--artist-shop-text);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
@@ -1259,7 +1335,10 @@ body.creator-shop-mode .creator-page {
   color: var(--artist-shop-bg);
 }
 
-.artist-shop-owned svg { width: 16px; height: 16px; }
+.artist-shop-owned svg {
+  width: 16px;
+  height: 16px;
+}
 
 .artist-shop-hero,
 .artist-shop-content {
@@ -1285,7 +1364,8 @@ body.creator-shop-mode .creator-page {
   border: 1px solid var(--artist-shop-line);
   border-radius: 30px;
   background: var(--artist-shop-surface);
-  box-shadow: 0 26px 80px color-mix(in srgb, var(--artist-shop-accent) 15%, transparent);
+  box-shadow: 0 26px 80px
+    color-mix(in srgb, var(--artist-shop-accent) 15%, transparent);
 }
 
 .artist-shop-hero-icon svg {
@@ -1298,9 +1378,9 @@ body.creator-shop-mode .creator-page {
 .artist-shop-content-head small {
   margin: 0 0 8px;
   color: var(--artist-shop-accent);
-  font-size: .62rem;
+  font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: .18em;
+  letter-spacing: 0.18em;
 }
 
 .artist-shop-hero h1 {
@@ -1308,8 +1388,8 @@ body.creator-shop-mode .creator-page {
   color: var(--artist-shop-text);
   font-size: clamp(2.55rem, 6vw, 6.4rem);
   font-weight: 900;
-  letter-spacing: -.07em;
-  line-height: .94;
+  letter-spacing: -0.07em;
+  line-height: 0.94;
 }
 
 .artist-shop-hero div > span {
@@ -1317,7 +1397,7 @@ body.creator-shop-mode .creator-page {
   max-width: 680px;
   margin-top: 14px;
   color: var(--artist-shop-muted);
-  font-size: clamp(.86rem, 1.2vw, 1.05rem);
+  font-size: clamp(0.86rem, 1.2vw, 1.05rem);
   line-height: 1.55;
 }
 
@@ -1340,12 +1420,12 @@ body.creator-shop-mode .creator-page {
   color: var(--artist-shop-text);
   font-size: clamp(1.45rem, 2vw, 2rem);
   font-weight: 900;
-  letter-spacing: -.04em;
+  letter-spacing: -0.04em;
 }
 
 .artist-shop-content-head > span {
   color: var(--artist-shop-muted);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 750;
 }
 
@@ -1365,15 +1445,23 @@ body.creator-shop-mode .creator-page {
   border: 1px solid var(--artist-shop-line);
   border-radius: 22px;
   background: var(--artist-shop-surface);
-  box-shadow: 0 18px 50px rgba(0,0,0,.08);
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .artist-shop-product:hover,
 .artist-shop-product:focus-visible {
   transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--artist-shop-accent) 48%, var(--artist-shop-line));
-  box-shadow: 0 24px 70px color-mix(in srgb, var(--artist-shop-accent) 12%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--artist-shop-accent) 48%,
+    var(--artist-shop-line)
+  );
+  box-shadow: 0 24px 70px
+    color-mix(in srgb, var(--artist-shop-accent) 12%, transparent);
 }
 
 .artist-shop-product-media {
@@ -1402,7 +1490,6 @@ body.creator-shop-mode .creator-page {
   background: var(--artist-shop-surface);
 }
 
-
 .artist-shop-product-owned {
   position: absolute;
   right: 12px;
@@ -1416,7 +1503,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 999px;
   background: color-mix(in srgb, var(--artist-shop-bg) 86%, transparent);
   color: var(--artist-shop-text);
-  font-size: .58rem;
+  font-size: 0.58rem;
   font-weight: 850;
   backdrop-filter: blur(12px);
 }
@@ -1434,7 +1521,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 999px;
   background: color-mix(in srgb, var(--artist-shop-bg) 82%, transparent);
   color: var(--artist-shop-text);
-  font-size: .58rem;
+  font-size: 0.58rem;
   font-weight: 850;
   backdrop-filter: blur(12px);
 }
@@ -1448,7 +1535,7 @@ body.creator-shop-mode .creator-page {
 .artist-shop-product-copy > small {
   overflow: hidden;
   color: var(--artist-shop-muted);
-  font-size: .66rem;
+  font-size: 0.66rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1457,7 +1544,7 @@ body.creator-shop-mode .creator-page {
 .artist-shop-product-copy > strong {
   overflow: hidden;
   color: var(--artist-shop-text);
-  font-size: .93rem;
+  font-size: 0.93rem;
   font-weight: 880;
   line-height: 1.25;
   text-overflow: ellipsis;
@@ -1467,7 +1554,7 @@ body.creator-shop-mode .creator-page {
 .artist-shop-product-copy > p {
   margin: 0;
   color: var(--artist-shop-muted);
-  font-size: .68rem;
+  font-size: 0.68rem;
 }
 
 .artist-shop-product-footer {
@@ -1482,7 +1569,7 @@ body.creator-shop-mode .creator-page {
 
 .artist-shop-product-footer b {
   color: var(--artist-shop-text);
-  font-size: .86rem;
+  font-size: 0.86rem;
 }
 
 .artist-shop-open {
@@ -1491,7 +1578,7 @@ body.creator-shop-mode .creator-page {
   border-radius: 10px;
   background: var(--artist-shop-accent);
   color: var(--artist-shop-bg);
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 850;
 }
 
@@ -1516,8 +1603,12 @@ body.creator-shop-mode .creator-page {
   color: var(--artist-shop-accent);
 }
 
-.artist-shop-empty strong { color: var(--artist-shop-text); }
-.artist-shop-empty small { max-width: 360px; }
+.artist-shop-empty strong {
+  color: var(--artist-shop-text);
+}
+.artist-shop-empty small {
+  max-width: 360px;
+}
 
 /* Le thème DAW assume volontairement le noir / or premium. */
 body.creator-shop-theme-daw .artist-shop-product,
@@ -1527,9 +1618,9 @@ body.creator-shop-theme-audio .artist-shop-product {
 
 /* MIDI : surface claire, typographie noire, lecture immédiate des covers. */
 body.creator-shop-theme-midi .artist-shop-product {
-  box-shadow: 0 18px 50px rgba(20,20,20,.08);
+  box-shadow: 0 18px 50px rgba(20, 20, 20, 0.08);
 }
 
 body.creator-shop-theme-midi .artist-shop-product-type {
-  background: rgba(255,255,255,.84);
+  background: rgba(255, 255, 255, 0.84);
 }

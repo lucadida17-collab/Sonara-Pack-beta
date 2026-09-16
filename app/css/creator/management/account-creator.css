@@ -10,7 +10,7 @@ html,
 body {
   width: 100%;
   min-height: 100%;
-    width: 100%;
+  width: 100%;
   min-height: 100vh;
 
   background: #000000;
@@ -56,10 +56,7 @@ button {
   width: 100%;
   min-height: 100vh;
 
-  padding:
-    max(18px, env(safe-area-inset-top))
-    20px
-    60px;
+  padding: max(18px, env(safe-area-inset-top)) 20px 60px;
 
   background: #000000;
 }
@@ -418,7 +415,6 @@ button {
   line-height: 1.6;
 }
 
-
 /* =========================
    ACCOUNT POPUP
 ========================= */
@@ -460,8 +456,7 @@ button {
 
   text-align: center;
 
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
 }
 
 .account-popup-icon {
@@ -720,7 +715,6 @@ button {
   stroke-width: 1.8;
 }
 
-
 /* =========================
    DESKTOP
 ========================= */
@@ -758,7 +752,6 @@ button {
 ========================= */
 
 @media (max-width: 600px) {
-
   .account-popup {
     padding: 18px;
   }
@@ -802,6 +795,32 @@ button {
 
   .account-message-title {
     font-size: 22px;
+  }
+
+  .add-account-form,
+  .connect-existing-account-form {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .add-account-form .account-input,
+  .connect-existing-account-form .account-input {
+    min-height: 56px;
+    padding: 0 15px;
+  }
+
+  .add-account-profile-upload {
+    min-height: 164px;
+    padding: 20px;
+  }
+
+  .add-account-avatar-upload {
+    width: 86px;
+    height: 86px;
+  }
+
+  .add-account-role-card {
+    border-radius: 18px;
   }
 }
 /* =========================
@@ -922,11 +941,7 @@ button {
   gap: 16px;
 
   background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.025),
-      rgba(255, 255, 255, 0)
-    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
     #121212;
 
   border-color: #2d2d2d;
@@ -959,8 +974,7 @@ button {
   background: #101010;
   border-color: #696969;
 
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.055);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.055);
 }
 
 .add-account-form .account-input::placeholder,
@@ -1026,12 +1040,7 @@ button {
 
   overflow: hidden;
 
-  background:
-    radial-gradient(
-      circle at 35% 25%,
-      #303030,
-      #171717 68%
-    );
+  background: radial-gradient(circle at 35% 25%, #303030, #171717 68%);
 
   border: 1px solid #414141;
   border-radius: 50%;
@@ -1210,35 +1219,6 @@ button {
   }
 }
 
-@media (max-width: 600px) {
-  .add-account-form,
-  .connect-existing-account-form {
-    padding: 18px;
-    border-radius: 20px;
-  }
-
-  .add-account-form .account-input,
-  .connect-existing-account-form .account-input {
-    min-height: 56px;
-    padding: 0 15px;
-  }
-
-  .add-account-profile-upload {
-    min-height: 164px;
-    padding: 20px;
-  }
-
-  .add-account-avatar-upload {
-    width: 86px;
-    height: 86px;
-  }
-
-  .add-account-role-card {
-    border-radius: 18px;
-  }
-}
-
-
 /* =========================
    MOT DE PASSE AJOUT COMPTE
 ========================= */
@@ -1303,14 +1283,12 @@ button {
   border-color: rgba(104, 222, 145, 0.55);
 }
 
-
 .add-account-submit-button:disabled {
   opacity: 0.38;
   cursor: not-allowed;
   transform: none;
   pointer-events: none;
 }
-
 
 /* =========================
    V5.0.5.3 - VALIDATION SOUS CHAQUE CHAMP
@@ -1413,7 +1391,6 @@ button {
   text-align: left !important;
 }
 
-
 /* Date de naissance — repère mobile uniquement */
 .birthdate-field-label {
   display: none;
@@ -1457,4 +1434,3 @@ button {
     opacity: 0.72;
   }
 }
-

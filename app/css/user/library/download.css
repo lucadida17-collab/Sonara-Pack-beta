@@ -9,7 +9,11 @@ body.Download {
   font-family: Arial, Helvetica, sans-serif;
   background:
     radial-gradient(circle at top, rgba(0, 140, 255, 0.22), transparent 38%),
-    radial-gradient(circle at bottom right, rgba(90, 0, 255, 0.18), transparent 35%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(90, 0, 255, 0.18),
+      transparent 35%
+    ),
     linear-gradient(180deg, #020817 0%, #050b18 45%, #02040a 100%);
   color: white;
   overflow-x: hidden;
@@ -39,8 +43,11 @@ body.Download {
   padding: 34px 24px;
   border: 1px solid rgba(120, 200, 255, 0.35);
   border-radius: 28px;
-  background:
-    linear-gradient(145deg, rgba(8, 22, 45, 0.95), rgba(2, 8, 20, 0.96));
+  background: linear-gradient(
+    145deg,
+    rgba(8, 22, 45, 0.95),
+    rgba(2, 8, 20, 0.96)
+  );
   box-shadow:
     0 0 35px rgba(0, 132, 255, 0.22),
     inset 0 0 25px rgba(0, 180, 255, 0.05);
@@ -54,7 +61,12 @@ body.Download {
   content: "";
   position: absolute;
   inset: -2px;
-  background: linear-gradient(120deg, transparent, rgba(0, 200, 255, 0.22), transparent);
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 200, 255, 0.22),
+    transparent
+  );
   opacity: 0.6;
   pointer-events: none;
 }
@@ -124,8 +136,7 @@ body.Download {
 /* DESKTOP */
 
 @media (min-width: 769px) {
-
-   .finger-cursor {
+  .finger-cursor {
     position: fixed;
     left: 0;
     top: 0;
@@ -142,12 +153,12 @@ body.Download {
     transform: translate(-50%, -50%);
 
     transition:
-        width .15s,
-        height .15s,
-        border .15s;
+      width 0.15s,
+      height 0.15s,
+      border 0.15s;
 
     display: none;
-}
+  }
 
   .download-mobile {
     display: none;

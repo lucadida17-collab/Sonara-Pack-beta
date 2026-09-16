@@ -41,9 +41,9 @@ button {
   align-items: center;
   gap: 8px;
   padding: 0 16px;
-  border: 1px solid rgba(123, 232, 255, .2);
+  border: 1px solid rgba(123, 232, 255, 0.2);
   border-radius: 12px;
-  background: rgba(9, 29, 57, .88);
+  background: rgba(9, 29, 57, 0.88);
   color: #fff;
   cursor: pointer;
 }
@@ -54,12 +54,12 @@ button {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(38, 217, 255, .09);
-  border: 1px solid rgba(80, 226, 255, .18);
+  background: rgba(38, 217, 255, 0.09);
+  border: 1px solid rgba(80, 226, 255, 0.18);
   color: #86efff;
-  font-size: .78rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
 }
 
 .creator-statistics-header {
@@ -69,21 +69,21 @@ button {
 .creator-statistics-label {
   margin: 0 0 9px;
   color: #63e8ff;
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: .18em;
+  letter-spacing: 0.18em;
 }
 
 .creator-statistics-header h1 {
   margin: 0;
   font-size: clamp(2rem, 5vw, 4.4rem);
-  letter-spacing: -.045em;
+  letter-spacing: -0.045em;
 }
 
 .creator-statistics-header p:last-child {
   max-width: 720px;
   margin: 14px 0 0;
-  color: rgba(233, 246, 255, .62);
+  color: rgba(233, 246, 255, 0.62);
   line-height: 1.65;
 }
 
@@ -95,9 +95,13 @@ button {
 
 .creator-stat-card,
 .creator-statistics-panel {
-  border: 1px solid rgba(112, 226, 255, .14);
-  background: linear-gradient(145deg, rgba(11, 35, 67, .94), rgba(5, 18, 38, .94));
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
+  border: 1px solid rgba(112, 226, 255, 0.14);
+  background: linear-gradient(
+    145deg,
+    rgba(11, 35, 67, 0.94),
+    rgba(5, 18, 38, 0.94)
+  );
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
 .creator-stat-card {
@@ -112,8 +116,8 @@ button {
 
 .creator-stat-card span,
 .creator-stat-pack-metric span {
-  color: rgba(230, 245, 255, .58);
-  font-size: .78rem;
+  color: rgba(230, 245, 255, 0.58);
+  font-size: 0.78rem;
 }
 
 .creator-stat-card strong {
@@ -122,7 +126,7 @@ button {
 }
 
 .creator-stat-card small {
-  color: rgba(226, 243, 255, .42);
+  color: rgba(226, 243, 255, 0.42);
   line-height: 1.4;
 }
 
@@ -148,8 +152,8 @@ button {
 
 .creator-statistics-panel-heading p {
   margin: 0;
-  color: rgba(230, 245, 255, .5);
-  font-size: .82rem;
+  color: rgba(230, 245, 255, 0.5);
+  font-size: 0.82rem;
 }
 
 .creator-commercial-lock {
@@ -158,8 +162,8 @@ button {
   gap: 10px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, .045);
-  color: rgba(235, 247, 255, .72);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(235, 247, 255, 0.72);
 }
 
 .creator-commercial-lock svg {
@@ -175,12 +179,12 @@ button {
 
 .creator-pack-stat-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1.4fr) repeat(4, minmax(92px, .6fr));
+  grid-template-columns: minmax(190px, 1.4fr) repeat(4, minmax(92px, 0.6fr));
   gap: 12px;
   align-items: center;
   padding: 13px;
   border-radius: 15px;
-  background: rgba(255, 255, 255, .035);
+  background: rgba(255, 255, 255, 0.035);
   overflow-x: auto;
 }
 
@@ -197,7 +201,7 @@ button {
   flex: 0 0 54px;
   overflow: hidden;
   border-radius: 10px;
-  background: rgba(255, 255, 255, .06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .creator-pack-stat-cover img {
@@ -213,7 +217,7 @@ button {
 
 .creator-pack-stat-main small {
   margin-top: 4px;
-  color: rgba(228, 244, 255, .48);
+  color: rgba(228, 244, 255, 0.48);
 }
 
 .creator-stat-pack-metric {
@@ -232,7 +236,7 @@ button {
   gap: 10px;
   padding: 13px 14px;
   border-radius: 13px;
-  background: rgba(255, 255, 255, .035);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .creator-recent-item p {
@@ -241,7 +245,7 @@ button {
 
 .creator-recent-item small,
 .creator-statistics-empty {
-  color: rgba(226, 243, 255, .48);
+  color: rgba(226, 243, 255, 0.48);
 }
 
 .creator-statistics-loading,
@@ -250,7 +254,7 @@ button {
   display: grid;
   place-items: center;
   text-align: center;
-  color: rgba(235, 247, 255, .72);
+  color: rgba(235, 247, 255, 0.72);
 }
 
 .creator-statistics-error button {

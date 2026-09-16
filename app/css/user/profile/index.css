@@ -234,7 +234,7 @@ button {
 .edit-profile-save-button {
   background: transparent;
   color: #ffffff;
-margin-left: -10px;
+  margin-left: -10px;
   font-size: 16px;
   font-weight: 500;
 }
@@ -378,8 +378,6 @@ margin-left: -10px;
   font-weight: 400;
 }
 
-
-
 @media (min-width: 900px) {
   body.profile {
     background: #09090a;
@@ -389,7 +387,6 @@ margin-left: -10px;
     display: flex;
     justify-content: center;
   }
-
 
   .profile-content {
     padding-top: 70px;
@@ -404,7 +401,7 @@ margin-left: -10px;
     font-size: 34px;
   }
 
-.edit-profile-header {
+  .edit-profile-header {
     min-height: 68px;
     padding: 0 16px;
   }
@@ -442,5 +439,4 @@ margin-left: -10px;
   .edit-profile-input {
     font-size: 17px;
   }
-
 }
