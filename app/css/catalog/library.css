@@ -3318,14 +3318,11 @@ html {
   margin-bottom: 22px;
 }
 
-.library-overview-home .library-overview-main-title {
-  font-size: 30px;
-}
 
 .library-home-pack-grid,
 .library-choice-pack-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  
   gap: 18px;
   overflow: visible;
 }
