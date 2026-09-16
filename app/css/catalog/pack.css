@@ -4507,3 +4507,157 @@ body.pack-page .playlist-cover-cell.is-sonara-placeholder svg {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+
+/* Partage du pack — sous la cover, sans modifier la composition existante. */
+body.pack-page .left-side {
+  align-content: start;
+}
+
+body.pack-page .pack-share-button {
+  width: 44px;
+  height: 44px;
+  margin: 12px 0 0;
+  justify-self: start;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .045);
+  color: rgba(255, 255, 255, .94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .20);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+body.pack-page .pack-share-button svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.9;
+}
+
+body.pack-page .pack-share-button:hover {
+  background: rgba(255, 255, 255, .10);
+  border-color: rgba(104, 225, 255, .30);
+}
+
+body.pack-page .pack-share-button:active {
+  transform: scale(.95);
+}
+
+body.pack-page .pack-share-button:focus-visible {
+  outline: 2px solid rgba(96, 220, 255, .9);
+  outline-offset: 3px;
+}
+
+/* Mobile : partage sous le nom d’artiste, icône seule.
+   Le bouton desktop sous la cover reste inchangé hors mobile. */
+body.pack-page .pack-share-button-mobile {
+  display: none;
+}
+
+body.pack-page .artist-name-share {
+  display: contents;
+}
+
+@media (max-width: 899px) {
+  body.pack-page .left-side > .pack-share-button {
+    display: none;
+  }
+
+  body.pack-page .artist-name-share {
+    min-width: 0;
+    flex: 1 1 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  body.pack-page .artist-name-share .artist {
+    width: 100%;
+    flex: none;
+  }
+
+  body.pack-page .artist-info .pack-share-button-mobile {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: rgba(255, 255, 255, .96);
+    align-items: center;
+    justify-content: flex-start;
+    align-self: flex-start;
+  }
+
+  body.pack-page .pack-share-button-mobile:hover,
+  body.pack-page .pack-share-button-mobile:active {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  body.pack-page .pack-share-button-mobile svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.9;
+  }
+}
+
+body.pack-page .pack-mobile-actions {
+  display: none;
+}
+
+/* Mobile partage pack — ligne d'actions séparée sous le bloc artiste. */
+@media (max-width: 899px) {
+  body.pack-page .pack-mobile-actions {
+    width: 100%;
+    margin: 7px 0 0;
+    padding-left: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  body.pack-page .pack-mobile-actions + .btn-acheter {
+    margin-top: 16px;
+  }
+
+  body.pack-page .pack-mobile-actions .pack-share-button-mobile {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: rgba(255, 255, 255, .96);
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 30px;
+  }
+
+  body.pack-page .pack-mobile-actions .pack-share-button-mobile:hover,
+  body.pack-page .pack-mobile-actions .pack-share-button-mobile:active {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  body.pack-page .pack-mobile-actions .pack-share-button-mobile svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.9;
+  }
+}

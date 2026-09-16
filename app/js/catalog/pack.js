@@ -1456,6 +1456,84 @@ function setupPackPreviewPlayer() {
   preparePackPreviewIntelligence();
 }
 
+function getPackShareUrl(packId) {
+  const shareUrl = new URL("/app/pages/catalog/share.html", window.location.origin);
+  shareUrl.searchParams.set("id", String(packId || ""));
+  return shareUrl.href;
+}
+
+function copyPackShareLinkFallback(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+
+  return copied;
+}
+
+async function shareCurrentPack() {
+  if (!packData?.id) return;
+
+  const url = getPackShareUrl(packData.id);
+  const title = String(packData.title || packData.name || "Sonara Pack");
+  const artist = String(
+    packData.artistProfile?.name ||
+    packData.artist ||
+    "Artiste Sonara"
+  );
+  const shareTemplate = window.SonaraI18n?.t?.("{0} — {1}, disponible sur Sonara Pack") || "{0} — {1}, disponible sur Sonara Pack";
+  const shareData = {
+    title,
+    text: shareTemplate
+      .replace("{0}", title)
+      .replace("{1}", artist),
+    url
+  };
+
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      console.warn("Pack : partage natif indisponible, copie du lien utilisée.", error);
+    }
+  }
+
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(url);
+    } else if (!copyPackShareLinkFallback(url)) {
+      throw new Error("Copie indisponible");
+    }
+  } catch (error) {
+    console.warn("Pack : copie du lien partagé impossible.", error);
+  }
+}
+
+function bindPackShareButton() {
+  document.querySelectorAll(".pack-share-button").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void shareCurrentPack();
+    });
+  });
+}
+
 function isResourcePack(pack = {}) {
   return ["midi", "daw"].includes(String(pack.contentType || "audio").trim().toLowerCase());
 }
@@ -1496,6 +1574,13 @@ function renderResourcePack() {
           <div class="card resource-pack-cover-card">
             <img src="${getFilePath(packData.coverPack)}" class="cover" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">
           </div>
+          <button class="pack-share-button" type="button" aria-label="Partager" title="Partager">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m8 7 4-4 4 4"></path>
+              <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+            </svg>
+          </button>
         </div>
         <div class="pack-info">
           <div class="resource-pack-badges">
@@ -1507,8 +1592,17 @@ function renderResourcePack() {
             <img src="${getFilePath(packData.artistProfile?.avatar || packData.artistProfile?.imageArtist || packData.artistProfile?.imageProfile || packData.imageProfile)}" class="artist-image" alt="">
             ${packArtistRewardBadgeMarkup(packData.artistProfile)}
             <p class="artist">${escapePackLicenseHtml(packData.artistProfile?.name || packData.artist || "Artiste Sonara")}</p>
-            <button class="btn-acheter">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
           </div>
+          <div class="pack-mobile-actions" aria-label="Actions du pack">
+            <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m8 7 4-4 4 4"></path>
+                <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+              </svg>
+            </button>
+          </div>
+          <button class="btn-acheter">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
           <button class="btn-acheter-desktop">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
           ${preV1 && futurePackPrice && futurePackPrice !== "Gratuit" ? `<small class="pre-v1-price-note">Prix prévu : ${escapePackLicenseHtml(futurePackPrice)}</small>` : ""}
         </div>
@@ -1544,6 +1638,7 @@ function renderResourcePack() {
 
   schedulePackPageTitleFit();
   if (window.lucide) lucide.createIcons();
+  bindPackShareButton();
 
   document.querySelector(".retour")?.addEventListener("click", () => {
     if (document.referrer && document.referrer.startsWith(window.location.origin)) window.history.back();
@@ -1659,6 +1754,14 @@ function renderPack() {
           <audio src="${getFilePath(packData.audio || packData.audioName)}">
             </audio>
     </div>
+
+    <button class="pack-share-button" type="button" aria-label="Partager" title="Partager">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m8 7 4-4 4 4"></path>
+              <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+            </svg>
+    </button>
     
 
    
@@ -1669,18 +1772,26 @@ function renderPack() {
         <h1 class="title">${packData.title}</h1>
         <div class="artist-info">
           ${packData.isAutoPlaylist
-            ? `<p class="artist">Playlist faite par Sonara</p>`
+            ? ``
             : `<img src="${getFilePath(
                 packData.artistProfile?.avatar ||
                 packData.artistProfile?.imageArtist ||
                 packData.artistProfile?.imageProfile ||
                 packData.imageProfile
               )}" class="artist-image">
-              ${packArtistRewardBadgeMarkup(packData.artistProfile)}
-              <p class="artist">${packData.artistProfile?.name || packData.artist}</p>`}
-
-        <button class="btn-acheter">${packActionLabel}</button>
+              ${packArtistRewardBadgeMarkup(packData.artistProfile)}`}
+          <p class="artist">${packData.isAutoPlaylist ? "Playlist faite par Sonara" : (packData.artistProfile?.name || packData.artist)}</p>
         </div>
+        <div class="pack-mobile-actions" aria-label="Actions du pack">
+          <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m8 7 4-4 4 4"></path>
+              <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+            </svg>
+          </button>
+        </div>
+        <button class="btn-acheter">${packActionLabel}</button>
          <button class="btn-acheter-desktop">${packActionLabel}</button>
          ${plannedPriceMarkup}
       </div>
@@ -1836,6 +1947,7 @@ src="${getFilePath(track.audioName || track.audio)}"
     }
 
     lucide.createIcons();
+    bindPackShareButton();
 
     setupPackPreviewPlayer();
 
@@ -2005,4 +2117,3 @@ async function initializePackPage() {
 }
 
 initializePackPage();
-

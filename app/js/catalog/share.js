@@ -496,27 +496,27 @@ function rememberShareRedirect(
 function getShareAuthenticationUrl(
   destination
 ) {
-  const authUrl =
+  const entryUrl =
     new URL(
-      "/app/pages/auth/inscription.html",
+      "/index.html",
       window.location.origin
     );
 
-  authUrl.searchParams.set(
-    "mode",
-    "login"
+  entryUrl.searchParams.set(
+    "language",
+    "choose"
   );
 
   if (destination) {
-    authUrl.searchParams.set(
-      "redirect",
+    entryUrl.searchParams.set(
+      "returnTo",
       destination
     );
   }
 
   return (
-    authUrl.pathname +
-    authUrl.search
+    entryUrl.pathname +
+    entryUrl.search
   );
 }
 

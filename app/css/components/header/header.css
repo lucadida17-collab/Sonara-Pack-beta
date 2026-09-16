@@ -394,3 +394,58 @@ margin-left: -20px;
     height: 27px;
   }
 }
+
+
+/* Partage global Sonara Pack — action voisine de la cinématique. */
+.dynamic-header-share {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background .18s ease, transform .18s ease, color .18s ease;
+}
+
+.dynamic-header-share svg {
+  width: 27px;
+  height: 27px;
+  stroke-width: 1.8;
+}
+
+.dynamic-header-share:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+}
+
+.dynamic-header-share:active {
+  transform: scale(.94);
+}
+
+.dynamic-header-share:focus-visible {
+  outline: 2px solid rgba(96, 220, 255, .9);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .dynamic-header-share {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
+  }
+
+  .dynamic-header-share svg {
+    width: 25px;
+    height: 25px;
+  }
+}

@@ -69,6 +69,9 @@ function initDynamicHeader() {
   const pageTitle =
     document.getElementById("dynamicHeaderTitle");
 
+  const shareButton =
+    document.getElementById("dynamicHeaderShare");
+
   const cinematicButton =
     document.getElementById("dynamicHeaderCinematic");
 
@@ -113,6 +116,10 @@ function initDynamicHeader() {
     redirectToProfilePage
   );
 
+  if (shareButton) {
+    shareButton.addEventListener("click", shareSonaraPlatform);
+  }
+
   if (cinematicButton) {
     // Le replay appartient au header partagé : Home, Bibliothèque, Pack, Artiste…
     // Il ne dépend jamais de la règle « vue une fois » du lancement automatique.
@@ -122,6 +129,47 @@ function initDynamicHeader() {
 
   if (window.lucide) {
     lucide.createIcons();
+  }
+}
+
+
+async function shareSonaraPlatform() {
+  const url = new URL("/", window.location.origin).href;
+  const shareData = {
+    title: "Sonara Pack",
+    text: "Sonara Pack",
+    url
+  };
+
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      console.warn("Header : partage natif indisponible, copie du lien utilisée.", error);
+    }
+  }
+
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(url);
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = url;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  } catch (error) {
+    console.warn("Header : copie du lien Sonara Pack impossible.", error);
   }
 }
 

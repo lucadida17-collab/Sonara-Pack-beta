@@ -277,13 +277,9 @@ function libraryEnvironment() {
 }
 
 function libraryPublicPackUrl(packId) {
-    const safeId = encodeURIComponent(String(packId || ""));
-
-    if (libraryEnvironment() === "local") {
-        return `${window.location.origin}/app/pages/catalog/public-pack.html?id=${safeId}`;
-    }
-
-    return `${window.location.origin}/catalog/packs/${safeId}`;
+    const shareUrl = new URL("/app/pages/catalog/share.html", window.location.origin);
+    shareUrl.searchParams.set("id", String(packId || ""));
+    return shareUrl.href;
 }
 
 function libraryPackShareText(pack = {}) {
