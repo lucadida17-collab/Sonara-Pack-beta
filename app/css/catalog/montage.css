@@ -95,8 +95,7 @@ body.montage {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 20000;
-    min-height: 66px;
+   
     padding: 9px 7px calc(9px + env(safe-area-inset-bottom));
     align-items: center;
     justify-content: space-around;
