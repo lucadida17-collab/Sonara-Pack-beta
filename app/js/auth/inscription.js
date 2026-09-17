@@ -1637,6 +1637,11 @@ Connectez-vous à votre compte Sonara Pack.
         );
       }
 
+      // Événement de connexion uniquement après succès réel de /api/login.
+      await window.SonaraOrganicAttribution?.trackEvent?.("login", {
+        target: "Connexion compte Sonara"
+      });
+
       window.location.href =
         getAccountRedirect(connectedProfile);
     } catch (error) {

@@ -21,13 +21,21 @@ const SEO_PILLAR_PAGES = Object.freeze([
 ]);
 
 const ORGANIC_SOURCES = Object.freeze([
-  "Google",
+  "Google Search",
+  "Google Images",
   "TikTok",
   "Instagram",
   "YouTube",
   "Direct",
+  "Referral",
+  "Unknown",
   "Other"
 ]);
+
+const ANALYTICS_SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const ANALYTICS_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+const ANALYTICS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+const ANALYTICS_TIMEZONE = String(process.env.SONARA_ANALYTICS_TIMEZONE || "Europe/Paris");
 
 const CATEGORY_SEO_LABELS = Object.freeze({
   "rap-hiphop": "Rap & Hip-Hop Music",
@@ -63,14 +71,18 @@ function normalizeEnvironment(value) {
 }
 
 function normalizeSource(value) {
-  const source = text(value, 80).toLowerCase();
-  if (!source) return "Direct";
-  if (source.includes("google")) return "Google";
+  const source = text(value, 120).toLowerCase();
+  if (!source) return "Unknown";
+  if (source.includes("google images") || source.includes("google_images") || source.includes("images.google") || source.includes("tbm=isch") || source.includes("/imgres")) return "Google Images";
+  if (source === "google" || source.includes("google search") || source.includes("google.")) return "Google Search";
   if (source.includes("tiktok")) return "TikTok";
   if (source.includes("instagram") || source === "ig") return "Instagram";
   if (source.includes("youtube") || source === "yt") return "YouTube";
   if (["direct", "none"].includes(source)) return "Direct";
-  return "Other";
+  if (["unknown", "inconnu"].includes(source)) return "Unknown";
+  if (source.includes("referral") || source.includes("referrer")) return "Referral";
+  if (source === "other") return "Other";
+  return "Referral";
 }
 
 function internalAccountIds(environment = "local") {
@@ -446,7 +458,7 @@ function packCommunicationKit(req, pack, publicOrigin, environment = "main") {
 function ensureLocalStore(filePath) {
   if (!fs.existsSync(path.dirname(filePath))) fs.mkdirSync(path.dirname(filePath), { recursive: true });
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify({ version: 3, visitors: [], internalDevices: [] }, null, 2), "utf8");
+    fs.writeFileSync(filePath, JSON.stringify({ version: 4, visitors: [], internalDevices: [], events: [] }, null, 2), "utf8");
   }
 }
 
@@ -457,18 +469,19 @@ function createLocalStore(filePath) {
     try {
       const parsed = JSON.parse(fs.readFileSync(filePath, "utf8") || "{}");
       return {
-        version: 3,
+        version: 4,
         visitors: Array.isArray(parsed.visitors) ? parsed.visitors : [],
-        internalDevices: Array.isArray(parsed.internalDevices) ? parsed.internalDevices : []
+        internalDevices: Array.isArray(parsed.internalDevices) ? parsed.internalDevices : [],
+        events: Array.isArray(parsed.events) ? parsed.events : []
       };
     } catch (error) {
       console.error("Organic visibility LOCAL illisible :", error.message || error);
-      return { version: 3, visitors: [], internalDevices: [] };
+      return { version: 4, visitors: [], internalDevices: [], events: [] };
     }
   }
 
   function write(data) {
-    data.version = 3;
+    data.version = 4;
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
   }
 
@@ -480,12 +493,19 @@ function createLocalStore(filePath) {
     const currentAt = safeDate(step.capturedAt)?.getTime() || Date.now();
     const duplicate = previous &&
       String(previous.landingPath || "") === String(step.landingPath || "") &&
-      String(previous.campaign || "") === String(step.campaign || "") &&
-      String(previous.journeyStep || "") === String(step.journeyStep || "") &&
-      currentAt - previousAt < 3000;
+      String(previous.sessionId || "") === String(step.sessionId || "") &&
+      String(previous.eventType || previous.journeyStep || "") === String(step.eventType || step.journeyStep || "") &&
+      currentAt - previousAt < 1500;
 
     if (!duplicate) journey.push(step);
     record.journey = journey.slice(-120);
+  }
+
+  function pruneEvents(events = []) {
+    const cutoff = Date.now() - ANALYTICS_RETENTION_MS;
+    return events
+      .filter((event) => (safeDate(event?.capturedAt)?.getTime() || 0) >= cutoff)
+      .slice(-25000);
   }
 
   return {
@@ -500,8 +520,8 @@ function createLocalStore(filePath) {
           lastTouch: touch,
           firstSeenAt: now,
           lastSeenAt: now,
-          visitCount: touch.journeyKind === "event" ? 0 : 1,
-          internalVisitCount: touch.journeyKind === "event" || touch.internalTraffic !== true ? 0 : 1,
+          visitCount: touch.eventType === "page_view" || touch.journeyKind !== "event" ? 1 : 0,
+          internalVisitCount: (touch.eventType === "page_view" || touch.journeyKind !== "event") && touch.internalTraffic === true ? 1 : 0,
           accountId: "",
           accountCreatedAt: "",
           linkedAt: "",
@@ -514,11 +534,9 @@ function createLocalStore(filePath) {
         if (!record.firstTouch) record.firstTouch = touch;
         record.lastTouch = touch;
         record.lastSeenAt = now;
-        if (touch.journeyKind !== "event") {
+        if (touch.eventType === "page_view" || touch.journeyKind !== "event") {
           record.visitCount = Math.max(0, Number(record.visitCount || 0)) + 1;
-          if (touch.internalTraffic === true) {
-            record.internalVisitCount = Math.max(0, Number(record.internalVisitCount || 0)) + 1;
-          }
+          if (touch.internalTraffic === true) record.internalVisitCount = Math.max(0, Number(record.internalVisitCount || 0)) + 1;
         }
         appendJourney(record, touch);
       }
@@ -539,6 +557,47 @@ function createLocalStore(filePath) {
       return read().visitors;
     },
 
+    async appendEvent(event = {}) {
+      const data = read();
+      const events = pruneEvents(data.events);
+      const previous = events[events.length - 1];
+      const previousAt = safeDate(previous?.capturedAt)?.getTime() || 0;
+      const currentAt = safeDate(event?.capturedAt)?.getTime() || Date.now();
+      const duplicate = previous &&
+        previous.visitorId === event.visitorId &&
+        previous.sessionId === event.sessionId &&
+        previous.eventType === event.eventType &&
+        previous.pathname === event.pathname &&
+        previous.target === event.target &&
+        currentAt - previousAt < 1200;
+      if (!duplicate) events.push(event);
+      data.events = pruneEvents(events);
+      write(data);
+      return event;
+    },
+
+    async listEvents({ since = null, until = null, limit = 50000 } = {}) {
+      const data = read();
+      const sinceTime = safeDate(since)?.getTime() || 0;
+      const untilTime = safeDate(until)?.getTime() || Number.MAX_SAFE_INTEGER;
+      return data.events
+        .filter((event) => {
+          const time = safeDate(event?.capturedAt)?.getTime() || 0;
+          return time >= sinceTime && time <= untilTime;
+        })
+        .sort((a, b) => (safeDate(a.capturedAt)?.getTime() || 0) - (safeDate(b.capturedAt)?.getTime() || 0))
+        .slice(-Math.max(1, Math.min(50000, Number(limit || 50000))));
+    },
+
+    async markVisitorInternal(visitorId) {
+      const data = read();
+      data.events = data.events.map((event) => String(event.visitorId) === String(visitorId) ? { ...event, internalTraffic: true } : event);
+      write(data);
+      return true;
+    },
+
+    async ensureIndexes() { return true; },
+
     async registerInternalDevice(deviceId, metadata = {}) {
       const data = read();
       const now = new Date().toISOString();
@@ -548,13 +607,7 @@ function createLocalStore(filePath) {
         existing.updatedAt = now;
         existing.label = text(metadata.label || existing.label || "Founder device", 120);
       } else {
-        data.internalDevices.push({
-          deviceId,
-          active: true,
-          createdAt: now,
-          updatedAt: now,
-          label: text(metadata.label || "Founder device", 120)
-        });
+        data.internalDevices.push({ deviceId, active: true, createdAt: now, updatedAt: now, label: text(metadata.label || "Founder device", 120) });
       }
       write(data);
       return true;
@@ -572,17 +625,16 @@ function createLocalStore(filePath) {
 
     async isInternalDevice(deviceId) {
       if (!deviceId) return false;
-      const data = read();
-      return data.internalDevices.some((item) => String(item.deviceId) === String(deviceId) && item.active === true);
+      return read().internalDevices.some((item) => String(item.deviceId) === String(deviceId) && item.active === true);
     }
   };
 }
 
-function createMongoStore(collection, internalDevicesCollection) {
+function createMongoStore(collection, internalDevicesCollection, eventsCollection) {
   return {
     async upsertVisit(visitorId, touch) {
       const now = new Date().toISOString();
-      const isPage = touch.journeyKind !== "event";
+      const isPage = touch.eventType === "page_view" || touch.journeyKind !== "event";
       const isInternalPage = isPage && touch.internalTraffic === true;
       await collection.updateOne(
         { visitorId },
@@ -597,14 +649,8 @@ function createMongoStore(collection, internalDevicesCollection) {
             signupAttributed: false,
             internalVisitCount: 0
           },
-          $set: {
-            lastTouch: touch,
-            lastSeenAt: now
-          },
-          $inc: {
-            visitCount: isPage ? 1 : 0,
-            internalVisitCount: isInternalPage ? 1 : 0
-          },
+          $set: { lastTouch: touch, lastSeenAt: now },
+          $inc: { visitCount: isPage ? 1 : 0, internalVisitCount: isInternalPage ? 1 : 0 },
           $push: { journey: { $each: [touch], $slice: -120 } }
         },
         { upsert: true }
@@ -625,38 +671,69 @@ function createMongoStore(collection, internalDevicesCollection) {
       return collection.find({}, { projection: { _id: 0 } }).sort({ firstSeenAt: -1 }).limit(50000).toArray();
     },
 
+    async appendEvent(event = {}) {
+      const document = { ...event, capturedAtDate: safeDate(event.capturedAt) || new Date() };
+      await eventsCollection.updateOne(
+        { eventKey: event.eventKey },
+        { $setOnInsert: document },
+        { upsert: true }
+      );
+      return event;
+    },
+
+    async listEvents({ since = null, until = null, limit = 50000 } = {}) {
+      const query = {};
+      const range = {};
+      const sinceDate = safeDate(since);
+      const untilDate = safeDate(until);
+      if (sinceDate) range.$gte = sinceDate;
+      if (untilDate) range.$lte = untilDate;
+      if (Object.keys(range).length) query.capturedAtDate = range;
+      const rows = await eventsCollection.find(query, { projection: { _id: 0, capturedAtDate: 0 } })
+        .sort({ capturedAtDate: -1 })
+        .limit(Math.max(1, Math.min(50000, Number(limit || 50000))))
+        .toArray();
+      return rows.reverse();
+    },
+
+    async markVisitorInternal(visitorId) {
+      await eventsCollection.updateMany({ visitorId: String(visitorId) }, { $set: { internalTraffic: true } });
+      return true;
+    },
+
+    async ensureIndexes() {
+      await Promise.all([
+        collection.createIndex({ visitorId: 1 }, { unique: true }),
+        internalDevicesCollection.createIndex({ deviceId: 1 }, { unique: true }),
+        eventsCollection.createIndex({ eventKey: 1 }, { unique: true }),
+        eventsCollection.createIndex({ capturedAtDate: -1 }),
+        eventsCollection.createIndex({ sessionId: 1, capturedAtDate: -1 }),
+        eventsCollection.createIndex({ visitorId: 1, capturedAtDate: -1 }),
+        eventsCollection.createIndex({ eventType: 1, capturedAtDate: -1 }),
+        eventsCollection.createIndex({ internalTraffic: 1, capturedAtDate: -1 }),
+        eventsCollection.createIndex({ capturedAtDate: 1 }, { expireAfterSeconds: Math.floor(ANALYTICS_RETENTION_MS / 1000) })
+      ]);
+      return true;
+    },
+
     async registerInternalDevice(deviceId, metadata = {}) {
       const now = new Date().toISOString();
       await internalDevicesCollection.updateOne(
         { deviceId },
-        {
-          $setOnInsert: { deviceId, createdAt: now },
-          $set: {
-            active: true,
-            updatedAt: now,
-            label: text(metadata.label || "Founder device", 120)
-          }
-        },
+        { $setOnInsert: { deviceId, createdAt: now }, $set: { active: true, updatedAt: now, label: text(metadata.label || "Founder device", 120) } },
         { upsert: true }
       );
       return true;
     },
 
     async revokeInternalDevice(deviceId) {
-      const result = await internalDevicesCollection.updateOne(
-        { deviceId },
-        { $set: { active: false, updatedAt: new Date().toISOString() } }
-      );
+      const result = await internalDevicesCollection.updateOne({ deviceId }, { $set: { active: false, updatedAt: new Date().toISOString() } });
       return Number(result.matchedCount || 0) > 0;
     },
 
     async isInternalDevice(deviceId) {
       if (!deviceId) return false;
-      const found = await internalDevicesCollection.findOne(
-        { deviceId, active: true },
-        { projection: { _id: 0, deviceId: 1 } }
-      );
-      return Boolean(found);
+      return Boolean(await internalDevicesCollection.findOne({ deviceId, active: true }, { projection: { _id: 0, deviceId: 1 } }));
     }
   };
 }
@@ -666,37 +743,244 @@ function createStore({ environment, db, dataDir }) {
     const env = normalizeEnvironment(environment);
     return createMongoStore(
       db.collection(`organic_visibility_${env}`),
-      db.collection(`organic_visibility_internal_devices_${env}`)
+      db.collection(`organic_visibility_internal_devices_${env}`),
+      db.collection(`organic_visibility_events_${env}`)
     );
   }
   return createLocalStore(path.join(dataDir || process.cwd(), `organic-visibility-${environment}.json`));
 }
 
 function normalizeTouch(body = {}) {
+  const eventType = text(body.eventType || body.journeyStep || (body.journeyKind === "event" ? "event" : "page_view"), 80).toLowerCase().replace(/[^a-z0-9_:-]+/g, "_");
   return {
-    source: normalizeSource(body.source),
-    sourceDetail: text(body.sourceDetail, 120),
+    source: normalizeSource(body.sessionSource || body.source),
+    sourceDetail: text(body.sessionSourceDetail || body.sourceDetail, 180),
+    sessionSource: normalizeSource(body.sessionSource || body.source),
+    sessionSourceDetail: text(body.sessionSourceDetail || body.sourceDetail, 180),
     medium: text(body.medium, 120),
     campaign: text(body.campaign, 160),
+    utmContent: text(body.utmContent, 160),
+    utmTerm: text(body.utmTerm, 160),
     referrerHost: text(body.referrerHost, 220).toLowerCase(),
     browser: text(body.browser, 60),
     inApp: text(body.inApp, 60),
     platform: text(body.platform, 60),
     device: text(body.device, 30),
-    navigationType: ["entry", "internal", "unknown"].includes(text(body.navigationType, 30).toLowerCase())
-      ? text(body.navigationType, 30).toLowerCase()
-      : "unknown",
-    landingPath: text(body.landingPath, 500),
+    navigationType: ["entry", "internal", "unknown"].includes(text(body.navigationType, 30).toLowerCase()) ? text(body.navigationType, 30).toLowerCase() : "unknown",
+    landingPath: text(body.landingPath || body.pathname, 500),
+    pathname: text(body.pathname || body.landingPath, 500),
+    previousPath: text(body.previousPath, 500),
     packId: text(body.packId, 180),
     trackId: text(body.trackId, 180),
-    journeyKind: ["page", "event"].includes(text(body.journeyKind, 20).toLowerCase())
-      ? text(body.journeyKind, 20).toLowerCase()
-      : "page",
-    journeyStep: text(body.journeyStep, 100),
+    artistId: text(body.artistId, 180),
+    userId: text(body.userId || body.accountId, 180),
+    sessionId: text(body.sessionId, 180),
+    sessionStartedAt: text(body.sessionStartedAt, 80),
+    eventType,
+    target: text(body.target || body.button || body.cta, 180),
+    journeyKind: body.journeyKind === "event" || eventType !== "page_view" ? "event" : "page",
+    journeyStep: text(body.journeyStep || eventType, 100),
     journeyDetail: text(body.journeyDetail, 240),
     internalTraffic: body.internalTraffic === true,
     trackingVersion: Math.max(1, Number(body.trackingVersion || 1) || 1),
     capturedAt: new Date().toISOString()
+  };
+}
+
+function analyticsEvent(visitorId, touch = {}) {
+  const capturedAt = text(touch.capturedAt || new Date().toISOString(), 80);
+  const dedupeBucket = Math.floor((safeDate(capturedAt)?.getTime() || Date.now()) / 1200);
+  const eventKey = crypto.createHash("sha256").update([
+    text(visitorId, 180),
+    text(touch.sessionId || `legacy-${visitorId}`, 180),
+    text(touch.eventType || touch.journeyStep || "page_view", 80),
+    text(touch.pathname || touch.landingPath, 500),
+    text(touch.target, 180),
+    String(dedupeBucket)
+  ].join("|")).digest("hex").slice(0, 32);
+  return {
+    eventId: `evt-${crypto.randomBytes(12).toString("base64url")}`,
+    eventKey,
+    visitorId: text(visitorId, 180),
+    sessionId: text(touch.sessionId || `legacy-${visitorId}`, 180),
+    userId: text(touch.userId, 180),
+    eventType: text(touch.eventType || touch.journeyStep || "page_view", 80),
+    capturedAt,
+    source: normalizeSource(touch.sessionSource || touch.source),
+    sourceDetail: text(touch.sessionSourceDetail || touch.sourceDetail, 180),
+    medium: text(touch.medium, 120),
+    campaign: text(touch.campaign, 160),
+    utmContent: text(touch.utmContent, 160),
+    utmTerm: text(touch.utmTerm, 160),
+    referrerHost: text(touch.referrerHost, 220),
+    pathname: text(touch.pathname || touch.landingPath, 500),
+    previousPath: text(touch.previousPath, 500),
+    packId: text(touch.packId, 180),
+    trackId: text(touch.trackId, 180),
+    artistId: text(touch.artistId, 180),
+    target: text(touch.target, 180),
+    browser: text(touch.browser, 60),
+    inApp: text(touch.inApp, 60),
+    platform: text(touch.platform, 60),
+    device: text(touch.device, 30),
+    internalTraffic: touch.internalTraffic === true
+  };
+}
+
+function analyticsDateKey(value, timeZone = ANALYTICS_TIMEZONE) {
+  const date = safeDate(value);
+  if (!date) return "";
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
+function analyticsMetricSummary(events = []) {
+  const unique = (field) => new Set(events.map((event) => text(event?.[field], 180)).filter(Boolean)).size;
+  const count = (...types) => events.filter((event) => types.includes(event.eventType)).length;
+  return {
+    visitors: unique("visitorId"),
+    sessions: unique("sessionId"),
+    pageViews: count("page_view"),
+    packViews: count("pack_view"),
+    trackViews: count("track_view"),
+    categoryViews: count("category_view"),
+    audioPlays: count("audio_play"),
+    audioPauses: count("audio_pause"),
+    clicks: count("click", "cta_click", "navigation_internal", "download_started"),
+    ctaClicks: count("cta_click"),
+    signups: count("signup_completed"),
+    logins: count("login"),
+    downloadsStarted: count("download_started"),
+    downloads: count("download_completed"),
+    returningVisitors: count("returning_visitor"),
+    returningUsers: count("returning_user")
+  };
+}
+
+function analyticsTop(events = [], eventType, field, limit = 8) {
+  const counts = new Map();
+  for (const event of events) {
+    if (event.eventType !== eventType) continue;
+    const key = text(event?.[field], 500);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([value, count]) => ({ value, count }));
+}
+
+function analyticsAcquisition(events = []) {
+  const sessions = new Map();
+  for (const event of events) {
+    if (!event.sessionId) continue;
+    const time = safeDate(event.capturedAt)?.getTime() || 0;
+    let session = sessions.get(event.sessionId);
+    if (!session) {
+      session = { time, source: normalizeSource(event.source), visitorId: event.visitorId, signups: 0, downloads: 0 };
+      sessions.set(event.sessionId, session);
+    } else if (time < session.time) {
+      session.time = time;
+      session.source = normalizeSource(event.source);
+      session.visitorId = event.visitorId || session.visitorId;
+    }
+    if (event.eventType === "signup_completed") session.signups += 1;
+    if (event.eventType === "download_completed") session.downloads += 1;
+  }
+  const rows = new Map(ORGANIC_SOURCES.map((source) => [source, { source, visitors: new Set(), sessions: 0, signups: 0, downloads: 0 }]));
+  for (const session of sessions.values()) {
+    const row = rows.get(session.source) || rows.get("Other");
+    row.sessions += 1;
+    row.signups += session.signups;
+    row.downloads += session.downloads;
+    if (session.visitorId) row.visitors.add(session.visitorId);
+  }
+  return [...rows.values()].map((row) => ({ ...row, visitors: row.visitors.size })).filter((row) => row.visitors || row.sessions || row.signups || row.downloads);
+}
+
+function analyticsFunnel(events = []) {
+  const stages = [
+    ["visitor", new Set(["page_view", "landing_page"])],
+    ["content", new Set(["category_view", "pack_view", "track_view"])],
+    ["listen", new Set(["audio_play"])],
+    ["cta", new Set(["cta_click"])],
+    ["signup", new Set(["signup_completed"])],
+    ["download", new Set(["download_completed"])]
+  ];
+  const visitors = new Map();
+  for (const event of events) {
+    if (!event.visitorId) continue;
+    const list = visitors.get(event.visitorId) || [];
+    list.push(event);
+    visitors.set(event.visitorId, list);
+  }
+  const counts = Object.fromEntries(stages.map(([name]) => [name, 0]));
+  for (const list of visitors.values()) {
+    list.sort((a, b) => (safeDate(a.capturedAt)?.getTime() || 0) - (safeDate(b.capturedAt)?.getTime() || 0));
+    let stageIndex = 0;
+    for (const event of list) {
+      while (stageIndex < stages.length && stages[stageIndex][1].has(event.eventType)) {
+        counts[stages[stageIndex][0]] += 1;
+        stageIndex += 1;
+      }
+      if (stageIndex >= stages.length) break;
+    }
+  }
+  return stages.map(([name], index) => ({ stage: name, value: counts[name], previous: index ? counts[stages[index - 1][0]] : counts[name] }));
+}
+
+function buildAnalyticsSnapshot(events = [], { now = new Date(), customFrom = null, customTo = null } = {}) {
+  const clean = (Array.isArray(events) ? events : []).filter((event) => event?.internalTraffic !== true && safeDate(event?.capturedAt));
+  const nowTime = now.getTime();
+  const todayKey = analyticsDateKey(now);
+  const yesterdayKey = analyticsDateKey(new Date(nowTime - 24 * 60 * 60 * 1000));
+  const byDays = (days) => clean.filter((event) => (safeDate(event.capturedAt)?.getTime() || 0) >= nowTime - days * 24 * 60 * 60 * 1000);
+  const today = clean.filter((event) => analyticsDateKey(event.capturedAt) === todayKey);
+  const yesterday = clean.filter((event) => analyticsDateKey(event.capturedAt) === yesterdayKey);
+  const active = clean.filter((event) => (safeDate(event.capturedAt)?.getTime() || 0) >= nowTime - ANALYTICS_ACTIVE_WINDOW_MS);
+  const recent = clean.slice().sort((a, b) => (safeDate(b.capturedAt)?.getTime() || 0) - (safeDate(a.capturedAt)?.getTime() || 0)).slice(0, 80);
+  const activeSessions = new Map();
+  for (const event of active) {
+    if (!event.sessionId) continue;
+    const time = safeDate(event.capturedAt)?.getTime() || 0;
+    const current = activeSessions.get(event.sessionId) || { time: 0, event: null, pageTime: 0, pageEvent: null };
+    if (time > current.time) { current.time = time; current.event = event; }
+    if (event.eventType === "page_view" && time >= current.pageTime) { current.pageTime = time; current.pageEvent = event; }
+    activeSessions.set(event.sessionId, current);
+  }
+  const customStart = safeDate(customFrom)?.getTime() || 0;
+  const customEnd = safeDate(customTo)?.getTime() || Number.MAX_SAFE_INTEGER;
+  const custom = customStart ? clean.filter((event) => {
+    const time = safeDate(event.capturedAt)?.getTime() || 0;
+    return time >= customStart && time <= customEnd;
+  }) : [];
+  return {
+    generatedAt: now.toISOString(),
+    activeWindowMinutes: Math.round(ANALYTICS_ACTIVE_WINDOW_MS / 60000),
+    now: {
+      visitors: new Set(active.map((event) => event.visitorId).filter(Boolean)).size,
+      sessions: activeSessions.size,
+      pages: [...activeSessions.values()].map(({ event, pageEvent }) => {
+        const page = pageEvent || event;
+        return { sessionId: page.sessionId, visitorId: page.visitorId, pathname: page.pathname, eventType: event?.eventType || page.eventType, source: page.source, capturedAt: event?.capturedAt || page.capturedAt };
+      }).slice(0, 30)
+    },
+    periods: {
+      today: analyticsMetricSummary(today),
+      yesterday: analyticsMetricSummary(yesterday),
+      sevenDays: analyticsMetricSummary(byDays(7)),
+      thirtyDays: analyticsMetricSummary(byDays(30)),
+      ...(customStart ? { custom: analyticsMetricSummary(custom) } : {})
+    },
+    acquisition: analyticsAcquisition(today),
+    top: {
+      pages: analyticsTop(today, "page_view", "pathname"),
+      packs: analyticsTop(today, "pack_view", "packId"),
+      tracks: analyticsTop(today, "track_view", "trackId")
+    },
+    funnel: analyticsFunnel(today),
+    recentEvents: recent
   };
 }
 
@@ -1218,6 +1502,7 @@ function registerOrganicVisibility({
 }) {
   const runtimeEnvironment = normalizeEnvironment(environment);
   const store = createStore({ environment: runtimeEnvironment, db, dataDir });
+  Promise.resolve(store.ensureIndexes?.()).catch((error) => console.warn("Analytics indexes indisponibles :", error?.message || error));
   const normalizedPublicOrigin = String(publicOrigin || "").replace(/\/+$/, "");
   const internalAccounts = internalAccountIds(runtimeEnvironment);
   const internalMarkTokens = new Map();
@@ -1419,16 +1704,21 @@ function registerOrganicVisibility({
       const validInternalDevice = /^internal-[a-zA-Z0-9_-]{20,200}$/.test(requestedInternalDeviceId)
         ? await store.isInternalDevice(requestedInternalDeviceId)
         : false;
-      const record = await store.upsertVisit(visitorId, normalizeTouch({
+      const claimedUserId = text(req.body?.userId || req.body?.accountId, 180);
+      const internalAccount = claimedUserId && internalAccounts.has(claimedUserId);
+      const touch = normalizeTouch({
         ...req.body,
-        internalTraffic: validInternalDevice,
-        trackingVersion: 2
-      }));
+        internalTraffic: validInternalDevice || internalAccount,
+        trackingVersion: 3
+      });
+      const record = await store.upsertVisit(visitorId, touch);
+      await store.appendEvent(analyticsEvent(visitorId, touch));
       return res.json({
         success: true,
         environment: runtimeEnvironment,
         visitorId: record?.visitorId || visitorId,
-        internalTraffic: validInternalDevice
+        sessionId: touch.sessionId,
+        internalTraffic: touch.internalTraffic === true
       });
     } catch (error) {
       console.error("Organic visit impossible :", error);
@@ -1519,6 +1809,26 @@ function registerOrganicVisibility({
         internalAccount,
         signupAttributed: internalAccount ? false : signupAttribution(existing.firstSeenAt, account.createdAt, linkedAt)
       });
+      if (internalAccount) await store.markVisitorInternal?.(visitorId);
+
+      // Une inscription n'est comptée que si la date réelle du compte la confirme.
+      // Une simple liaison d'un compte existant n'est pas renommée en "login" :
+      // le vrai événement login est émis uniquement après succès de /api/login côté client.
+      if (record?.signupAttributed === true) {
+        const verifiedTouch = normalizeTouch({
+          ...(existing.lastTouch || existing.firstTouch || {}),
+          ...req.body,
+          userId: account.accountId,
+          eventType: "signup_completed",
+          journeyKind: "event",
+          journeyStep: "signup_completed",
+          journeyDetail: "Compte réellement créé dans la base Sonara",
+          internalTraffic: internalAccount,
+          trackingVersion: 3
+        });
+        await store.upsertVisit(visitorId, verifiedTouch);
+        await store.appendEvent(analyticsEvent(visitorId, verifiedTouch));
+      }
 
       return res.json({
         success: true,
@@ -1908,11 +2218,33 @@ function registerOrganicVisibility({
     }
   });
 
+  app.get("/api/founder/organic-visibility/live", requireFounderKey, async (req, res) => {
+    try {
+      const now = new Date();
+      const since = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
+      const events = await store.listEvents({ since, limit: 12000 });
+      return res.json({
+        success: true,
+        environment: runtimeEnvironment,
+        analytics: buildAnalyticsSnapshot(events, { now }),
+        generatedAt: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Founder live analytics impossible :", error);
+      return res.status(500).json({ success: false, message: "Activité en direct indisponible." });
+    }
+  });
+
   app.get("/api/founder/organic-visibility", requireFounderKey, async (req, res) => {
     try {
-      const [rawRecords, packs] = await Promise.all([store.list(), visiblePacks()]);
+      const now = new Date();
+      const since = new Date(now.getTime() - ANALYTICS_RETENTION_MS).toISOString();
+      const customFrom = text(req.query?.from, 80);
+      const customTo = text(req.query?.to, 80);
+      const [rawRecords, packs, events] = await Promise.all([store.list(), visiblePacks(), store.listEvents({ since, limit: 50000 })]);
       const records = recordsWithKnownInternalAccounts(rawRecords);
       const attribution = summarizeAttribution(records);
+      const analytics = buildAnalyticsSnapshot(events, { now, customFrom, customTo });
       const communication = packs
         .slice()
         .sort((a, b) => new Date(b?.publishedAt || b?.moderatedAt || b?.createdAt || 0) - new Date(a?.publishedAt || a?.moderatedAt || a?.createdAt || 0))
@@ -1924,8 +2256,9 @@ function registerOrganicVisibility({
         environment: runtimeEnvironment,
         commercialMode: commercialPolicy?.mode || (commercialPolicy?.paymentsActive ? "COMMERCIAL" : "PRE_V1"),
         attribution,
+        analytics,
         communication,
-        generatedAt: new Date().toISOString()
+        generatedAt: now.toISOString()
       });
     } catch (error) {
       console.error("Founder organic visibility impossible :", error);
@@ -1950,5 +2283,7 @@ module.exports = {
   semanticData,
   seoMetadata,
   summarizeAttribution,
+  buildAnalyticsSnapshot,
+  analyticsMetricSummary,
   excludedUserAgent
 };

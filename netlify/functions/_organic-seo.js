@@ -191,7 +191,7 @@ function shell({ event, apiBase, head, markup, type }) {
     </nav>
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
-  <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
+  <script src="/app/js/growth/organic-attribution.js?v=analytics-realtime-v3"></script>
   <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v10-brand-images"></script>
   <script src="/app/js/core/i18n.js?v=seo-pillars-v1" defer></script>
 </body>

@@ -131,6 +131,12 @@ async function prepareProtectedDownload() {
 
 async function downloadFile() {
   try {
+    void window.SonaraOrganicAttribution?.trackEvent?.("download_started", {
+      packId: packId || "",
+      trackId: trackId || "",
+      resourceId: resourceId || "",
+      target: "protected_download"
+    });
     const finalUrl = await prepareProtectedDownload();
     const link = document.createElement("a");
     link.href = finalUrl;
@@ -141,6 +147,12 @@ async function downloadFile() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    void window.SonaraOrganicAttribution?.trackDownloadCompleted?.({
+      packId: packId || "",
+      trackId: trackId || "",
+      resourceId: resourceId || "",
+      target: "protected_download"
+    });
     return true;
   } catch (error) {
     console.error("Téléchargement protégé refusé :", error);

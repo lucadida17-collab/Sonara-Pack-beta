@@ -664,12 +664,19 @@ window.SonaraSession = SonaraSession;
    qui utilisent déjà config.js, sans modifier leur logique.
 ========================================================= */
 (() => {
-  if (window.__SONARA_ORGANIC_ATTRIBUTION_ACTIVE__ === true) return;
-  if (document.querySelector('script[data-sonara-organic-attribution="true"]')) return;
+  const loadOrganicAttribution = () => {
+    if (window.__SONARA_ORGANIC_ATTRIBUTION_ACTIVE__ === true) return;
+    if (document.querySelector('script[data-sonara-organic-attribution="true"], script[src*="/app/js/growth/organic-attribution.js"]')) return;
 
-  const script = document.createElement("script");
-  script.src = "/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2";
-  script.async = true;
-  script.dataset.sonaraOrganicAttribution = "true";
-  (document.head || document.documentElement).appendChild(script);
+    const script = document.createElement("script");
+    script.src = "/app/js/growth/organic-attribution.js?v=analytics-realtime-v3";
+    script.async = true;
+    script.dataset.sonaraOrganicAttribution = "true";
+    (document.head || document.documentElement).appendChild(script);
+  };
+
+  // Attendre que le HTML soit parsé évite une double requête quand une page
+  // inclut déjà explicitement le tracker juste après config.js.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadOrganicAttribution, { once: true });
+  else loadOrganicAttribution();
 })();

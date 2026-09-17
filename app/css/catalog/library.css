@@ -2627,6 +2627,7 @@ html {
   font: inherit;
 }
 
+
 .library-overview-heading,
 .library-overview-section-heading {
   display: flex;
@@ -2637,6 +2638,7 @@ html {
 
 .library-overview-heading {
   margin-bottom: 34px;
+  font: inherit;
 }
 
 .library-overview-title-action,
@@ -2735,9 +2737,10 @@ html {
 
 .library-preview-pack-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
+
 
 .library-preview-pack {
   all: unset;
