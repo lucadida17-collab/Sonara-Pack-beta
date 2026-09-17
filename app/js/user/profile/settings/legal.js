@@ -168,6 +168,13 @@ const legalContent = {
       </p>
 
       <p>
+        Sonara Pack est actuellement en Pré-V1. Le catalogue, les previews,
+        les licences et les téléchargements prévus par ce mode existent déjà,
+        tandis que les paiements réels et les fonctions commerciales restent
+        désactivés jusqu’au lancement commercial.
+      </p>
+
+      <p>
         Exploitant : Luca Dida
       </p>
 

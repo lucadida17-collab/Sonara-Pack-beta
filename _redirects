@@ -27,6 +27,10 @@
 /licensing.html                      /licensing 301!
 /pre-v1.html                         /pre-v1 301!
 
+# SONARA — pages légales publiques (sans authentification)
+/legal                              /legal.html 200
+/legal.html                         /legal 301!
+
 # SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
 /catalog                             /.netlify/functions/catalog-index 200
 /catalog/categories/*               /.netlify/functions/catalog-facet?path=categories/:splat  200

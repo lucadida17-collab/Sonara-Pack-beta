@@ -1883,6 +1883,9 @@ function registerOrganicVisibility({
         index: [{
           url: `${normalizedPublicOrigin}/catalog`,
           updatedAt: packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0] ? new Date(packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0]).toISOString() : ""
+        }, {
+          url: `${normalizedPublicOrigin}/legal`,
+          updatedAt: ""
         }],
         packs: packEntries,
         tracks: trackEntries,
@@ -2002,6 +2005,9 @@ function registerOrganicVisibility({
         index: [{
           url: `${normalizedPublicOrigin}/catalog`,
           updatedAt: packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0] ? new Date(packEntries.map((item) => safeDate(item.updatedAt)?.getTime() || 0).sort((a, b) => b - a)[0]).toISOString() : ""
+        }, {
+          url: `${normalizedPublicOrigin}/legal`,
+          updatedAt: ""
         }],
         packs: packEntries,
         tracks: trackEntries,
