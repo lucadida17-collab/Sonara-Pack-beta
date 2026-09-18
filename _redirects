@@ -1,3 +1,7 @@
+# SONARA SEO MULTILINGUE — entrée plateforme
+/:lang/                                 /seo-languages/:lang/index.html 200
+/:lang                                  /:lang/ 301!
+
 # SONARA SEO MULTILINGUE — fichiers rangés sous /seo-languages, URLs publiques inchangées
 /:lang/how-it-works                    /seo-languages/:lang/how-it-works.html 200
 /:lang/for-creators                    /seo-languages/:lang/for-creators.html 200
