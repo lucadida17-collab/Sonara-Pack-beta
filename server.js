@@ -7531,14 +7531,34 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (
       return res.json({ success: true, deleted: false, item: publicPack, pack: publicPack });
     }
 
+    const moderatedAt = new Date().toISOString();
+    const updateFields = { status, moderatedAt, updatedAt: moderatedAt };
+
+    if (status === "approved" && Array.isArray(req.body?.previews) && req.body.previews.length) {
+      const currentPack = await packsCollection.findOne({ id: requestedId });
+      if (!currentPack) {
+        return res.status(404).json({ success: false, message: "Pack introuvable." });
+      }
+      const previewByTrack = new Map(req.body.previews.map((item) => [String(item?.trackId || ""), item]));
+      updateFields.tracks = (Array.isArray(currentPack.tracks) ? currentPack.tracks : []).map((track) => {
+        const selected = previewByTrack.get(String(track?.id || track?.trackId || ""));
+        if (!selected) return track;
+        const start = Number(selected.previewStart);
+        if (!Number.isFinite(start) || start < 0) return track;
+        return {
+          ...track,
+          previewStart: Math.round(start * 100) / 100,
+          previewDuration: 30,
+          previewAnalysisVersion: PREVIEW_ANALYSIS_VERSION,
+          previewSelectionSource: "founder_manual",
+          previewSelectedAt: moderatedAt
+        };
+      });
+    }
+
     const result = await packsCollection.findOneAndUpdate(
       { id: requestedId },
-      {
-        $set: {
-          status,
-          moderatedAt: new Date().toISOString()
-        }
-      },
+      { $set: updateFields },
       { returnDocument: "after" }
     );
 

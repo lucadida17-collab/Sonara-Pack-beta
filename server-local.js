@@ -7193,8 +7193,24 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, r
     }
 
 
+    if (status === "approved" && Array.isArray(req.body?.previews)) {
+      const previewByTrack = new Map(req.body.previews.map((item) => [String(item?.trackId || ""), item]));
+      for (const track of Array.isArray(pack.tracks) ? pack.tracks : []) {
+        const selected = previewByTrack.get(String(track?.id || track?.trackId || ""));
+        if (!selected) continue;
+        const start = Number(selected.previewStart);
+        if (!Number.isFinite(start) || start < 0) continue;
+        track.previewStart = Math.round(start * 100) / 100;
+        track.previewDuration = 30;
+        track.previewAnalysisVersion = PREVIEW_ANALYSIS_VERSION;
+        track.previewSelectionSource = "founder_manual";
+        track.previewSelectedAt = new Date().toISOString();
+      }
+    }
+
     pack.status = status;
     pack.moderatedAt = new Date().toISOString();
+    pack.updatedAt = pack.moderatedAt;
     writeJsonArray(packsPath, packs);
 
     return res.json({ success: true, item: pack, pack });
