@@ -323,3 +323,113 @@ body.sonara-pillar-page {
     grid-template-columns: 1fr;
   }
 }
+
+/* Sélecteur de langue des pages publiques principales */
+.pillar-language-switcher {
+  position: relative;
+  flex: 0 0 auto;
+}
+.pillar-language-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #eef5ff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pillar-language-button:hover,
+.pillar-language-switcher.is-open .pillar-language-button {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.pillar-language-label {
+  color: #8f9db2;
+  font-weight: 650;
+}
+.pillar-language-chevron {
+  color: #91a0b8;
+  font-size: 14px;
+  line-height: 1;
+  transform: translateY(-1px);
+  transition: transform 160ms ease;
+}
+.pillar-language-switcher.is-open .pillar-language-chevron {
+  transform: translateY(1px) rotate(180deg);
+}
+.pillar-language-menu {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 40;
+  width: min(250px, calc(100vw - 28px));
+  max-height: min(440px, 70vh);
+  overflow: auto;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(9, 14, 25, 0.98);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(20px);
+}
+.pillar-language-menu[hidden] {
+  display: none;
+}
+.pillar-language-option {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 9px;
+  text-decoration: none;
+  color: #c5d0e0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.pillar-language-option:hover,
+.pillar-language-option:focus-visible {
+  outline: none;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.pillar-language-option[aria-current="true"] {
+  background: rgba(88, 186, 255, 0.12);
+  color: #91d3ff;
+}
+
+@media (max-width: 1100px) {
+  .pillar-header-inner {
+    gap: 14px;
+  }
+  .pillar-nav {
+    gap: 2px;
+  }
+  .pillar-nav a {
+    padding-inline: 7px;
+  }
+  .pillar-language-label {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .pillar-language-button {
+    min-height: 36px;
+    padding-inline: 10px;
+  }
+  .pillar-language-menu {
+    position: fixed;
+    top: 72px;
+    right: 13px;
+    left: 13px;
+    width: auto;
+    max-height: calc(100vh - 92px);
+  }
+}
