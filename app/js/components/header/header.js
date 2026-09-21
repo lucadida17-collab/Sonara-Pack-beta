@@ -72,9 +72,6 @@ function initDynamicHeader() {
   const shareButton =
     document.getElementById("dynamicHeaderShare");
 
-  const cinematicButton =
-    document.getElementById("dynamicHeaderCinematic");
-
   if (
     !profileButton ||
     !profileImage ||
@@ -118,13 +115,6 @@ function initDynamicHeader() {
 
   if (shareButton) {
     shareButton.addEventListener("click", shareSonaraPlatform);
-  }
-
-  if (cinematicButton) {
-    // Le replay appartient au header partagé : Home, Bibliothèque, Pack, Artiste…
-    // Il ne dépend jamais de la règle « vue une fois » du lancement automatique.
-    cinematicButton.hidden = false;
-    cinematicButton.addEventListener("click", openCinematicReplay);
   }
 
   if (window.lucide) {
@@ -171,29 +161,6 @@ async function shareSonaraPlatform() {
   } catch (error) {
     console.warn("Header : copie du lien Sonara Pack impossible.", error);
   }
-}
-
-function openCinematicReplay() {
-  const returnTo =
-    `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-  // Double verrou : query-string + sessionStorage.
-  // Ainsi un replay volontaire reste un replay même si la cinématique a déjà été vue.
-  try {
-    sessionStorage.setItem(
-      "sonara:cinematicReplayRequest",
-      JSON.stringify({ returnTo, requestedAt: Date.now() })
-    );
-  } catch (error) {
-    console.warn("Replay cinématique non mémorisé en session :", error);
-  }
-
-  const replayUrl = new URL("/index.html", window.location.origin);
-  replayUrl.searchParams.set("cinematic", "replay");
-  replayUrl.searchParams.set("returnTo", returnTo);
-  replayUrl.searchParams.set("replay", String(Date.now()));
-
-  window.location.assign(replayUrl.href);
 }
 
 function getProfilePageUrl() {
