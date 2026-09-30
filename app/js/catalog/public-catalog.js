@@ -77,7 +77,7 @@
 
   function updatePackSeo(pack) {
     const url = pack.canonicalUrl || pack.publicUrl || window.location.href;
-    const description = pack.seo?.description || `Découvrez ${pack.title} par ${pack.artist} sur Sonara Pack.`.slice(0, 160);
+    const description = pack.seo?.description || `Découvrez ${pack.title} par ${pack.artist} : musique sous licence pour vidéos, films, jeux et création de contenu sur Sonara Pack.`.slice(0, 180);
     document.title = pack.seo?.title || `${pack.title} - ${pack.artist} | Sonara Pack`;
     setMeta("description", description);
     setMeta("og:title", document.title, "property");
@@ -111,7 +111,7 @@
 
   function updateTrackSeo(pack, track) {
     const url = track.canonicalUrl || track.publicUrl || window.location.href;
-    const description = track.seo?.description || `Écoutez un aperçu de ${track.title} par ${track.artist} sur Sonara Pack.`.slice(0, 160);
+    const description = track.seo?.description || `Écoutez ${track.title} par ${track.artist} : musique sous licence pour vidéos, films, jeux et création de contenu sur Sonara Pack.`.slice(0, 180);
     document.title = track.seo?.title || `${track.title} - ${track.artist} | Sonara Pack`;
     setMeta("description", description);
     setMeta("og:title", document.title, "property");

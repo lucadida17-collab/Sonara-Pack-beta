@@ -33,8 +33,7 @@ const IS_MAIN = !IS_LOCAL && !IS_TEST;
 const API_URLS = Object.freeze({
   local: `${window.location.protocol}//${window.location.hostname}:3001`,
   test: "https://sonara-pack-beta-1.onrender.com",
-  main: "https://sonara-pack-beta.onrender.com",
-  mainBackup: "https://api--sonara-pack-main-backup--xm8lv9y66wnw.code.run"
+  main: "https://sonara-pack-beta.onrender.com"
 });
 
 let API_URL = IS_LOCAL
@@ -46,50 +45,26 @@ let API_URL = IS_LOCAL
 const SONARA_ENV = IS_LOCAL ? "local" : IS_TEST ? "test" : "main";
 
 /* =========================================================
-   SONARA MAIN API ROUTER
+   SONARA API ROUTER — RENDER ONLY
    ---------------------------------------------------------
-   MAIN primary : Render
-   MAIN backup  : Northflank
-
-   Rules:
-   - Local and Test never use the MAIN backup.
-   - Render always remains the preferred MAIN server.
-   - If Render is unavailable, MAIN switches to Northflank.
-   - Safe requests (GET/HEAD/OPTIONS) may be retried once on
-     the other MAIN server.
-   - Mutating requests are NEVER replayed automatically after
-     an uncertain failure, preventing duplicate registrations,
-     downloads, Stripe actions, moderation actions, etc.
-   - After a MAIN outage, the selected backup is kept briefly
-     for the current browser session to avoid ping-pong.
+   - Local reste sur le serveur local :3001.
+   - Test reste sur son service Render Test.
+   - Main utilise uniquement Render Main.
+   - Aucun failover externe n'est utilisé.
+   - L'interface publique du routeur est conservée pour ne pas
+     casser les pages qui utilisent getState(), ready() ou fetch().
 ========================================================= */
 const SonaraApiRouter = (() => {
   const nativeFetch = window.fetch.bind(window);
-  const PRIMARY_MAIN = API_URLS.main.replace(/\/+$/, "");
-  const BACKUP_MAIN = API_URLS.mainBackup.replace(/\/+$/, "");
-  const SINGLE_ENV_API = API_URL.replace(/\/+$/, "");
+  const ACTIVE_API = String(API_URL || "").replace(/\/+$/, "");
 
-  const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-  const FAILOVER_STATUSES = new Set([
-    408,
-    425,
-    429,
-    502,
-    503,
-    504,
-    521,
-    522,
-    523,
-    524
-  ]);
-
-  const HEALTH_TIMEOUT_MS = 3500;
-  const BACKUP_STICKY_MS = 60000;
-  const STORAGE_KEY = "sonaraMainApiRoute";
-
-  let activeBase = SINGLE_ENV_API;
-  let resolutionPromise = null;
-  let lastReason = "initial";
+  // Nettoyage de l'ancien choix de route conservé dans les sessions
+  // créées avant le passage à Render uniquement.
+  try {
+    sessionStorage.removeItem("sonaraMainApiRoute");
+  } catch {
+    // Le routage reste fonctionnel même si sessionStorage est indisponible.
+  }
 
   function normalizeBase(value) {
     return String(value || "").trim().replace(/\/+$/, "");
@@ -101,144 +76,20 @@ const SonaraApiRouter = (() => {
     return input?.url || "";
   }
 
-  function requestMethod(input, init = {}) {
-    return String(
-      init?.method ||
-      (
-        typeof Request !== "undefined" &&
-        input instanceof Request
-          ? input.method
-          : "GET"
-      ) ||
-      "GET"
-    ).toUpperCase();
-  }
-
-  function knownMainOrigin(origin) {
-    if (!IS_MAIN) return false;
-    return origin === new URL(PRIMARY_MAIN).origin || origin === new URL(BACKUP_MAIN).origin;
-  }
-
   function isKnownApiUrl(input) {
     try {
       const raw = requestUrl(input);
-      if (!raw) return false;
-      const origin = new URL(raw, window.location.href).origin;
-
-      if (IS_MAIN) return knownMainOrigin(origin);
-      return origin === new URL(SINGLE_ENV_API).origin;
+      if (!raw || !ACTIVE_API) return false;
+      return new URL(raw, window.location.href).origin === new URL(ACTIVE_API).origin;
     } catch {
       return false;
     }
   }
 
-  function apiPath(input) {
-    try {
-      const raw = requestUrl(input);
-      if (!raw) return "";
-      const parsed = new URL(raw, window.location.href);
-      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    } catch {
-      return "";
-    }
-  }
+  async function probe(base = ACTIVE_API, timeoutMs = 3500) {
+    const normalized = normalizeBase(base || ACTIVE_API);
+    if (!normalized) return { ok: false, status: 0, base: normalized };
 
-  function rewriteInput(input, targetBase) {
-    if (!IS_MAIN || !isKnownApiUrl(input)) return input;
-
-    const raw = requestUrl(input);
-    const parsed = new URL(raw, window.location.href);
-    const rewritten = `${normalizeBase(targetBase)}${parsed.pathname}${parsed.search}${parsed.hash}`;
-
-    if (
-      typeof Request !== "undefined" &&
-      input instanceof Request
-    ) {
-      return new Request(rewritten, input);
-    }
-
-    if (typeof URL !== "undefined" && input instanceof URL) {
-      return new URL(rewritten);
-    }
-
-    return rewritten;
-  }
-
-  function storedRoute() {
-    if (!IS_MAIN) return null;
-
-    try {
-      const parsed = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
-      if (!parsed || parsed.base !== BACKUP_MAIN || Number(parsed.until) <= Date.now()) {
-        sessionStorage.removeItem(STORAGE_KEY);
-        return null;
-      }
-      return parsed;
-    } catch {
-      sessionStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-  }
-
-  function rememberBackup() {
-    if (!IS_MAIN) return;
-    try {
-      sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          base: BACKUP_MAIN,
-          until: Date.now() + BACKUP_STICKY_MS
-        })
-      );
-    } catch {
-      // Le routage reste fonctionnel même si le stockage navigateur est indisponible.
-    }
-  }
-
-  function forgetBackup() {
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Aucun impact sur le routage courant.
-    }
-  }
-
-  function setActive(base, reason = "manual") {
-    const normalized = normalizeBase(base);
-    if (!normalized) return activeBase;
-
-    const previous = activeBase;
-    activeBase = normalized;
-    API_URL = normalized;
-    lastReason = reason;
-
-    if (IS_MAIN && normalized === BACKUP_MAIN) rememberBackup();
-    if (IS_MAIN && normalized === PRIMARY_MAIN) forgetBackup();
-
-    if (previous !== normalized) {
-      console.warn(
-        `[Sonara API] bascule MAIN : ${previous} -> ${normalized} (${reason})`
-      );
-
-      try {
-        window.dispatchEvent(new CustomEvent("sonara:api-change", {
-          detail: {
-            environment: SONARA_ENV,
-            previous,
-            current: normalized,
-            reason
-          }
-        }));
-      } catch {
-        // L'évènement est informatif uniquement.
-      }
-    }
-
-    return activeBase;
-  }
-
-  async function probe(base, timeoutMs = HEALTH_TIMEOUT_MS) {
-    const normalized = normalizeBase(base);
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
@@ -249,148 +100,39 @@ const SonaraApiRouter = (() => {
         headers: { Accept: "application/json" },
         signal: controller.signal
       });
-
-      if (!response.ok) {
-        return {
-          ok: false,
-          status: response.status,
-          base: normalized
-        };
-      }
-
       const payload = await response.json().catch(() => null);
       return {
-        ok: payload?.ok === true,
+        ok: response.ok && payload?.ok === true,
         status: response.status,
         base: normalized,
         payload
       };
     } catch (error) {
-      return {
-        ok: false,
-        status: 0,
-        base: normalized,
-        error
-      };
+      return { ok: false, status: 0, base: normalized, error };
     } finally {
       window.clearTimeout(timeout);
     }
   }
 
-  async function resolveInitialRoute() {
-    if (!IS_MAIN) {
-      setActive(SINGLE_ENV_API, "single_environment");
-      return activeBase;
-    }
-
-    const sticky = storedRoute();
-    if (sticky) {
-      const backupStatus = await probe(BACKUP_MAIN, 2500);
-      if (backupStatus.ok) {
-        setActive(BACKUP_MAIN, "backup_session_sticky");
-        return activeBase;
-      }
-      forgetBackup();
-    }
-
-    const primaryStatus = await probe(PRIMARY_MAIN);
-    if (primaryStatus.ok) {
-      setActive(PRIMARY_MAIN, "primary_ready");
-      return activeBase;
-    }
-
-    const backupStatus = await probe(BACKUP_MAIN);
-    if (backupStatus.ok) {
-      setActive(BACKUP_MAIN, `primary_unavailable_${primaryStatus.status || "network"}`);
-      return activeBase;
-    }
-
-    // Les deux sont indisponibles : on conserve Render comme référence MAIN.
-    // L'écran d'entrée affichera alors son erreur normale, sans inventer un serveur valide.
-    setActive(PRIMARY_MAIN, "both_unavailable");
-    return activeBase;
-  }
-
   function ready() {
-    if (!resolutionPromise) {
-      resolutionPromise = resolveInitialRoute().catch((error) => {
-        console.warn("Résolution du serveur MAIN impossible :", error);
-        return activeBase;
-      });
-    }
-    return resolutionPromise;
-  }
-
-  function alternateBase(base) {
-    if (!IS_MAIN) return "";
-    return normalizeBase(base) === PRIMARY_MAIN ? BACKUP_MAIN : PRIMARY_MAIN;
-  }
-
-  async function activateAlternate(base, reason) {
-    if (!IS_MAIN) return false;
-    const alternate = alternateBase(base);
-    if (!alternate) return false;
-
-    const status = await probe(alternate);
-    if (!status.ok) return false;
-
-    setActive(alternate, reason);
-    return true;
+    API_URL = ACTIVE_API;
+    return Promise.resolve(ACTIVE_API);
   }
 
   async function routedFetch(input, init = {}) {
-    if (!isKnownApiUrl(input)) {
-      return nativeFetch(input, init);
-    }
-
-    await ready();
-
-    const method = requestMethod(input, init);
-    const safeToReplay = SAFE_METHODS.has(method);
-    const requestBase = activeBase;
-    const routedInput = rewriteInput(input, requestBase);
-
-    try {
-      const response = await nativeFetch(routedInput, init);
-
-      if (!IS_MAIN || !FAILOVER_STATUSES.has(response.status)) {
-        return response;
-      }
-
-      const switched = await activateAlternate(
-        requestBase,
-        `http_${response.status}`
-      );
-
-      if (!switched || !safeToReplay) {
-        // Pour POST/PUT/PATCH/DELETE on ne rejoue jamais automatiquement la requête :
-        // le serveur initial pourrait l'avoir exécutée avant que sa réponse échoue.
-        return response;
-      }
-
-      return nativeFetch(rewriteInput(input, activeBase), init);
-    } catch (error) {
-      if (!IS_MAIN) throw error;
-
-      const switched = await activateAlternate(requestBase, "network_error");
-
-      if (!switched || !safeToReplay) {
-        // Même règle anti-duplication pour une erreur réseau sur une mutation.
-        throw error;
-      }
-
-      return nativeFetch(rewriteInput(input, activeBase), init);
-    }
+    // Plus de bascule de serveur : une requête destinée à l'API de
+    // l'environnement courant reste toujours sur cette API.
+    return nativeFetch(input, init);
   }
 
   function getState() {
     return Object.freeze({
       environment: SONARA_ENV,
-      active: activeBase,
-      primary: IS_MAIN ? PRIMARY_MAIN : SINGLE_ENV_API,
-      backup: IS_MAIN ? BACKUP_MAIN : null,
-      usingBackup: IS_MAIN && activeBase === BACKUP_MAIN,
-      reason: lastReason
+      active: ACTIVE_API,
+      primary: ACTIVE_API,
+      backup: null,
+      usingBackup: false,
+      reason: IS_MAIN ? "render_only" : "single_environment"
     });
   }
 
@@ -495,7 +237,7 @@ console.info(`[Sonara API] ${SONARA_ENV} -> ${API_URL}`);
 
 const SonaraSession = (() => {
   const TOKEN_KEY = "sonaraSessionToken";
-  // À ce stade window.fetch contient déjà le routeur MAIN Render -> Northflank.
+  // À ce stade window.fetch utilise uniquement l'API de l'environnement courant.
   const routedFetch = window.fetch.bind(window);
 
   function getToken() {
@@ -664,19 +406,12 @@ window.SonaraSession = SonaraSession;
    qui utilisent déjà config.js, sans modifier leur logique.
 ========================================================= */
 (() => {
-  const loadOrganicAttribution = () => {
-    if (window.__SONARA_ORGANIC_ATTRIBUTION_ACTIVE__ === true) return;
-    if (document.querySelector('script[data-sonara-organic-attribution="true"], script[src*="/app/js/growth/organic-attribution.js"]')) return;
+  if (window.__SONARA_ORGANIC_ATTRIBUTION_ACTIVE__ === true) return;
+  if (document.querySelector('script[data-sonara-organic-attribution="true"]')) return;
 
-    const script = document.createElement("script");
-    script.src = "/app/js/growth/organic-attribution.js?v=analytics-realtime-v3";
-    script.async = true;
-    script.dataset.sonaraOrganicAttribution = "true";
-    (document.head || document.documentElement).appendChild(script);
-  };
-
-  // Attendre que le HTML soit parsé évite une double requête quand une page
-  // inclut déjà explicitement le tracker juste après config.js.
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadOrganicAttribution, { once: true });
-  else loadOrganicAttribution();
+  const script = document.createElement("script");
+  script.src = "/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2";
+  script.async = true;
+  script.dataset.sonaraOrganicAttribution = "true";
+  (document.head || document.documentElement).appendChild(script);
 })();

@@ -1,6 +1,34 @@
 # SONARA SEO MULTILINGUE — entrée plateforme
-/:lang/                                 /seo-languages/:lang/index.html 200
-/:lang                                  /:lang/ 301!
+/en/                                  /seo-languages/en/index.html 200
+/en                                   /en/ 301!
+/sq/                                  /seo-languages/sq/index.html 200
+/sq                                   /sq/ 301!
+/ar/                                  /seo-languages/ar/index.html 200
+/ar                                   /ar/ 301!
+/tr/                                  /seo-languages/tr/index.html 200
+/tr                                   /tr/ 301!
+/id/                                  /seo-languages/id/index.html 200
+/id                                   /id/ 301!
+/es/                                  /seo-languages/es/index.html 200
+/es                                   /es/ 301!
+/de/                                  /seo-languages/de/index.html 200
+/de                                   /de/ 301!
+/it/                                  /seo-languages/it/index.html 200
+/it                                   /it/ 301!
+/pt/                                  /seo-languages/pt/index.html 200
+/pt                                   /pt/ 301!
+/nl/                                  /seo-languages/nl/index.html 200
+/nl                                   /nl/ 301!
+/pl/                                  /seo-languages/pl/index.html 200
+/pl                                   /pl/ 301!
+/ro/                                  /seo-languages/ro/index.html 200
+/ro                                   /ro/ 301!
+/ru/                                  /seo-languages/ru/index.html 200
+/ru                                   /ru/ 301!
+/zh/                                  /seo-languages/zh/index.html 200
+/zh                                   /zh/ 301!
+/sw/                                  /seo-languages/sw/index.html 200
+/sw                                   /sw/ 301!
 
 # SONARA SEO MULTILINGUE — fichiers rangés sous /seo-languages, URLs publiques inchangées
 /:lang/how-it-works                    /seo-languages/:lang/how-it-works.html 200
@@ -30,10 +58,6 @@
 /for-artists.html                    /for-artists 301!
 /licensing.html                      /licensing 301!
 /pre-v1.html                         /pre-v1 301!
-
-# SONARA — pages légales publiques (sans authentification)
-/legal                              /legal.html 200
-/legal.html                         /legal 301!
 
 # SONARA SEO — réponses selon le domaine (Main indexable, Test bloqué)
 /catalog                             /.netlify/functions/catalog-index 200

@@ -1,7 +1,6 @@
 const API_BASES = Object.freeze({
   test: String(process.env.SONARA_API_TEST || "https://sonara-pack-beta-1.onrender.com").replace(/\/+$/, ""),
-  main: String(process.env.SONARA_API_MAIN || "https://sonara-pack-beta.onrender.com").replace(/\/+$/, ""),
-  mainBackup: String(process.env.SONARA_API_MAIN_BACKUP || "https://api--sonara-pack-main-backup--xm8lv9y66wnw.code.run").replace(/\/+$/, "")
+  main: String(process.env.SONARA_API_MAIN || "https://sonara-pack-beta.onrender.com").replace(/\/+$/, "")
 });
 
 function headerValue(headers = {}, name) {
@@ -27,7 +26,7 @@ function pageOrigin(event = {}) {
 
 function apiCandidates(environment) {
   return environment === "main"
-    ? [API_BASES.main, API_BASES.mainBackup].filter(Boolean)
+    ? [API_BASES.main].filter(Boolean)
     : [API_BASES.test].filter(Boolean);
 }
 
@@ -191,7 +190,7 @@ function shell({ event, apiBase, head, markup, type }) {
     </nav>
   </main>
   <script>window.SONARA_PUBLIC_API_URL=${jsonForHtml(apiBase)};window.SONARA_PUBLIC_ORIGIN=${jsonForHtml(origin)};</script>
-  <script src="/app/js/growth/organic-attribution.js?v=analytics-realtime-v3"></script>
+  <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
   <script src="/app/js/catalog/public-catalog.js?v=organic-visibility-v10-brand-images"></script>
   <script src="/app/js/core/i18n.js?v=seo-pillars-v1" defer></script>
 </body>
@@ -326,6 +325,12 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
   const promoRows = isCatalogRoot
     ? rows.filter((pack) => pack?.promoImageUrl && pack?.canonicalUrl).slice(0, 6)
     : [];
+  const searchIntentIntro = isCatalogRoot
+    ? `<section class="public-catalog-section public-catalog-search-intent">
+        <h2>Musique pour création de contenu et montage vidéo</h2>
+        <p>Explorez des musiques et sons sous licence pour vidéos YouTube, TikTok, Instagram, films, jeux vidéo, podcasts, publicités, réseaux sociaux et autres projets créatifs.</p>
+      </section>`
+    : "";
   const promoGallery = promoRows.length
     ? `<section class="public-catalog-visual-showcase" aria-labelledby="sonaraVisualShowcaseTitle">
         <h2 id="sonaraVisualShowcaseTitle">Visuels publics Sonara Pack</h2>
@@ -344,6 +349,7 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
     <h1 class="public-catalog-title" data-user-content>${escapeHtml(collection.label)}</h1>
     <p class="public-catalog-collection-description" data-user-content>${escapeHtml(description)}</p>
     <p class="public-catalog-collection-count">${escapeHtml(countLabel(rows.length))}</p>
+    ${searchIntentIntro}
     <div class="public-catalog-list">${cards}</div>
     ${promoGallery}
     <div class="public-catalog-actions"><a class="public-catalog-action" href="/home.html">Retour au catalogue</a></div>
