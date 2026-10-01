@@ -312,7 +312,7 @@ function copyLibraryTextFallback(text) {
     return copied;
 }
 
-async function copyLibraryPackLink(pack = {}, button = null) {
+async function copyLibraryPackLink(pack = {}) {
     const url = libraryPublicPackUrl(pack.id);
 
     try {
@@ -320,14 +320,6 @@ async function copyLibraryPackLink(pack = {}, button = null) {
             await navigator.clipboard.writeText(url);
         } else if (!copyLibraryTextFallback(url)) {
             throw new Error("Copie indisponible");
-        }
-
-        if (button) {
-            const original = libraryTranslate("Copier le lien");
-            button.textContent = libraryTranslate("Lien du pack copié.");
-            window.setTimeout(() => {
-                if (button.isConnected) button.textContent = original;
-            }, 1800);
         }
 
         return true;
@@ -355,12 +347,21 @@ async function shareLibraryPack(pack = {}, button = null) {
         }
     }
 
-    const copied = await copyLibraryPackLink(pack, button);
+    const copied = await copyLibraryPackLink(pack);
     if (copied && button) {
-        const original = libraryTranslate("Partager");
-        button.textContent = libraryTranslate("Lien du pack copié.");
+        const originalLabel = button.getAttribute("aria-label") || libraryTranslate("Partager");
+        const originalTitle = button.getAttribute("title") || originalLabel;
+        const copiedLabel = libraryTranslate("Lien du pack copié.");
+
+        button.classList.add("is-copied");
+        button.setAttribute("aria-label", copiedLabel);
+        button.setAttribute("title", copiedLabel);
+
         window.setTimeout(() => {
-            if (button.isConnected) button.textContent = original;
+            if (!button.isConnected) return;
+            button.classList.remove("is-copied");
+            button.setAttribute("aria-label", originalLabel);
+            button.setAttribute("title", originalTitle);
         }, 1800);
     }
 }
@@ -1355,6 +1356,14 @@ function renderDownloadedPack(packId) {
             <audio src="${getFilePath(packData.audio)}">
             </audio>
     </div>
+
+    <button class="pack-share-button js-share-library-pack" type="button" aria-label="Partager" title="Partager">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12"></path>
+        <path d="m8 7 4-4 4 4"></path>
+        <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+      </svg>
+    </button>
     
 
    
@@ -1387,10 +1396,13 @@ function renderDownloadedPack(packId) {
             })
         )}">Télécharger</button>
 
-        <div class="library-pack-share-actions" aria-label="Partage du pack">
-          <button type="button" class="library-pack-share-button js-share-library-pack">Partager</button>
-          <button type="button" class="library-pack-share-button secondary js-copy-library-pack-link">Copier le lien</button>
-        </div>
+        <button class="pack-share-button pack-share-button-mobile js-share-library-pack" type="button" aria-label="Partager" title="Partager">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m8 7 4-4 4 4"></path>
+            <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+          </svg>
+        </button>
       </div>
     </div>
    <div class="track-row-separator"></div>
@@ -2033,19 +2045,12 @@ grandControlNext.addEventListener("click", (e) => {
 
     }
 
-    const sharePackButton = document.querySelector(".js-share-library-pack");
-    const copyPackLinkButton = document.querySelector(".js-copy-library-pack-link");
-
-    sharePackButton?.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        await shareLibraryPack(packData, sharePackButton);
-    });
-
-    copyPackLinkButton?.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        await copyLibraryPackLink(packData, copyPackLinkButton);
+    document.querySelectorAll(".js-share-library-pack").forEach((sharePackButton) => {
+        sharePackButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await shareLibraryPack(packData, sharePackButton);
+        });
     });
 
     const packDownloadBtns = document.querySelectorAll(".js-download-pack, .js-download-pack-desktop");
