@@ -2912,11 +2912,11 @@ background: #061f5f; /* bleu royal profond */
 }
 
 .library-home-pack-grid {
-  max-width: 900px;
+  max-width: 960px;
 }
 
 .library-choice-pack-grid {
-  max-width: 760px;
+  max-width: 960px;
 }
 
 .library-downloads-heading {
