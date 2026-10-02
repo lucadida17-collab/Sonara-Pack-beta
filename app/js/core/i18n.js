@@ -311,7 +311,18 @@
 
       const titleSource = document.documentElement.dataset.sonaraOriginalTitle || document.title;
       document.documentElement.dataset.sonaraOriginalTitle = titleSource;
-      document.title = translateValue(titleSource);
+
+      // Les pages SEO statiques ont déjà un titre propre par langue.
+      // Ne jamais le retraduire côté client : une traduction par fragments peut
+      // produire des titres hybrides du type « Musique for vidéos and... ».
+      if (document.documentElement.dataset.sonaraSeoTitleStatic !== "true") {
+        const normalizedTitle = canonicalize(titleSource);
+        const exactTitle = exactIndex.get(normalizedTitle);
+        const insensitiveTitle = caseInsensitiveIndex.get(normalizedTitle.toLocaleLowerCase("fr"));
+        document.title = typeof exactTitle === "string"
+          ? exactTitle
+          : (typeof insensitiveTitle === "string" ? insensitiveTitle : titleSource);
+      }
     } finally {
       translatingDepth -= 1;
     }

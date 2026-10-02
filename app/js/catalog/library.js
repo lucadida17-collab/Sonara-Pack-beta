@@ -323,10 +323,16 @@ async function copyLibraryPackLink(pack = {}, button = null) {
         }
 
         if (button) {
-            const original = libraryTranslate("Copier le lien");
-            button.textContent = libraryTranslate("Lien du pack copié.");
+            const originalLabel = button.getAttribute("aria-label") || libraryTranslate("Partager");
+            const originalTitle = button.getAttribute("title") || originalLabel;
+            button.classList.add("is-copied");
+            button.setAttribute("aria-label", libraryTranslate("Lien du pack copié."));
+            button.setAttribute("title", libraryTranslate("Lien du pack copié."));
             window.setTimeout(() => {
-                if (button.isConnected) button.textContent = original;
+                if (!button.isConnected) return;
+                button.classList.remove("is-copied");
+                button.setAttribute("aria-label", originalLabel);
+                button.setAttribute("title", originalTitle);
             }, 1800);
         }
 
@@ -355,14 +361,7 @@ async function shareLibraryPack(pack = {}, button = null) {
         }
     }
 
-    const copied = await copyLibraryPackLink(pack, button);
-    if (copied && button) {
-        const original = libraryTranslate("Partager");
-        button.textContent = libraryTranslate("Lien du pack copié.");
-        window.setTimeout(() => {
-            if (button.isConnected) button.textContent = original;
-        }, 1800);
-    }
+    await copyLibraryPackLink(pack, button);
 }
 
 function navigateToLibraryDownload(
@@ -1355,6 +1354,14 @@ function renderDownloadedPack(packId) {
             <audio src="../../${packData.audio}">
             </audio>
     </div>
+
+    <button class="pack-share-button js-share-library-pack" type="button" aria-label="Partager" title="Partager">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12"></path>
+        <path d="m8 7 4-4 4 4"></path>
+        <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+      </svg>
+    </button>
     
 
    
@@ -1387,10 +1394,13 @@ function renderDownloadedPack(packId) {
             })
         )}">Télécharger</button>
 
-        <div class="library-pack-share-actions" aria-label="Partage du pack">
-          <button type="button" class="library-pack-share-button js-share-library-pack">Partager</button>
-          <button type="button" class="library-pack-share-button secondary js-copy-library-pack-link">Copier le lien</button>
-        </div>
+        <button class="pack-share-button pack-share-button-mobile js-share-library-pack" type="button" aria-label="Partager" title="Partager">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m8 7 4-4 4 4"></path>
+            <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+          </svg>
+        </button>
       </div>
     </div>
    <div class="track-row-separator"></div>
@@ -1638,53 +1648,108 @@ function renderDownloadedPack(packId) {
         };
     }
 
-    function playMobileTrack(row) {
-        const audio = row.querySelector(".mobile-track-audio, .track-audio");
+    function isLibraryAudioAtEnd(audio) {
+        if (!audio) return false;
+        if (audio.ended) return true;
+        const duration = Number(audio.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return false;
+        return Number(audio.currentTime) >= Math.max(0, duration - 0.08);
+    }
+
+    function getCurrentTrackIndex(rows) {
+        if (!Array.isArray(rows) || !rows.length) return -1;
+        const activeId = String(currentRowMobile?.dataset?.trackId || "");
+        const byId = activeId
+            ? rows.findIndex((candidate) => String(candidate?.dataset?.trackId || "") === activeId)
+            : -1;
+        if (byId >= 0) return byId;
+
+        const byState = rows.findIndex((candidate) =>
+            candidate.classList.contains("is-playing") || candidate.classList.contains("is-paused")
+        );
+        return byState >= 0 ? byState : 0;
+    }
+
+    function moveLibraryTrack(direction) {
+        const rows = getCurrentTrackRows();
+        if (!rows.length) return;
+
+        if (rows.length === 1) {
+            const onlyAudio = rows[0].querySelector(".mobile-track-audio, .track-audio");
+            if (onlyAudio) onlyAudio.currentTime = 0;
+            playMobileTrack(rows[0], { restartIfEnded: false });
+            return;
+        }
+
+        const currentIndex = getCurrentTrackIndex(rows);
+        const nextIndex = (currentIndex + direction + rows.length) % rows.length;
+        playMobileTrack(rows[nextIndex], { restartIfEnded: true });
+    }
+
+    function toggleCurrentLibraryTrack() {
+        if (!currentAudioMobile || !currentRowMobile) return;
+
+        if (!currentAudioMobile.paused) {
+            currentAudioMobile.pause();
+            return;
+        }
+
+        if (isLibraryAudioAtEnd(currentAudioMobile)) {
+            const rows = getCurrentTrackRows();
+            if (rows.length > 1) {
+                moveLibraryTrack(1);
+                return;
+            }
+            currentAudioMobile.currentTime = 0;
+        }
+
+        currentAudioMobile.play();
+    }
+
+    function playMobileTrack(row, { restartIfEnded = true } = {}) {
+        const audio = row?.querySelector(".mobile-track-audio, .track-audio");
         if (!audio) return;
 
-        // Si une autre track était active avant
         if (currentAudioMobile && currentAudioMobile !== audio) {
             const oldAudio = currentAudioMobile;
             const oldRow = currentRowMobile;
 
-            // On change d'abord la source actuelle
             currentAudioMobile = audio;
             currentRowMobile = row;
             currentGrandAudio = audio;
 
-            // Puis on stop l'ancienne
             oldAudio.pause();
             oldAudio.currentTime = 0;
-
-            // Puis on la rend inactive visuellement
             oldRow?.classList.remove("is-playing", "is-paused");
         }
 
-        // Nettoyage général : aucune ancienne track ne reste active
         resetMobileTracks();
 
-        // Nouvelle track active
         currentAudioMobile = audio;
         currentRowMobile = row;
         currentGrandAudio = audio;
+
+        if (restartIfEnded && isLibraryAudioAtEnd(audio)) {
+            audio.currentTime = 0;
+        }
 
         startGrandPlayerLiveProgress();
 
         row.classList.add("is-playing");
         row.classList.remove("is-paused");
+        updateMiniPlayer(row, audio);
+        updateGrandPlayerInfo(row, audio);
         syncGrandPlayButton();
 
-        updateMiniPlayer(row, audio);
-
-        audio.addEventListener("play", () => {
+        audio.onplay = () => {
+            if (currentAudioMobile !== audio) return;
             row.classList.add("is-playing");
             row.classList.remove("is-paused");
             miniPlayerBtn.textContent = "❚❚";
+            syncGrandPlayButton();
+        };
 
-            syncGrandPlayButton()
-        });
-
-        audio.addEventListener("pause", () => {
+        audio.onpause = () => {
             if (currentAudioMobile !== audio) {
                 row.classList.remove("is-playing", "is-paused");
                 return;
@@ -1693,26 +1758,32 @@ function renderDownloadedPack(packId) {
             row.classList.remove("is-playing");
             row.classList.add("is-paused");
             miniPlayerBtn.textContent = "▶";
-
-            syncGrandPlayButton()
-        });
-
-        audio.onended = () => {
-            const index = trackRowsMobile.indexOf(row);
-            const nextRow = trackRowsMobile[index + 1];
-
-            if (nextRow) {
-                row.classList.remove("is-playing", "is-paused");
-                playMobileTrack(nextRow);
-            } else {
-                row.classList.remove("is-playing");
-                row.classList.add("is-paused");
-                miniPlayerBtn.textContent = "▶";
-                miniPlayerProgressFill.style.width = "100%";
-            }
+            syncGrandPlayButton();
         };
 
-        audio.play();
+        audio.onended = () => {
+            if (currentAudioMobile !== audio) return;
+
+            const rows = getCurrentTrackRows();
+            if (rows.length > 1) {
+                moveLibraryTrack(1);
+                return;
+            }
+
+            row.classList.remove("is-playing");
+            row.classList.add("is-paused");
+            miniPlayerBtn.textContent = "▶";
+            miniPlayerProgressFill.style.width = "100%";
+            updateGrandPlayerProgress();
+            syncGrandPlayButton();
+        };
+
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch((error) => {
+                console.warn("Lecture audio Library impossible", error);
+            });
+        }
     }
 
 let touchStartY = 0;
@@ -1748,26 +1819,7 @@ trackRowsMobile.forEach(row => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-
-
-
-        if (!currentAudioMobile || !currentRowMobile) return;
-
-        if (currentAudioMobile.paused) {
-            currentAudioMobile.play();
-
-            currentRowMobile.classList.add("is-playing");
-            currentRowMobile.classList.remove("is-paused");
-
-            miniPlayerBtn.textContent = "❚❚";
-        } else {
-            currentAudioMobile.pause();
-
-            currentRowMobile.classList.remove("is-playing");
-            currentRowMobile.classList.add("is-paused");
-
-            miniPlayerBtn.textContent = "▶";
-        }
+        toggleCurrentLibraryTrack();
     });
 
     miniPlayerMobile.addEventListener("pointerdown", (e) => {
@@ -1934,91 +1986,25 @@ trackRowsMobile.forEach(row => {
     grandControlPlay.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-
-        if (!currentAudioMobile || !currentRowMobile) return;
-
-        if (currentAudioMobile.paused) {
-            currentAudioMobile.play();
-        } else {
-            currentAudioMobile.pause();
-        }
-
+        toggleCurrentLibraryTrack();
         syncGrandPlayButton();
-
     });
 
-grandControlNext.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const rows = getCurrentTrackRows();
-
-    if (rows.length === 1) {
-        currentAudioMobile.currentTime =0;
-        currentAudioMobile.play();
-
-        syncGrandPlayButton();
+    grandControlNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        moveLibraryTrack(1);
         updateGrandPlayerProgress();
-        return;
-    }
-
-    const activeRow =
-        rows.find(row => row.classList.contains("is-playing")) ||
-        rows.find(row => row.classList.contains("is-paused"));
-
-    if (!activeRow) return;
-
-    const currentIndex = rows.indexOf(activeRow);
-
-    const nextRow = rows[currentIndex + 1] || rows[0];
-
-    nextRow.click();
-
-    const audio = nextRow.querySelector(".mobile-track-audio, .track-audio");
-
-    updateGrandPlayerInfo(nextRow, audio);
-    updateGrandPlayerProgress();
-    syncGrandPlayButton();
-});
+        syncGrandPlayButton();
+    });
 
     grandControlBack.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const rows = getCurrentTrackRows();    
-    
-    if (rows.length === 1) {
-        currentAudioMobile.currentTime =0;
-        currentAudioMobile.play();
-
-        syncGrandPlayButton();
+        e.preventDefault();
+        e.stopPropagation();
+        moveLibraryTrack(-1);
         updateGrandPlayerProgress();
-        return;
-    }
-
-
-
-
-    const activeRow =
-        rows.find(row => row.classList.contains("is-playing")) ||
-        rows.find(row => row.classList.contains("is-paused"));
-
-    if (!activeRow) return;
-
-    const currentIndex = rows.indexOf(activeRow);
-
-    const previousRow =
-        rows[currentIndex - 1] || rows[rows.length - 1];
-
-    previousRow.click();
-
-    const audio = previousRow.querySelector(".mobile-track-audio, .track-audio");
-
-    updateGrandPlayerInfo(previousRow, audio);
-    updateGrandPlayerProgress();
-    syncGrandPlayButton();
-});
-
+        syncGrandPlayButton();
+    });
 
     function syncGrandPlayButton() {
         if (!currentAudioMobile || !currentRowMobile) {
@@ -2033,19 +2019,12 @@ grandControlNext.addEventListener("click", (e) => {
 
     }
 
-    const sharePackButton = document.querySelector(".js-share-library-pack");
-    const copyPackLinkButton = document.querySelector(".js-copy-library-pack-link");
-
-    sharePackButton?.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        await shareLibraryPack(packData, sharePackButton);
-    });
-
-    copyPackLinkButton?.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        await copyLibraryPackLink(packData, copyPackLinkButton);
+    document.querySelectorAll(".js-share-library-pack").forEach((sharePackButton) => {
+        sharePackButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await shareLibraryPack(packData, sharePackButton);
+        });
     });
 
     const packDownloadBtns = document.querySelectorAll(".js-download-pack, .js-download-pack-desktop");
@@ -2378,53 +2357,108 @@ async function renderTrack() {
         };
     }
 
-    function playMobileTrack(row) {
-        const audio = row.querySelector(".mobile-track-audio, .track-audio");
+    function isLibraryAudioAtEnd(audio) {
+        if (!audio) return false;
+        if (audio.ended) return true;
+        const duration = Number(audio.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return false;
+        return Number(audio.currentTime) >= Math.max(0, duration - 0.08);
+    }
+
+    function getCurrentTrackIndex(rows) {
+        if (!Array.isArray(rows) || !rows.length) return -1;
+        const activeId = String(currentRowMobile?.dataset?.trackId || "");
+        const byId = activeId
+            ? rows.findIndex((candidate) => String(candidate?.dataset?.trackId || "") === activeId)
+            : -1;
+        if (byId >= 0) return byId;
+
+        const byState = rows.findIndex((candidate) =>
+            candidate.classList.contains("is-playing") || candidate.classList.contains("is-paused")
+        );
+        return byState >= 0 ? byState : 0;
+    }
+
+    function moveLibraryTrack(direction) {
+        const rows = getCurrentTrackRows();
+        if (!rows.length) return;
+
+        if (rows.length === 1) {
+            const onlyAudio = rows[0].querySelector(".mobile-track-audio, .track-audio");
+            if (onlyAudio) onlyAudio.currentTime = 0;
+            playMobileTrack(rows[0], { restartIfEnded: false });
+            return;
+        }
+
+        const currentIndex = getCurrentTrackIndex(rows);
+        const nextIndex = (currentIndex + direction + rows.length) % rows.length;
+        playMobileTrack(rows[nextIndex], { restartIfEnded: true });
+    }
+
+    function toggleCurrentLibraryTrack() {
+        if (!currentAudioMobile || !currentRowMobile) return;
+
+        if (!currentAudioMobile.paused) {
+            currentAudioMobile.pause();
+            return;
+        }
+
+        if (isLibraryAudioAtEnd(currentAudioMobile)) {
+            const rows = getCurrentTrackRows();
+            if (rows.length > 1) {
+                moveLibraryTrack(1);
+                return;
+            }
+            currentAudioMobile.currentTime = 0;
+        }
+
+        currentAudioMobile.play();
+    }
+
+    function playMobileTrack(row, { restartIfEnded = true } = {}) {
+        const audio = row?.querySelector(".mobile-track-audio, .track-audio");
         if (!audio) return;
 
-        // Si une autre track était active avant
         if (currentAudioMobile && currentAudioMobile !== audio) {
             const oldAudio = currentAudioMobile;
             const oldRow = currentRowMobile;
 
-            // On change d'abord la source actuelle
             currentAudioMobile = audio;
             currentRowMobile = row;
             currentGrandAudio = audio;
 
-            // Puis on stop l'ancienne
             oldAudio.pause();
             oldAudio.currentTime = 0;
-
-            // Puis on la rend inactive visuellement
             oldRow?.classList.remove("is-playing", "is-paused");
         }
 
-        // Nettoyage général : aucune ancienne track ne reste active
         resetMobileTracks();
 
-        // Nouvelle track active
         currentAudioMobile = audio;
         currentRowMobile = row;
         currentGrandAudio = audio;
+
+        if (restartIfEnded && isLibraryAudioAtEnd(audio)) {
+            audio.currentTime = 0;
+        }
 
         startGrandPlayerLiveProgress();
 
         row.classList.add("is-playing");
         row.classList.remove("is-paused");
+        updateMiniPlayer(row, audio);
+        updateGrandPlayerInfo(row, audio);
         syncGrandPlayButton();
 
-        updateMiniPlayer(row, audio);
-
-        audio.addEventListener("play", () => {
+        audio.onplay = () => {
+            if (currentAudioMobile !== audio) return;
             row.classList.add("is-playing");
             row.classList.remove("is-paused");
             miniPlayerBtn.textContent = "❚❚";
+            syncGrandPlayButton();
+        };
 
-            syncGrandPlayButton()
-        });
-
-        audio.addEventListener("pause", () => {
+        audio.onpause = () => {
             if (currentAudioMobile !== audio) {
                 row.classList.remove("is-playing", "is-paused");
                 return;
@@ -2433,26 +2467,32 @@ async function renderTrack() {
             row.classList.remove("is-playing");
             row.classList.add("is-paused");
             miniPlayerBtn.textContent = "▶";
-
-            syncGrandPlayButton()
-        });
-
-        audio.onended = () => {
-            const index = trackRowsMobile.indexOf(row);
-            const nextRow = trackRowsMobile[index + 1];
-
-            if (nextRow) {
-                row.classList.remove("is-playing", "is-paused");
-                playMobileTrack(nextRow);
-            } else {
-                row.classList.remove("is-playing");
-                row.classList.add("is-paused");
-                miniPlayerBtn.textContent = "▶";
-                miniPlayerProgressFill.style.width = "100%";
-            }
+            syncGrandPlayButton();
         };
 
-        audio.play();
+        audio.onended = () => {
+            if (currentAudioMobile !== audio) return;
+
+            const rows = getCurrentTrackRows();
+            if (rows.length > 1) {
+                moveLibraryTrack(1);
+                return;
+            }
+
+            row.classList.remove("is-playing");
+            row.classList.add("is-paused");
+            miniPlayerBtn.textContent = "▶";
+            miniPlayerProgressFill.style.width = "100%";
+            updateGrandPlayerProgress();
+            syncGrandPlayButton();
+        };
+
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch((error) => {
+                console.warn("Lecture audio Library impossible", error);
+            });
+        }
     }
 
 let touchStartY = 0;
@@ -2488,26 +2528,7 @@ trackRowsMobile.forEach(row => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-
-
-
-        if (!currentAudioMobile || !currentRowMobile) return;
-
-        if (currentAudioMobile.paused) {
-            currentAudioMobile.play();
-
-            currentRowMobile.classList.add("is-playing");
-            currentRowMobile.classList.remove("is-paused");
-
-            miniPlayerBtn.textContent = "❚❚";
-        } else {
-            currentAudioMobile.pause();
-
-            currentRowMobile.classList.remove("is-playing");
-            currentRowMobile.classList.add("is-paused");
-
-            miniPlayerBtn.textContent = "▶";
-        }
+        toggleCurrentLibraryTrack();
     });
 
     miniPlayerMobile.addEventListener("pointerdown", (e) => {
@@ -2673,70 +2694,25 @@ trackRowsMobile.forEach(row => {
     grandControlPlay.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-
-        if (!currentAudioMobile || !currentRowMobile) return;
-
-        if (currentAudioMobile.paused) {
-            currentAudioMobile.play();
-        } else {
-            currentAudioMobile.pause();
-        }
-
+        toggleCurrentLibraryTrack();
         syncGrandPlayButton();
-
     });
 
-grandControlNext.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const rows = getCurrentTrackRows();
-
-    const activeRow =
-        rows.find(row => row.classList.contains("is-playing")) ||
-        rows.find(row => row.classList.contains("is-paused"));
-
-    if (!activeRow) return;
-
-    const currentIndex = rows.indexOf(activeRow);
-
-    const nextRow = rows[currentIndex + 1] || rows[0];
-
-    nextRow.click();
-
-    const audio = nextRow.querySelector(".mobile-track-audio, .track-audio");
-
-    updateGrandPlayerInfo(nextRow, audio);
-    updateGrandPlayerProgress();
-    syncGrandPlayButton();
-});
+    grandControlNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        moveLibraryTrack(1);
+        updateGrandPlayerProgress();
+        syncGrandPlayButton();
+    });
 
     grandControlBack.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const rows = getCurrentTrackRows();
-
-    const activeRow =
-        rows.find(row => row.classList.contains("is-playing")) ||
-        rows.find(row => row.classList.contains("is-paused"));
-
-    if (!activeRow) return;
-
-    const currentIndex = rows.indexOf(activeRow);
-
-    const previousRow =
-        rows[currentIndex - 1] || rows[rows.length - 1];
-
-    previousRow.click();
-
-    const audio = previousRow.querySelector(".mobile-track-audio, .track-audio");
-
-    updateGrandPlayerInfo(previousRow, audio);
-    updateGrandPlayerProgress();
-    syncGrandPlayButton();
-});
-
+        e.preventDefault();
+        e.stopPropagation();
+        moveLibraryTrack(-1);
+        updateGrandPlayerProgress();
+        syncGrandPlayButton();
+    });
 
     function syncGrandPlayButton() {
         if (!currentAudioMobile || !currentRowMobile) {
