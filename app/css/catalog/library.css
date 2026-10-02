@@ -2912,7 +2912,7 @@ background: #061f5f; /* bleu royal profond */
 }
 
 .library-home-pack-grid {
-  max-width: 960px;
+  max-width: 900px;
 }
 
 .library-choice-pack-grid {
@@ -3736,3 +3736,55 @@ body.library .pack-share-button-mobile {
   }
 }
 
+
+
+/* ==========================================================
+   PACKS LIVRE 3D — BIBLIOTHÈQUE
+   Les cards restent structurelles pour le titre/artiste mais deviennent
+   totalement transparentes derrière le livre. Les tracks ne sont pas touchées.
+========================================================== */
+body.library .sonara-pack-book-card {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+body.library .sonara-pack-book-card:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body.library .sonara-pack-book-card .sonara-pack-book-surface,
+body.library .sonara-pack-book-card .sonara-pack-book-surface:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+}
+
+body.library .sonara-pack-book-card .sonara-book-cover {
+  display: block;
+  object-fit: contain !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1);
+  filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.34));
+  transition: transform 190ms ease, filter 190ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body.library .sonara-pack-book-card:hover .sonara-book-cover,
+  body.library .sonara-pack-book-card:focus-visible .sonara-book-cover {
+    transform: translateY(-3px) scale(1.012);
+    filter:
+      drop-shadow(0 16px 22px rgba(0, 0, 0, 0.36))
+      drop-shadow(0 0 10px rgba(68, 220, 255, 0.34))
+      drop-shadow(0 0 28px rgba(0, 153, 255, 0.20));
+  }
+}

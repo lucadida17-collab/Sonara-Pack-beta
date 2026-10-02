@@ -917,6 +917,12 @@ function createPackCard(pack = {}) {
 
   card.className = "card";
 
+  // Tous les vrais packs Home passent automatiquement par le visuel livre.
+  // La classe card reste structurelle pour préserver titre, artiste et dimensions.
+  if (pack.isAutoPlaylist !== true) {
+    card.classList.add("sonara-pack-book-card");
+  }
+
   if (artistProfile.accountId) {
     card.dataset.artistId =
       artistProfile.accountId;
@@ -951,6 +957,10 @@ function createPackCard(pack = {}) {
 
   cover.className = "cover";
 
+  if (pack.isAutoPlaylist !== true) {
+    cover.classList.add("sonara-pack-book-surface");
+  }
+
   if (pack.isAutoPlaylist === true) {
     cover.classList.add("is-auto-playlist");
     cover.appendChild(createAutoPlaylistCoverMosaic(pack));
@@ -977,6 +987,7 @@ function createPackCard(pack = {}) {
       image.decoding = "async";
       image.draggable = false;
       image.src = imageUrl;
+      image.dataset.sonaraBookCover = imageUrl;
 
       image.addEventListener(
         "load",
@@ -1358,6 +1369,10 @@ function renderSectionCards(
       createPackCard(pack)
     );
   });
+
+  // Les catégories sont générées dynamiquement : on rescane la rangée immédiatement
+  // afin que tout nouveau pack obtienne le livre sans ajout manuel par catégorie.
+  window.SonaraBookCover?.scan?.(row);
 }
 
 function escapeHomeHtml(value = "") {

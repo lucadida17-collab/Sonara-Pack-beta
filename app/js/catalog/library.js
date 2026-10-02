@@ -535,17 +535,18 @@ function createLibraryPackPreview(pack) {
 
     return `
         <button
-            class="library-preview-pack"
+            class="library-preview-pack sonara-pack-book-card"
             type="button"
             data-pack-id="${packId}"
             aria-label="Ouvrir le pack ${title}"
         >
-            <span class="library-preview-pack-cover">
+            <span class="library-preview-pack-cover sonara-pack-book-surface">
                 ${
                     cover
                         ? `
                             <img
                                 src="${cover}"
+                                data-sonara-book-cover="${cover}"
                                 alt="Cover du pack ${title}"
                                 loading="lazy"
                                 decoding="async"
@@ -1267,11 +1268,12 @@ async function renderPack() {
 
     <div class="pack-grid">
            ${packsTelecharges.map((pack) => `
-  <div class="pack-card" data-pack-id="${pack.id}">
+  <div class="pack-card sonara-pack-book-card" data-pack-id="${pack.id}">
 
     <img 
-  class="pack-cover" 
+  class="pack-cover sonara-pack-book-surface" 
   src="${getFilePath(pack.coverPack)}"
+  data-sonara-book-cover="${getFilePath(pack.coverPack)}"
   alt="${pack.title}"
 >
     <h3 data-user-content>${pack.title}</h3>
@@ -1343,10 +1345,11 @@ function renderDownloadedPack(packId) {
         <div class="pack-hero">
     <div class="left-side">
 
-    <div class="card">
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card">
       <img 
       src="${getFilePath(packData.coverPack)}"
-      class="cover">
+      data-sonara-book-cover="${getFilePath(packData.coverPack)}"
+      class="cover sonara-pack-book-surface">
       <alt="${packData.title} cover image"
       >
      
