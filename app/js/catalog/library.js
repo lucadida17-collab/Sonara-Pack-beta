@@ -1865,7 +1865,15 @@ trackRowsMobile.forEach(row => {
         const title = row.querySelector(".track-title-mobile, .track-title")?.textContent || "";
         const artist = row.querySelector(".track-artist-mobile, .track-artist")?.textContent || "";
 
+        // Le grand player affiche désormais le pack sous forme de livre 3D,
+        // avec la cover courante appliquée sur la couverture du livre.
         grandPlayerCover.src = coverSrc;
+        grandPlayerCover.dataset.sonaraBookCover = coverSrc;
+        delete grandPlayerCover.dataset.sonaraBookReady;
+        delete grandPlayerCover.dataset.sonaraBookPending;
+        if (window.SonaraBookCover?.render) {
+            window.SonaraBookCover.render(grandPlayerCover);
+        }
         grandPlayerTitle.textContent = title;
         grandPlayerArtist.textContent = artist;
 
@@ -2574,7 +2582,15 @@ trackRowsMobile.forEach(row => {
         const title = row.querySelector(".track-title-mobile, .track-title")?.textContent || "";
         const artist = row.querySelector(".track-artist-mobile, .track-artist")?.textContent || "";
 
+        // Le grand player affiche désormais le pack sous forme de livre 3D,
+        // avec la cover courante appliquée sur la couverture du livre.
         grandPlayerCover.src = coverSrc;
+        grandPlayerCover.dataset.sonaraBookCover = coverSrc;
+        delete grandPlayerCover.dataset.sonaraBookReady;
+        delete grandPlayerCover.dataset.sonaraBookPending;
+        if (window.SonaraBookCover?.render) {
+            window.SonaraBookCover.render(grandPlayerCover);
+        }
         grandPlayerTitle.textContent = title;
         grandPlayerArtist.textContent = artist;
 

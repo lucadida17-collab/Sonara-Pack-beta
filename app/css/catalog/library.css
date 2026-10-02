@@ -2971,8 +2971,8 @@ background: #061f5f; /* bleu royal profond */
   .library-choice-pack-grid {
     display: grid;
     grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-    gap: 12px 9px;
+      repeat(2, minmax(0, 1fr));
+    gap: 22px 16px;
     max-width: none;
     padding: 0;
     overflow: visible;
@@ -3004,16 +3004,16 @@ background: #061f5f; /* bleu royal profond */
   .library-preview-pack-info,
   .library-choice-pack-grid
   .library-preview-pack-info {
-    gap: 2px;
-    margin: 7px 1px 0;
+    gap: 4px;
+    margin: 10px 2px 0;
   }
 
   .library-home-pack-grid
   .library-preview-pack-info strong,
   .library-choice-pack-grid
   .library-preview-pack-info strong {
-    font-size: 11px;
-    font-weight: 620;
+    font-size: 16px;
+    font-weight: 700;
     line-height: 1.25;
   }
 
@@ -3021,7 +3021,9 @@ background: #061f5f; /* bleu royal profond */
   .library-preview-pack-info small,
   .library-choice-pack-grid
   .library-preview-pack-info small {
-    display: none;
+    display: block;
+    font-size: 13px;
+    line-height: 1.25;
   }
 
   .library-downloads-heading {
@@ -3983,5 +3985,72 @@ body.library .sonara-pack-book-hero-card .cover {
     max-width: none;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: clamp(34px, 2.4vw, 54px) clamp(26px, 2vw, 44px);
+  }
+}
+
+/* ==========================================================
+   LIBRARY — RESPONSIVE PACKS ALIGNÉ SUR HOME
+   Desktop : même logique visuelle que Home, 4 gros packs.
+========================================================== */
+@media (min-width: 900px) {
+  body.library .library-overview,
+  body.library .library-overview-home,
+  body.library .library-downloads-overview,
+  body.library .pack-page {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  body.library .library-home-pack-grid,
+  body.library .library-choice-pack-grid,
+  body.library .library-preview-pack-grid,
+  body.library .pack-grid,
+  body.library .pack-grid:hover {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 20px;
+    margin-left: 0;
+    overflow: visible;
+  }
+
+  body.library .library-preview-pack,
+  body.library .pack-card,
+  body.library .pack-card:hover {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+  }
+
+  body.library .library-preview-pack-cover,
+  body.library .pack-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+
+/* V5 — Grand player : le livre 3D devient le visuel principal, grand format. */
+body.library .grand-player-cover.sonara-grand-player-book {
+  width: min(72vw, 760px) !important;
+  max-width: 760px !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 899px) {
+  body.library .grand-player-cover.sonara-grand-player-book {
+    width: min(90vw, 620px) !important;
+    max-width: 620px !important;
   }
 }
