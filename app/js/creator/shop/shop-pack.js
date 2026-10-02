@@ -332,8 +332,8 @@ function renderShopPack() {
 
     <main class="artist-store-pack-main">
       <section class="artist-store-pack-hero">
-        <div class="artist-store-pack-cover">
-          ${cover ? `<img src="${shopEscape(cover)}" alt="">` : `<span><i data-lucide="${shopTypeIcon()}"></i></span>`}
+        <div class="artist-store-pack-cover sonara-pack-book-card sonara-pack-book-hero-card">
+          ${cover ? `<img class="sonara-pack-book-surface" src="${shopEscape(cover)}" data-sonara-book-cover="${shopEscape(cover)}" alt="">` : `<span><i data-lucide="${shopTypeIcon()}"></i></span>`}
         </div>
         <div class="artist-store-pack-intro">
           <div class="artist-store-pack-kicker"><i data-lucide="${shopTypeIcon()}"></i><span>${shopEscape(shopPackType === "midi" ? "MIDI PACK" : "DAW PACK")}</span></div>

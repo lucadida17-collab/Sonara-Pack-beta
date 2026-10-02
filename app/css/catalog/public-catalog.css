@@ -2,20 +2,10 @@
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(
-      circle at 18% 0%,
-      rgba(91, 168, 255, 0.14),
-      transparent 34rem
-    ),
+    radial-gradient(circle at 18% 0%, rgba(91, 168, 255, 0.14), transparent 34rem),
     #07090f;
   color: #f5f7fb;
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .public-catalog-page * {
@@ -411,3 +401,22 @@
 .public-catalog-list-card p {
   margin: 0 0 7px;
 }
+
+
+/* Sonara Pack — livre 3D comme identité visuelle des packs. */
+.sonara-pack-book-card { background: transparent !important; }
+.sonara-pack-book-card .sonara-pack-book-surface { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.sonara-pack-book-card[role="button"],
+.sonara-pack-book-card[role="link"],
+a.sonara-pack-book-card,
+.pack-card.sonara-pack-book-card { cursor: pointer; }
+.sonara-pack-book-card:not(.sonara-pack-book-hero-card):hover .sonara-book-cover,
+.sonara-pack-book-card:not(.sonara-pack-book-hero-card):focus-visible .sonara-book-cover {
+  filter: drop-shadow(0 0 12px rgba(47, 211, 255, .72)) drop-shadow(0 0 26px rgba(47, 211, 255, .28));
+}
+.sonara-pack-book-hero-card:hover .sonara-book-cover,
+.sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
+.sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+.public-catalog-cover-frame:has(.sonara-book-cover) { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.public-catalog-cover.sonara-book-cover { object-fit: contain !important; }

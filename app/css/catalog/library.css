@@ -2916,7 +2916,7 @@ background: #061f5f; /* bleu royal profond */
 }
 
 .library-choice-pack-grid {
-  max-width: 960px;
+  max-width: 760px;
 }
 
 .library-downloads-heading {
@@ -2964,7 +2964,7 @@ background: #061f5f; /* bleu royal profond */
   .library-overview-home
   .library-overview-main-title,
   .library-downloads-heading h1 {
-    font-size: 24px;
+    font-size: 23px;
   }
 
   .library-home-pack-grid,
@@ -3786,5 +3786,202 @@ body.library .sonara-pack-book-card .sonara-book-cover {
       drop-shadow(0 16px 22px rgba(0, 0, 0, 0.36))
       drop-shadow(0 0 10px rgba(68, 220, 255, 0.34))
       drop-shadow(0 0 28px rgba(0, 153, 255, 0.20));
+  }
+}
+
+
+/* Sonara Pack — livre 3D comme identité visuelle des packs. */
+.sonara-pack-book-card { background: transparent !important; }
+.sonara-pack-book-card .sonara-pack-book-surface { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.sonara-pack-book-card[role="button"],
+.sonara-pack-book-card[role="link"],
+a.sonara-pack-book-card,
+.pack-card.sonara-pack-book-card { cursor: pointer; }
+.sonara-pack-book-card:not(.sonara-pack-book-hero-card):hover .sonara-book-cover,
+.sonara-pack-book-card:not(.sonara-pack-book-hero-card):focus-visible .sonara-book-cover {
+  filter: drop-shadow(0 0 12px rgba(47, 211, 255, .72)) drop-shadow(0 0 26px rgba(47, 211, 255, .28));
+}
+.sonara-pack-book-hero-card:hover .sonara-book-cover,
+.sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
+.sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* Livre 3D — pack ouvert : la card reste uniquement structurelle. */
+body.library .sonara-pack-book-hero-card,
+body.library .sonara-pack-book-hero-card .sonara-pack-book-surface,
+body.library .sonara-pack-book-hero-card .cover {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================
+   LIBRARY DESKTOP — PACKS AGRANDIS
+   Les packs prennent davantage de place sur ordinateur.
+   Mobile/tablette < 900px inchangés.
+========================================================== */
+@media (min-width: 900px) {
+  body.library .library-preview-pack-grid,
+  body.library .library-home-pack-grid,
+  body.library .library-choice-pack-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px 28px;
+  }
+
+  body.library .library-home-pack-grid,
+  body.library .library-choice-pack-grid {
+    width: 100%;
+    max-width: 1120px;
+  }
+
+  body.library .library-preview-pack-info {
+    margin-top: 16px;
+  }
+
+  body.library .library-preview-pack-info strong {
+    font-size: 19px;
+  }
+
+  body.library .library-preview-pack-info small {
+    font-size: 13px;
+  }
+}
+
+
+/* ==========================================================
+   LIBRARY DESKTOP — 4 GROS PACKS / LIGNE
+   Les vues d'aperçu restent limitées à 4 packs côté JS.
+========================================================== */
+@media (min-width: 900px) {
+  .library-overview,
+  .library-overview-home,
+  .library-downloads-overview {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .library-home-pack-grid,
+  .library-choice-pack-grid,
+  .library-preview-pack-grid {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(22px, 2.1vw, 38px);
+  }
+
+  .library-home-pack-grid .library-preview-pack,
+  .library-choice-pack-grid .library-preview-pack {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .library-home-pack-grid .library-preview-pack-info strong,
+  .library-choice-pack-grid .library-preview-pack-info strong {
+    font-size: clamp(17px, 1.15vw, 21px);
+  }
+
+  .library-home-pack-grid .library-preview-pack-info small,
+  .library-choice-pack-grid .library-preview-pack-info small {
+    font-size: clamp(13px, .9vw, 16px);
+  }
+
+  /* Vue « Tous vos packs » : toujours quatre gros packs par ligne. */
+  .pack-page {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .pack-grid {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(28px, 2.5vw, 48px) clamp(22px, 2vw, 38px);
+    margin-left: 0;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .pack-grid:hover { height: auto; }
+
+  .pack-card,
+  .pack-card:hover {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    display: block;
+    transform: none;
+  }
+
+  .pack-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .pack-card h3 { font-size: clamp(18px, 1.2vw, 22px); }
+  .pack-card p { font-size: clamp(14px, .95vw, 17px); }
+
+  /* Packs / tracks téléchargés : exploiter la largeur desktop. */
+  .library-overview-section,
+  .library-preview-track-list {
+    width: 100%;
+    max-width: none;
+  }
+
+  .library-preview-track {
+    min-height: 92px;
+    padding: 14px 18px;
+    grid-template-columns: 40px 66px minmax(0, 1fr) auto 28px;
+    gap: 18px;
+  }
+
+  .library-preview-track-cover {
+    width: 66px;
+    height: 66px;
+  }
+
+  .library-preview-track-info strong { font-size: 17px; }
+  .library-preview-track-info small { font-size: 13px; }
+  .library-preview-track-duration { font-size: 12px; }
+}
+
+/* ==========================================================
+   LIBRARY — TOUS VOS PACKS / RESPONSIVE DESKTOP
+   Desktop standard : 3 gros packs par ligne.
+   Grand écran (1800px+) : 4 gros packs par ligne.
+   La grille exploite toute la largeur disponible.
+========================================================== */
+@media (min-width: 900px) and (max-width: 1799px) {
+  body.library .pack-page {
+    width: 100%;
+    max-width: none;
+  }
+
+  body.library .pack-grid,
+  body.library .pack-grid:hover {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(30px, 3vw, 48px) clamp(24px, 2.5vw, 42px);
+  }
+}
+
+@media (min-width: 1800px) {
+  body.library .pack-page {
+    width: 100%;
+    max-width: none;
+  }
+
+  body.library .pack-grid,
+  body.library .pack-grid:hover {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(34px, 2.4vw, 54px) clamp(26px, 2vw, 44px);
   }
 }

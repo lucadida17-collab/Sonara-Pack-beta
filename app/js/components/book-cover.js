@@ -393,10 +393,10 @@
     }
 
     const projection = mat4Perspective(26 * Math.PI / 180, 1, 0.01, 5);
-    // Présentation produit Sonara : légère vue trois-quarts depuis la gauche,
+    // Présentation produit Sonara : turn horizontal de 12° depuis la gauche,
     // caméra à hauteur de la couverture pour ne plus montrer le dessous du livre.
     const view = mat4LookAt(
-      [-0.24, 0.1525, 0.72],
+      [-0.153, 0.1525, 0.72],
       [0, 0.1525, 0],
       [0, 1, 0]
     );
@@ -420,6 +420,32 @@
     async function renderCover(coverUrl) {
       const coverImage = await loadImage(coverUrl);
 
+      // Les covers Sonara restent importées dans leur format d’origine (souvent 1:1).
+      // La face avant du livre est plus verticale : on fait donc un vrai « cover »
+      // centré, sans jamais étirer ni écraser l’image source.
+      const targetAspect = 0.2070 / 0.2970;
+      const sourceWidth = coverImage.naturalWidth || coverImage.width;
+      const sourceHeight = coverImage.naturalHeight || coverImage.height;
+      const sourceAspect = sourceWidth / sourceHeight;
+      let sx = 0;
+      let sy = 0;
+      let sw = sourceWidth;
+      let sh = sourceHeight;
+
+      if (sourceAspect > targetAspect) {
+        sw = sourceHeight * targetAspect;
+        sx = (sourceWidth - sw) / 2;
+      } else if (sourceAspect < targetAspect) {
+        sh = sourceWidth / targetAspect;
+        sy = (sourceHeight - sh) / 2;
+      }
+
+      const coverCanvas = document.createElement("canvas");
+      coverCanvas.width = 768;
+      coverCanvas.height = Math.round(coverCanvas.width / targetAspect);
+      const coverContext = coverCanvas.getContext("2d", { alpha: false });
+      coverContext.drawImage(coverImage, sx, sy, sw, sh, 0, 0, coverCanvas.width, coverCanvas.height);
+
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -433,7 +459,7 @@
         gl.RGBA,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        coverImage
+        coverCanvas
       );
 
       for (const mesh of meshes) {

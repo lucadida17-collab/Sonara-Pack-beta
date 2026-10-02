@@ -167,7 +167,7 @@
     return `
       <article class="public-catalog-card">
         <div class="public-catalog-cover-frame">
-          <img class="public-catalog-cover" src="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="600" height="600" data-user-content>
+          <img class="public-catalog-cover sonara-pack-book-surface" src="${escapeHTML(pack.coverUrl || "")}" data-sonara-book-cover="${escapeHTML(pack.coverUrl || "")}" alt="${escapeHTML(pack.seo?.imageAlt || pack.title)}" width="600" height="600" data-user-content>
         </div>
         <div>
           <p class="public-catalog-eyebrow">Catalogue public Sonara</p>

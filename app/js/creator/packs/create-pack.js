@@ -555,7 +555,7 @@ function cameraIcon() {
   `;
 }
 
-function renderImageDropzone(inputId, file, title, subtitle) {
+function renderImageDropzone(inputId, file, title, subtitle, asPackBook = false) {
   const previewUrl = file ? createObjectUrl(file) : "";
 
   return `
@@ -563,7 +563,7 @@ function renderImageDropzone(inputId, file, title, subtitle) {
       <input id="${inputId}" type="file" accept="image/jpeg,image/png,image/webp">
 
       ${file ? `
-        <img class="cover-picker-preview" src="${previewUrl}" alt="Aperçu de la cover sélectionnée">
+        <img class="cover-picker-preview ${asPackBook ? "sonara-pack-book-surface" : ""}" src="${previewUrl}" ${asPackBook ? `data-sonara-book-cover="${previewUrl}"` : ""} alt="Aperçu de la cover sélectionnée">
         <span class="cover-picker-action">
           <span class="cover-picker-camera">${cameraIcon()}</span>
           <span>
@@ -677,7 +677,8 @@ function renderIdentity() {
           "pack-cover-input",
           packData.identity.coverFile,
           "Dépose la cover du pack",
-          "Format carré recommandé · minimum 600 × 600 px"
+          "Format carré recommandé · minimum 600 × 600 px",
+          true
         )}
 
         <small class="field-error" data-error="identity-cover"></small>
@@ -1400,7 +1401,7 @@ function audioIcon() {
   `;
 }
 
-function renderImageDropzone(inputId, file, title, subtitle) {
+function renderImageDropzone(inputId, file, title, subtitle, asPackBook = false) {
   const previewUrl = file ? createObjectUrl(file) : "";
 
   return `
@@ -1408,7 +1409,7 @@ function renderImageDropzone(inputId, file, title, subtitle) {
       <input id="${inputId}" type="file" accept="image/jpeg,image/png,image/webp">
 
       ${file ? `
-        <img class="cover-picker-preview" src="${previewUrl}" alt="Aperçu de la cover sélectionnée">
+        <img class="cover-picker-preview ${asPackBook ? "sonara-pack-book-surface" : ""}" src="${previewUrl}" ${asPackBook ? `data-sonara-book-cover="${previewUrl}"` : ""} alt="Aperçu de la cover sélectionnée">
         <span class="cover-picker-action">
           <span class="cover-picker-camera">${cameraIcon()}</span>
           <span>

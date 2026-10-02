@@ -290,8 +290,8 @@ function renderManagePack(pack) {
     </header>
 
     <section class="manage-pack-hero">
-      <div class="manage-pack-cover">
-        ${cover ? `<img src="${managePackEscape(cover)}" alt="" data-i18n-ignore>` : `<i data-lucide="package"></i>`}
+      <div class="manage-pack-cover sonara-pack-book-card">
+        ${cover ? `<img class="sonara-pack-book-surface" src="${managePackEscape(cover)}" data-sonara-book-cover="${managePackEscape(cover)}" alt="" data-i18n-ignore>` : `<i data-lucide="package"></i>`}
       </div>
       <div>
         <p class="manage-pack-eyebrow">GESTION DU PACK</p>

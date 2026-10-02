@@ -78,9 +78,9 @@ function renderCreatorStatistics(data) {
     .map((pack) => `
       <article class="creator-pack-stat-row">
         <div class="creator-pack-stat-main">
-          <span class="creator-pack-stat-cover">
+          <span class="creator-pack-stat-cover sonara-pack-book-card">
             ${pack.coverPack
-              ? `<img src="${escapeCreatorStatisticsHtml(creatorStatisticsMediaUrl(pack.coverPack))}" alt="">`
+              ? `<img class="sonara-pack-book-surface" src="${escapeCreatorStatisticsHtml(creatorStatisticsMediaUrl(pack.coverPack))}" data-sonara-book-cover="${escapeCreatorStatisticsHtml(creatorStatisticsMediaUrl(pack.coverPack))}" alt="">`
               : ""}
           </span>
           <span>

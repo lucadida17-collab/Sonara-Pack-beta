@@ -778,7 +778,7 @@ async function renderLibrary() {
             );
 
         const previewPacks =
-            downloadedPacks.slice(0, 8);
+            downloadedPacks.slice(0, 4);
 
         const packPreviewContent =
             previewPacks.length
@@ -1547,7 +1547,7 @@ function renderDownloadedPack(packId) {
 <div class="grand-player">
  <button class="grand-player-back">⌄</button>
  <div class="grand-player-shell">
-    <img class="grand-player-cover" src="" alt="">
+    <img class="grand-player-cover sonara-pack-book-surface sonara-grand-player-book" src="" alt="">
 <div class="position">
     <div class="player-progress-content">
      <div class="player-time-row">
@@ -2256,7 +2256,7 @@ async function renderTrack() {
 <div class="grand-player">
  <button class="grand-player-back">⌄</button>
  <div class="grand-player-shell">
-    <img class="grand-player-cover" src="" alt="">
+    <img class="grand-player-cover sonara-pack-book-surface sonara-grand-player-book" src="" alt="">
 <div class="position">
     <div class="player-progress-content">
      <div class="player-time-row">

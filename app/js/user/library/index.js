@@ -1269,11 +1269,12 @@ async function renderPack() {
 
     <div class="pack-grid">
            ${packsTelecharges.map((pack) => `
-  <div class="pack-card" data-pack-id="${pack.id}">
+  <div class="pack-card sonara-pack-book-card" data-pack-id="${pack.id}">
 
     <img 
-  class="pack-cover" 
+  class="pack-cover sonara-pack-book-surface" 
   src="${getFilePath(pack.coverPack)}"
+  data-sonara-book-cover="${getFilePath(pack.coverPack)}"
   alt="${pack.title}"
 >
     <h3 data-user-content>${pack.title}</h3>
@@ -1345,10 +1346,11 @@ function renderDownloadedPack(packId) {
         <div class="pack-hero">
     <div class="left-side">
 
-    <div class="card">
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card">
       <img 
       src="${getFilePath(packData.coverPack)}"
-      class="cover">
+      data-sonara-book-cover="${getFilePath(packData.coverPack)}"
+      class="cover sonara-pack-book-surface">
       <alt="${packData.title} cover image"
       >
      
@@ -1546,7 +1548,7 @@ function renderDownloadedPack(packId) {
 <div class="grand-player">
  <button class="grand-player-back">⌄</button>
  <div class="grand-player-shell">
-    <img class="grand-player-cover" src="" alt="">
+    <img class="grand-player-cover sonara-pack-book-surface sonara-grand-player-book" src="" alt="">
 <div class="position">
     <div class="player-progress-content">
      <div class="player-time-row">
@@ -2279,7 +2281,7 @@ async function renderTrack() {
 <div class="grand-player">
  <button class="grand-player-back">⌄</button>
  <div class="grand-player-shell">
-    <img class="grand-player-cover" src="" alt="">
+    <img class="grand-player-cover sonara-pack-book-surface sonara-grand-player-book" src="" alt="">
 <div class="position">
     <div class="player-progress-content">
      <div class="player-time-row">

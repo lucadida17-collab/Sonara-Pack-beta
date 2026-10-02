@@ -919,9 +919,7 @@ function createPackCard(pack = {}) {
 
   // Tous les vrais packs Home passent automatiquement par le visuel livre.
   // La classe card reste structurelle pour préserver titre, artiste et dimensions.
-  if (pack.isAutoPlaylist !== true) {
-    card.classList.add("sonara-pack-book-card");
-  }
+  card.classList.add("sonara-pack-book-card");
 
   if (artistProfile.accountId) {
     card.dataset.artistId =
@@ -957,14 +955,9 @@ function createPackCard(pack = {}) {
 
   cover.className = "cover";
 
-  if (pack.isAutoPlaylist !== true) {
-    cover.classList.add("sonara-pack-book-surface");
-  }
+  cover.classList.add("sonara-pack-book-surface");
 
-  if (pack.isAutoPlaylist === true) {
-    cover.classList.add("is-auto-playlist");
-    cover.appendChild(createAutoPlaylistCoverMosaic(pack));
-  } else {
+  {
     const fallback =
       createHomeCoverFallback();
 
@@ -972,7 +965,11 @@ function createPackCard(pack = {}) {
 
     const imageUrl =
       getFilePath(
-        getPackCoverValue(pack)
+        getPackCoverValue(pack) ||
+        pack?.tracks?.[0]?.coverPack ||
+        pack?.tracks?.[0]?.cover ||
+        pack?.tracks?.[0]?.image ||
+        ""
       );
 
     if (imageUrl) {

@@ -759,9 +759,9 @@ async function initializeMyPacks() {
             <input class="my-pack-check" type="checkbox" aria-label="Sélectionner ${safeTitle}">
           </label>
 
-          <div class="my-pack-cover">
+          <div class="my-pack-cover sonara-pack-book-card">
             ${pack.coverPack
-              ? `<img src="${escapeMyPackHtml(myPackMediaUrl(pack.coverPack))}" alt="">`
+              ? `<img class="sonara-pack-book-surface" src="${escapeMyPackHtml(myPackMediaUrl(pack.coverPack))}" data-sonara-book-cover="${escapeMyPackHtml(myPackMediaUrl(pack.coverPack))}" alt="">`
               : `<i data-lucide="image"></i>`}
           </div>
 

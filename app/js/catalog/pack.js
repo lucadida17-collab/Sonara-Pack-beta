@@ -960,7 +960,7 @@ function ensurePackPreviewPlayerMarkup() {
       <button class="grand-player-back" type="button" aria-label="Réduire le lecteur">⌄</button>
 
       <div class="grand-player-shell">
-        <img class="grand-player-cover" src="" alt="">
+        <img class="grand-player-cover sonara-pack-book-surface sonara-grand-player-book" src="" alt="">
 
         <div class="position">
           <div class="player-progress-content">
@@ -1148,6 +1148,9 @@ function setupPackPreviewPlayer() {
     miniTitle.textContent = title;
     miniArtist.textContent = artist;
     grandCover.src = cover;
+    grandCover.dataset.sonaraBookCover = cover;
+    delete grandCover.dataset.sonaraBookReady;
+    window.SonaraBookCover?.render?.(grandCover);
     grandTitle.textContent = title;
     grandArtist.textContent = artist;
     miniPlayer.classList.add("active");
@@ -1571,8 +1574,8 @@ function renderResourcePack() {
     <section class="body-pack resource-pack-body">
       <div class="pack-hero resource-pack-hero">
         <div class="left-side">
-          <div class="card resource-pack-cover-card">
-            <img src="${getFilePath(packData.coverPack)}" class="cover" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">
+          <div class="card resource-pack-cover-card sonara-pack-book-card sonara-pack-book-hero-card">
+            <img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">
           </div>
           <button class="pack-share-button" type="button" aria-label="Partager" title="Partager">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1592,17 +1595,15 @@ function renderResourcePack() {
             <img src="${getFilePath(packData.artistProfile?.avatar || packData.artistProfile?.imageArtist || packData.artistProfile?.imageProfile || packData.imageProfile)}" class="artist-image" alt="">
             ${packArtistRewardBadgeMarkup(packData.artistProfile)}
             <p class="artist">${escapePackLicenseHtml(packData.artistProfile?.name || packData.artist || "Artiste Sonara")}</p>
+            <button class="btn-acheter">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
           </div>
-          <div class="pack-mobile-actions" aria-label="Actions du pack">
-            <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3v12"></path>
-                <path d="m8 7 4-4 4 4"></path>
-                <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
-              </svg>
-            </button>
-          </div>
-          <button class="btn-acheter">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
+          <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m8 7 4-4 4 4"></path>
+              <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+            </svg>
+          </button>
           <button class="btn-acheter-desktop">${escapePackLicenseHtml(packActionLabel || "Voir le prix")}</button>
           ${preV1 && futurePackPrice && futurePackPrice !== "Gratuit" ? `<small class="pre-v1-price-note">Prix prévu : ${escapePackLicenseHtml(futurePackPrice)}</small>` : ""}
         </div>
@@ -1745,10 +1746,10 @@ function renderPack() {
     <div class="pack-hero">
     <div class="left-side">
 
-    <div class="card">
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card">
       ${packData.isAutoPlaylist
-        ? autoPlaylistCoverMarkup(packData)
-        : `<img src="${getFilePath(packData.coverPack)}" class="cover" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
+        ? `<img src="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" data-sonara-book-cover="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`
+        : `<img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
      
           <button class="playerBtnMob play"></button>
           <audio src="${getFilePath(packData.audio || packData.audioName)}">
@@ -1781,17 +1782,15 @@ function renderPack() {
               )}" class="artist-image">
               ${packArtistRewardBadgeMarkup(packData.artistProfile)}`}
           <p class="artist">${packData.isAutoPlaylist ? "Playlist faite par Sonara" : (packData.artistProfile?.name || packData.artist)}</p>
+          <button class="btn-acheter">${packActionLabel}</button>
         </div>
-        <div class="pack-mobile-actions" aria-label="Actions du pack">
-          <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 3v12"></path>
-              <path d="m8 7 4-4 4 4"></path>
-              <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
-            </svg>
-          </button>
-        </div>
-        <button class="btn-acheter">${packActionLabel}</button>
+        <button class="pack-share-button pack-share-button-mobile" type="button" aria-label="Partager" title="Partager">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m8 7 4-4 4 4"></path>
+            <path d="M5 10v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path>
+          </svg>
+        </button>
          <button class="btn-acheter-desktop">${packActionLabel}</button>
          ${plannedPriceMarkup}
       </div>
@@ -2117,3 +2116,4 @@ async function initializePackPage() {
 }
 
 initializePackPage();
+

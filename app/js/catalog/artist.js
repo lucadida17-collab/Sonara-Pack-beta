@@ -360,11 +360,11 @@ function renderPackCard(pack = {}) {
 
   return `
     <a class="artist-pack-card" href="${artistEscape(artistPackDestination(pack))}">
-      <div class="artist-pack-cover">
+      <div class="artist-pack-cover sonara-pack-book-card">
         <span class="artist-pack-cover-fallback" aria-hidden="true">
           <i data-lucide="package"></i>
         </span>
-        ${cover ? `<img src="${artistEscape(cover)}" alt="Cover de ${artistEscape(pack.title || "Pack Sonara")}" loading="lazy">` : ""}
+        ${cover ? `<img class="sonara-pack-book-surface" src="${artistEscape(cover)}" data-sonara-book-cover="${artistEscape(cover)}" alt="Cover de ${artistEscape(pack.title || "Pack Sonara")}" loading="lazy">` : ""}
       </div>
 
       <p class="artist-pack-title" data-user-content>${artistEscape(pack.title || "Pack sans titre")}</p>
