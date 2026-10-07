@@ -226,11 +226,95 @@ const SonaraCommercial = (() => {
 
 window.SonaraCommercial = SonaraCommercial;
 
+/* =========================================================
+   SONARA V2 — FEATURE GATE DE PRÉPARATION
+   ---------------------------------------------------------
+   - OFF par défaut dans Local / Test / Main.
+   - La V1 et la Pre-V1 ne montrent pas Sonara Sync.
+   - Quand SONARA_V2_ENABLED=true côté environnement,
+     les fonctionnalités rangées dans la V2 peuvent s'activer.
+   - Pour l'instant seule Sonara Sync est branchée à ce gate.
+========================================================= */
+const SonaraV2 = (() => {
+  const fallbackState = Object.freeze({
+    environment: SONARA_ENV,
+    enabled: false,
+    version: "V1",
+    syncEnabled: false
+  });
+
+  let state = fallbackState;
+  let loadingPromise = null;
+
+  function getState() {
+    return state;
+  }
+
+  function isEnabled() {
+    return state.enabled === true;
+  }
+
+  function isSyncEnabled() {
+    return state.enabled === true && state.syncEnabled === true;
+  }
+
+  async function refresh() {
+    if (loadingPromise) return loadingPromise;
+
+    loadingPromise = (async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/v2-mode`, {
+          method: "GET",
+          cache: "no-store",
+          headers: { Accept: "application/json" }
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data?.enabled !== "boolean") {
+          throw new Error("Mode V2 indisponible.");
+        }
+
+        state = Object.freeze({
+          ...fallbackState,
+          ...data,
+          environment: data.environment || SONARA_ENV,
+          enabled: data.enabled === true,
+          syncEnabled: data.enabled === true && data.syncEnabled === true
+        });
+      } catch (error) {
+        console.warn("Mode V2 indisponible, fonctionnalités V2 masquées :", error);
+        state = fallbackState;
+      } finally {
+        loadingPromise = null;
+      }
+
+      return state;
+    })();
+
+    return loadingPromise;
+  }
+
+  function ready() {
+    return refresh();
+  }
+
+  return Object.freeze({
+    getState,
+    isEnabled,
+    isSyncEnabled,
+    ready,
+    refresh
+  });
+})();
+
+window.SonaraV2 = SonaraV2;
+
 // L'écran d'entrée vérifie déjà /api/health. Il ne lance pas en parallèle
 // /api/commercial-mode afin d'éviter plusieurs requêtes au réveil du serveur.
 const IS_ENTRY_PAGE = /^\/(?:index\.html)?$/.test(window.location.pathname);
 if (!IS_ENTRY_PAGE) {
   SonaraCommercial.refresh();
+  SonaraV2.refresh();
 }
 
 console.info(`[Sonara API] ${SONARA_ENV} -> ${API_URL}`);

@@ -25,6 +25,7 @@ require("dotenv").config({
 path: path.resolve(__dirname, ".env.local")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
+const { createV2Policy } = require("./backend/config/v2-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
 const { validateMp3Upload, MAX_MP3_FILE_SIZE_BYTES, MAX_MP3_FILE_SIZE_MB, MP3_MIME_TYPES, hasMp3Extension, hasAllowedMp3MimeType } = require("./backend/features/audio/mp3-validation");
 const { createZipFromPaths } = require("./backend/features/audio/streaming-zip");
@@ -142,6 +143,8 @@ const transporter = nodemailer.createTransport({
 })
 
 
+const v2Policy = createV2Policy({ environment: "local" });
+
 const app = express();
 installDataProtection(app, { environment: "local" });
 
@@ -210,6 +213,10 @@ app.get("/api/commercial-mode", (_req, res) => {
   res.status(200).json(commercialPolicy.publicState());
 });
 
+app.get("/api/v2-mode", (_req, res) => {
+  res.status(200).json(v2Policy.publicState());
+});
+
 app.use("/api/stripe", commercialPolicy.blockStripeApi);
 
 app.post(
@@ -259,7 +266,9 @@ app.post(
 
 app.use(express.json({ limit: "2mb" }));
 app.use(rejectUnsafeJsonKeys);
-registerSonaraSyncEngine(app);
+if (v2Policy.syncEnabled) {
+  registerSonaraSyncEngine(app);
+}
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     ok: true,
@@ -7193,24 +7202,8 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, r
     }
 
 
-    if (status === "approved" && Array.isArray(req.body?.previews)) {
-      const previewByTrack = new Map(req.body.previews.map((item) => [String(item?.trackId || ""), item]));
-      for (const track of Array.isArray(pack.tracks) ? pack.tracks : []) {
-        const selected = previewByTrack.get(String(track?.id || track?.trackId || ""));
-        if (!selected) continue;
-        const start = Number(selected.previewStart);
-        if (!Number.isFinite(start) || start < 0) continue;
-        track.previewStart = Math.round(start * 100) / 100;
-        track.previewDuration = 30;
-        track.previewAnalysisVersion = PREVIEW_ANALYSIS_VERSION;
-        track.previewSelectionSource = "founder_manual";
-        track.previewSelectedAt = new Date().toISOString();
-      }
-    }
-
     pack.status = status;
     pack.moderatedAt = new Date().toISOString();
-    pack.updatedAt = pack.moderatedAt;
     writeJsonArray(packsPath, packs);
 
     return res.json({ success: true, item: pack, pack });

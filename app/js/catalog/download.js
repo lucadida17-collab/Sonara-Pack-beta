@@ -131,12 +131,6 @@ async function prepareProtectedDownload() {
 
 async function downloadFile() {
   try {
-    void window.SonaraOrganicAttribution?.trackEvent?.("download_started", {
-      packId: packId || "",
-      trackId: trackId || "",
-      resourceId: resourceId || "",
-      target: "protected_download"
-    });
     const finalUrl = await prepareProtectedDownload();
     const link = document.createElement("a");
     link.href = finalUrl;
@@ -147,12 +141,6 @@ async function downloadFile() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    void window.SonaraOrganicAttribution?.trackDownloadCompleted?.({
-      packId: packId || "",
-      trackId: trackId || "",
-      resourceId: resourceId || "",
-      target: "protected_download"
-    });
     return true;
   } catch (error) {
     console.error("Téléchargement protégé refusé :", error);
@@ -350,7 +338,9 @@ function buildIntegrationGuide(kind) {
         firstStep,
         downloadTranslate("Ouvrez votre projet vidéo et ajoutez le fichier Sonara comme piste audio."),
         downloadTranslate("Placez le son sous la vidéo, alignez son départ avec l’image puis ajustez son volume."),
-        downloadTranslate("Vous pouvez aussi ouvrir Sonara Sync pour faire cette synchronisation directement ici.")
+        ...(window.SonaraV2?.isSyncEnabled?.()
+          ? [downloadTranslate("Vous pouvez aussi ouvrir Sonara Sync pour faire cette synchronisation directement ici.")]
+          : [])
       ]
     },
     music: {
@@ -404,7 +394,7 @@ function renderPostDownloadAssistant() {
   const choices = getProjectChoices();
   const itemTitle = selectedDownload?.title || selectedPack?.title || downloadTranslate("Votre fichier Sonara");
   const contentType = String(selectedPack?.contentType || "audio").toLowerCase();
-  const supportsSonaraSync = !["midi", "daw"].includes(contentType);
+  const supportsSonaraSync = window.SonaraV2?.isSyncEnabled?.() === true && !["midi", "daw"].includes(contentType);
 
   downloadPage.innerHTML = `
     <section class="download-after">

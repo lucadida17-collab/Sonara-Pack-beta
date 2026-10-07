@@ -1187,3 +1187,184 @@ a.sonara-pack-book-card,
 .sonara-pack-book-hero-card:hover .sonara-book-cover,
 .sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
 .sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* =========================================================
+   MY PACK — finition premium V2
+   Mobile d'abord, puis tablette / desktop.
+   Aucun changement de structure ni de logique métier.
+   ========================================================= */
+
+/* Mobile : surface plus calme, hiérarchie plus nette. */
+.create-pack {
+  width: min(100% - 24px, 1120px);
+  padding: 82px 0 112px;
+}
+
+.my-pack-header {
+  margin-bottom: 12px;
+  padding: 24px 20px 22px;
+  border-color: rgba(103, 232, 255, .10);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 88% -8%, rgba(14, 165, 233, .17), transparent 35%),
+    linear-gradient(145deg, rgba(16, 25, 39, .94), rgba(7, 12, 20, .92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 18px 48px rgba(0,0,0,.18);
+}
+
+.my-pack-label { color: #66ddff; }
+.my-pack-header h1 { text-shadow: 0 0 28px rgba(56,189,248,.10); }
+.my-pack-subtitle { color: rgba(229, 241, 255, .58); }
+
+.my-pack-stats {
+  gap: 9px;
+  margin-bottom: 20px;
+}
+
+.my-pack-stats article {
+  min-height: 92px;
+  padding: 14px;
+  border-color: rgba(148, 198, 255, .09);
+  border-radius: 18px;
+  background: linear-gradient(155deg, rgba(17, 28, 45, .78), rgba(8, 14, 24, .76));
+}
+
+.my-pack-stats article:hover {
+  border-color: rgba(103,232,255,.24);
+  background: linear-gradient(155deg, rgba(18, 38, 58, .84), rgba(8, 18, 31, .80));
+}
+
+.my-pack-stats strong {
+  color: #71e6ff;
+  text-shadow: 0 0 18px rgba(56,189,248,.13);
+}
+
+.my-pack-list { gap: 14px; }
+
+/* La carte devient un support discret : le livre est le visuel principal. */
+.my-pack-card {
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 14px;
+  padding: 15px 14px 15px 10px;
+  overflow: visible;
+  border-color: rgba(137, 190, 255, .085);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 0% 50%, rgba(20, 184, 255, .07), transparent 34%),
+    linear-gradient(140deg, rgba(14, 22, 35, .82), rgba(7, 12, 20, .76));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 14px 34px rgba(0,0,0,.16);
+}
+
+.my-pack-card:not(.is-selected):hover,
+.my-pack-card:not(.is-selected):focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 255, .24);
+  background:
+    radial-gradient(circle at 0% 50%, rgba(20, 184, 255, .10), transparent 38%),
+    linear-gradient(140deg, rgba(16, 31, 48, .88), rgba(8, 18, 29, .82));
+  box-shadow: 0 18px 46px rgba(0, 110, 180, .10), inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+.my-pack-cover,
+.my-pack-cover.sonara-pack-book-card {
+  width: 116px;
+  min-height: 150px;
+  aspect-ratio: auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.my-pack-cover img,
+.my-pack-cover .sonara-book-cover {
+  width: 100%;
+  height: auto;
+  max-height: 154px;
+  object-fit: contain;
+  filter: drop-shadow(0 15px 16px rgba(0,0,0,.36));
+  transform-origin: center;
+}
+
+.my-pack-card:hover .my-pack-cover img { transform: translateY(-2px) scale(1.025); }
+.my-pack-card:hover .my-pack-cover .sonara-book-cover {
+  filter: drop-shadow(0 0 10px rgba(47,211,255,.46)) drop-shadow(0 16px 18px rgba(0,0,0,.38));
+}
+
+.my-pack-info { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.my-pack-title-row { gap: 7px; }
+.my-pack-title-row h2 { font-size: 1.06rem; font-weight: 820; letter-spacing: -.03em; }
+.my-pack-status { padding: 5px 8px; border-radius: 9px; font-size: .62rem; }
+
+.my-pack-meta {
+  margin-top: 10px;
+  gap: 7px 10px;
+}
+.my-pack-meta span { color: rgba(225,238,255,.53); font-size: .69rem; }
+
+.my-pack-card-footer {
+  margin-top: 13px;
+  padding-top: 11px;
+  align-items: flex-end;
+  border-color: rgba(255,255,255,.065);
+}
+
+.my-pack-license-status { color: rgba(220,238,255,.50); }
+.my-pack-card-actions { gap: 7px; }
+.my-pack-share-button,
+.my-pack-manage-button { min-height: 36px; border-radius: 11px; }
+.my-pack-copy-link-button { min-height: 34px; border-radius: 10px; }
+
+/* Téléphone étroit : on garde le livre généreux sans écraser les infos. */
+@media (max-width: 430px) {
+  .create-pack { width: min(100% - 18px, 1120px); }
+  .my-pack-header { padding: 22px 17px 20px; }
+  .my-pack-card { grid-template-columns: 104px minmax(0,1fr); gap: 11px; padding: 13px 11px 13px 8px; }
+  .my-pack-cover, .my-pack-cover.sonara-pack-book-card { width: 104px; min-height: 138px; }
+  .my-pack-cover img, .my-pack-cover .sonara-book-cover { max-height: 140px; }
+  .my-pack-meta { gap: 6px 8px; }
+  .my-pack-card-footer { align-items: stretch; flex-direction: column; }
+  .my-pack-card-actions { justify-content: flex-start; }
+  .my-pack-license-status { font-size: .67rem; }
+}
+
+/* Tablette : plus d'air, livre plus affirmé. */
+@media (min-width: 600px) and (max-width: 899px) {
+  .create-pack { width: min(100% - 36px, 1120px); }
+  .my-pack-header { padding: 30px; }
+  .my-pack-card { grid-template-columns: 148px minmax(0,1fr); gap: 20px; padding: 18px; }
+  .my-pack-cover, .my-pack-cover.sonara-pack-book-card { width: 148px; min-height: 190px; }
+  .my-pack-cover img, .my-pack-cover .sonara-book-cover { max-height: 194px; }
+  .my-pack-title-row h2 { font-size: 1.22rem; }
+  .my-pack-meta span { font-size: .76rem; }
+}
+
+/* Desktop : cartes plus larges, livres réellement présents, densité propre. */
+@media (min-width: 900px) {
+  .create-pack { width: min(100% - 56px, 1280px); }
+  .my-pack-header { padding: 34px 38px; }
+  .my-pack-list { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+  .my-pack-card { grid-template-columns: 150px minmax(0,1fr); gap: 20px; min-height: 230px; padding: 20px 18px 20px 14px; border-radius: 24px; }
+  .my-pack-cover, .my-pack-cover.sonara-pack-book-card { width: 150px; min-height: 194px; }
+  .my-pack-cover img, .my-pack-cover .sonara-book-cover { max-height: 198px; }
+  .my-pack-title-row h2 { font-size: 1.18rem; }
+  .my-pack-meta span { font-size: .73rem; }
+  .my-pack-card-footer { margin-top: auto; }
+}
+
+@media (min-width: 1200px) {
+  .create-pack { width: min(100% - 72px, 1380px); }
+  .my-pack-card { grid-template-columns: 170px minmax(0,1fr); min-height: 252px; padding: 22px 20px 22px 14px; }
+  .my-pack-cover, .my-pack-cover.sonara-pack-book-card { width: 170px; min-height: 218px; }
+  .my-pack-cover img, .my-pack-cover .sonara-book-cover { max-height: 222px; }
+  .my-pack-title-row h2 { font-size: 1.28rem; }
+}
+
+@media (min-width: 2000px) {
+  .create-pack { width: min(100% - 96px, 1540px); }
+  .my-pack-list { gap: 22px; }
+  .my-pack-card { grid-template-columns: 190px minmax(0,1fr); min-height: 282px; padding: 25px 24px 25px 18px; }
+  .my-pack-cover, .my-pack-cover.sonara-pack-book-card { width: 190px; min-height: 244px; }
+  .my-pack-cover img, .my-pack-cover .sonara-book-cover { max-height: 248px; }
+  .my-pack-title-row h2 { font-size: 1.38rem; }
+}

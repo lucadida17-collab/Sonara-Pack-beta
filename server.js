@@ -31,6 +31,7 @@ require("dotenv").config({
   path: path.resolve(__dirname, ".env.prod")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
+const { createV2Policy } = require("./backend/config/v2-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
 const { validateMp3Upload, MAX_MP3_FILE_SIZE_BYTES, MAX_MP3_FILE_SIZE_MB, MP3_MIME_TYPES, hasMp3Extension, hasAllowedMp3MimeType } = require("./backend/features/audio/mp3-validation");
 const { createZipFromPaths } = require("./backend/features/audio/streaming-zip");
@@ -55,6 +56,7 @@ const commercialPolicy = createCommercialPolicy({
 });
 const Stripe = require("stripe");
 const stripeSecretKey = String(process.env.STRIPE_SECRET_KEY || "").trim();
+const v2Policy = createV2Policy({ environment: "main" });
 const mainPaymentsEnabled = commercialPolicy.paymentsActive;
 const stripeKeyIsLive = /^sk_live_/i.test(stripeSecretKey);
 
@@ -456,6 +458,10 @@ app.get("/api/commercial-mode", (_req, res) => {
   res.status(200).json(commercialPolicy.publicState());
 });
 
+app.get("/api/v2-mode", (_req, res) => {
+  res.status(200).json(v2Policy.publicState());
+});
+
 app.use("/api/stripe", commercialPolicy.blockStripeApi);
 
 app.post(
@@ -505,7 +511,9 @@ app.post(
 
 app.use(express.json({ limit: "2mb" }));
 app.use(rejectUnsafeJsonKeys);
-registerSonaraSyncEngine(app);
+if (v2Policy.syncEnabled) {
+  registerSonaraSyncEngine(app);
+}
 app.get("/api/health", async (_req, res) => {
   try {
     // MAIN n'est considéré prêt que lorsque MongoDB et les initialisations
@@ -7531,34 +7539,14 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, async (
       return res.json({ success: true, deleted: false, item: publicPack, pack: publicPack });
     }
 
-    const moderatedAt = new Date().toISOString();
-    const updateFields = { status, moderatedAt, updatedAt: moderatedAt };
-
-    if (status === "approved" && Array.isArray(req.body?.previews) && req.body.previews.length) {
-      const currentPack = await packsCollection.findOne({ id: requestedId });
-      if (!currentPack) {
-        return res.status(404).json({ success: false, message: "Pack introuvable." });
-      }
-      const previewByTrack = new Map(req.body.previews.map((item) => [String(item?.trackId || ""), item]));
-      updateFields.tracks = (Array.isArray(currentPack.tracks) ? currentPack.tracks : []).map((track) => {
-        const selected = previewByTrack.get(String(track?.id || track?.trackId || ""));
-        if (!selected) return track;
-        const start = Number(selected.previewStart);
-        if (!Number.isFinite(start) || start < 0) return track;
-        return {
-          ...track,
-          previewStart: Math.round(start * 100) / 100,
-          previewDuration: 30,
-          previewAnalysisVersion: PREVIEW_ANALYSIS_VERSION,
-          previewSelectionSource: "founder_manual",
-          previewSelectedAt: moderatedAt
-        };
-      });
-    }
-
     const result = await packsCollection.findOneAndUpdate(
       { id: requestedId },
-      { $set: updateFields },
+      {
+        $set: {
+          status,
+          moderatedAt: new Date().toISOString()
+        }
+      },
       { returnDocument: "after" }
     );
 
