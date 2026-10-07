@@ -26,6 +26,43 @@
     return Array.from(document.querySelectorAll(ENTRY_SELECTOR));
   }
 
+  function createDesktopEntry() {
+    const button = document.createElement("button");
+    button.className = "desktop-nav-btn";
+    button.type = "button";
+    button.setAttribute("data-sonara-montage-entry", "");
+    button.setAttribute("data-sonara-v2-injected", "true");
+    button.innerHTML = `
+      <i data-lucide="clapperboard"></i>
+      <span><strong>Sync</strong><small>Synchroniser vos sons</small></span>
+    `;
+    return button;
+  }
+
+  function createMobileEntry() {
+    const button = document.createElement("button");
+    button.className = "nav-mobile-btn nav-mobile-montage";
+    button.type = "button";
+    button.setAttribute("data-sonara-montage-entry", "");
+    button.setAttribute("data-sonara-v2-injected", "true");
+    button.innerHTML = `<i data-lucide="clapperboard"></i><span>Sync</span>`;
+    return button;
+  }
+
+  function ensureV2Entries() {
+    // PRE-V1 / V1 contain no Sync control in their HTML.
+    // The control is created only after the official V2 launch gate is open.
+    if (getEntries().length) return;
+
+    document.querySelector(".desktop-side-nav")?.appendChild(createDesktopEntry());
+    document.querySelector(".nav-mobile")?.appendChild(createMobileEntry());
+    window.lucide?.createIcons?.();
+  }
+
+  function removeInjectedV2Entries() {
+    document.querySelectorAll('[data-sonara-v2-injected="true"]').forEach((entry) => entry.remove());
+  }
+
   function setEntriesVisible(visible) {
     getEntries().forEach((entry) => {
       entry.hidden = !visible;
@@ -60,14 +97,14 @@
   }
 
   async function refresh() {
-    bindEntries();
+    removeInjectedV2Entries();
     setEntriesVisible(false);
 
     const v2State = await resolveV2State();
     const syncEnabled = v2State?.enabled === true && v2State?.syncEnabled === true;
 
-    // Sonara Sync est désormais une fonctionnalité V2 :
-    // invisible et inaccessible tant que SONARA_V2_ENABLED n'est pas activé.
+    // PRE-V1 et V1 : aucune fonction / entrée Sync n'est montée dans la navigation.
+    // SONARA_V2_ENABLED=true est le switch de lancement OFFICIEL de la V2.
     if (!syncEnabled) {
       if (isDirectV2Page()) {
         window.location.replace("/home.html");
@@ -77,6 +114,9 @@
       window.dispatchEvent(new CustomEvent("sonara:montage-access", { detail: result }));
       return result;
     }
+
+    ensureV2Entries();
+    bindEntries();
 
     let profile = getStoredProfile();
 

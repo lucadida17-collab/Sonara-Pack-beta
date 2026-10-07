@@ -230,16 +230,17 @@ window.SonaraCommercial = SonaraCommercial;
    SONARA V2 — FEATURE GATE DE PRÉPARATION
    ---------------------------------------------------------
    - OFF par défaut dans Local / Test / Main.
-   - La V1 et la Pre-V1 ne montrent pas Sonara Sync.
-   - Quand SONARA_V2_ENABLED=true côté environnement,
-     les fonctionnalités rangées dans la V2 peuvent s'activer.
-   - Pour l'instant seule Sonara Sync est branchée à ce gate.
+   - PRE-V1 et V1 ne montent aucune fonction Sonara Sync.
+   - SONARA_V2_ENABLED=true = lancement OFFICIEL de la V2.
+   - Avant ce lancement, le code V2 reste préparé mais inaccessible.
+   - Pour l'instant seule Sonara Sync est rangée derrière ce gate.
 ========================================================= */
 const SonaraV2 = (() => {
   const fallbackState = Object.freeze({
     environment: SONARA_ENV,
     enabled: false,
-    version: "V1",
+    phase: "PREPARATION",
+    version: "PRE_V2",
     syncEnabled: false
   });
 

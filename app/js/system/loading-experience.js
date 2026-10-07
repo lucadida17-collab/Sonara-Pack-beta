@@ -20,8 +20,7 @@
     "Ajoute les packs que tu utilises à ta bibliothèque pour les retrouver plus vite.",
     "Lis la licence du pack avant de publier ton projet : elle précise ce que tu peux faire.",
     "Les catégories t’aident à chercher par ambiance et par usage, pas seulement par genre.",
-    "Tu peux revenir sur un artiste depuis un pack pour découvrir le reste de son catalogue.",
-    "Dans Sonara Sync, combine tes sons avec ta vidéo avant de finaliser ton montage."
+    "Tu peux revenir sur un artiste depuis un pack pour découvrir le reste de son catalogue."
   ];
 
   const CHEVRON_LEFT_ICON = `
