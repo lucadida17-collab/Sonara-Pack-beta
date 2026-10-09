@@ -6,18 +6,21 @@ const ARTIST_REWARD_IDS = Object.freeze({
   PRE_V1_SENIORITY: "PRE_V1_SENIORITY"
 });
 
-/*
-  Image volontairement vide pour l'instant.
-  Quand le visuel final est prêt, modifier UNIQUEMENT badgeImage ici.
-  Exemple futur : "/app/assets/badges/pre-v1-seniority.png"
-*/
+const PRE_V1_SENIORITY_BADGE_IMAGE = "/app/assets/badges/pre-v1-seniority.png";
+
+const LEGACY_BADGE_IMAGE_PATHS = new Set([
+  "/app/assets/badges/pre-v1-seniority.jpeg",
+  "/app/assets/badges/pre-v1-seniority.jpg",
+  "/assets/image/badge-anciennete-pre-v1.png"
+]);
+
 const ARTIST_REWARD_DEFINITIONS = Object.freeze({
   [ARTIST_REWARD_IDS.PRE_V1_SENIORITY]: Object.freeze({
     id: ARTIST_REWARD_IDS.PRE_V1_SENIORITY,
     type: "BADGE_AND_TITLE",
     title: "Ancienneté Pre-V1",
     badgeLabel: "Ancienneté Pre-V1",
-    badgeImage: "/app/assets/badges/pre-v1-seniority.jpeg",
+    badgeImage: PRE_V1_SENIORITY_BADGE_IMAGE,
     permanent: true
   })
 });
@@ -29,12 +32,38 @@ function ensureArtistRewards(account = {}) {
   return account.artistRewards;
 }
 
+
+function normalizeArtistRewardRecord(rewardId, record = {}) {
+  const definition = ARTIST_REWARD_DEFINITIONS[String(rewardId || "")] || {};
+  const normalized = { ...record };
+
+  if (String(rewardId || "") === ARTIST_REWARD_IDS.PRE_V1_SENIORITY) {
+    const rawBadgeImage = String(normalized.badgeImage || "").trim();
+    if (!rawBadgeImage || LEGACY_BADGE_IMAGE_PATHS.has(rawBadgeImage)) {
+      normalized.badgeImage = PRE_V1_SENIORITY_BADGE_IMAGE;
+    }
+    if (!normalized.badgeLabel) normalized.badgeLabel = definition.badgeLabel || null;
+    if (!normalized.title) normalized.title = definition.title || null;
+    if (!normalized.type) normalized.type = definition.type || null;
+    if (normalized.permanent == null) normalized.permanent = Boolean(definition.permanent);
+  }
+
+  return normalized;
+}
+
 function grantArtistRewardOnce(account = {}, rewardId, metadata = {}, now = new Date()) {
   const id = String(rewardId || "").trim();
   const definition = ARTIST_REWARD_DEFINITIONS[id];
   if (!definition) return { changed: false, record: null };
   const store = ensureArtistRewards(account);
-  if (store[id]?.granted) return { changed: false, record: store[id] };
+  if (store[id]?.granted) {
+    const normalizedExisting = normalizeArtistRewardRecord(id, store[id]);
+    if (JSON.stringify(normalizedExisting) !== JSON.stringify(store[id])) {
+      store[id] = normalizedExisting;
+      return { changed: true, record: normalizedExisting };
+    }
+    return { changed: false, record: normalizedExisting };
+  }
 
   const record = {
     id,
@@ -48,8 +77,9 @@ function grantArtistRewardOnce(account = {}, rewardId, metadata = {}, now = new 
     badgeImage: definition.badgeImage,
     permanent: Boolean(definition.permanent)
   };
-  store[id] = record;
-  return { changed: true, record };
+  const normalizedRecord = normalizeArtistRewardRecord(id, record);
+  store[id] = normalizedRecord;
+  return { changed: true, record: normalizedRecord };
 }
 
 function maybeGrantPreV1SeniorityReward(account = {}, activity = {}, now = new Date()) {
@@ -69,6 +99,12 @@ function hasArtistReward(account = {}, rewardId) {
 
 function getPublicArtistRewards(account = {}) {
   const store = ensureArtistRewards(account);
+  for (const [rewardId, rewardRecord] of Object.entries(store)) {
+    const normalizedRecord = normalizeArtistRewardRecord(rewardId, rewardRecord);
+    if (JSON.stringify(normalizedRecord) !== JSON.stringify(rewardRecord)) {
+      store[rewardId] = normalizedRecord;
+    }
+  }
   return Object.values(store)
     .filter((record) => record && record.granted)
     .map((record) => {
@@ -92,5 +128,6 @@ module.exports = {
   grantArtistRewardOnce,
   maybeGrantPreV1SeniorityReward,
   hasArtistReward,
-  getPublicArtistRewards
+  getPublicArtistRewards,
+  normalizeArtistRewardRecord
 };
