@@ -1043,26 +1043,26 @@ a.sonara-pack-book-card,
 }
 .artist-public-mini-avatar .artist-public-avatar-certification {
   position: absolute;
-  inset: auto auto -12px 50%;
-  width: 25px;
-  height: 25px;
+  inset: auto auto -13px 50%;
+  width: 31px;
+  height: 31px;
   transform: translateX(-50%);
   z-index: 3;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #161b26;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+  background: transparent;
+  box-shadow: none;
 }
 .artist-public-mini-avatar .artist-public-avatar-certification .artist-public-reward-badge {
   position: static;
-  width: 23px;
-  height: 23px;
+  width: 31px;
+  height: 31px;
   object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .45));
 }
 
 /* Profil artiste : certification lisible, sections compactes et navigation desktop. */
-.artist-public-mini-avatar .artist-public-avatar-certification{font-size:17px;font-weight:900;line-height:1;color:#fff;background:linear-gradient(145deg,#d8b65c,#75521e);border:2px solid #ffe7a2;text-shadow:0 1px 2px #352400}
 .artist-public-reward-title{margin-top:15px}
 .artist-expand{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;padding:12px 16px;border:1px solid rgba(123,189,229,.35);border-radius:12px;background:rgba(30,53,76,.3);color:inherit;cursor:pointer;font-weight:700}
 .artist-expand-inline{width:auto;margin:0 0 0 14px;padding:8px 14px}
@@ -1073,3 +1073,27 @@ a.sonara-pack-book-card,
 .artist-discography-rail.is-expanded{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
 .artist-pack-date{font-size:12px;opacity:.7;margin:4px 0 0}
 @media(max-width:899px){.artist-rail-arrows{display:none}.artist-discography-rail.is-expanded{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Corrections profil artiste : badge officiel + rails sans barre blanche + flèches desktop découverte */
+.artist-pack-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.artist-pack-rail::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.artist-rail-wrap .artist-pack-rail {
+  padding-bottom: 2px;
+}
+.artist-rail-wrap .artist-pack-rail.is-expanded {
+  overflow: visible;
+}
+.artist-public-avatar-certification {
+  overflow: visible;
+}
+.artist-public-avatar-certification .artist-public-reward-badge {
+  display: block;
+}

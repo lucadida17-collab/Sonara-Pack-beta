@@ -293,7 +293,7 @@ function renderArtistMiniAvatar(profile = {}) {
         ? `<img src="${artistEscape(image)}" alt="" loading="lazy">`
         : ""
       }
-      ${artistPrimaryReward(profile)?.badgeImage ? `<span class="artist-public-avatar-certification" title="Certification Pre-V1" aria-label="Certification Pre-V1">V</span>` : ""}
+      ${artistPrimaryReward(profile)?.badgeImage ? `<span class="artist-public-avatar-certification" title="Certification Pre-V1" aria-label="Certification Pre-V1">${renderArtistRewardBadge(profile)}</span>` : ""}
     </span>
   `;
 }
@@ -480,7 +480,13 @@ function renderArtistPage() {
           <button class="artist-expand artist-expand-inline" data-expand-packs type="button" aria-expanded="false">Tout voir <i data-lucide="chevron-down"></i></button>
         </div>
       </header>
-      <div class="artist-rail-wrap"><div class="artist-rail-arrows"><button type="button" data-rail-prev aria-label="Précédent"><i data-lucide="chevron-left"></i></button><button type="button" data-rail-next aria-label="Suivant"><i data-lucide="chevron-right"></i></button></div>${renderPackRail(rankedPacks.slice(0,12), "La discographie de cet artiste arrivera ici.", "artist-discography-rail")}</div>
+      <div class="artist-rail-wrap">
+        <div class="artist-rail-arrows">
+          <button type="button" data-rail-prev aria-label="Précédent"><i data-lucide="chevron-left"></i></button>
+          <button type="button" data-rail-next aria-label="Suivant"><i data-lucide="chevron-right"></i></button>
+        </div>
+        ${renderPackRail(rankedPacks.slice(0,12), "La discographie de cet artiste arrivera ici.", "artist-discography-rail")}
+      </div>
     </section>
 
     <section class="artist-public-section">
@@ -489,7 +495,13 @@ function renderArtistPage() {
           <h2>À découvrir sur Sonara Pack</h2>
         </div>
       </header>
-      ${renderPackRail(discoveryPacks, "Les prochains packs du catalogue apparaîtront ici.")}
+      <div class="artist-rail-wrap">
+        <div class="artist-rail-arrows">
+          <button type="button" data-rail-prev aria-label="Précédent"><i data-lucide="chevron-left"></i></button>
+          <button type="button" data-rail-next aria-label="Suivant"><i data-lucide="chevron-right"></i></button>
+        </div>
+        ${renderPackRail(discoveryPacks, "Les prochains packs du catalogue apparaîtront ici.", "artist-discovery-rail")}
+      </div>
     </section>
   `;
 
