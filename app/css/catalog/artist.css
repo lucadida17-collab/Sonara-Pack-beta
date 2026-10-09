@@ -1031,3 +1031,32 @@ a.sonara-pack-book-card,
 .sonara-pack-book-hero-card:hover .sonara-book-cover,
 .sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
 .sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* Certification Pre-V1 : anneau autour du favicon et médaille centrée en bas. */
+.artist-public-mini-avatar.has-pre-v1-certification {
+  overflow: visible;
+  border: 2px solid #d9b767;
+  box-shadow: 0 0 0 2px rgba(26, 31, 43, .95), 0 0 0 3px rgba(233, 201, 115, .65), 0 8px 22px rgba(0, 0, 0, .28);
+}
+.artist-public-mini-avatar.has-pre-v1-certification > img {
+  border-radius: 50%;
+}
+.artist-public-mini-avatar .artist-public-avatar-certification {
+  position: absolute;
+  inset: auto auto -12px 50%;
+  width: 25px;
+  height: 25px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #161b26;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+}
+.artist-public-mini-avatar .artist-public-avatar-certification .artist-public-reward-badge {
+  position: static;
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}

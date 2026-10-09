@@ -264,7 +264,7 @@ function renderArtistRewardBadge(profile = {}) {
 function renderArtistRewardTitle(profile = {}) {
   const reward = artistPrimaryReward(profile);
   if (!reward?.title) return "";
-  return `<p class="artist-public-reward-title">${renderArtistRewardBadge(profile)}<span>${artistEscape(reward.title)}</span></p>`;
+  return `<p class="artist-public-reward-title"><span>${artistEscape(reward.title)}</span></p>`;
 }
 
 function renderArtistPhoto(profile) {
@@ -287,12 +287,13 @@ function renderArtistMiniAvatar(profile = {}) {
   );
 
   return `
-    <span class="artist-public-mini-avatar" aria-hidden="true">
+    <span class="artist-public-mini-avatar${artistPrimaryReward(profile)?.badgeImage ? " has-pre-v1-certification" : ""}" aria-hidden="true">
       <span>${artistEscape(artistInitials(profile.name))}</span>
       ${image
         ? `<img src="${artistEscape(image)}" alt="" loading="lazy">`
         : ""
       }
+      ${artistPrimaryReward(profile)?.badgeImage ? `<span class="artist-public-avatar-certification">${renderArtistRewardBadge(profile)}</span>` : ""}
     </span>
   `;
 }
@@ -416,7 +417,6 @@ function renderArtistPage() {
 
         <div class="artist-public-name-row">
           ${renderArtistMiniAvatar(publicArtist)}
-          ${renderArtistRewardBadge(publicArtist)}
           <h1 class="artist-public-name" data-user-content>${artistEscape(publicArtist.name)}</h1>
         </div>
         ${renderArtistRewardTitle(publicArtist)}
