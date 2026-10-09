@@ -40,7 +40,7 @@ const {
 } = require("./backend/features/pre-v1/pre-v1-activity");
 const { buildMissionPayload, resolveMissionMode } = require("./backend/features/missions/mission-system");
 const { grantMissionRewardOnce, attachRewardState, getActiveVisibilityBoost } = require("./backend/features/missions/mission-rewards");
-const { ARTIST_REWARD_IDS, maybeGrantPreV1SeniorityReward, hasArtistReward, getPublicArtistRewards } = require("./backend/features/pre-v1/artist-rewards");
+const { ARTIST_REWARD_IDS, maybeGrantPreV1SeniorityReward, grantArtistRewardOnce, hasArtistReward, getPublicArtistRewards } = require("./backend/features/pre-v1/artist-rewards");
 const commercialPolicy = createCommercialPolicy({ environment: "local" });
 
 const packsPath = path.join(__dirname, "data", "pendingPacks.json");
@@ -5870,6 +5870,15 @@ app.get("/api/creator/missions/:artistId", async (req, res) => {
       let rewardChanged = false;
       const seniorityGrant = maybeGrantPreV1SeniorityReward(artistResult.account, activity);
       rewardChanged = rewardChanged || seniorityGrant.changed;
+      // Clôture Pre-V1 : même badge pour tous les artistes existants,
+      // indépendamment des mois réels. L'attribution est idempotente.
+      const seniorityCloseout = payload.missions.some(
+        (mission) => mission.id === "pre_v1_seniority" && mission.closeout === true
+      ) ? grantArtistRewardOnce(artistResult.account, ARTIST_REWARD_IDS.PRE_V1_SENIORITY, {
+        source: "PRE_V1_MISSION_CLOSEOUT",
+        sourceMissionId: "pre_v1_seniority"
+      }) : { changed: false };
+      rewardChanged = rewardChanged || seniorityCloseout.changed;
       payload.missions.forEach((mission) => {
         const granted = grantMissionRewardOnce(artistResult.account, mission);
         rewardChanged = rewardChanged || granted.changed;

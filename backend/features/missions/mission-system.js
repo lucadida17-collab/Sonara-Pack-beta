@@ -34,6 +34,11 @@ const PRE_V1_MISSIONS = Object.freeze({
   })
 });
 
+// Clôture exceptionnelle des deux missions historiques Pre-V1.
+// La progression factuelle (mois / packs) reste inchangée dans l'activité :
+// seule la mission est clôturée et ses récompenses sont attribuées une fois.
+const PRE_V1_MISSIONS_CLOSED = true;
+
 const V1_DYNAMIC_CONFIG = Object.freeze({
   maxActiveMissions: 3,
   newArtistStartsWithIntroMission: true,
@@ -92,7 +97,7 @@ function createPreV1ManualMissions(activity = {}) {
   const seniority = createMissionProgress(activeMonths, PRE_V1_MISSIONS.seniority.target);
   const catalog = createMissionProgress(publishedPacks, PRE_V1_MISSIONS.publishedPacks.target);
 
-  return [
+  const missions = [
     {
       id: PRE_V1_MISSIONS.seniority.id,
       category: PRE_V1_MISSIONS.seniority.category,
@@ -134,6 +139,16 @@ function createPreV1ManualMissions(activity = {}) {
       }
     }
   ];
+
+  return PRE_V1_MISSIONS_CLOSED
+    ? missions.map((mission) => ({
+        ...mission,
+        actualProgressPercent: mission.progressPercent,
+        progressPercent: 100,
+        state: MISSION_STATES.COMPLETED_WAITING_REWARD,
+        closeout: true
+      }))
+    : missions;
 }
 
 function resolveArtistDifficultyTier(metrics = {}) {
@@ -196,6 +211,7 @@ module.exports = {
   MISSION_MODES,
   MISSION_STATES,
   PRE_V1_MISSIONS,
+  PRE_V1_MISSIONS_CLOSED,
   V1_DYNAMIC_CONFIG,
   resolveMissionMode,
   createMissionProgress,

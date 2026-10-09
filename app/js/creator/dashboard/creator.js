@@ -603,7 +603,73 @@ function creatorMissionStatusLabel(state) {
   return "En cours";
 }
 
+function creatorMissionCloseoutKey(accountId) {
+  // Le marqueur concerne seulement la cinématique, pas les récompenses :
+  // celles-ci sont enregistrées côté serveur, une seule fois par artiste.
+  const environment = String(window.SonaraCommercial?.getState?.().environment || window.location.host || "unknown");
+  return `sonara:pre-v1-missions-closeout:v1:${environment}:${accountId}`;
+}
+
+function creatorCloseoutSeen(key) {
+  try { return localStorage.getItem(key) === "seen"; } catch (_) { return false; }
+}
+
+function markCreatorCloseoutSeen(key) {
+  try { localStorage.setItem(key, "seen"); } catch (_) { /* private mode */ }
+}
+
+function animateCreatorMissionCloseout(missionsList, accountId) {
+  const cards = [...missionsList.querySelectorAll(".creator-mission-card[data-closeout='true']")];
+  if (!cards.length) return;
+
+  const section = missionsList.closest(".creator-missions");
+  const storageKey = creatorMissionCloseoutKey(accountId);
+  if (creatorCloseoutSeen(storageKey)) {
+    section?.setAttribute("hidden", "");
+    return;
+  }
+
+  section?.removeAttribute("hidden");
+  cards.forEach((card, index) => {
+    const bar = card.querySelector(".creator-mission-progress > span");
+    const amount = card.querySelector(".creator-mission-progress-row > span");
+    const status = card.querySelector(".creator-mission-status");
+    const initial = Math.max(0, Math.min(100, Number(card.dataset.initialProgress || 0)));
+    if (bar) bar.style.width = `${initial}%`;
+    if (amount) amount.textContent = `${initial}%`;
+    card.classList.add("is-rewarding");
+
+    // Une animation en cascade, comme la fin de deux quêtes dans un jeu.
+    window.setTimeout(() => {
+      card.classList.add("is-filling");
+      if (bar) bar.style.width = "100%";
+      if (amount) amount.textContent = "100%";
+      window.setTimeout(() => {
+        card.classList.add("is-reward-unlocked");
+        if (status) status.textContent = "Récompense obtenue";
+      }, 1500);
+    }, 250 + index * 550);
+  });
+
+  window.setTimeout(() => {
+    markCreatorCloseoutSeen(storageKey);
+    const message = document.createElement("div");
+    message.className = "creator-missions-celebration";
+    message.setAttribute("role", "status");
+    message.textContent = "✓ 2 missions terminées · Récompenses débloquées";
+    section?.appendChild(message);
+  }, 2800);
+
+  window.setTimeout(() => {
+    section?.classList.add("is-closeout-leaving");
+  }, 4500);
+  window.setTimeout(() => {
+    section?.setAttribute("hidden", "");
+  }, 5100);
+}
+
 function creatorMissionProgressLabel(mission = {}) {
+  if (mission.closeout) return { value: "Mission clôturée", unit: "" };
   const current = Number(mission.currentValue || 0);
   const target = Number(mission.targetValue || 0);
   if (mission.unit === "active_months") {
@@ -627,7 +693,7 @@ function renderCreatorMissionCard(mission = {}) {
   const progressLabel = creatorMissionProgressLabel(mission);
 
   return `
-    <article class="creator-mission-card ${completed ? "is-completed" : ""}">
+    <article class="creator-mission-card ${completed ? "is-completed" : ""}" data-closeout="${mission.closeout === true}" data-initial-progress="${Math.max(0, Math.min(100, Number(mission.actualProgressPercent ?? progress) || 0))}">
       <div class="creator-mission-topline">
         <div>
           <h3>${escapeCreatorMissionText(mission.title || "Mission")}</h3>
@@ -684,9 +750,18 @@ async function refreshCreatorMissions(attempt = 0) {
     }
 
     const missions = Array.isArray(data.missions) ? data.missions : [];
+    const allClosedAndRewarded = missions.length === 2 && missions.every(
+      (mission) => mission.closeout === true && mission.rewardGranted === true
+    );
     missionsList.innerHTML = missions.length
       ? missions.map(renderCreatorMissionCard).join("")
       : `<div class="creator-mission-empty">Aucune mission disponible.</div>`;
+    const section = missionsList.closest(".creator-missions");
+    if (allClosedAndRewarded) {
+      animateCreatorMissionCloseout(missionsList, accountId);
+    } else {
+      section?.removeAttribute("hidden");
+    }
     if (window.lucide) lucide.createIcons();
   } catch (error) {
     console.warn("Missions Creator indisponibles :", error);
