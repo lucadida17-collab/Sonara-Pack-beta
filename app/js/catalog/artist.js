@@ -264,7 +264,7 @@ function renderArtistRewardBadge(profile = {}) {
 function renderArtistRewardTitle(profile = {}) {
   const reward = artistPrimaryReward(profile);
   if (!reward?.title) return "";
-  return `<p class="artist-public-reward-title"><span>${artistEscape(reward.title)}</span></p>`;
+  return `<p class="artist-public-reward-title"><span>${artistEscape(/pre.?v1/i.test(reward.title) ? "Pre-V1" : reward.title)}</span></p>`;
 }
 
 function renderArtistPhoto(profile) {
@@ -293,9 +293,20 @@ function renderArtistMiniAvatar(profile = {}) {
         ? `<img src="${artistEscape(image)}" alt="" loading="lazy">`
         : ""
       }
-      ${artistPrimaryReward(profile)?.badgeImage ? `<span class="artist-public-avatar-certification">${renderArtistRewardBadge(profile)}</span>` : ""}
+      ${artistPrimaryReward(profile)?.badgeImage ? `<span class="artist-public-avatar-certification" title="Certification Pre-V1" aria-label="Certification Pre-V1">V</span>` : ""}
     </span>
   `;
+}
+
+function artistTrackScore(entry) {
+  const t = entry.track;
+  return artistSafeNumber(t.downloadCount ?? t.downloads ?? t.stats?.downloads, 0);
+}
+
+function artistBestTracks(entries) {
+  const now = new Date();
+  const monthly = entries.filter(e => { const d = new Date(e.referenceDate); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); });
+  return [...(monthly.length ? monthly : entries)].sort((a,b) => artistTrackScore(b) - artistTrackScore(a) || b.referenceDate - a.referenceDate);
 }
 
 function renderTrackRows(trackEntries = []) {
@@ -354,6 +365,11 @@ function renderTrackRows(trackEntries = []) {
   `;
 }
 
+function artistPackDate(pack) {
+  const date = new Date(pack.publishedAt || pack.createdAt || pack.moderatedAt || "");
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : "";
+}
+
 function renderPackCard(pack = {}) {
   const profile = getPackArtist(pack);
   const cover = artistFilePath(pack.coverPack || pack.cover || pack.coverUrl || pack.imagePack || pack.image);
@@ -369,6 +385,7 @@ function renderPackCard(pack = {}) {
       </div>
 
       <p class="artist-pack-title" data-user-content>${artistEscape(pack.title || "Pack sans titre")}</p>
+      <p class="artist-pack-date">${artistEscape(artistPackDate(pack))}</p>
 
       <div class="artist-pack-meta">
         <span class="artist-pack-avatar" aria-hidden="true">
@@ -382,13 +399,13 @@ function renderPackCard(pack = {}) {
   `;
 }
 
-function renderPackRail(packs = [], emptyMessage = "Aucun pack pour le moment.") {
+function renderPackRail(packs = [], emptyMessage = "Aucun pack pour le moment.", railClass = "") {
   if (!packs.length) {
     return `<div class="artist-public-empty-section">${artistEscape(emptyMessage)}</div>`;
   }
 
   return `
-    <div class="artist-pack-rail">
+    <div class="artist-pack-rail ${railClass}">
       ${packs.map(renderPackCard).join("")}
     </div>
   `;
@@ -400,7 +417,9 @@ function renderArtistPage() {
     artistCatalogue,
     publicArtist.accountId
   );
-  const firstTrack = tracks[0] || null;
+  const featuredTracks = artistBestTracks(tracks);
+  const firstTrack = featuredTracks[0] || null;
+  const rankedPacks = [...artistPacks].sort((a,b) => artistSafeNumber(b.downloadCount ?? b.downloads ?? b.stats?.downloads) - artistSafeNumber(a.downloadCount ?? a.downloads ?? a.stats?.downloads) || Date.parse(b.publishedAt || b.createdAt || 0) - Date.parse(a.publishedAt || a.createdAt || 0));
 
   artistContent.innerHTML = `
     <section class="artist-public-hero">
@@ -450,16 +469,18 @@ function renderArtistPage() {
           <h2>Sons</h2>
         </div>
       </header>
-      ${renderTrackRows(tracks)}
+      ${renderTrackRows(featuredTracks.slice(0, 3))}
+      ${featuredTracks.length > 3 ? `<button type="button" class="artist-expand" data-expand-tracks aria-expanded="false">Tout voir <i data-lucide="chevron-down"></i></button>` : ""}
     </section>
 
     <section class="artist-public-section">
       <header class="artist-public-section-header">
         <div class="artist-public-section-copy">
           <h2>Discographie</h2>
+          <button class="artist-expand artist-expand-inline" data-expand-packs type="button" aria-expanded="false">Tout voir <i data-lucide="chevron-down"></i></button>
         </div>
       </header>
-      ${renderPackRail(artistPacks, "La discographie de cet artiste arrivera ici.")}
+      <div class="artist-rail-wrap"><div class="artist-rail-arrows"><button type="button" data-rail-prev aria-label="Précédent"><i data-lucide="chevron-left"></i></button><button type="button" data-rail-next aria-label="Suivant"><i data-lucide="chevron-right"></i></button></div>${renderPackRail(rankedPacks.slice(0,12), "La discographie de cet artiste arrivera ici.", "artist-discography-rail")}</div>
     </section>
 
     <section class="artist-public-section">
@@ -481,6 +502,30 @@ function renderArtistPage() {
       }
     });
 
+  const tracksSection = artistContent.querySelector("[data-artist-tracks]");
+  artistContent.querySelector("[data-expand-tracks]")?.addEventListener("click", event => {
+    const button = event.currentTarget;
+    const expanded = button.getAttribute("aria-expanded") !== "true";
+    stopArtistPreview();
+    tracksSection.querySelector(".artist-track-list").outerHTML = renderTrackRows(expanded ? featuredTracks : featuredTracks.slice(0,3)).trim();
+    button.setAttribute("aria-expanded", String(expanded));
+    button.innerHTML = expanded ? 'Réduire <i data-lucide="chevron-up"></i>' : 'Tout voir <i data-lucide="chevron-down"></i>';
+    setupPreviewPlayers(); refreshArtistIcons();
+  });
+  artistContent.querySelector("[data-expand-packs]")?.addEventListener("click", event => {
+    const button = event.currentTarget;
+    const expanded = button.getAttribute("aria-expanded") !== "true";
+    const rail = artistContent.querySelector(".artist-discography-rail");
+    rail.innerHTML = (expanded ? rankedPacks : rankedPacks.slice(0,12)).map(renderPackCard).join("");
+    rail.classList.toggle("is-expanded", expanded);
+    button.setAttribute("aria-expanded", String(expanded));
+    button.innerHTML = expanded ? 'Réduire <i data-lucide="chevron-up"></i>' : 'Tout voir <i data-lucide="chevron-down"></i>';
+    refreshArtistIcons();
+  });
+  artistContent.querySelectorAll("[data-rail-prev], [data-rail-next]").forEach(button => button.addEventListener("click", () => {
+    const rail = button.closest(".artist-rail-wrap").querySelector(".artist-pack-rail");
+    rail.scrollBy({left: (button.hasAttribute("data-rail-next") ? 1 : -1) * rail.clientWidth * .85, behavior: "smooth"});
+  }));
   setupPreviewPlayers();
 
   artistContent.querySelector("[data-play-first]")
