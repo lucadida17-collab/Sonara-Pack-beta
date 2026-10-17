@@ -148,6 +148,7 @@ function registerHumanCreationReviewRoutes(options = {}) {
   });
 
   app.get('/api/packs/:packId/moderation-request', async (req, res) => {
+    if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== String(req.query.accountId || '')) return res.status(403).json({success:false,code:'ACCOUNT_FORBIDDEN'});
     const pack = await getPack(req.params.packId);
     if (!pack || String(pack.artistId || '') !== String(req.query.accountId || '')) return res.status(404).json({ success: false });
     const requests = Array.isArray(pack.humanModeration?.requests) ? pack.humanModeration.requests : [];
@@ -158,6 +159,7 @@ function registerHumanCreationReviewRoutes(options = {}) {
     try {
       const pack = await getPack(req.params.packId);
       const accountId = String(req.body?.accountId || '');
+      if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== accountId) return res.status(403).json({success:false,code:'ACCOUNT_FORBIDDEN'});
       if (!pack || String(pack.artistId || '') !== accountId) return res.status(403).json({ success: false, message: 'Ce pack ne vous appartient pas.' });
       const response = String(req.body?.response || '').trim().slice(0, 2200);
       if (!response) return res.status(400).json({ success: false, message: 'Réponse vide.' });

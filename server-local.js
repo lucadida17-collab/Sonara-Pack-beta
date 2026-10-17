@@ -1,4 +1,9 @@
 const express = require("express");
+const { hashPassword, verifyPassword, createAccountGate, findSession } = require("./backend/security/account-security");
+const { installApiHardening } = require("./backend/security/api-hardening");
+const { createPrivateMedia } = require("./backend/security/private-media");
+const { publicMidiPreview } = require("./backend/security/public-previews");
+const { migrateLocalPasswords, migrateMongoPasswords } = require("./backend/security/password-migration");
 const cors = require("cors");
 const fs = require("fs");
 const multer = require("multer");
@@ -25,6 +30,7 @@ require("dotenv").config({
 path: path.resolve(__dirname, ".env.local")
 });
 const { createCommercialPolicy } = require("./backend/config/commercial-mode");
+const { checkLocalV1SaleEligibility, updateLocalV1PaymentReadyOnModeration } = require("./backend/features/finance/local-v1-checkout");
 const { createV2Policy } = require("./backend/config/v2-mode");
 const { analyzeAudioPreview, normalizeStoredPreview, ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION } = require("./backend/features/audio/preview-selector");
 const { validateMp3Upload, MAX_MP3_FILE_SIZE_BYTES, MAX_MP3_FILE_SIZE_MB, MP3_MIME_TYPES, hasMp3Extension, hasAllowedMp3MimeType } = require("./backend/features/audio/mp3-validation");
@@ -147,6 +153,13 @@ const v2Policy = createV2Policy({ environment: "local" });
 
 const app = express();
 installDataProtection(app, { environment: "local" });
+// The LOCAL API is private by default, including uploaded working files.
+app.use((req,res,next)=>{
+  if (String(process.env.SONARA_LOCAL_ALLOW_LAN || "").toLowerCase()==="true") return next();
+  const remote=String(req.socket?.remoteAddress||"");
+  if (remote==="::1" || remote==="127.0.0.1" || remote==="::ffff:127.0.0.1") return next();
+  return res.status(403).json({success:false,code:"LOCAL_NETWORK_PRIVATE"});
+});
 
 const founderFinance = registerFounderFinance({
   app,
@@ -162,10 +175,12 @@ const founderFinance = registerFounderFinance({
 
 const PORT = process.env.PORT || 3001;
 
-const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = [
+  "http://127.0.0.1:5500", "http://localhost:5500",
+  "http://127.0.0.1:5501", "http://localhost:5501",
+  "http://127.0.0.1:3001", "http://localhost:3001",
+  ...String(process.env.ALLOWED_ORIGINS || "").split(",").map(origin=>origin.trim()).filter(Boolean)
+];
 
 function resolveFrontUrl(req) {
   const candidates = [req?.headers?.origin, req?.headers?.referer];
@@ -202,7 +217,7 @@ function resolveFrontUrl(req) {
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Origine non autorisée par Sonara."));
@@ -266,6 +281,62 @@ app.post(
 
 app.use(express.json({ limit: "2mb" }));
 app.use(rejectUnsafeJsonKeys);
+installApiHardening(app);
+const accountSecurity = createAccountGate({
+  findTokenAccount: async (digest) => {
+    const users = readJsonArray(usersPath);
+    for(const rootUser of users) {
+      const account=(rootUser.accounts||[]).find(a=>findSession(a,digest));
+      if(account) return {rootUser,account};
+    }
+    return null;
+  },
+  saveAccount: (rootUser, account) => saveAccountState(rootUser, account),
+  findAccountById: id=>findRootAndAccountById(id)
+});
+app.post("/api/auth/restore", (req,res)=>accountSecurity.restore(req,res).catch(()=>res.status(503).json({success:false})));
+app.post("/api/auth/logout", (req,res)=>accountSecurity.logout(req,res).catch(()=>res.status(503).json({success:false})));
+// Issue a new authenticated session only after an approved registration/login response.
+app.use((req,res,next)=>{
+  const eligible = new Set(["/api/register","/api/login","/api/accounts/login","/api/accounts/switch","/api/accounts"]);
+  if(req.method !== "POST" || !eligible.has(req.path)) return next();
+  const sendJson=res.json.bind(res);
+  res.json=function(payload){
+    if(!payload?.success || ![200,201].includes(res.statusCode)) return sendJson(payload);
+    const profile=payload.account||payload.profile;
+    const accountId=String(profile?.accountId||profile?.id||"");
+    if(!accountId) return sendJson(payload);
+    (async()=>{
+      const match=await findRootAndAccountById(accountId);
+      if(!match?.account) return sendJson(payload);
+      const sessionToken=await accountSecurity.issue(match.rootUser,match.account);
+      return sendJson({...payload,sessionToken});
+    })().catch(err=>{
+      console.error("[SESSION] Échec émission:",err.message);
+      if(!res.headersSent) res.status(503).json({success:false,code:"AUTH_SERVICE_UNAVAILABLE"});
+    });
+    return res;
+  };
+  next();
+});
+app.use(accountSecurity.middleware);
+
+// Public previews are server-side 30-second exports. Full audio gets a short-lived
+// capability URL only when the authenticated account has acquired that content.
+const mediaSafety = createPrivateMedia({
+  readPacks: async () => readJsonArray(packsPath),
+  getInput: async (key,target) => fs.promises.copyFile(path.join(__dirname,"uploads",path.basename(key)),target),
+  sendOriginal: async (key,req,res) => {
+    const filename=path.join(__dirname,"uploads",path.basename(key));
+    if(!fs.existsSync(filename)) return res.status(404).end();
+    return res.sendFile(filename,{acceptRanges:true});
+  },
+  getAccountById: id=>findRootAndAccountById(id),
+  getAuthenticated: req => accountSecurity.authenticate(req)
+});
+mediaSafety.mount(app);
+
+
 if (v2Policy.syncEnabled) {
   registerSonaraSyncEngine(app);
 }
@@ -288,14 +359,24 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const uniqueName =
-      Date.now() + "-" + file.originalname;
+    const safeOriginal = path.basename(String(file.originalname || "upload"))
+      .replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 90) || "upload";
+    const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${safeOriginal}`;
 
     cb(null, uniqueName);
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { files: 1, fields: 30, fileSize: 8 * 1024 * 1024, fieldSize: 2 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    if (file.fieldname !== "imageProfile" || !["image/png","image/jpeg","image/webp"].includes(String(file.mimetype || "").toLowerCase())) {
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    }
+    cb(null,true);
+  }
+});
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -835,6 +916,11 @@ app.use("/downloads", (_req, res) => {
 });
 
 const usersPath = path.join(__dirname, "data", "users.json");
+try {
+  const migrated=migrateLocalPasswords(usersPath);
+  if(migrated) console.info(`[SECURITY:LOCAL] ${migrated} mot(s) de passe converti(s) en hachage.`);
+} catch(err) {throw new Error("Migration des mots de passe LOCAL impossible : "+err.message);}
+
 const licenseProtection = createLicenseProtection({
   environment: "local",
   dataDir: path.join(__dirname, "data")
@@ -956,10 +1042,9 @@ function createVerificationToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-function passwordAlreadyUsedInUsers(users, password) {
-  return users.some((rootUser) =>
-    rootUser.accounts?.some((account) => account.password === password)
-  );
+function passwordAlreadyUsedInUsers(_users, _password) {
+  // Salted hashes make password reuse checks meaningless and leak account data.
+  return false;
 }
 
 function collectLocalDuplicateErrors(users, { mail, pseudo, password, phone }) {
@@ -1248,7 +1333,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
         normalizedMail || "",
 
       password:
-        profile.password || "",
+        hashPassword(profile.password),
 
       phone:
         profile.phone?.trim() || "",
@@ -1397,6 +1482,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       : req.body;
 
     const userId = String(req.body.userId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.rootId !== userId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
 
     if (!userId) {
       return res.status(400).json({
@@ -1526,7 +1612,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
         normalizedMail || "",
 
       password:
-        profile.password || "",
+        hashPassword(profile.password),
 
       phone:
         profile.phone?.trim() || "",
@@ -1859,7 +1945,7 @@ app.post("/api/login/live-check", (req, res) => {
           matchedAccount &&
           typeof password === "string" &&
           password.length >= 8 &&
-          matchedAccount.password === password
+          verifyPassword(password, matchedAccount.password)
         )
       }
     });
@@ -1895,7 +1981,7 @@ app.post("/api/login/send-code", async (req, res) => {
     const accountExists = users.some((rootUser) =>
       rootUser.accounts?.some((account) =>
         normalizeMail(account.mail) === normalizedMail &&
-        account.password === password &&
+        verifyPassword(password, account.password) &&
         normalizeLoginPhone(account.phone) === normalizedPhone
       )
     );
@@ -1968,7 +2054,7 @@ app.post("/api/login", (req, res) => {
       const foundAccount = currentRootUser.accounts?.find(
         (currentAccount) =>
           normalizeMail(currentAccount.mail) === normalizedMail &&
-          currentAccount.password === password &&
+          verifyPassword(password, currentAccount.password) &&
           String(currentAccount.phone || "").trim() === normalizedPhone
       );
 
@@ -2109,7 +2195,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
     for (const rootUser of users) {
       targetAccount = rootUser.accounts?.find((item) =>
         normalizeMail(item.mail) === normalizedMail &&
-        item.password === password &&
+        verifyPassword(password, item.password) &&
         normalizeLoginPhone(item.phone) === normalizeLoginPhone(phone)
       );
 
@@ -2180,7 +2266,7 @@ app.post("/api/accounts/login", (req, res) => {
     for (const currentRootUser of users) {
       const foundAccount = currentRootUser.accounts?.find((item) =>
         normalizeMail(item.mail) === normalizedMail &&
-        item.password === password &&
+        verifyPassword(password, item.password) &&
         normalizeLoginPhone(item.phone) === normalizeLoginPhone(phone)
       );
 
@@ -2784,6 +2870,7 @@ app.patch(
   async (req, res) => {
     try {
       const id = String(req.body.id || "");
+      if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== id) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
 
       const pseudo =
         req.body.pseudo?.trim();
@@ -3112,7 +3199,7 @@ app.patch(
       }
 
       if (
-        account.password !== currentPassword
+        !verifyPassword(currentPassword, account.password)
       ) {
         return res.status(401).json({
           success: false,
@@ -3121,6 +3208,7 @@ app.patch(
         });
       }
 
+      if (newPassword.length > 128) return res.status(400).json({success:false,message:"Mot de passe trop long (128 caractères maximum)."});
       if (newPassword.length < 8) {
         return res.status(400).json({
           success: false,
@@ -3129,7 +3217,8 @@ app.patch(
         });
       }
 
-      account.password = newPassword;
+      account.password = hashPassword(newPassword);
+      account.authSessions = [];
 
       const founderSync =
         queueFounderAccountSync({
@@ -3367,7 +3456,7 @@ app.patch(
       }
 
       if (
-        account.password !== currentPassword
+        !verifyPassword(currentPassword, account.password)
       ) {
         return res.status(401).json({
           success: false,
@@ -3790,6 +3879,10 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
   try {
     const packId = String(req.params.id || "");
     const accountId = String(req.body?.accountId || "");
+    // Le body multipart arrive APRES le middleware global : vérifier aussi ici.
+    if (!req.sonaraIdentity || accountId !== req.sonaraIdentity.accountId) {
+      return res.status(403).json({ success: false, code: "ACCOUNT_FORBIDDEN" });
+    }
     const packs = readJsonArray(packsPath);
     const index = packs.findIndex((pack) => String(pack.id) === packId);
 
@@ -4246,6 +4339,9 @@ function enrichLocalPublicCataloguePack(pack, context) {
     } else if (!publicResource.preview && contentType === "daw") {
       publicResource.preview = buildDawResourcePreview(resource, pack);
     }
+    if (String(pack?.contentType || "audio").toLowerCase() === "midi") {
+      publicResource.preview = publicMidiPreview(publicResource.preview);
+    }
     return publicResource;
   });
 
@@ -4261,14 +4357,29 @@ function enrichLocalPublicCataloguePack(pack, context) {
   };
 }
 
-app.get("/api/packs/pending", (req, res) => {
-  const packs = readJsonArray(packsPath)
-    .filter((pack) => !isPackHiddenByModeration(pack))
-    .map((pack) => ({ ...humanCreationModeration.publicPackWithoutPrivateEvidence(pack), license: normalizePackLicense(pack.license) }));
-  res.json(packs);
+app.get("/api/packs/pending", async (req, res) => {
+  try {
+    let identity = null;
+    if (req.get("x-founder-key")) {
+      let accepted=false;
+      await new Promise(resolve=>{res.once("finish",resolve);requireFounderKey(req,res,()=>{accepted=true;res.removeListener("finish",resolve);resolve();});});
+      if(!accepted) return;
+    } else {
+      identity=await accountSecurity.authenticate(req);
+      if(!identity) return res.status(401).json({success:false,code:"AUTH_REQUIRED"});
+    }
+    const requestedId=String(req.query?.packId||"").trim();
+    const packs=readJsonArray(packsPath)
+      .filter(pack=>!isPackHiddenByModeration(pack))
+      .filter(pack=>!requestedId||String(pack.id)===requestedId)
+      .filter(pack=>!identity||[pack.artistId,pack.accountId,pack.artistAccountId].filter(Boolean)
+        .some(id=>String(id)===String(identity.account.accountId||identity.account.id)))
+      .map(pack=>({...humanCreationModeration.publicPackWithoutPrivateEvidence(pack),license:normalizePackLicense(pack.license)}));
+    return res.json(packs);
+  }catch(error){console.error("Liste des packs en attente indisponible :",error.message);if(!res.headersSent)return res.status(500).json({error:"Erreur serveur"});}
 });
 
-app.get("/api/packs", (req, res) => {
+app.get("/api/packs", async (req, res) => {
   const packs = readJsonArray(packsPath);
   const catalogueContext = buildLocalPublicCatalogueContext();
   const approvedPacks = packs
@@ -4284,7 +4395,7 @@ app.get("/api/packs", (req, res) => {
       enrichLocalPublicCataloguePack(pack, catalogueContext)
     );
 
-  res.json(approvedPacks);
+  res.json(await mediaSafety.catalogue(req,approvedPacks));
 });
 
 
@@ -4313,7 +4424,7 @@ app.get("/api/packs/:id/resources/:resourceId/midi-preview", (req, res) => {
       return res.status(404).json({ success: false, message: "Fichier MIDI introuvable." });
     }
     const filePath = path.join(__dirname, "uploads", path.basename(String(resource.fileKey)));
-    const preview = buildMidiPreviewFromFile(filePath, { full: true });
+    const preview = buildMidiPreviewFromFile(filePath, { full: false });
     if (!preview) return res.status(404).json({ success: false, message: "Aperçu MIDI indisponible." });
     res.setHeader("Cache-Control", "private, max-age=300");
     return res.json({ success: true, packId, resourceId, preview });
@@ -4403,6 +4514,9 @@ app.post(
 
       const receivedPack = validation.pack;
       const fileByField = validation.fileByField;
+      if (!req.sonaraIdentity || String(receivedPack.artistId || "") !== req.sonaraIdentity.accountId) {
+        return res.status(403).json({success:false,code:"PACK_OWNER_FORBIDDEN"});
+      }
 
       if (
         !commercialPolicy.paymentsActive &&
@@ -5127,6 +5241,9 @@ app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
       expand: ["payment_intent"]
     });
 
+    if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== userId) {
+      return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
+    }
     if (String(session.metadata?.userId || "") !== userId) {
       return res.status(403).json({
         success: false,
@@ -5206,10 +5323,11 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       return res.status(404).json({ error: "Pack introuvable." });
     }
 
-    if (String(pack.status || "").toLowerCase() !== "approved") {
-      return res.status(409).json({
-        error: "Ce pack n’est pas disponible à l’achat."
-      });
+    // LOCAL V1 : approval + contrôles de visibilité priment sur l'ancien
+    // paymentReady=false, resté figé à la création même après modération.
+    const saleEligibility = checkLocalV1SaleEligibility(pack, commercialPolicy);
+    if (!saleEligibility.ok) {
+      return res.status(409).json({ success: false, code: saleEligibility.code, error: saleEligibility.error });
     }
 
     const currentLicenseMetadata = licenseMetadata(pack);
@@ -5279,13 +5397,6 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       });
     }
 
-    if (pack.paymentReady !== true) {
-      return res.status(409).json({
-        success: false,
-        code: "PACK_PAYMENT_NOT_READY",
-        error: "Ce pack n’est pas encore disponible à la vente."
-      });
-    }
 
     console.log("Pack ID :", pack.id);
     console.log("Pack artistId :", pack.artistId);
@@ -5332,6 +5443,13 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     if (!artist) {
       console.log("🔴 [STOP] Artiste introuvable");
       return res.status(404).json({ error: "Artiste introuvable." });
+    }
+    if (!isCreatorAccountActive(artist)) {
+      return res.status(403).json({
+        success: false,
+        code: "ARTIST_ACCOUNT_BLOCKED",
+        error: "Le compte artiste n’est pas autorisé à vendre."
+      });
     }
 
     console.log("Artist ID :", artist.id);
@@ -5577,9 +5695,19 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       }
     );
 
+    if (!session?.url || !/^https:\/\/checkout\.stripe\.com\//i.test(session.url)) {
+      throw new Error("Stripe n’a pas renvoyé une URL de paiement vérifiable.");
+    }
+
+    // Mise à jour tardive des packs historiques approuvés : uniquement
+    // après la création d'une session Stripe TEST valide, sans paiement fictif.
+    if (saleEligibility.legacyPaymentReady && pack.paymentReady !== true) {
+      pack.paymentReady = true;
+      writeJsonArray(packsPath, packs);
+    }
+
     console.log("🟢 [11] Session Stripe créée !");
-    console.log("Session ID :", session.id);
-    console.log("Session URL :", session.url);
+    console.log("Session Stripe TEST créée (URL conservée uniquement côté navigateur).");
 
     console.log("🟢 [12] Réponse envoyée au front");
     console.log("====================================");
@@ -5595,7 +5723,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     console.log("Message :", err.message);
     console.log("Type :", err.type);
     console.log("Code :", err.code);
-    console.log("Raw :", err.raw);
+    console.log("Erreur Stripe : données sensibles masquées.");
     console.log("====================================");
 
     return res.status(500).json({
@@ -5632,6 +5760,7 @@ app.patch("/api/packs/:id/status", requireFounderKey, async (req, res) => {
     if (status === "rejected") {
       const moderatedAt = new Date().toISOString();
       pack.status = "rejected";
+      updateLocalV1PaymentReadyOnModeration(pack, "rejected", commercialPolicy);
       pack.rejectionReason = String(req.body?.reason || "La demande ne respecte pas les critères de validation Sonara.").trim();
       pack.moderatedAt = moderatedAt;
       pack.updatedAt = moderatedAt;
@@ -5659,6 +5788,7 @@ app.patch("/api/packs/:id/status", requireFounderKey, async (req, res) => {
     pack.status = status;
     pack.moderatedAt = moderatedAt;
     pack.updatedAt = moderatedAt;
+    updateLocalV1PaymentReadyOnModeration(pack, status, commercialPolicy);
     if (status === "approved") {
       pack.wasPublished = true;
       pack.publishedAt = pack.publishedAt || moderatedAt;
@@ -6624,6 +6754,7 @@ app.post("/api/appeals/:id/forfeit", (req, res) => {
 
 app.patch("/api/appeals/:id/read", (req, res) => {
   const accountId = String(req.body?.accountId || "").trim();
+  if (!accountId || String(req.sonaraIdentity?.accountId || "") !== accountId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
   const stage = String(req.body?.stage || "initial").toLowerCase();
   const appeals = readJsonArray(moderationAppealsPath);
   const item = getLocalAppealById(appeals, req.params.id);
@@ -7193,6 +7324,7 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, r
     if (status === "rejected") {
       const moderatedAt = new Date().toISOString();
       pack.status = "rejected";
+      updateLocalV1PaymentReadyOnModeration(pack, "rejected", commercialPolicy);
       pack.rejectionReason = String(req.body?.reason || "La demande ne respecte pas les critères de validation Sonara.").trim();
       pack.moderatedAt = moderatedAt;
       pack.updatedAt = moderatedAt;
@@ -7213,6 +7345,7 @@ app.patch("/api/founder/moderation/:type/:id/status", requireFounderKey, (req, r
 
     pack.status = status;
     pack.moderatedAt = new Date().toISOString();
+    updateLocalV1PaymentReadyOnModeration(pack, status, commercialPolicy);
     writeJsonArray(packsPath, packs);
 
     return res.json({ success: true, item: pack, pack });

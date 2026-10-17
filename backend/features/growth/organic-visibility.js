@@ -285,7 +285,8 @@ function publicTrack(track = {}, pack = {}) {
     artist,
     coverPack: text(track.coverPack || pack.coverPack, 1000),
     promoImage: text(track.promoImageUrl || track.mockupUrl || pack.promoImageUrl || pack.mockupUrl, 1000),
-    audioName: text(track.audioName || track.audio, 1000),
+    audioName: (track.audioName || track.audio) && pack.id && track.id
+      ? `/api/media/preview/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id)}` : "",
     previewStart: Math.max(0, Number(track.previewStart || 0) || 0),
     previewDuration: Math.min(30, Math.max(1, Number(track.previewDuration || 30) || 30)),
     duration: Math.max(0, Number(track.duration || 0) || 0),
@@ -406,6 +407,7 @@ function mediaUrl(req, value) {
   }
 
   const origin = requestOrigin(req);
+  if (raw.startsWith("/api/media/")) return origin ? `${origin}${raw}` : raw;
   if (!origin) return raw;
   if (raw.startsWith("/uploads/") || raw.startsWith("/downloads/")) return `${origin}${raw}`;
   if (raw.startsWith("uploads/") || raw.startsWith("downloads/")) return `${origin}/${raw}`;
@@ -1473,6 +1475,7 @@ function registerOrganicVisibility({
     try {
       const visitorId = text(req.body?.visitorId, 180);
       const requestedAccountId = text(req.body?.accountId, 180);
+      if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== requestedAccountId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
       if (!visitorId || !requestedAccountId) {
         return res.status(400).json({ success: false, message: "Attribution incomplète." });
       }

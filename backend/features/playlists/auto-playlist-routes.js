@@ -93,6 +93,7 @@ function registerAutoPlaylistRoutes(app, options = {}) {
   app.post("/api/auto-playlists/:playlistId/acquire", async (req, res) => {
     try {
       const userId = text(req.body?.userId);
+      if (!req.sonaraIdentity || text(req.sonaraIdentity.accountId) !== userId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
       const licensesAccepted = req.body?.licensesAccepted === true;
 
       if (!userId) {

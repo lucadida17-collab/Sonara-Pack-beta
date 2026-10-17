@@ -4,6 +4,7 @@ function getFilePath(file) {
 
   const value = String(file).trim();
 
+  if (value.startsWith("/api/media/")) return `${API_URL}${value}`;
   if (/^(https?:|blob:|data:)/i.test(value)) return value;
 
   if (value.startsWith("/downloads/")) return `${API_URL}${value}`;
@@ -93,32 +94,28 @@ function renderError(message) {
   }
 }
 
-function getFinalDownloadUrl() {
-  if (!selectedDownload || !selectedDownload.downloadZip) {
-    return null;
+async function downloadFile() {
+  try {
+    const userId = getCurrentUserId();
+    if (!userId || !packId) throw new Error("Compte ou pack manquant.");
+    const response = await fetch(`${API_URL}/api/downloads/prepare`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "Accept":"application/json"},
+      body: JSON.stringify({userId,packId,trackId:trackId||null})
+    });
+    const data = await readJsonResponse(response);
+    if (!data.fileUrl || !String(data.fileUrl).startsWith("/api/downloads/file/")) throw new Error("Lien de téléchargement invalide.");
+    const link = document.createElement("a");
+    link.href = `${API_URL}${data.fileUrl}`;
+    link.download = `${selectedDownload?.title || "sonara-pack"}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return true;
+  } catch (error) {
+    renderError(error.message || "Accès au téléchargement refusé.");
+    return false;
   }
-
-  return `${getFilePath(selectedDownload.downloadZip)}`;
-}
-
-function downloadFile() {
-  const finalUrl = getFinalDownloadUrl();
-
-  if (!finalUrl) {
-    console.log("Aucun ZIP trouvé :", selectedDownload);
-    renderError("Aucun fichier ZIP disponible pour ce téléchargement.");
-    return;
-  }
-
-  console.log("ZIP FINAL =", finalUrl);
-
-  const link = document.createElement("a");
-  link.href = finalUrl;
-  link.download = `${selectedDownload.title || "sonara-pack"}.zip`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
 function finishDesktopDownload() {
@@ -142,9 +139,11 @@ function connectMobileButtons() {
   const homeButton = document.querySelector(".download-home-button");
 
   if (downloadButton) {
-    downloadButton.addEventListener("click", () => {
-      downloadFile();
-      downloadButton.textContent = "Téléchargement lancé";
+    downloadButton.addEventListener("click", async () => {
+      if (await downloadFile()) {
+        downloadButton.textContent = "Téléchargement lancé";
+        downloadButton.disabled = true;
+      }
     });
   }
 
@@ -268,9 +267,8 @@ async function loadDownloadData() {
     if (isMobile) {
       connectMobileButtons();
     } else {
-      setTimeout(() => {
-        downloadFile();
-        finishDesktopDownload();
+      setTimeout(async () => {
+        if (await downloadFile()) finishDesktopDownload();
       }, 2000);
     }
   } catch (error) {

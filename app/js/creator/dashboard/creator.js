@@ -1,7 +1,8 @@
 const creatorPage = document.querySelector(".creator-page");
 const creatorParams = new URLSearchParams(window.location.search);
 const creatorShopMode = ["shop", "purchases"].includes(creatorParams.get("mode"));
-const initialCreatorPreV1 = window.SonaraCommercial?.getState?.().mode === "PRE_V1";
+const initialCreatorPreV1 = window.SonaraCommercial?.getState?.().mode === "PRE_V1"
+  && window.SonaraCommercial?.getState?.().confirmedByApi === true;
 const initialCreatorV1Features = window.SonaraCommercial?.getState?.().paymentsActive === true;
 
 creatorPage.innerHTML = `
@@ -192,7 +193,8 @@ function isCreatorPreV1() {
 }
 
 function canOpenCreatePackWithoutStripe() {
-  return isCreatorPreV1();
+  return isCreatorPreV1()
+    && window.SonaraCommercial?.getState?.().confirmedByApi === true;
 }
 
 function enableCreatePackForPreV1() {
@@ -1126,7 +1128,19 @@ if (returnedPackId && window.history?.replaceState) {
   window.history.replaceState({}, "", cleanDashboardUrl.href);
 }
 
-function renderCreatorManagement() {
+function isCreatorBankAvailable(state = window.SonaraCommercial?.getState?.()) {
+  return state?.confirmedByApi === true
+    && state.mode === "COMMERCIAL"
+    && state.bankAccessible === true
+    && state.stripeEnabled === true;
+}
+
+function renderCreatorManagement(commercialState = window.SonaraCommercial?.getState?.()) {
+  const bankAvailable = isCreatorBankAvailable(commercialState);
+  const unavailableMessage = commercialState?.confirmedByApi !== true
+    ? "Connexion au serveur indisponible. Vérifie ton serveur local Sonara."
+    : "Ajouter un compte bancaire sera disponible au lancement de la V1.";
+
   creatorPage.innerHTML = `
     <section class="creator-management-head">
       <button class="creator-management-back back-creator-dashboard" type="button">
@@ -1144,12 +1158,12 @@ function renderCreatorManagement() {
     </section>
 
     <section class="creator-actions creator-management-actions">
-      <button class="creator-action stripe-connect-btn ${isCreatorPreV1() ? "is-locked" : ""}" ${isCreatorPreV1() ? 'type="button" aria-disabled="true"' : 'type="button"'}>
-        ${isCreatorPreV1() ? `
+      <button class="creator-action stripe-connect-btn ${bankAvailable ? "" : "is-locked"}" type="button" aria-disabled="${bankAvailable ? "false" : "true"}">
+        ${!bankAvailable ? `
           <div class="pre-v1-bank-lock">
             <i class="pre-v1-bank-lock-icon" data-lucide="lock-keyhole"></i>
             <strong>Compte bancaire</strong>
-            <small>Ajouter un compte bancaire sera disponible au lancement de la V1.</small>
+            <small>${unavailableMessage}</small>
           </div>
         ` : `
           <span class="creator-action-icon"><i data-lucide="landmark"></i></span>
@@ -1185,8 +1199,8 @@ function renderCreatorManagement() {
   });
 
   document.querySelector(".stripe-connect-btn")?.addEventListener("click", async () => {
-    await window.SonaraCommercial?.ready?.();
-    if (isCreatorPreV1()) return;
+    const currentState = await window.SonaraCommercial?.ready?.();
+    if (!isCreatorBankAvailable(currentState)) return;
     window.location.href = "/app/pages/creator/management/bank.html";
   });
 
@@ -1200,7 +1214,17 @@ function renderCreatorManagement() {
 }
 
 if (creatorParams.get("mode") === "management") {
-  renderCreatorManagement();
+  // Le mode serveur n'est pas connu au premier rendu : le fallback PRE_V1
+  // ne doit jamais verrouiller à tort la banque en V1 LOCAL.
+  creatorPage.innerHTML = '<section class="creator-management-head"><p class="creator-subtitle">Vérification du mode commercial…</p></section>';
+  (async () => {
+    const commercialState = await window.SonaraCommercial?.ready?.()
+      || window.SonaraCommercial?.getState?.();
+    renderCreatorManagement(commercialState);
+  })().catch((error) => {
+    console.warn("Impossible de vérifier le mode commercial Creator :", error);
+    renderCreatorManagement(window.SonaraCommercial?.getState?.());
+  });
 } else if (["shop", "purchases"].includes(creatorParams.get("mode"))) {
   renderCreatorShop();
 }

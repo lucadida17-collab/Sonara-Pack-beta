@@ -527,6 +527,10 @@ async function startStripePayment() {
 
   try {
     const commercialState = await window.SonaraCommercial?.ready?.() || getCommercialState();
+    if (commercialState.confirmedByApi !== true) {
+      showPopup({ type: "error", title: "Paiement indisponible", message: "Impossible de vérifier le mode Sonara. Démarre le serveur LOCAL et réessaie." });
+      return;
+    }
     const rawProfile = localStorage.getItem("sonaraProfile");
 
     console.log("🟢 [FRONT 2] rawProfile :", rawProfile);
@@ -594,7 +598,10 @@ async function startStripePayment() {
 
     const purchaseType = selectedTrackId ? "track" : "pack";
 
-    if (commercialState.freeAcquisitionEnabled || isFreeCatalogItem(selectedItem)) {
+    // En V1, tous les contenus payants passent par Stripe TEST.
+    // L'ancien indicateur isFree des packs Pre-V1 ne doit plus
+    // rediriger un achat commercial vers la route gratuite désactivée.
+    if (commercialState.freeAcquisitionEnabled === true) {
       const freeResponse = await fetch(`${API_URL}/api/free-download-access`, {
         method: "POST",
         headers: {

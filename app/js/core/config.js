@@ -151,6 +151,7 @@ window.fetch = SonaraApiRouter.fetch;
 const SonaraCommercial = (() => {
   const fallbackState = Object.freeze({
     environment: SONARA_ENV,
+    confirmedByApi: false,
     mode: "PRE_V1",
     paymentsActive: false,
     bankAccessible: false,
@@ -196,6 +197,7 @@ const SonaraCommercial = (() => {
         state = Object.freeze({
           ...fallbackState,
           ...data,
+          confirmedByApi: true,
           environment: data.environment || SONARA_ENV
         });
       } catch (error) {

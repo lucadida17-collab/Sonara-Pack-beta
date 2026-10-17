@@ -16,9 +16,10 @@ function normalizeCommercialMode(value) {
 
 function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
   const env = String(environment || "local").trim().toLowerCase();
-  const mode = normalizeCommercialMode(process.env.SONARA_COMMERCIAL_MODE);
+  // MAIN must remain PRE_V1 even when a deployment variable is misconfigured.
+  const mode = env === "main" ? COMMERCIAL_MODES.PRE_V1 : normalizeCommercialMode(process.env.SONARA_COMMERCIAL_MODE);
   const commercialRequested = mode === COMMERCIAL_MODES.COMMERCIAL;
-  const paymentsActive = Boolean(commercialRequested && paymentSwitch);
+  const paymentsActive = Boolean(env !== "main" && commercialRequested && paymentSwitch);
 
   const state = Object.freeze({
     environment: env,

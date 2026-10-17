@@ -2,6 +2,11 @@ const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 
 const express = require("express");
+const { hashPassword, verifyPassword, createAccountGate, findSession } = require("./backend/security/account-security");
+const { installApiHardening } = require("./backend/security/api-hardening");
+const { createPrivateMedia } = require("./backend/security/private-media");
+const { publicMidiPreview } = require("./backend/security/public-previews");
+const { migrateLocalPasswords, migrateMongoPasswords } = require("./backend/security/password-migration");
 const cors = require("cors");
 
 const multer = require("multer");
@@ -44,9 +49,8 @@ const {
   backfillLocalPublishedAt,
   backfillMongoPublishedAt
 } = require("./backend/features/pre-v1/pre-v1-activity");
-const mainPaymentsSwitch = String(
-  process.env.SONARA_MAIN_PAYMENTS_ENABLED || ""
-).toLowerCase() === "true";
+// Production MAIN is strictly PRE_V1. Do not enable LIVE payments via env alone.
+const mainPaymentsSwitch = false;
 const { buildMissionPayload, resolveMissionMode } = require("./backend/features/missions/mission-system");
 const { grantMissionRewardOnce, attachRewardState, getActiveVisibilityBoost } = require("./backend/features/missions/mission-rewards");
 const { ARTIST_REWARD_IDS, maybeGrantPreV1SeniorityReward, grantArtistRewardOnce, hasArtistReward, getPublicArtistRewards } = require("./backend/features/pre-v1/artist-rewards");
@@ -106,7 +110,9 @@ const r2 = new S3Client({
 });
 
 async function uploadToR2(file, folder) {
-  const key = `${folder}/${Date.now()}-${file.originalname}`;
+  const safeOriginal = path.basename(String(file.originalname || "upload"))
+    .replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 90) || "upload";
+  const key = `${folder}/${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${safeOriginal}`;
   const bodyStream = fs.createReadStream(file.path);
 
   try {
@@ -377,6 +383,11 @@ async function connectDB() {
   }
 }
 
+void connectDB().then(async()=>{
+  const migrated=await migrateMongoPasswords(usersCollection);
+  if(migrated) console.info(`[SECURITY:MAIN] ${migrated} mot(s) de passe migré(s).`);
+}).catch(error=>console.error("[SECURITY:MAIN] Migration différée :",error.message));
+
 void connectDB().catch((error) => {
   console.error("Initialisation MongoDB MAIN différée :", error.message || error);
   scheduleDatabaseReconnect();
@@ -398,7 +409,7 @@ const founderFinance = registerFounderFinance({
     String(process.env.FOUNDER_FINANCE_LIVE_ENABLED || "").toLowerCase() === "true"
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 
 const PORT = process.env.PORT || 3000;
@@ -511,6 +522,66 @@ app.post(
 
 app.use(express.json({ limit: "2mb" }));
 app.use(rejectUnsafeJsonKeys);
+installApiHardening(app);
+const accountSecurity = createAccountGate({
+  findTokenAccount: async (digest) => {
+    await connectDB();
+    const rootUser = await usersCollection.findOne({"accounts.authSessions.tokenHash":digest});
+    if (!rootUser) return null;
+    const account = (rootUser.accounts || []).find(a=>findSession(a,digest));
+    return account ? {rootUser,account} : null;
+  },
+  saveAccount: (rootUser, account) => saveAccountState(rootUser, account),
+  findAccountById: id=>findRootAndAccountById(id)
+});
+app.post("/api/auth/restore", (req,res)=>accountSecurity.restore(req,res).catch(()=>res.status(503).json({success:false})));
+app.post("/api/auth/logout", (req,res)=>accountSecurity.logout(req,res).catch(()=>res.status(503).json({success:false})));
+// Issue a new authenticated session only after an approved registration/login response.
+app.use((req,res,next)=>{
+  const eligible = new Set(["/api/register","/api/login","/api/accounts/login","/api/accounts/switch","/api/accounts"]);
+  if(req.method !== "POST" || !eligible.has(req.path)) return next();
+  const sendJson=res.json.bind(res);
+  res.json=function(payload){
+    if(!payload?.success || ![200,201].includes(res.statusCode)) return sendJson(payload);
+    const profile=payload.account||payload.profile;
+    const accountId=String(profile?.accountId||profile?.id||"");
+    if(!accountId) return sendJson(payload);
+    (async()=>{
+      const match=await findRootAndAccountById(accountId);
+      if(!match?.account) return sendJson(payload);
+      const sessionToken=await accountSecurity.issue(match.rootUser,match.account);
+      return sendJson({...payload,sessionToken});
+    })().catch(err=>{
+      console.error("[SESSION] Échec émission:",err.message);
+      if(!res.headersSent) res.status(503).json({success:false,code:"AUTH_SERVICE_UNAVAILABLE"});
+    });
+    return res;
+  };
+  next();
+});
+app.use(accountSecurity.middleware);
+
+// Public previews are server-side 30-second exports. Full audio gets a short-lived
+// capability URL only when the authenticated account has acquired that content.
+const mediaSafety = createPrivateMedia({
+  readPacks: async () => packsCollection.find({}).toArray(),
+  getInput: async (key,target) => downloadPackR2File(key,target),
+  sendOriginal: async (key,req,res) => {
+    const object = await r2.send(new GetObjectCommand({Bucket:process.env.R2_BUCKET_NAME,Key:normalizePackR2Key(key),...(req.headers.range?{Range:req.headers.range}:{})}));
+    if(object.ContentType) res.setHeader("Content-Type",object.ContentType);
+    else res.setHeader("Content-Type","audio/mpeg");
+    if(object.ContentRange){res.setHeader("Content-Range",object.ContentRange);res.status(206);}
+    if(object.ContentLength != null) res.setHeader("Content-Length",String(object.ContentLength));
+    res.setHeader("Accept-Ranges","bytes");
+    if(!object.Body?.pipe) throw new Error("Flux audio indisponible");
+    object.Body.pipe(res);
+  },
+  getAccountById: id=>findRootAndAccountById(id),
+  getAuthenticated: req => accountSecurity.authenticate(req)
+});
+mediaSafety.mount(app);
+
+
 if (v2Policy.syncEnabled) {
   registerSonaraSyncEngine(app);
 }
@@ -690,24 +761,30 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const uniqueName =
-      Date.now() + "-" + file.originalname;
+    const safeOriginal = path.basename(String(file.originalname || "upload"))
+      .replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 90) || "upload";
+    const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${safeOriginal}`;
 
     cb(null, uniqueName);
   }
 });
 
 const upload = multer({
-   storage,
-  limits: {
-    fileSize: 250 * 1024 * 1024
-  } });
+  storage,
+  limits: { files: 1, fields: 30, fileSize: 8 * 1024 * 1024, fieldSize: 2 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    if (file.fieldname !== "imageProfile" || !["image/png","image/jpeg","image/webp"].includes(String(file.mimetype || "").toLowerCase())) {
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    }
+    cb(null,true);
+  }
+});
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads", { recursive: true });
 }
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 
 const PACK_MAX_TRACKS = 20;
@@ -1570,18 +1647,9 @@ async function consumeVerifiedToken({ token, mail, purpose, userId = "" }) {
   return result.deletedCount === 1;
 }
 
-async function isPasswordAlreadyUsed(password) {
-  const normalizedPassword = String(password || "");
-  if (!normalizedPassword) return false;
-
-  return Boolean(
-    await usersCollection.findOne({
-      $or: [
-        { "accounts.password": normalizedPassword },
-        { password: normalizedPassword }
-      ]
-    })
-  );
+async function isPasswordAlreadyUsed(_password) {
+  // Password equality is deliberately not queried/stored: hashes are salted.
+  return false;
 }
 
 async function isPhoneAlreadyUsed(phone) {
@@ -1837,7 +1905,7 @@ app.post("/api/register", upload.any(), async (req, res) => {
         normalizedMail,
 
       password:
-        profile.password,
+        hashPassword(profile.password),
 
       phone:
         profile.phone?.trim() || "",
@@ -1973,6 +2041,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
       : req.body;
 
     const userId = String(req.body.userId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.rootId !== userId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
 
     if (!(await consumeVerifiedToken({
       token: req.body.verificationToken,
@@ -2092,7 +2161,7 @@ app.post("/api/accounts", upload.any(), async (req, res) => {
         normalizedMail,
 
       password:
-        profile.password,
+        hashPassword(profile.password),
 
       phone:
         profile.phone?.trim() || "",
@@ -2388,7 +2457,7 @@ app.post("/api/login/live-check", async (req, res) => {
           matchedAccount &&
           typeof password === "string" &&
           password.length >= 8 &&
-          matchedAccount.password === password
+          verifyPassword(password, matchedAccount.password)
         )
       }
     });
@@ -2426,7 +2495,7 @@ app.post("/api/login/send-code", async (req, res) => {
 
     const accountExists = rootUser?.accounts?.some((account) =>
       normalizeMail(account.mail) === normalizedMail &&
-      account.password === password &&
+      verifyPassword(password, account.password) &&
       normalizeLoginPhone(account.phone) === normalizedPhone
     );
 
@@ -2489,13 +2558,7 @@ app.post("/api/login", async (req, res) => {
     }
 
     let rootUser = await usersCollection.findOne({
-      accounts: {
-        $elemMatch: {
-          mail: normalizedMail,
-          password,
-          phone: normalizedPhone
-        }
-      }
+      "accounts.mail": normalizedMail
     });
 
     let account = null;
@@ -2504,7 +2567,7 @@ app.post("/api/login", async (req, res) => {
       account = rootUser.accounts.find(
         (currentAccount) =>
           normalizeMail(currentAccount.mail) === normalizedMail &&
-          currentAccount.password === password &&
+          verifyPassword(password, currentAccount.password) &&
           String(currentAccount.phone || "").trim() === normalizedPhone
       );
     }
@@ -2640,7 +2703,7 @@ app.post("/api/accounts/login/send-code", async (req, res) => {
 
     const targetAccount = rootUser?.accounts?.find((item) =>
       normalizeMail(item.mail) === normalizedMail &&
-      item.password === password &&
+      verifyPassword(password, item.password) &&
       normalizeLoginPhone(item.phone) === normalizedPhone
     );
 
@@ -2709,7 +2772,7 @@ app.post("/api/accounts/login", async (req, res) => {
 
     const account = rootUser?.accounts?.find((item) =>
       normalizeMail(item.mail) === normalizedMail &&
-      item.password === password &&
+      verifyPassword(password, item.password) &&
       normalizeLoginPhone(item.phone) === normalizedPhone
     );
 
@@ -3218,6 +3281,7 @@ app.patch(
   async (req, res) => {
     try {
       const id = String(req.body.id || "");
+      if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== id) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
       const pseudo =
         req.body.pseudo?.trim();
 
@@ -3505,7 +3569,7 @@ app.patch(
       const account = result.account;
 
       if (
-        account.password !== currentPassword
+        !verifyPassword(currentPassword, account.password)
       ) {
         return res.status(401).json({
           success: false,
@@ -3514,6 +3578,7 @@ app.patch(
         });
       }
 
+      if (newPassword.length > 128) return res.status(400).json({success:false,message:"Mot de passe trop long (128 caractères maximum)."});
       if (newPassword.length < 8) {
         return res.status(400).json({
           success: false,
@@ -3522,7 +3587,8 @@ app.patch(
         });
       }
 
-      account.password = newPassword;
+      account.password = hashPassword(newPassword);
+      account.authSessions = [];
 
       const founderSync =
         queueFounderAccountSync({
@@ -3720,7 +3786,7 @@ app.patch(
       const account = result.account;
 
       if (
-        account.password !== currentPassword
+        !verifyPassword(currentPassword, account.password)
       ) {
         return res.status(401).json({
           success: false,
@@ -4166,6 +4232,10 @@ app.patch("/api/creator/packs/:id", handlePackRevisionUpload, async (req, res) =
   try {
     const packId = String(req.params.id || "");
     const accountId = String(req.body?.accountId || "");
+    // Le body multipart arrive APRES le middleware global : vérifier aussi ici.
+    if (!req.sonaraIdentity || accountId !== req.sonaraIdentity.accountId) {
+      return res.status(403).json({ success: false, code: "ACCOUNT_FORBIDDEN" });
+    }
     const pack = await packsCollection.findOne({ id: packId });
 
     if (!pack) {
@@ -4664,6 +4734,9 @@ function enrichPublicCataloguePack(pack, context) {
     if (!publicResource.preview && String(pack?.contentType || "audio").toLowerCase() === "daw") {
       publicResource.preview = buildDawResourcePreview(resource, pack);
     }
+    if (String(pack?.contentType || "audio").toLowerCase() === "midi") {
+      publicResource.preview = publicMidiPreview(publicResource.preview);
+    }
     return publicResource;
   });
 
@@ -4681,17 +4754,32 @@ function enrichPublicCataloguePack(pack, context) {
 
 app.get("/api/packs/pending", async (req, res) => {
   try {
+    let identity = null;
+    if (req.get("x-founder-key")) {
+      let accepted = false;
+      await new Promise(resolve=>{res.once("finish",resolve);requireFounderKey(req,res,()=>{accepted=true;res.removeListener("finish",resolve);resolve();});});
+      if (!accepted) return;
+    } else {
+      identity = await accountSecurity.authenticate(req);
+      if (!identity) return res.status(401).json({success:false,code:"AUTH_REQUIRED"});
+    }
+    const requestedId=String(req.query?.packId||"").trim();
     const packs = await packsCollection.find({
       moderationHidden: { $ne: true },
-      status: { $ne: "moderation_hidden" }
+      status: { $ne: "moderation_hidden" },
+      ...(requestedId?{id:requestedId}:{})
     }).toArray();
-    res.json(packs.map(({ _id, ...pack }) => ({
+    const own = identity ? packs.filter(pack =>
+      [pack.artistId,pack.accountId,pack.artistAccountId].filter(Boolean)
+        .some(id=>String(id)===String(identity.account.accountId||identity.account.id))
+    ) : packs;
+    res.json(own.map(({ _id, ...pack }) => ({
       ...humanCreationModeration.publicPackWithoutPrivateEvidence(pack),
       license: normalizePackLicense(pack.license)
     })));
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erreur serveur" });
+    console.error("Liste des packs en attente indisponible :",error.message);
+    if (!res.headersSent) res.status(500).json({error:"Erreur serveur"});
   }
 });
 
@@ -4711,9 +4799,9 @@ app.get("/api/packs", async (req, res) => {
           String(pack?.contentType || "audio").toLowerCase() === "audio"
         );
 
-    res.json(visiblePacks.map(({ _id, ...pack }) =>
+    res.json(await mediaSafety.catalogue(req, visiblePacks.map(({ _id, ...pack }) =>
       enrichPublicCataloguePack(pack, catalogueContext)
-    ));
+    )));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erreur serveur" });
@@ -4749,7 +4837,7 @@ app.get("/api/packs/:id/resources/:resourceId/midi-preview", async (req, res) =>
     }
     temporaryMidiPath = path.join(downloadsPath, `midi-preview-${crypto.randomUUID()}.mid`);
     await downloadPackR2File(fileKey, temporaryMidiPath);
-    const preview = buildMidiPreviewFromFile(temporaryMidiPath, { full: true });
+    const preview = buildMidiPreviewFromFile(temporaryMidiPath, { full: false });
     if (!preview) return res.status(404).json({ success: false, message: "Aperçu MIDI indisponible." });
     res.setHeader("Cache-Control", "private, max-age=300");
     return res.json({ success: true, packId, resourceId, preview });
@@ -4868,6 +4956,9 @@ app.post(
 
       const receivedPack = validation.pack;
       const fileByField = validation.fileByField;
+      if (!req.sonaraIdentity || String(receivedPack.artistId || "") !== req.sonaraIdentity.accountId) {
+        return res.status(403).json({success:false,code:"PACK_OWNER_FORBIDDEN"});
+      }
 
       if (
         !commercialPolicy.paymentsActive &&
@@ -5562,6 +5653,9 @@ app.post("/api/stripe/confirm-checkout-session", async (req, res) => {
       expand: ["payment_intent"]
     });
 
+    if (!req.sonaraIdentity || String(req.sonaraIdentity.accountId) !== userId) {
+      return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
+    }
     if (String(session.metadata?.userId || "") !== userId) {
       return res.status(403).json({
         success: false,
@@ -6954,6 +7048,9 @@ app.post("/api/appeals/:id/forfeit", async (req, res) => {
 
 app.patch("/api/appeals/:id/read", async (req, res) => {
   const accountId = String(req.body?.accountId || "").trim();
+  if (!accountId || String(req.sonaraIdentity?.accountId || "") !== accountId) {
+    return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
+  }
   const stage = String(req.body?.stage || "initial").toLowerCase();
   const now = new Date().toISOString();
   const set = stage === "final"

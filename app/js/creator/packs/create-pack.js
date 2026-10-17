@@ -246,6 +246,12 @@ async function init() {
   const commercialState = await window.SonaraCommercial?.ready?.()
     || window.SonaraCommercial?.getState?.()
     || { paymentsActive: false };
+  // Ne jamais ouvrir la création sur un fallback PRE_V1 si l'API locale
+  // n'a pas confirmé l'environnement. Le backend vérifie aussi Stripe.
+  if (commercialState.confirmedByApi !== true) {
+    CreatePack.innerHTML = '<section class="create-pack-error" role="alert">Impossible de vérifier le mode Sonara. Démarre le serveur de cet environnement et recharge cette page.</section>';
+    return;
+  }
   createPackV1FeaturesEnabled = commercialState.paymentsActive === true;
 
   if (commercialState.bankRequiredForPackCreation === true) {

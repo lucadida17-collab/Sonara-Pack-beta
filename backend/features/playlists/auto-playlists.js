@@ -125,7 +125,8 @@ function publicTrack(pack = {}) {
     category,
     categories,
     coverPack: pack.coverPack || pack.cover || track.coverPack || "",
-    audioName: track.audioName || track.audio || "",
+    audioName: (track.audioName || track.audio) && pack.id && track.id
+      ? `/api/media/preview/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id)}` : "",
     previewStart: Number.isFinite(Number(track.previewStart)) ? Number(track.previewStart) : 0,
     previewDuration: Math.min(30, Math.max(1, Number(track.previewDuration || 30))),
     priceCents,

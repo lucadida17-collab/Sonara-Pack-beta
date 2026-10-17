@@ -599,6 +599,10 @@ async function beginPurchase() {
     : null;
   const selectedItem = resource || shopPackData;
   const commercialState = await window.SonaraCommercial?.ready?.() || window.SonaraCommercial?.getState?.() || { freeAcquisitionEnabled: true };
+  if (commercialState.confirmedByApi !== true) {
+    alert(shopT("Impossible de vérifier le mode commercial. Démarre le serveur LOCAL et réessaie."));
+    return;
+  }
   const licenseVersion = Number(shopPackData?.license?.version || 1);
   const licenseId = String(shopPackData?.license?.id || `${shopPackData.id}:license:v${licenseVersion}`);
 
