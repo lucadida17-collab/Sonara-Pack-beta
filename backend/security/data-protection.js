@@ -26,7 +26,10 @@ const SECRET_ACCOUNT_KEYS = new Set([
   "secretkey",
   "apikey",
   "accesstoken",
-  "refreshtoken"
+  "refreshtoken",
+  "authsessions",
+  "sessions",
+  "sessiontoken"
 ]);
 
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
@@ -99,6 +102,13 @@ function installDataProtection(app, { environment = "unknown" } = {}) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    // An enforcing CSP needs a dedicated pass on legacy inline scripts.
+    // Start with a safe report-only policy to avoid breaking MAIN's Pre-V1 UI.
+    if (!String(req.path || "").startsWith("/api/")) {
+      res.setHeader("Content-Security-Policy", "object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+    }
 
     if (String(req.path || "").startsWith("/api/")) {
       res.setHeader("Cache-Control", "no-store, private");
