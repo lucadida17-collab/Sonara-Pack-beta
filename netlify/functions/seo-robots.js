@@ -18,7 +18,7 @@ const MAIN_PRIVATE_PATHS = Object.freeze([
   "/.netlify/",
   "/backend/",
   "/data/",
-  "/node_modules/"
+  "/node_modules/",
 ]);
 
 exports.handler = async (event) => {
@@ -29,7 +29,7 @@ exports.handler = async (event) => {
         "Allow: /",
         ...MAIN_PRIVATE_PATHS.map((pathname) => `Disallow: ${pathname}`),
         `Sitemap: ${pageOrigin(event)}/sitemap.xml`,
-        ""
+        "",
       ].join("\n")
     : "User-agent: *\nDisallow: /\n";
 
@@ -37,8 +37,8 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=300, s-maxage=900"
+      "Cache-Control": "public, max-age=300, s-maxage=900",
     },
-    body
+    body,
   };
 };

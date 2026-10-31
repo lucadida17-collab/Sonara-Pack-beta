@@ -860,6 +860,10 @@ function renderAccountPage(accountKey) {
       renderAccountInformations();
       break;
 
+    case "legal":
+      window.location.href = "/app/pages/creator/management/legal-identity.html";
+      break;
+
     case "email":
       renderAccountEmail();
       break;
@@ -1696,6 +1700,9 @@ function renderKnownAccountRows(
               );
             }
 
+            if (switchData.sessionToken && window.SonaraSession) {
+              window.SonaraSession.persist(switchData.sessionToken, switchData.profile);
+            }
             nextProfile =
               switchData.profile;
           } else {
@@ -2208,6 +2215,9 @@ function renderConnectExistingAccount() {
       }
 
       rememberKnownAccount(data.profile);
+      if (data.sessionToken && window.SonaraSession) {
+        window.SonaraSession.persist(data.sessionToken, data.profile);
+      }
 
       localStorage.setItem("sonaraProfile", JSON.stringify(data.profile));
       localStorage.setItem("sonaraProfileCreated", "true");
@@ -2787,4 +2797,9 @@ function renderLogout() {
     });
 }
 
-renderAccount();
+
+// Ancien lien conservé : le formulaire légal a sa propre page Management.
+// Ne plus importer le formulaire dans les paramètres du compte.
+if (new URLSearchParams(location.search).get("section") === "legal") {
+  window.location.replace("/app/pages/creator/management/legal-identity.html");
+} else renderAccount();

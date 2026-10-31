@@ -1,15 +1,25 @@
 const API_BASES = Object.freeze({
-  test: String(process.env.SONARA_API_TEST || "https://sonara-pack-beta-1.onrender.com").replace(/\/+$/, ""),
-  main: String(process.env.SONARA_API_MAIN || "https://sonara-pack-beta.onrender.com").replace(/\/+$/, "")
+  test: String(
+    process.env.SONARA_API_TEST || "https://sonara-pack-beta-1.onrender.com",
+  ).replace(/\/+$/, ""),
+  main: String(
+    process.env.SONARA_API_MAIN || "https://sonara-pack-beta.onrender.com",
+  ).replace(/\/+$/, ""),
 });
 
 function headerValue(headers = {}, name) {
-  const key = Object.keys(headers).find((candidate) => candidate.toLowerCase() === name.toLowerCase());
+  const key = Object.keys(headers).find(
+    (candidate) => candidate.toLowerCase() === name.toLowerCase(),
+  );
   return key ? String(headers[key] || "") : "";
 }
 
 function hostFromEvent(event = {}) {
-  return headerValue(event.headers, "x-forwarded-host") || headerValue(event.headers, "host") || "";
+  return (
+    headerValue(event.headers, "x-forwarded-host") ||
+    headerValue(event.headers, "host") ||
+    ""
+  );
 }
 
 function environmentFromEvent(event = {}) {
@@ -40,7 +50,7 @@ async function fetchJson(event, pathname) {
     try {
       const response = await fetch(`${base}${pathname}`, {
         headers: { Accept: "application/json" },
-        signal: controller.signal
+        signal: controller.signal,
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -74,8 +84,12 @@ function jsonForHtml(value) {
 }
 
 function categoryLabel(value = "") {
-  const category = String(value || "").trim().replace(/[_-]+/g, " ");
-  return category ? category.charAt(0).toUpperCase() + category.slice(1) : "Sonara";
+  const category = String(value || "")
+    .trim()
+    .replace(/[_-]+/g, " ");
+  return category
+    ? category.charAt(0).toUpperCase() + category.slice(1)
+    : "Sonara";
 }
 
 function countLabel(count) {
@@ -89,18 +103,24 @@ function onboardingHref(destination = "") {
 
 function audioObject(track = {}) {
   if (!track.previewAudioUrl) return undefined;
-  const duration = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
+  const duration = Math.min(
+    30,
+    Math.max(1, Number(track.previewDuration || 30)),
+  );
   return {
     "@type": "AudioObject",
     contentUrl: track.previewAudioUrl,
     encodingFormat: "audio/mpeg",
-    duration: `PT${Math.round(duration)}S`
+    duration: `PT${Math.round(duration)}S`,
   };
 }
 
 function audioMarkup(track = {}) {
   if (!track.previewAudioUrl) return "";
-  const previewDuration = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
+  const previewDuration = Math.min(
+    30,
+    Math.max(1, Number(track.previewDuration || 30)),
+  );
   const title = escapeHtml(track.title || "Track Sonara");
   const linkedTitle = track.canonicalUrl
     ? `<a class="public-catalog-track-link" href="${escapeHtml(track.canonicalUrl)}" data-user-content>${title}</a>`
@@ -123,7 +143,8 @@ function semanticLinksMarkup(data = {}) {
   const links = [];
   if (data.artist?.url) links.push(data.artist);
   for (const key of ["categories", "genres", "moods", "usages"]) {
-    for (const item of Array.isArray(data[key]) ? data[key] : []) links.push(item);
+    for (const item of Array.isArray(data[key]) ? data[key] : [])
+      links.push(item);
   }
   const unique = new Map();
   for (const item of links) {
@@ -133,12 +154,17 @@ function semanticLinksMarkup(data = {}) {
   const selected = [...unique.values()].slice(0, 8);
   if (!selected.length) return "";
   return `<nav class="public-catalog-semantic-links" aria-label="Catalogue Sonara">${selected
-    .map((item) => `<a href="${escapeHtml(item.url)}" data-user-content>${escapeHtml(item.label)}</a>`)
+    .map(
+      (item) =>
+        `<a href="${escapeHtml(item.url)}" data-user-content>${escapeHtml(item.label)}</a>`,
+    )
     .join("")}</nav>`;
 }
 
 function visibleSemanticMarkup(semantic = {}) {
-  const values = Array.isArray(semantic.visibleTerms) ? semantic.visibleTerms.slice(0, 6) : [];
+  const values = Array.isArray(semantic.visibleTerms)
+    ? semantic.visibleTerms.slice(0, 6)
+    : [];
   if (!values.length && !semantic.description) return "";
   return `<section class="public-catalog-section public-catalog-semantic-context">
     ${semantic.description ? `<p data-user-content>${escapeHtml(semantic.description)}</p>` : ""}
@@ -146,7 +172,16 @@ function visibleSemanticMarkup(semantic = {}) {
   </section>`;
 }
 
-function sharedHead({ title, description, canonical, image, imageAlt = "", ogType, robots, structuredData }) {
+function sharedHead({
+  title,
+  description,
+  canonical,
+  image,
+  imageAlt = "",
+  ogType,
+  robots,
+  structuredData,
+}) {
   return `<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="${escapeHtml(robots)}">
@@ -199,14 +234,28 @@ function shell({ event, apiBase, head, markup, type }) {
 
 function renderPackPage(event, apiBase, pack) {
   const origin = pageOrigin(event);
-  const canonical = pack.canonicalUrl || `${origin}/catalog/packs/${encodeURIComponent(pack.id)}`;
-  const title = pack.seo?.title || `${pack.title} - ${pack.artist} | Sonara Pack`;
-  const description = pack.seo?.description || `Découvrez ${pack.title} par ${pack.artist} sur Sonara Pack.`.slice(0, 160);
-  const robots = environmentFromEvent(event) === "main" ? "index, follow, max-image-preview:large" : "noindex, nofollow";
+  const canonical =
+    pack.canonicalUrl ||
+    `${origin}/catalog/packs/${encodeURIComponent(pack.id)}`;
+  const title =
+    pack.seo?.title || `${pack.title} - ${pack.artist} | Sonara Pack`;
+  const description =
+    pack.seo?.description ||
+    `Découvrez ${pack.title} par ${pack.artist} sur Sonara Pack.`.slice(0, 160);
+  const robots =
+    environmentFromEvent(event) === "main"
+      ? "index, follow, max-image-preview:large"
+      : "noindex, nofollow";
   const category = categoryLabel(pack.category);
   const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
-  const previews = tracks.filter((track) => track.previewAudioUrl).slice(0, 6).map(audioMarkup).join("") || "<p>Aucun aperçu audio disponible.</p>";
-  const imageAlt = pack.seo?.imageAlt || `${pack.title} by ${pack.artist} on Sonara Pack`;
+  const previews =
+    tracks
+      .filter((track) => track.previewAudioUrl)
+      .slice(0, 6)
+      .map(audioMarkup)
+      .join("") || "<p>Aucun aperçu audio disponible.</p>";
+  const imageAlt =
+    pack.seo?.imageAlt || `${pack.title} by ${pack.artist} on Sonara Pack`;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -214,7 +263,10 @@ function renderPackPage(event, apiBase, pack) {
     name: pack.title,
     description,
     byArtist: { "@type": "MusicGroup", name: pack.artist },
-    genre: (pack.semantic?.genres?.length ? pack.semantic.genres : pack.categories) || [],
+    genre:
+      (pack.semantic?.genres?.length
+        ? pack.semantic.genres
+        : pack.categories) || [],
     numTracks: Number(pack.trackCount || 0),
     image: pack.coverUrl ? [pack.coverUrl] : [],
     url: canonical,
@@ -223,8 +275,8 @@ function renderPackPage(event, apiBase, pack) {
       name: track.title,
       byArtist: { "@type": "MusicGroup", name: track.artist || pack.artist },
       url: track.canonicalUrl || undefined,
-      audio: audioObject(track)
-    }))
+      audio: audioObject(track),
+    })),
   };
 
   const markup = `<article class="public-catalog-card">
@@ -248,30 +300,60 @@ function renderPackPage(event, apiBase, pack) {
     event,
     apiBase,
     type: "pack",
-    head: sharedHead({ title, description, canonical, image: pack.coverUrl, imageAlt, ogType: "music.album", robots, structuredData }),
-    markup
+    head: sharedHead({
+      title,
+      description,
+      canonical,
+      image: pack.coverUrl,
+      imageAlt,
+      ogType: "music.album",
+      robots,
+      structuredData,
+    }),
+    markup,
   });
 }
 
 function renderTrackPage(event, apiBase, pack, track) {
   const origin = pageOrigin(event);
-  const canonical = track.canonicalUrl || `${origin}/catalog/tracks/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id)}`;
-  const title = track.seo?.title || `${track.title} - ${track.artist} | Sonara Pack`;
-  const description = track.seo?.description || `Écoutez un aperçu de ${track.title} par ${track.artist} sur Sonara Pack.`.slice(0, 160);
-  const robots = environmentFromEvent(event) === "main" ? "index, follow, max-image-preview:large" : "noindex, nofollow";
+  const canonical =
+    track.canonicalUrl ||
+    `${origin}/catalog/tracks/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id)}`;
+  const title =
+    track.seo?.title || `${track.title} - ${track.artist} | Sonara Pack`;
+  const description =
+    track.seo?.description ||
+    `Écoutez un aperçu de ${track.title} par ${track.artist} sur Sonara Pack.`.slice(
+      0,
+      160,
+    );
+  const robots =
+    environmentFromEvent(event) === "main"
+      ? "index, follow, max-image-preview:large"
+      : "noindex, nofollow";
   const category = categoryLabel(pack.category);
-  const imageAlt = track.seo?.imageAlt || `${track.title} by ${track.artist} on Sonara Pack`;
+  const imageAlt =
+    track.seo?.imageAlt || `${track.title} by ${track.artist} on Sonara Pack`;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "MusicRecording",
     name: track.title,
     description,
     byArtist: { "@type": "MusicGroup", name: track.artist },
-    genre: (track.semantic?.genres?.length ? track.semantic.genres : pack.categories) || [],
-    inAlbum: pack.title ? { "@type": "MusicAlbum", name: pack.title, url: pack.canonicalUrl || undefined } : undefined,
+    genre:
+      (track.semantic?.genres?.length
+        ? track.semantic.genres
+        : pack.categories) || [],
+    inAlbum: pack.title
+      ? {
+          "@type": "MusicAlbum",
+          name: pack.title,
+          url: pack.canonicalUrl || undefined,
+        }
+      : undefined,
     image: track.coverUrl ? [track.coverUrl] : [],
     url: canonical,
-    audio: audioObject(track)
+    audio: audioObject(track),
   };
 
   const markup = `<article class="public-catalog-card">
@@ -292,25 +374,49 @@ function renderTrackPage(event, apiBase, pack, track) {
     event,
     apiBase,
     type: "track",
-    head: sharedHead({ title, description, canonical, image: track.coverUrl, imageAlt, ogType: "music.song", robots, structuredData }),
-    markup
+    head: sharedHead({
+      title,
+      description,
+      canonical,
+      image: track.coverUrl,
+      imageAlt,
+      ogType: "music.song",
+      robots,
+      structuredData,
+    }),
+    markup,
   });
 }
 
-function renderCollectionPage(event, apiBase, collection, packs, type = "facet") {
+function renderCollectionPage(
+  event,
+  apiBase,
+  collection,
+  packs,
+  type = "facet",
+) {
   const origin = pageOrigin(event);
-  const canonical = collection.canonicalUrl || `${origin}${String(event.path || "")}`;
+  const canonical =
+    collection.canonicalUrl || `${origin}${String(event.path || "")}`;
   const title = `${collection.label} | Sonara Pack`;
-  const description = String(collection.description || `Explore ${collection.label} on Sonara Pack.`).slice(0, 180);
-  const robots = environmentFromEvent(event) === "main" ? "index, follow, max-image-preview:large" : "noindex, nofollow";
+  const description = String(
+    collection.description || `Explore ${collection.label} on Sonara Pack.`,
+  ).slice(0, 180);
+  const robots =
+    environmentFromEvent(event) === "main"
+      ? "index, follow, max-image-preview:large"
+      : "noindex, nofollow";
   const rows = Array.isArray(packs) ? packs : [];
-  const leadImage = type === "artist" ? (collection.avatarUrl || rows[0]?.coverUrl || "") : (rows[0]?.coverUrl || "");
+  const leadImage =
+    type === "artist"
+      ? collection.avatarUrl || rows[0]?.coverUrl || ""
+      : rows[0]?.coverUrl || "";
   const imageAlt = `${collection.label} – Sonara Pack`;
   const itemList = rows.map((pack, index) => ({
     "@type": "ListItem",
     position: index + 1,
     url: pack.canonicalUrl,
-    name: pack.title
+    name: pack.title,
   }));
   const structuredData = {
     "@context": "https://schema.org",
@@ -319,11 +425,18 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
     description,
     url: canonical,
     image: leadImage || undefined,
-    mainEntity: { "@type": "ItemList", numberOfItems: itemList.length, itemListElement: itemList }
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: itemList.length,
+      itemListElement: itemList,
+    },
   };
-  const isCatalogRoot = String(canonical).replace(/\/+$/, "") === `${origin}/catalog`;
+  const isCatalogRoot =
+    String(canonical).replace(/\/+$/, "") === `${origin}/catalog`;
   const promoRows = isCatalogRoot
-    ? rows.filter((pack) => pack?.promoImageUrl && pack?.canonicalUrl).slice(0, 6)
+    ? rows
+        .filter((pack) => pack?.promoImageUrl && pack?.canonicalUrl)
+        .slice(0, 6)
     : [];
   const searchIntentIntro = isCatalogRoot
     ? `<section class="public-catalog-section public-catalog-search-intent">
@@ -334,16 +447,22 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
   const promoGallery = promoRows.length
     ? `<section class="public-catalog-visual-showcase" aria-labelledby="sonaraVisualShowcaseTitle">
         <h2 id="sonaraVisualShowcaseTitle">Visuels publics Sonara Pack</h2>
-        <div class="public-catalog-visual-grid">${promoRows.map((pack) => {
-          const alt = `${pack.title || "Sonara Pack"} by ${pack.artist || "Sonara artist"} – Sonara Pack promotional visual`;
-          return `<a class="public-catalog-visual-item" href="${escapeHtml(pack.canonicalUrl)}"><img src="${escapeHtml(pack.promoImageUrl)}" alt="${escapeHtml(alt)}" loading="lazy"><span data-user-content>${escapeHtml(pack.title || "Sonara Pack")}</span></a>`;
-        }).join("")}</div>
+        <div class="public-catalog-visual-grid">${promoRows
+          .map((pack) => {
+            const alt = `${pack.title || "Sonara Pack"} by ${pack.artist || "Sonara artist"} – Sonara Pack promotional visual`;
+            return `<a class="public-catalog-visual-item" href="${escapeHtml(pack.canonicalUrl)}"><img src="${escapeHtml(pack.promoImageUrl)}" alt="${escapeHtml(alt)}" loading="lazy"><span data-user-content>${escapeHtml(pack.title || "Sonara Pack")}</span></a>`;
+          })
+          .join("")}</div>
       </section>`
     : "";
-  const cards = rows.map((pack) => `<article class="public-catalog-list-card">
+  const cards = rows
+    .map(
+      (pack) => `<article class="public-catalog-list-card">
     <a href="${escapeHtml(pack.canonicalUrl)}"><img src="${escapeHtml(pack.coverUrl || "")}" alt="${escapeHtml(pack.seo?.imageAlt || pack.title)}" width="600" height="600" loading="lazy" data-user-content></a>
     <div><h2><a href="${escapeHtml(pack.canonicalUrl)}" data-user-content>${escapeHtml(pack.title)}</a></h2><p data-user-content>${escapeHtml(pack.artist)}</p><p>${escapeHtml(pack.seo?.primaryPhrase || pack.semantic?.primaryPhrase || "")}</p></div>
-  </article>`).join("");
+  </article>`,
+    )
+    .join("");
   const markup = `<article class="public-catalog-collection">
     <p class="public-catalog-eyebrow">Catalogue public Sonara</p>
     <h1 class="public-catalog-title" data-user-content>${escapeHtml(collection.label)}</h1>
@@ -358,8 +477,17 @@ function renderCollectionPage(event, apiBase, collection, packs, type = "facet")
     event,
     apiBase,
     type,
-    head: sharedHead({ title, description, canonical, image: leadImage, imageAlt, ogType: "website", robots, structuredData }),
-    markup
+    head: sharedHead({
+      title,
+      description,
+      canonical,
+      image: leadImage,
+      imageAlt,
+      ogType: "website",
+      robots,
+      structuredData,
+    }),
+    markup,
   });
 }
 
@@ -377,9 +505,9 @@ function htmlResponse(statusCode, body) {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=60, s-maxage=300",
-      "X-Content-Type-Options": "nosniff"
+      "X-Content-Type-Options": "nosniff",
     },
-    body
+    body,
   };
 }
 
@@ -392,5 +520,5 @@ module.exports = {
   renderFacetPage,
   renderArtistPage,
   htmlResponse,
-  escapeHtml
+  escapeHtml,
 };

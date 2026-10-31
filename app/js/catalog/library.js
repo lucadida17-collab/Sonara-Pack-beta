@@ -6,6 +6,10 @@ function getFilePath(file) {
 
   if (/^(https?:|blob:|data:)/i.test(value)) return value;
 
+  // Protected previews and purchased audio use API routes, not /uploads/.
+  if (value.startsWith("/api/media/")) return `${API_URL}${value}`;
+  if (value.startsWith("api/media/")) return `${API_URL}/${value}`;
+
   if (value.startsWith("/downloads/")) return `${API_URL}${value}`;
   if (value.startsWith("downloads/")) return `${API_URL}/${value}`;
 
@@ -13,6 +17,45 @@ function getFilePath(file) {
   if (value.startsWith("uploads/")) return `${API_URL}/${value}`;
 
   return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
+}
+
+// Keep the Library player honest: never claim playback succeeded until
+// the browser's `play` event fires. Network/media errors are surfaced to users.
+function reportLibraryAudioError(audio, error) {
+  console.warn("Sonara Library audio indisponible :", error);
+  audio?.closest(".track-row, .track-row-mobile")?.classList.remove("is-playing");
+  audio?.closest(".track-row, .track-row-mobile")?.classList.add("is-paused");
+  document.querySelectorAll(".mini-player-btn").forEach((btn) => { btn.textContent = "▶"; });
+  let alert = document.getElementById("sonara-library-audio-error");
+  if (!alert) {
+    alert = document.createElement("div");
+    alert.id = "sonara-library-audio-error";
+    alert.setAttribute("role", "alert");
+    alert.style.cssText = "position:fixed;bottom:16px;left:16px;right:16px;z-index:99999;max-width:520px;margin:auto;padding:14px;border:1px solid #777;border-radius:10px;background:#111;color:#fff";
+    document.body.appendChild(alert);
+  }
+  alert.textContent = navigator.onLine === false
+    ? "Pas de connexion Internet : impossible de lire ce son."
+    : "Lecture audio indisponible. Le fichier ou le serveur ne répond pas ; réessaie.";
+  clearTimeout(reportLibraryAudioError.hideTimeout);
+  reportLibraryAudioError.hideTimeout = setTimeout(() => alert.remove(), 5500);
+}
+
+function startLibraryAudio(audio) {
+  if (!audio?.getAttribute("src")) {
+    reportLibraryAudioError(audio, new Error("Source audio manquante"));
+    return;
+  }
+  // Called immediately inside the click handler (no awaits).
+  try {
+    const result = audio.play();
+    result?.catch?.((error) => {
+      if (error?.name !== "AbortError") reportLibraryAudioError(audio, error);
+    });
+    return result;
+  } catch (error) {
+    reportLibraryAudioError(audio, error);
+  }
 }
 
 let packs = [];
@@ -715,12 +758,13 @@ async function loadLibrary() {
         );
 
         renderLibraryOverviewError(
-            error?.name === "AbortError"
-                ? "Le serveur met trop de temps à répondre."
-                : (
-                    error?.message ||
-                    "Impossible de charger la Librairie."
-                )
+            navigator.onLine === false
+                ? "Erreur de connexion : impossible de charger cette page sans Internet."
+                : error?.name === "AbortError"
+                    ? "Le serveur met trop de temps à répondre."
+                    : error instanceof TypeError
+                        ? "Erreur de connexion au serveur. Vérifie ton réseau puis réessaie."
+                        : (error?.message || "Impossible de charger la Librairie.")
         );
     }
 }
@@ -1440,7 +1484,7 @@ function renderDownloadedPack(packId) {
     <span></span>
     <span></span>
   </div>
-   <audio class="track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio> 
+   <audio preload="none" class="track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio> 
     </div>
 
       <p class="track-title">${track.title}</p>
@@ -1489,7 +1533,7 @@ function renderDownloadedPack(packId) {
     <span></span>
   </div>
     
-    <audio class="mobile-track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio>
+    <audio preload="none" class="mobile-track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio>
 
     </div>
 
@@ -1638,7 +1682,7 @@ function renderDownloadedPack(packId) {
 
         miniPlayerTitle.textContent = title;
         miniPlayerArtist.textContent = artist;
-        miniPlayerBtn.textContent = "❚❚";
+        miniPlayerBtn.textContent = "▶";
         miniPlayerProgressFill.style.width = "0%";
 
         miniPlayerMobile.classList.add("active");
@@ -1706,7 +1750,7 @@ function renderDownloadedPack(packId) {
             currentAudioMobile.currentTime = 0;
         }
 
-        currentAudioMobile.play();
+        startLibraryAudio(currentAudioMobile);
     }
 
     function playMobileTrack(row, { restartIfEnded = true } = {}) {
@@ -1738,8 +1782,7 @@ function renderDownloadedPack(packId) {
 
         startGrandPlayerLiveProgress();
 
-        row.classList.add("is-playing");
-        row.classList.remove("is-paused");
+        row.classList.remove("is-playing", "is-paused");
         updateMiniPlayer(row, audio);
         updateGrandPlayerInfo(row, audio);
         syncGrandPlayButton();
@@ -1781,39 +1824,15 @@ function renderDownloadedPack(packId) {
             syncGrandPlayButton();
         };
 
-        const playPromise = audio.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch((error) => {
-                console.warn("Lecture audio Library impossible", error);
-            });
-        }
+        audio.onerror = () => reportLibraryAudioError(audio, audio.error);
+        startLibraryAudio(audio);
     }
 
-let touchStartY = 0;
-let touchMoved = false;
-
 trackRowsMobile.forEach(row => {
-    row.addEventListener("touchstart", (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchMoved = false;
-    }, { passive: true });
-
-    row.addEventListener("touchmove", (e) => {
-        const currentY = e.touches[0].clientY;
-
-        if (Math.abs(currentY - touchStartY) > 15) {
-            touchMoved = true;
-        }
-    }, { passive: true });
-
-    row.addEventListener("click", () => {
-        playMobileTrack(row);
-    });
-
-    row.addEventListener("touchend", (e) => {
-        if (touchMoved) return;
-
-        e.preventDefault();
+    // Single pointer/click path: avoid touchend + synthetic click playing twice.
+    row.style.touchAction = "manipulation";
+    row.addEventListener("click", (event) => {
+        if (event.target.closest("button, a")) return;
         playMobileTrack(row);
     });
 });
@@ -2157,7 +2176,7 @@ async function renderTrack() {
     <span></span>
     <span></span>
   </div>
-   <audio class="track-audio" src="${getFilePath(track.audioName)}"></audio> 
+   <audio preload="none" class="track-audio" src="${getFilePath(track.audioName)}"></audio> 
     </div>
 
       <p class="track-title">${track.title}</p>
@@ -2206,7 +2225,7 @@ async function renderTrack() {
     <span></span>
   </div>
     
-    <audio class="mobile-track-audio" src="${getFilePath(track.audioName)}"></audio>
+    <audio preload="none" class="mobile-track-audio" src="${getFilePath(track.audioName)}"></audio>
 
     </div>
 
@@ -2355,7 +2374,7 @@ async function renderTrack() {
 
         miniPlayerTitle.textContent = title;
         miniPlayerArtist.textContent = artist;
-        miniPlayerBtn.textContent = "❚❚";
+        miniPlayerBtn.textContent = "▶";
         miniPlayerProgressFill.style.width = "0%";
 
         miniPlayerMobile.classList.add("active");
@@ -2423,7 +2442,7 @@ async function renderTrack() {
             currentAudioMobile.currentTime = 0;
         }
 
-        currentAudioMobile.play();
+        startLibraryAudio(currentAudioMobile);
     }
 
     function playMobileTrack(row, { restartIfEnded = true } = {}) {
@@ -2455,8 +2474,7 @@ async function renderTrack() {
 
         startGrandPlayerLiveProgress();
 
-        row.classList.add("is-playing");
-        row.classList.remove("is-paused");
+        row.classList.remove("is-playing", "is-paused");
         updateMiniPlayer(row, audio);
         updateGrandPlayerInfo(row, audio);
         syncGrandPlayButton();
@@ -2498,39 +2516,15 @@ async function renderTrack() {
             syncGrandPlayButton();
         };
 
-        const playPromise = audio.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch((error) => {
-                console.warn("Lecture audio Library impossible", error);
-            });
-        }
+        audio.onerror = () => reportLibraryAudioError(audio, audio.error);
+        startLibraryAudio(audio);
     }
 
-let touchStartY = 0;
-let touchMoved = false;
-
 trackRowsMobile.forEach(row => {
-    row.addEventListener("touchstart", (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchMoved = false;
-    }, { passive: true });
-
-    row.addEventListener("touchmove", (e) => {
-        const currentY = e.touches[0].clientY;
-
-        if (Math.abs(currentY - touchStartY) > 15) {
-            touchMoved = true;
-        }
-    }, { passive: true });
-
-    row.addEventListener("click", () => {
-        playMobileTrack(row);
-    });
-
-    row.addEventListener("touchend", (e) => {
-        if (touchMoved) return;
-
-        e.preventDefault();
+    // Single pointer/click path: avoid touchend + synthetic click playing twice.
+    row.style.touchAction = "manipulation";
+    row.addEventListener("click", (event) => {
+        if (event.target.closest("button, a")) return;
         playMobileTrack(row);
     });
 });

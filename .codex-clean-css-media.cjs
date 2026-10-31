@@ -130,7 +130,7 @@ function readTopLevelMedia(source) {
         closingBrace,
         end: closingBrace + 1,
         params,
-        body: source.slice(openingBrace + 1, closingBrace).trim()
+        body: source.slice(openingBrace + 1, closingBrace).trim(),
       });
 
       cursor = closingBrace + 1;
@@ -172,14 +172,14 @@ function consolidateMediaQueries(source) {
     replacements.push({
       start: first.start,
       end: first.end,
-      value: `@media ${params} {\n${combinedBody}\n}`
+      value: `@media ${params} {\n${combinedBody}\n}`,
     });
 
     for (const duplicate of duplicates) {
       replacements.push({
         start: duplicate.start,
         end: duplicate.end,
-        value: ""
+        value: "",
       });
     }
 
@@ -220,5 +220,5 @@ for (const file of listCssFiles(CSS_ROOT)) {
 }
 
 console.log(
-  `Fusion terminée : ${mergedGroupCount} breakpoints regroupés dans ${changedFiles} fichiers.`
+  `Fusion terminée : ${mergedGroupCount} breakpoints regroupés dans ${changedFiles} fichiers.`,
 );

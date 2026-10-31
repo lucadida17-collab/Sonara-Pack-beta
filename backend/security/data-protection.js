@@ -27,6 +27,8 @@ const SECRET_ACCOUNT_KEYS = new Set([
   "apikey",
   "accesstoken",
   "refreshtoken",
+  "artistlegalidentity",
+  "artistlegalproof",
   "authsessions",
   "sessions",
   "sessiontoken"

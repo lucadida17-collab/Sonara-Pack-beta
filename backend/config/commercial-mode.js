@@ -2,24 +2,33 @@
 
 const COMMERCIAL_MODES = Object.freeze({
   PRE_V1: "PRE_V1",
-  COMMERCIAL: "COMMERCIAL"
+  COMMERCIAL: "COMMERCIAL",
 });
 
 const V1_CONTENT_TYPES = Object.freeze(new Set(["midi", "daw"]));
 
 function normalizeCommercialMode(value) {
-  const normalized = String(value || "").trim().toUpperCase();
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase();
   return normalized === COMMERCIAL_MODES.COMMERCIAL
     ? COMMERCIAL_MODES.COMMERCIAL
     : COMMERCIAL_MODES.PRE_V1;
 }
 
 function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
-  const env = String(environment || "local").trim().toLowerCase();
+  const env = String(environment || "local")
+    .trim()
+    .toLowerCase();
   // MAIN must remain PRE_V1 even when a deployment variable is misconfigured.
-  const mode = env === "main" ? COMMERCIAL_MODES.PRE_V1 : normalizeCommercialMode(process.env.SONARA_COMMERCIAL_MODE);
+  const mode =
+    env === "main"
+      ? COMMERCIAL_MODES.PRE_V1
+      : normalizeCommercialMode(process.env.SONARA_COMMERCIAL_MODE);
   const commercialRequested = mode === COMMERCIAL_MODES.COMMERCIAL;
-  const paymentsActive = Boolean(env !== "main" && commercialRequested && paymentSwitch);
+  const paymentsActive = Boolean(
+    env !== "main" && commercialRequested && paymentSwitch,
+  );
 
   const state = Object.freeze({
     environment: env,
@@ -29,11 +38,15 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
     stripeEnabled: paymentsActive,
     checkoutEnabled: paymentsActive,
     freeAcquisitionEnabled: mode === COMMERCIAL_MODES.PRE_V1,
-    bankRequiredForPackCreation: paymentsActive
+    bankRequiredForPackCreation: paymentsActive,
   });
 
   function isV1ContentType(contentType) {
-    return V1_CONTENT_TYPES.has(String(contentType || "audio").trim().toLowerCase());
+    return V1_CONTENT_TYPES.has(
+      String(contentType || "audio")
+        .trim()
+        .toLowerCase(),
+    );
   }
 
   function canAccessContentType(contentType) {
@@ -43,7 +56,7 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
   function publicState() {
     return {
       ...state,
-      paymentRequired: paymentsActive
+      paymentRequired: paymentsActive,
     };
   }
 
@@ -53,7 +66,7 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
     return res.status(503).json({
       success: false,
       code: "COMMERCIAL_MODE_BLOCKED",
-      message: "Les paiements seront disponibles lors du lancement commercial."
+      message: "Les paiements seront disponibles lors du lancement commercial.",
     });
   }
 
@@ -62,7 +75,7 @@ function createCommercialPolicy({ environment, paymentSwitch = true } = {}) {
     publicState,
     blockStripeApi,
     isV1ContentType,
-    canAccessContentType
+    canAccessContentType,
   });
 }
 
@@ -70,5 +83,5 @@ module.exports = {
   COMMERCIAL_MODES,
   V1_CONTENT_TYPES,
   normalizeCommercialMode,
-  createCommercialPolicy
+  createCommercialPolicy,
 };

@@ -1,689 +1,870 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr" class="notranslate" data-sonara-seo-title-static="true">
-<head>
-  <meta charset="UTF-8">
-  <meta name="google" content="notranslate">
-  <script>
-    try {
-      const languageChoiceSeen =
-        localStorage.getItem("sonaraLanguageChoice") === "1" ||
-        localStorage.getItem("sonaraLanguageChoiceV2") === "1" ||
-        localStorage.getItem("sonaraLanguageChoiceV1") === "1";
-      document.documentElement.dataset.sonaraLanguageChosen =
-        languageChoiceSeen ? "true" : "false";
-    } catch {
-      document.documentElement.dataset.sonaraLanguageChosen = "false";
-    }
-  </script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
+    <script>
+      try {
+        const languageChoiceSeen =
+          localStorage.getItem("sonaraLanguageChoice") === "1" ||
+          localStorage.getItem("sonaraLanguageChoiceV2") === "1" ||
+          localStorage.getItem("sonaraLanguageChoiceV1") === "1";
+        document.documentElement.dataset.sonaraLanguageChosen =
+          languageChoiceSeen ? "true" : "false";
+      } catch {
+        document.documentElement.dataset.sonaraLanguageChosen = "false";
+      }
+    </script>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-NEBG1Z3EE0');
-  </script>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-NEBG1Z3EE0"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-NEBG1Z3EE0");
+    </script>
 
-  <link rel="stylesheet" href="/app/css/auth/index.css?v=pre-v1-language-gate-v1">
-  <link rel="stylesheet" href="/app/css/system/loading-experience.css?v=loading-advice-mobile-compact-v1">
-  <link rel="icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
-  <link rel="shortcut icon" href="/assets/image/logo-sonara-pack.PNG" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <meta name="robots" content="index, follow, max-image-preview:large">
-  <meta name="description" content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.">
-  <link rel="canonical" href="https://sonarapack.com/">
-  <link rel="alternate" hreflang="fr" href="https://sonarapack.com/">
-  <link rel="alternate" hreflang="en" href="https://sonarapack.com/en/">
-  <link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/">
-  <link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/">
-  <link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/">
-  <link rel="alternate" hreflang="id" href="https://sonarapack.com/id/">
-  <link rel="alternate" hreflang="es" href="https://sonarapack.com/es/">
-  <link rel="alternate" hreflang="de" href="https://sonarapack.com/de/">
-  <link rel="alternate" hreflang="it" href="https://sonarapack.com/it/">
-  <link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/">
-  <link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/">
-  <link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/">
-  <link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/">
-  <link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/">
-  <link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/">
-  <link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/">
-  <link rel="alternate" hreflang="x-default" href="https://sonarapack.com/">
-  <meta property="og:site_name" content="Sonara Pack">
-  <meta property="og:title" content="Sonara Pack | Musique sous licence pour créateurs">
-  <meta property="og:description" content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://sonarapack.com/">
-  <meta property="og:image" content="https://sonarapack.com/assets/image/logo-sonara-pack.PNG">
-  <meta property="og:image:alt" content="Sonara Pack">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Sonara Pack | Musique sous licence pour créateurs">
-  <meta name="twitter:description" content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.">
-  <meta name="twitter:image" content="https://sonarapack.com/assets/image/logo-sonara-pack.PNG">
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": "https://sonarapack.com/#organization",
-      "name": "Sonara Pack",
-      "url": "https://sonarapack.com/",
-      "logo": "https://sonarapack.com/assets/image/logo-sonara-pack.PNG",
-      "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://sonarapack.com/#website",
-      "url": "https://sonarapack.com/",
-      "name": "Sonara Pack",
-      "inLanguage": "fr",
-      "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.",
-      "publisher": {
-        "@id": "https://sonarapack.com/#organization"
-      },
-      "keywords": [
-        "musique pour vidéos et création de contenu",
-        "musique pour création de contenu",
-        "son pour création de contenu",
-        "musique pour vidéo",
-        "son pour montage vidéo",
-        "musique pour YouTube",
-        "musique pour film",
-        "musique pour jeu vidéo",
-        "musique sous licence"
-      ]
-    },
-    {
-      "@type": "Service",
-      "@id": "https://sonarapack.com/#music-licensing",
-      "name": "Sonara Pack",
-      "serviceType": "Music licensing platform",
-      "url": "https://sonarapack.com/",
-      "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.",
-      "provider": {
-        "@id": "https://sonarapack.com/#organization"
-      },
-      "areaServed": "Worldwide"
-    }
-  ]
-}
-  </script>
-  <script src="/app/js/core/seo-environment.js?v=seo-images-v2"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sonara Pack | Musique sous licence pour créateurs</title>
-  <link rel="stylesheet" href="/app/css/core/i18n.css">
-</head>
+    <link
+      rel="stylesheet"
+      href="/app/css/auth/index.css?v=pre-v1-language-gate-v1"
+    />
+    <link
+      rel="stylesheet"
+      href="/app/css/system/loading-experience.css?v=loading-advice-mobile-compact-v1"
+    />
+    <link
+      rel="icon"
+      href="/assets/image/logo-sonara-pack.PNG"
+      type="image/png"
+    />
+    <link
+      rel="shortcut icon"
+      href="/assets/image/logo-sonara-pack.PNG"
+      type="image/png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta
+      name="description"
+      content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
+    />
+    <link rel="canonical" href="https://sonarapack.com/" />
+    <link rel="alternate" hreflang="fr" href="https://sonarapack.com/" />
+    <link rel="alternate" hreflang="en" href="https://sonarapack.com/en/" />
+    <link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/" />
+    <link rel="alternate" hreflang="ar" href="https://sonarapack.com/ar/" />
+    <link rel="alternate" hreflang="tr" href="https://sonarapack.com/tr/" />
+    <link rel="alternate" hreflang="id" href="https://sonarapack.com/id/" />
+    <link rel="alternate" hreflang="es" href="https://sonarapack.com/es/" />
+    <link rel="alternate" hreflang="de" href="https://sonarapack.com/de/" />
+    <link rel="alternate" hreflang="it" href="https://sonarapack.com/it/" />
+    <link rel="alternate" hreflang="pt" href="https://sonarapack.com/pt/" />
+    <link rel="alternate" hreflang="nl" href="https://sonarapack.com/nl/" />
+    <link rel="alternate" hreflang="pl" href="https://sonarapack.com/pl/" />
+    <link rel="alternate" hreflang="ro" href="https://sonarapack.com/ro/" />
+    <link rel="alternate" hreflang="ru" href="https://sonarapack.com/ru/" />
+    <link rel="alternate" hreflang="zh" href="https://sonarapack.com/zh/" />
+    <link rel="alternate" hreflang="sw" href="https://sonarapack.com/sw/" />
+    <link rel="alternate" hreflang="x-default" href="https://sonarapack.com/" />
+    <meta property="og:site_name" content="Sonara Pack" />
+    <meta
+      property="og:title"
+      content="Sonara Pack | Musique sous licence pour créateurs"
+    />
+    <meta
+      property="og:description"
+      content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sonarapack.com/" />
+    <meta
+      property="og:image"
+      content="https://sonarapack.com/assets/image/logo-sonara-pack.PNG"
+    />
+    <meta property="og:image:alt" content="Sonara Pack" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Sonara Pack | Musique sous licence pour créateurs"
+    />
+    <meta
+      name="twitter:description"
+      content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
+    />
+    <meta
+      name="twitter:image"
+      content="https://sonarapack.com/assets/image/logo-sonara-pack.PNG"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://sonarapack.com/#organization",
+            "name": "Sonara Pack",
+            "url": "https://sonarapack.com/",
+            "logo": "https://sonarapack.com/assets/image/logo-sonara-pack.PNG",
+            "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://sonarapack.com/#website",
+            "url": "https://sonarapack.com/",
+            "name": "Sonara Pack",
+            "inLanguage": "fr",
+            "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.",
+            "publisher": {
+              "@id": "https://sonarapack.com/#organization"
+            },
+            "keywords": [
+              "musique pour vidéos et création de contenu",
+              "musique pour création de contenu",
+              "son pour création de contenu",
+              "musique pour vidéo",
+              "son pour montage vidéo",
+              "musique pour YouTube",
+              "musique pour film",
+              "musique pour jeu vidéo",
+              "musique sous licence"
+            ]
+          },
+          {
+            "@type": "Service",
+            "@id": "https://sonarapack.com/#music-licensing",
+            "name": "Sonara Pack",
+            "serviceType": "Music licensing platform",
+            "url": "https://sonarapack.com/",
+            "description": "Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu.",
+            "provider": {
+              "@id": "https://sonarapack.com/#organization"
+            },
+            "areaServed": "Worldwide"
+          }
+        ]
+      }
+    </script>
+    <script src="/app/js/core/seo-environment.js?v=seo-images-v2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sonara Pack | Musique sous licence pour créateurs</title>
+    <link rel="stylesheet" href="/app/css/core/i18n.css" />
+  </head>
 
-<body class="Load">
-  <section
-    class="sonara-language-choice"
-    data-nosnippet
-    id="sonaraLanguageChoice"
-    aria-labelledby="sonaraLanguageChoiceTitle"
-    data-i18n-ignore="true"
-  >
-    <div class="sonara-language-choice-ambient" aria-hidden="true"></div>
-    <div class="sonara-language-choice-card">
-      <div class="sonara-language-choice-mark" aria-hidden="true">
-        <span></span><span></span><span></span>
+  <body class="Load">
+    <section
+      class="sonara-language-choice"
+      data-nosnippet
+      id="sonaraLanguageChoice"
+      aria-labelledby="sonaraLanguageChoiceTitle"
+      data-i18n-ignore="true"
+    >
+      <div class="sonara-language-choice-ambient" aria-hidden="true"></div>
+      <div class="sonara-language-choice-card">
+        <div class="sonara-language-choice-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <p class="sonara-language-choice-brand">SONARA PACK</p>
+        <h1 id="sonaraLanguageChoiceTitle">Choose your language</h1>
+        <div class="sonara-language-choice-grid" id="sonaraLanguageChoiceGrid">
+          <button type="button" data-language="fr">
+            <strong>Français</strong><span>FR</span>
+          </button>
+          <button type="button" data-language="en">
+            <strong>English</strong><span>EN</span>
+          </button>
+          <button type="button" data-language="es">
+            <strong>Español</strong><span>ES</span>
+          </button>
+          <button type="button" data-language="de">
+            <strong>Deutsch</strong><span>DE</span>
+          </button>
+          <button type="button" data-language="it">
+            <strong>Italiano</strong><span>IT</span>
+          </button>
+          <button type="button" data-language="pt">
+            <strong>Português</strong><span>PT</span>
+          </button>
+          <button type="button" data-language="nl">
+            <strong>Nederlands</strong><span>NL</span>
+          </button>
+          <button type="button" data-language="pl">
+            <strong>Polski</strong><span>PL</span>
+          </button>
+          <button type="button" data-language="ro">
+            <strong>Română</strong><span>RO</span>
+          </button>
+          <button type="button" data-language="ru">
+            <strong>Русский</strong><span>RU</span>
+          </button>
+          <button type="button" data-language="tr">
+            <strong>Türkçe</strong><span>TR</span>
+          </button>
+          <button type="button" data-language="sq">
+            <strong>Shqip</strong><span>SQ</span>
+          </button>
+          <button type="button" data-language="id">
+            <strong>Bahasa Indonesia</strong><span>ID</span>
+          </button>
+          <button type="button" data-language="sw">
+            <strong>Kiswahili</strong><span>SW</span>
+          </button>
+          <button type="button" data-language="ar">
+            <strong>العربية</strong><span>AR</span>
+          </button>
+          <button type="button" data-language="zh">
+            <strong>中文</strong><span>ZH</span>
+          </button>
+        </div>
       </div>
-      <p class="sonara-language-choice-brand">SONARA PACK</p>
-      <h1 id="sonaraLanguageChoiceTitle">Choose your language</h1>
-      <div class="sonara-language-choice-grid" id="sonaraLanguageChoiceGrid">
-        <button type="button" data-language="fr"><strong>Français</strong><span>FR</span></button>
-        <button type="button" data-language="en"><strong>English</strong><span>EN</span></button>
-        <button type="button" data-language="es"><strong>Español</strong><span>ES</span></button>
-        <button type="button" data-language="de"><strong>Deutsch</strong><span>DE</span></button>
-        <button type="button" data-language="it"><strong>Italiano</strong><span>IT</span></button>
-        <button type="button" data-language="pt"><strong>Português</strong><span>PT</span></button>
-        <button type="button" data-language="nl"><strong>Nederlands</strong><span>NL</span></button>
-        <button type="button" data-language="pl"><strong>Polski</strong><span>PL</span></button>
-        <button type="button" data-language="ro"><strong>Română</strong><span>RO</span></button>
-        <button type="button" data-language="ru"><strong>Русский</strong><span>RU</span></button>
-        <button type="button" data-language="tr"><strong>Türkçe</strong><span>TR</span></button>
-        <button type="button" data-language="sq"><strong>Shqip</strong><span>SQ</span></button>
-        <button type="button" data-language="id"><strong>Bahasa Indonesia</strong><span>ID</span></button>
-        <button type="button" data-language="sw"><strong>Kiswahili</strong><span>SW</span></button>
-        <button type="button" data-language="ar"><strong>العربية</strong><span>AR</span></button>
-        <button type="button" data-language="zh"><strong>中文</strong><span>ZH</span></button>
-      </div>
-    </div>
-  </section>
-
-  <main
-    class="sonara-entry-loader sonara-loading-surface"
-    data-nosnippet
-    data-sonara-loading-audience="none"
-    id="sonaraEntryLoader"
-    role="progressbar"
-    aria-label="Chargement de Sonara Pack"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    aria-valuenow="0"
-    aria-hidden="true"
-  >
-    <div class="sonara-loader-glow sonara-loader-glow-one" aria-hidden="true"></div>
-    <div class="sonara-loader-glow sonara-loader-glow-two" aria-hidden="true"></div>
-
-    <section class="sonara-loader-content">
-      <p class="sonara-loader-kicker" translate="no" data-i18n-ignore="true">SONARA PACK</p>
-      <h1>Connexion à votre espace</h1>
-
-      <p
-        class="intro-chargement sonara-loader-message"
-        id="sonaraLoadingStatus"
-        aria-live="polite"
-        aria-atomic="true"
-      >Initialisation de Sonara Pack…</p>
-
-      <div class="sonara-loader-progress" aria-hidden="true">
-        <span class="sonara-loader-progress-fill" id="sonaraProgressFill"></span>
-      </div>
-
-      <div class="sonara-loader-meta" aria-hidden="true">
-        <span id="sonaraLoadingStep">Initialisation</span>
-        <span id="sonaraLoadingPercent">0%</span>
-      </div>
-
-      <button class="sonara-loader-retry" id="sonaraRetryButton" type="button" hidden>
-        Réessayer
-      </button>
     </section>
-  </main>
 
-  <script src="/app/js/core/i18n.js?v=seo-title-clean-v1"></script>
-  <script src="/app/js/core/config.js?v=render-only-v1"></script>
-  <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
-  <script src="/app/js/system/loading-experience.js?v=loading-bg-v1"></script>
-  <script>
-    (() => {
-      "use strict";
+    <main
+      class="sonara-entry-loader sonara-loading-surface"
+      data-nosnippet
+      data-sonara-loading-audience="none"
+      id="sonaraEntryLoader"
+      role="progressbar"
+      aria-label="Chargement de Sonara Pack"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      aria-hidden="true"
+    >
+      <div
+        class="sonara-loader-glow sonara-loader-glow-one"
+        aria-hidden="true"
+      ></div>
+      <div
+        class="sonara-loader-glow sonara-loader-glow-two"
+        aria-hidden="true"
+      ></div>
 
-      // Contrat stable Sonara Pack :
-      // - 6 secondes visibles minimum, même si Local/Test/Main répond immédiatement ;
-      // - 60 secondes maximum avant de déclarer le serveur indisponible ;
-      // - tant que ces 60 secondes ne sont pas écoulées, un échec réseau temporaire
-      //   (health ou vérification du compte) ne déclenche pas l'écran d'erreur ;
-      // - MAIN utilise uniquement le serveur Render ; aucun serveur de secours externe n’est appelé ;
-      // - après l'erreur, l'écran reste affiché jusqu'au clic manuel sur « Réessayer ».
-      const MIN_LOADING_DURATION = 6000;
-      const MAX_LOADING_DURATION = 60000;
-      const SERVER_ATTEMPT_TIMEOUT = 8000;
-      const SERVER_RETRY_BASE_DELAY = 1200;
-      const SERVER_RETRY_MAX_DELAY = 2500;
-      const SERVER_RATE_LIMIT_DELAY = 2500;
-      const MIN_STEP_TIME = 360;
-      const TYPE_SPEED = 18;
+      <section class="sonara-loader-content">
+        <p class="sonara-loader-kicker" translate="no" data-i18n-ignore="true">
+          SONARA PACK
+        </p>
+        <h1>Connexion à votre espace</h1>
 
-      const SEO_RETURN_SESSION_KEY = "sonaraSeoReturnAfterAuth";
-      const SEO_RETURN_MAX_AGE = 30 * 60 * 1000;
+        <p
+          class="intro-chargement sonara-loader-message"
+          id="sonaraLoadingStatus"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          Initialisation de Sonara Pack…
+        </p>
 
-      function sanitizeSeoReturnTarget(rawTarget) {
-        if (!rawTarget) return "";
+        <div class="sonara-loader-progress" aria-hidden="true">
+          <span
+            class="sonara-loader-progress-fill"
+            id="sonaraProgressFill"
+          ></span>
+        </div>
 
-        try {
-          const targetUrl = new URL(rawTarget, window.location.origin);
-          const packId = String(targetUrl.searchParams.get("id") || "").trim();
-          if (targetUrl.origin !== window.location.origin) return "";
-          if (targetUrl.pathname !== "/app/pages/catalog/pack.html") return "";
-          if (!packId) return "";
-          return `${targetUrl.pathname}${targetUrl.search}`;
-        } catch {
+        <div class="sonara-loader-meta" aria-hidden="true">
+          <span id="sonaraLoadingStep">Initialisation</span>
+          <span id="sonaraLoadingPercent">0%</span>
+        </div>
+
+        <button
+          class="sonara-loader-retry"
+          id="sonaraRetryButton"
+          type="button"
+          hidden
+        >
+          Réessayer
+        </button>
+      </section>
+    </main>
+
+    <script src="/app/js/core/i18n.js?v=seo-title-clean-v1"></script>
+    <script src="/app/js/core/config.js?v=render-only-v1"></script>
+    <script src="/app/js/growth/organic-attribution.js?v=organic-acquisition-internal-v2"></script>
+    <script src="/app/js/system/loading-experience.js?v=loading-bg-v1"></script>
+    <script>
+      (() => {
+        "use strict";
+
+        // Contrat stable Sonara Pack :
+        // - 6 secondes visibles minimum, même si Local/Test/Main répond immédiatement ;
+        // - 60 secondes maximum avant de déclarer le serveur indisponible ;
+        // - tant que ces 60 secondes ne sont pas écoulées, un échec réseau temporaire
+        //   (health ou vérification du compte) ne déclenche pas l'écran d'erreur ;
+        // - MAIN utilise uniquement le serveur Render ; aucun serveur de secours externe n’est appelé ;
+        // - après l'erreur, l'écran reste affiché jusqu'au clic manuel sur « Réessayer ».
+        const MIN_LOADING_DURATION = 6000;
+        const MAX_LOADING_DURATION = 60000;
+        const SERVER_ATTEMPT_TIMEOUT = 8000;
+        const SERVER_RETRY_BASE_DELAY = 1200;
+        const SERVER_RETRY_MAX_DELAY = 2500;
+        const SERVER_RATE_LIMIT_DELAY = 2500;
+        const MIN_STEP_TIME = 360;
+        const TYPE_SPEED = 18;
+
+        const SEO_RETURN_SESSION_KEY = "sonaraSeoReturnAfterAuth";
+        const SEO_RETURN_MAX_AGE = 30 * 60 * 1000;
+
+        function sanitizeSeoReturnTarget(rawTarget) {
+          if (!rawTarget) return "";
+
+          try {
+            const targetUrl = new URL(rawTarget, window.location.origin);
+            const packId = String(
+              targetUrl.searchParams.get("id") || "",
+            ).trim();
+            if (targetUrl.origin !== window.location.origin) return "";
+            if (targetUrl.pathname !== "/app/pages/catalog/pack.html")
+              return "";
+            if (!packId) return "";
+            return `${targetUrl.pathname}${targetUrl.search}`;
+          } catch {
+            return "";
+          }
+        }
+
+        function rememberSeoReturnTarget() {
+          const params = new URLSearchParams(window.location.search);
+          const queryTarget = sanitizeSeoReturnTarget(params.get("returnTo"));
+
+          if (queryTarget) {
+            try {
+              sessionStorage.setItem(
+                SEO_RETURN_SESSION_KEY,
+                JSON.stringify({
+                  target: queryTarget,
+                  requestedAt: Date.now(),
+                }),
+              );
+            } catch {
+              // La query-string reste suffisante si le stockage de session est indisponible.
+            }
+            return queryTarget;
+          }
+
+          try {
+            const stored = JSON.parse(
+              sessionStorage.getItem(SEO_RETURN_SESSION_KEY) || "null",
+            );
+            const age = Date.now() - Number(stored?.requestedAt || 0);
+            const storedTarget = sanitizeSeoReturnTarget(stored?.target);
+            if (storedTarget && age >= 0 && age <= SEO_RETURN_MAX_AGE)
+              return storedTarget;
+            sessionStorage.removeItem(SEO_RETURN_SESSION_KEY);
+          } catch {
+            try {
+              sessionStorage.removeItem(SEO_RETURN_SESSION_KEY);
+            } catch {
+              /* aucun stockage */
+            }
+          }
+
           return "";
         }
-      }
 
-      function rememberSeoReturnTarget() {
-        const params = new URLSearchParams(window.location.search);
-        const queryTarget = sanitizeSeoReturnTarget(params.get("returnTo"));
-
-        if (queryTarget) {
+        function consumeSeoReturnTarget() {
+          const target = rememberSeoReturnTarget();
+          if (!target) return "";
           try {
-            sessionStorage.setItem(
-              SEO_RETURN_SESSION_KEY,
-              JSON.stringify({ target: queryTarget, requestedAt: Date.now() })
-            );
+            sessionStorage.removeItem(SEO_RETURN_SESSION_KEY);
           } catch {
-            // La query-string reste suffisante si le stockage de session est indisponible.
+            /* aucun stockage */
           }
-          return queryTarget;
+          return target;
         }
 
-        try {
-          const stored = JSON.parse(sessionStorage.getItem(SEO_RETURN_SESSION_KEY) || "null");
-          const age = Date.now() - Number(stored?.requestedAt || 0);
-          const storedTarget = sanitizeSeoReturnTarget(stored?.target);
-          if (storedTarget && age >= 0 && age <= SEO_RETURN_MAX_AGE) return storedTarget;
-          sessionStorage.removeItem(SEO_RETURN_SESSION_KEY);
-        } catch {
-          try { sessionStorage.removeItem(SEO_RETURN_SESSION_KEY); } catch { /* aucun stockage */ }
-        }
+        const seoReturnTarget = rememberSeoReturnTarget();
 
-        return "";
-      }
-
-      function consumeSeoReturnTarget() {
-        const target = rememberSeoReturnTarget();
-        if (!target) return "";
-        try { sessionStorage.removeItem(SEO_RETURN_SESSION_KEY); } catch { /* aucun stockage */ }
-        return target;
-      }
-
-      const seoReturnTarget = rememberSeoReturnTarget();
-
-      const loader = document.getElementById("sonaraEntryLoader");
-      const statusElement = document.getElementById("sonaraLoadingStatus");
-      const progressFill = document.getElementById("sonaraProgressFill");
-      const progressPercent = document.getElementById("sonaraLoadingPercent");
-      const progressStep = document.getElementById("sonaraLoadingStep");
-      const retryButton = document.getElementById("sonaraRetryButton");
-      const languageChoice = document.getElementById("sonaraLanguageChoice");
-      const languageChoiceButtons = Array.from(
-        document.querySelectorAll("#sonaraLanguageChoiceGrid [data-language]")
-      );
-
-      let typingRun = 0;
-      let currentProgress = 0;
-      let currentStatusSource = "Initialisation de Sonara Pack…";
-      let currentStepSource = "Initialisation";
-      let loadingStartedAt = 0;
-
-      function wait(ms) {
-        return new Promise((resolve) => window.setTimeout(resolve, ms));
-      }
-
-      async function waitForTranslations() {
-        try {
-          await window.SonaraI18n?.ready;
-        } catch (error) {
-          console.warn("Traduction du chargement indisponible :", error);
-        }
-      }
-
-      function t(value) {
-        return window.SonaraI18n?.t?.(value) || String(value || "");
-      }
-
-      function setProgress(value, stepLabel) {
-        const safeValue = Math.min(100, Math.max(currentProgress, Number(value) || 0));
-        currentProgress = safeValue;
-        if (stepLabel) currentStepSource = stepLabel;
-
-        if (progressFill) progressFill.style.width = `${safeValue}%`;
-        if (progressPercent) progressPercent.textContent = `${Math.round(safeValue)}%`;
-        if (progressStep && currentStepSource) progressStep.textContent = t(currentStepSource);
-        loader?.setAttribute("aria-valuenow", String(Math.round(safeValue)));
-      }
-
-      async function writeStatus(message, instant = false) {
-        if (!statusElement) return;
-
-        currentStatusSource = String(message || "");
-        const runId = ++typingRun;
-        const text = t(currentStatusSource);
-        statusElement.classList.add("is-writing");
-        statusElement.textContent = "";
-
-        if (instant) {
-          statusElement.textContent = text;
-          statusElement.classList.remove("is-writing");
-          return;
-        }
-
-        for (let index = 0; index < text.length; index += 1) {
-          if (runId !== typingRun) return;
-          statusElement.textContent += text[index];
-          await wait(TYPE_SPEED);
-        }
-
-        if (runId === typingRun) statusElement.classList.remove("is-writing");
-      }
-
-      async function showStep(message, progress, stepLabel, minimumTime = MIN_STEP_TIME) {
-        setProgress(progress, stepLabel);
-        await Promise.all([writeStatus(message), wait(minimumTime)]);
-      }
-
-      async function fetchWithTimeout(url, options = {}, timeoutMs = SERVER_ATTEMPT_TIMEOUT) {
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-          return await fetch(url, {
-            ...options,
-            cache: "no-store",
-            headers: { Accept: "application/json", ...(options.headers || {}) },
-            signal: controller.signal
-          });
-        } finally {
-          window.clearTimeout(timeout);
-        }
-      }
-
-      function retryAfterMilliseconds(response) {
-        const value = response?.headers?.get?.("Retry-After");
-        if (!value) return 0;
-
-        const seconds = Number(value);
-        if (Number.isFinite(seconds) && seconds >= 0) {
-          return seconds * 1000;
-        }
-
-        const date = Date.parse(value);
-        return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
-      }
-
-      function normalRetryDelay(attempt) {
-        return Math.min(
-          SERVER_RETRY_MAX_DELAY,
-          SERVER_RETRY_BASE_DELAY + Math.max(0, attempt - 1) * 2500
+        const loader = document.getElementById("sonaraEntryLoader");
+        const statusElement = document.getElementById("sonaraLoadingStatus");
+        const progressFill = document.getElementById("sonaraProgressFill");
+        const progressPercent = document.getElementById("sonaraLoadingPercent");
+        const progressStep = document.getElementById("sonaraLoadingStep");
+        const retryButton = document.getElementById("sonaraRetryButton");
+        const languageChoice = document.getElementById("sonaraLanguageChoice");
+        const languageChoiceButtons = Array.from(
+          document.querySelectorAll(
+            "#sonaraLanguageChoiceGrid [data-language]",
+          ),
         );
-      }
 
-      function loadingDeadline() {
-        return loadingStartedAt + MAX_LOADING_DURATION;
-      }
+        let typingRun = 0;
+        let currentProgress = 0;
+        let currentStatusSource = "Initialisation de Sonara Pack…";
+        let currentStepSource = "Initialisation";
+        let loadingStartedAt = 0;
 
-      function loadingTimeRemaining() {
-        return Math.max(0, loadingDeadline() - performance.now());
-      }
+        function wait(ms) {
+          return new Promise((resolve) => window.setTimeout(resolve, ms));
+        }
 
-      async function checkServerUntilReady() {
-        const serverSearchStartedAt = performance.now();
-        const deadline = loadingDeadline();
-        let attempt = 0;
-        let lastError = new Error("Le serveur Sonara ne répond pas.");
+        async function waitForTranslations() {
+          try {
+            await window.SonaraI18n?.ready;
+          } catch (error) {
+            console.warn("Traduction du chargement indisponible :", error);
+          }
+        }
 
-        while (performance.now() < deadline) {
-          attempt += 1;
-          const elapsed = performance.now() - serverSearchStartedAt;
-          const remaining = Math.max(0, deadline - performance.now());
-          const progress = 12 + Math.min(22, (elapsed / MAX_LOADING_DURATION) * 22);
-          setProgress(progress, `Serveur · tentative ${attempt}`);
+        function t(value) {
+          return window.SonaraI18n?.t?.(value) || String(value || "");
+        }
 
-          let retryDelay = normalRetryDelay(attempt);
+        function setProgress(value, stepLabel) {
+          const safeValue = Math.min(
+            100,
+            Math.max(currentProgress, Number(value) || 0),
+          );
+          currentProgress = safeValue;
+          if (stepLabel) currentStepSource = stepLabel;
+
+          if (progressFill) progressFill.style.width = `${safeValue}%`;
+          if (progressPercent)
+            progressPercent.textContent = `${Math.round(safeValue)}%`;
+          if (progressStep && currentStepSource)
+            progressStep.textContent = t(currentStepSource);
+          loader?.setAttribute("aria-valuenow", String(Math.round(safeValue)));
+        }
+
+        async function writeStatus(message, instant = false) {
+          if (!statusElement) return;
+
+          currentStatusSource = String(message || "");
+          const runId = ++typingRun;
+          const text = t(currentStatusSource);
+          statusElement.classList.add("is-writing");
+          statusElement.textContent = "";
+
+          if (instant) {
+            statusElement.textContent = text;
+            statusElement.classList.remove("is-writing");
+            return;
+          }
+
+          for (let index = 0; index < text.length; index += 1) {
+            if (runId !== typingRun) return;
+            statusElement.textContent += text[index];
+            await wait(TYPE_SPEED);
+          }
+
+          if (runId === typingRun) statusElement.classList.remove("is-writing");
+        }
+
+        async function showStep(
+          message,
+          progress,
+          stepLabel,
+          minimumTime = MIN_STEP_TIME,
+        ) {
+          setProgress(progress, stepLabel);
+          await Promise.all([writeStatus(message), wait(minimumTime)]);
+        }
+
+        async function fetchWithTimeout(
+          url,
+          options = {},
+          timeoutMs = SERVER_ATTEMPT_TIMEOUT,
+        ) {
+          const controller = new AbortController();
+          const timeout = window.setTimeout(
+            () => controller.abort(),
+            timeoutMs,
+          );
 
           try {
-            const attemptTimeout = Math.max(500, Math.min(SERVER_ATTEMPT_TIMEOUT, remaining));
-            const response = await fetchWithTimeout(
-              `${API_URL}/api/health`,
-              { method: "GET" },
-              attemptTimeout
-            );
-            const payload = await response.json().catch(() => null);
+            return await fetch(url, {
+              ...options,
+              cache: "no-store",
+              headers: {
+                Accept: "application/json",
+                ...(options.headers || {}),
+              },
+              signal: controller.signal,
+            });
+          } finally {
+            window.clearTimeout(timeout);
+          }
+        }
 
-            if (response.ok && payload?.ok === true) return payload;
+        function retryAfterMilliseconds(response) {
+          const value = response?.headers?.get?.("Retry-After");
+          if (!value) return 0;
 
-            if (response.status === 429) {
-              retryDelay = Math.max(
-                SERVER_RATE_LIMIT_DELAY,
-                retryAfterMilliseconds(response)
-              );
-              lastError = new Error("Serveur temporairement limité (429).");
-            } else {
-              lastError = new Error(`Réponse serveur invalide : ${response.status}`);
-            }
-          } catch (error) {
-            // Un 429 renvoyé par l'hébergeur peut être masqué par CORS et arriver ici
-            // comme une simple erreur réseau. On espace donc aussi ces échecs.
-            lastError = error;
-            retryDelay = Math.max(retryDelay, SERVER_RETRY_BASE_DELAY);
+          const seconds = Number(value);
+          if (Number.isFinite(seconds) && seconds >= 0) {
+            return seconds * 1000;
           }
 
-          const waitRemaining = deadline - performance.now();
-          if (waitRemaining <= 0) break;
-          await wait(Math.min(retryDelay, waitRemaining));
+          const date = Date.parse(value);
+          return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
         }
 
-        throw lastError;
-      }
-
-      async function waitForMinimumLoadingDuration() {
-        const remaining = MIN_LOADING_DURATION - (performance.now() - loadingStartedAt);
-        if (remaining > 0) await wait(remaining);
-      }
-
-      async function waitForAuthResult(promise) {
-        const remaining = loadingTimeRemaining();
-        if (remaining <= 0) {
-          return { ok: false, reason: "server_unavailable", profile: null };
-        }
-
-        return Promise.race([
-          Promise.resolve(promise).catch((error) => ({
-            ok: false,
-            reason: "server_unavailable",
-            profile: null,
-            error
-          })),
-          wait(remaining).then(() => ({
-            ok: false,
-            reason: "server_unavailable",
-            profile: null
-          }))
-        ]);
-      }
-
-      async function retryAuthUntilDeadline(initialResult) {
-        let result = initialResult;
-
-        while (result?.reason === "server_unavailable" && loadingTimeRemaining() > 0) {
-          const pause = Math.min(700, loadingTimeRemaining());
-          if (pause > 0) await wait(pause);
-          if (loadingTimeRemaining() <= 0) break;
-
-          result = await waitForAuthResult(
-            window.SonaraAuth.verify({
-              mode: "optional",
-              redirectOnFailure: false
-            })
+        function normalRetryDelay(attempt) {
+          return Math.min(
+            SERVER_RETRY_MAX_DELAY,
+            SERVER_RETRY_BASE_DELAY + Math.max(0, attempt - 1) * 2500,
           );
         }
 
-        return result;
-      }
-
-      function clearSession() {
-        window.SonaraAuth?.clear?.();
-      }
-
-      function goToInscription() {
-        const inscriptionUrl = new URL("/app/pages/auth/inscription.html", window.location.origin);
-        if (seoReturnTarget) inscriptionUrl.searchParams.set("returnTo", seoReturnTarget);
-        window.location.replace(`${inscriptionUrl.pathname}${inscriptionUrl.search}`);
-      }
-
-      function redirectByRole(profile) {
-        const role = String(profile?.role || "").toLowerCase();
-        const status = String(profile?.status || "").toLowerCase();
-
-        if (["artist", "both"].includes(role) && status === "pending") {
-          window.location.replace("/app/pages/auth/pending.html");
-          return;
+        function loadingDeadline() {
+          return loadingStartedAt + MAX_LOADING_DURATION;
         }
 
-        const returnTarget = consumeSeoReturnTarget();
-        if (returnTarget && ["user", "artist", "both"].includes(role)) {
-          window.location.replace(returnTarget);
-          return;
+        function loadingTimeRemaining() {
+          return Math.max(0, loadingDeadline() - performance.now());
         }
 
-        if (["artist", "both"].includes(role)) {
-          window.location.replace("/app/pages/creator/dashboard.html");
-          return;
+        async function checkServerUntilReady() {
+          const serverSearchStartedAt = performance.now();
+          const deadline = loadingDeadline();
+          let attempt = 0;
+          let lastError = new Error("Le serveur Sonara ne répond pas.");
+
+          while (performance.now() < deadline) {
+            attempt += 1;
+            const elapsed = performance.now() - serverSearchStartedAt;
+            const remaining = Math.max(0, deadline - performance.now());
+            const progress =
+              12 + Math.min(22, (elapsed / MAX_LOADING_DURATION) * 22);
+            setProgress(progress, `Serveur · tentative ${attempt}`);
+
+            let retryDelay = normalRetryDelay(attempt);
+
+            try {
+              const attemptTimeout = Math.max(
+                500,
+                Math.min(SERVER_ATTEMPT_TIMEOUT, remaining),
+              );
+              const response = await fetchWithTimeout(
+                `${API_URL}/api/health`,
+                { method: "GET" },
+                attemptTimeout,
+              );
+              const payload = await response.json().catch(() => null);
+
+              if (response.ok && payload?.ok === true) return payload;
+
+              if (response.status === 429) {
+                retryDelay = Math.max(
+                  SERVER_RATE_LIMIT_DELAY,
+                  retryAfterMilliseconds(response),
+                );
+                lastError = new Error("Serveur temporairement limité (429).");
+              } else {
+                lastError = new Error(
+                  `Réponse serveur invalide : ${response.status}`,
+                );
+              }
+            } catch (error) {
+              // Un 429 renvoyé par l'hébergeur peut être masqué par CORS et arriver ici
+              // comme une simple erreur réseau. On espace donc aussi ces échecs.
+              lastError = error;
+              retryDelay = Math.max(retryDelay, SERVER_RETRY_BASE_DELAY);
+            }
+
+            const waitRemaining = deadline - performance.now();
+            if (waitRemaining <= 0) break;
+            await wait(Math.min(retryDelay, waitRemaining));
+          }
+
+          throw lastError;
         }
 
-        if (role === "user") {
-          window.location.replace("/home.html");
-          return;
+        async function waitForMinimumLoadingDuration() {
+          const remaining =
+            MIN_LOADING_DURATION - (performance.now() - loadingStartedAt);
+          if (remaining > 0) await wait(remaining);
         }
 
-        clearSession();
-        goToInscription();
-      }
+        async function waitForAuthResult(promise) {
+          const remaining = loadingTimeRemaining();
+          if (remaining <= 0) {
+            return { ok: false, reason: "server_unavailable", profile: null };
+          }
 
-      function loadAuthGuard() {
-        return new Promise((resolve, reject) => {
-          if (window.SonaraAuth?.ready) {
-            resolve();
+          return Promise.race([
+            Promise.resolve(promise).catch((error) => ({
+              ok: false,
+              reason: "server_unavailable",
+              profile: null,
+              error,
+            })),
+            wait(remaining).then(() => ({
+              ok: false,
+              reason: "server_unavailable",
+              profile: null,
+            })),
+          ]);
+        }
+
+        async function retryAuthUntilDeadline(initialResult) {
+          let result = initialResult;
+
+          while (
+            result?.reason === "server_unavailable" &&
+            loadingTimeRemaining() > 0
+          ) {
+            const pause = Math.min(700, loadingTimeRemaining());
+            if (pause > 0) await wait(pause);
+            if (loadingTimeRemaining() <= 0) break;
+
+            result = await waitForAuthResult(
+              window.SonaraAuth.verify({
+                mode: "optional",
+                redirectOnFailure: false,
+              }),
+            );
+          }
+
+          return result;
+        }
+
+        function clearSession() {
+          window.SonaraAuth?.clear?.();
+        }
+
+        function goToInscription() {
+          const inscriptionUrl = new URL(
+            "/app/pages/auth/inscription.html",
+            window.location.origin,
+          );
+          if (seoReturnTarget)
+            inscriptionUrl.searchParams.set("returnTo", seoReturnTarget);
+          window.location.replace(
+            `${inscriptionUrl.pathname}${inscriptionUrl.search}`,
+          );
+        }
+
+        function redirectByRole(profile) {
+          const role = String(profile?.role || "").toLowerCase();
+          const status = String(profile?.status || "").toLowerCase();
+
+          if (["artist", "both"].includes(role) && status === "pending") {
+            window.location.replace("/app/pages/auth/pending.html");
             return;
           }
 
-          const existing = document.querySelector('script[data-sonara-auth="entry"]');
-          if (existing) {
-            existing.addEventListener("load", resolve, { once: true });
-            existing.addEventListener("error", reject, { once: true });
+          const returnTarget = consumeSeoReturnTarget();
+          if (returnTarget && ["user", "artist", "both"].includes(role)) {
+            window.location.replace(returnTarget);
             return;
           }
 
-          const script = document.createElement("script");
-          script.src = "/app/js/core/auth-guard.js?v=main-strict-account-id-v1";
-          script.dataset.sonaraAuth = "entry";
-          script.onload = resolve;
-          script.onerror = () => reject(new Error("Auth Guard indisponible."));
-          document.body.appendChild(script);
-        });
-      }
+          if (["artist", "both"].includes(role)) {
+            window.location.replace("/app/pages/creator/dashboard.html");
+            return;
+          }
 
-      async function showServerError() {
-        loader?.classList.add("has-error");
-        setProgress(Math.max(currentProgress, 12), "Serveur indisponible");
-        await writeStatus("Connexion au serveur impossible.", true);
-        if (retryButton) retryButton.hidden = false;
-        // Aucun autre minuteur : l'utilisateur peut laisser cet écran ouvert
-        // aussi longtemps qu'il le souhaite, puis choisir lui-même « Réessayer ».
-      }
+          if (role === "user") {
+            window.location.replace("/home.html");
+            return;
+          }
 
-      async function startSonara() {
-        loadingStartedAt = performance.now();
-        loader?.classList.remove("has-error");
-        if (retryButton) retryButton.hidden = true;
+          clearSession();
+          goToInscription();
+        }
 
-        try {
-          await waitForTranslations();
-          await showStep("Recherche du serveur Sonara Pack…", 12, "Serveur · 1/4");
-          await checkServerUntilReady();
+        function loadAuthGuard() {
+          return new Promise((resolve, reject) => {
+            if (window.SonaraAuth?.ready) {
+              resolve();
+              return;
+            }
 
-          await Promise.all([
-            loadAuthGuard(),
-            showStep("Serveur trouvé. Chargement des données…", 42, "Données · 2/4")
-          ]);
+            const existing = document.querySelector(
+              'script[data-sonara-auth="entry"]',
+            );
+            if (existing) {
+              existing.addEventListener("load", resolve, { once: true });
+              existing.addEventListener("error", reject, { once: true });
+              return;
+            }
 
-          const [, firstAuthResult] = await Promise.all([
-            showStep("Recherche de l’ID du compte connecté…", 68, "Compte · 3/4"),
-            waitForAuthResult(window.SonaraAuth.ready)
-          ]);
+            const script = document.createElement("script");
+            script.src =
+              "/app/js/core/auth-guard.js?v=main-strict-account-id-v1";
+            script.dataset.sonaraAuth = "entry";
+            script.onload = resolve;
+            script.onerror = () =>
+              reject(new Error("Auth Guard indisponible."));
+            document.body.appendChild(script);
+          });
+        }
 
-          const authResult = await retryAuthUntilDeadline(firstAuthResult);
+        async function showServerError() {
+          loader?.classList.add("has-error");
+          setProgress(Math.max(currentProgress, 12), "Serveur indisponible");
+          await writeStatus("Connexion au serveur impossible.", true);
+          if (retryButton) retryButton.hidden = false;
+          // Aucun autre minuteur : l'utilisateur peut laisser cet écran ouvert
+          // aussi longtemps qu'il le souhaite, puis choisir lui-même « Réessayer ».
+        }
 
-          if (!authResult?.ok) {
-            if (authResult?.reason === "server_unavailable") {
+        async function startSonara() {
+          loadingStartedAt = performance.now();
+          loader?.classList.remove("has-error");
+          if (retryButton) retryButton.hidden = true;
+
+          try {
+            await waitForTranslations();
+            await showStep(
+              "Recherche du serveur Sonara Pack…",
+              12,
+              "Serveur · 1/4",
+            );
+            await checkServerUntilReady();
+
+            await Promise.all([
+              loadAuthGuard(),
+              showStep(
+                "Serveur trouvé. Chargement des données…",
+                42,
+                "Données · 2/4",
+              ),
+            ]);
+
+            const [, firstAuthResult] = await Promise.all([
+              showStep(
+                "Recherche de l’ID du compte connecté…",
+                68,
+                "Compte · 3/4",
+              ),
+              waitForAuthResult(window.SonaraAuth.ready),
+            ]);
+
+            const authResult = await retryAuthUntilDeadline(firstAuthResult);
+
+            if (!authResult?.ok) {
+              if (authResult?.reason === "server_unavailable") {
+                await showServerError();
+                return;
+              }
+
+              if (
+                [
+                  "missing_profile",
+                  "profile_not_found",
+                  "invalid_profile",
+                  "identity_mismatch",
+                  "blocked",
+                  "permanently_deleted",
+                ].includes(authResult?.reason)
+              ) {
+                const message =
+                  authResult.reason === "missing_profile"
+                    ? "Aucun ID connecté. Ouverture de l’inscription…"
+                    : "ID introuvable. Retour à l’inscription…";
+
+                await showStep(message, 92, "Inscription · 4/4", 520);
+                await waitForMinimumLoadingDuration();
+                setProgress(100, "Inscription");
+                await wait(180);
+                goToInscription();
+                return;
+              }
+
               await showServerError();
               return;
             }
 
-            if ([
-              "missing_profile",
-              "profile_not_found",
-              "invalid_profile",
-              "identity_mismatch",
-              "blocked",
-              "permanently_deleted"
-            ].includes(authResult?.reason)) {
-              const message = authResult.reason === "missing_profile"
-                ? "Aucun ID connecté. Ouverture de l’inscription…"
-                : "ID introuvable. Retour à l’inscription…";
-
-              await showStep(message, 92, "Inscription · 4/4", 520);
-              await waitForMinimumLoadingDuration();
-              setProgress(100, "Inscription");
-              await wait(180);
-              goToInscription();
-              return;
-            }
-
+            await showStep(
+              "ID retrouvé. Préparation de votre dashboard…",
+              88,
+              "Accès · 4/4",
+              460,
+            );
+            await waitForMinimumLoadingDuration();
+            await showStep("Entrée dans Sonara Pack…", 100, "Sonara Pack", 420);
+            redirectByRole(authResult.profile);
+          } catch (error) {
+            console.error("Chargement Sonara impossible :", error);
             await showServerError();
+          }
+        }
+
+        retryButton?.addEventListener("click", () => window.location.reload());
+        window.addEventListener("sonara:languagechange", () => {
+          writeStatus(currentStatusSource, true);
+          setProgress(currentProgress, currentStepSource);
+        });
+
+        async function ensureLanguageChoice() {
+          try {
+            await window.SonaraI18n?.ready;
+          } catch (error) {
+            console.warn("Initialisation de la langue indisponible :", error);
+          }
+
+          if (window.SonaraI18n?.hasChosenLanguage?.()) {
+            document.documentElement.dataset.sonaraLanguageChosen = "true";
+            languageChoice?.setAttribute("aria-hidden", "true");
             return;
           }
 
-          await showStep("ID retrouvé. Préparation de votre dashboard…", 88, "Accès · 4/4", 460);
-          await waitForMinimumLoadingDuration();
-          await showStep("Entrée dans Sonara Pack…", 100, "Sonara Pack", 420);
-          redirectByRole(authResult.profile);
-        } catch (error) {
-          console.error("Chargement Sonara impossible :", error);
-          await showServerError();
-        }
-      }
+          document.documentElement.dataset.sonaraLanguageChosen = "false";
+          languageChoice?.removeAttribute("aria-hidden");
 
-      retryButton?.addEventListener("click", () => window.location.reload());
-      window.addEventListener("sonara:languagechange", () => {
-        writeStatus(currentStatusSource, true);
-        setProgress(currentProgress, currentStepSource);
-      });
+          await new Promise((resolve) => {
+            let choosing = false;
 
-      async function ensureLanguageChoice() {
-        try {
-          await window.SonaraI18n?.ready;
-        } catch (error) {
-          console.warn("Initialisation de la langue indisponible :", error);
-        }
+            languageChoiceButtons.forEach((button) => {
+              button.addEventListener("click", async () => {
+                if (choosing) return;
+                choosing = true;
+                languageChoiceButtons.forEach((item) => {
+                  item.disabled = true;
+                });
+                button.classList.add("is-selecting");
 
-        if (window.SonaraI18n?.hasChosenLanguage?.()) {
-          document.documentElement.dataset.sonaraLanguageChosen = "true";
-          languageChoice?.setAttribute("aria-hidden", "true");
-          return;
-        }
-
-        document.documentElement.dataset.sonaraLanguageChosen = "false";
-        languageChoice?.removeAttribute("aria-hidden");
-
-        await new Promise((resolve) => {
-          let choosing = false;
-
-          languageChoiceButtons.forEach((button) => {
-            button.addEventListener("click", async () => {
-              if (choosing) return;
-              choosing = true;
-              languageChoiceButtons.forEach((item) => { item.disabled = true; });
-              button.classList.add("is-selecting");
-
-              try {
-                await window.SonaraI18n?.setLanguage?.(button.dataset.language);
-                document.documentElement.dataset.sonaraLanguageChosen = "true";
-                languageChoice?.classList.add("is-leaving");
-                await wait(420);
-                languageChoice?.setAttribute("aria-hidden", "true");
-                resolve();
-              } catch (error) {
-                console.error("Choix de langue impossible :", error);
-                choosing = false;
-                button.classList.remove("is-selecting");
-                languageChoiceButtons.forEach((item) => { item.disabled = false; });
-              }
+                try {
+                  await window.SonaraI18n?.setLanguage?.(
+                    button.dataset.language,
+                  );
+                  document.documentElement.dataset.sonaraLanguageChosen =
+                    "true";
+                  languageChoice?.classList.add("is-leaving");
+                  await wait(420);
+                  languageChoice?.setAttribute("aria-hidden", "true");
+                  resolve();
+                } catch (error) {
+                  console.error("Choix de langue impossible :", error);
+                  choosing = false;
+                  button.classList.remove("is-selecting");
+                  languageChoiceButtons.forEach((item) => {
+                    item.disabled = false;
+                  });
+                }
+              });
             });
           });
-        });
-      }
+        }
 
-      async function startEntryFlow() {
-        // Entrée simplifiée : choix de langue, puis chargement/auth Sonara.
-        // La cinématique Pre-V1 a été retirée volontairement.
-        await ensureLanguageChoice();
-        loader?.removeAttribute("aria-hidden");
-        await startSonara();
-      }
+        async function startEntryFlow() {
+          // Entrée simplifiée : choix de langue, puis chargement/auth Sonara.
+          // La cinématique Pre-V1 a été retirée volontairement.
+          await ensureLanguageChoice();
+          loader?.removeAttribute("aria-hidden");
+          await startSonara();
+        }
 
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", startEntryFlow, { once: true });
-      } else {
-        startEntryFlow();
-      }
-    })();
-  </script>
-</body>
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", startEntryFlow, {
+            once: true,
+          });
+        } else {
+          startEntryFlow();
+        }
+      })();
+    </script>
+  </body>
 </html>

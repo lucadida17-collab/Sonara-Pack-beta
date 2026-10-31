@@ -195,6 +195,10 @@ function getFilePath(file) {
     return encodeURI(value);
   }
 
+  // Protected previews and purchased audio use API routes, not /uploads/.
+  if (value.startsWith("/api/media/")) return `${API_URL}${value}`;
+  if (value.startsWith("api/media/")) return `${API_URL}/${value}`;
+
   if (value.startsWith("/downloads/")) {
     return encodeURI(`${API_URL}${value}`);
   }
@@ -481,10 +485,24 @@ function createHomeDistribution(rawPacks = []) {
   };
 }
 
+async function fetchHomeWithTimeout(url, timeoutMs, { optional = false } = {}) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { cache: "no-store", signal: controller.signal });
+  } catch (error) {
+    if (optional) return null;
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 async function loadHome() {
+  // Autoplaylists are optional: their outage must never freeze the entire home.
   const [packResponse, playlistResponse] = await Promise.all([
-    fetch(`${API_URL}/api/packs`, { cache: "no-store" }),
-    fetch(`${API_URL}/api/auto-playlists`, { cache: "no-store" }).catch(() => null)
+    fetchHomeWithTimeout(`${API_URL}/api/packs`, 15000),
+    fetchHomeWithTimeout(`${API_URL}/api/auto-playlists`, 2500, { optional: true })
   ]);
 
   const data = await packResponse.json();
@@ -562,6 +580,25 @@ async function loadHome() {
   renderHome();
 }
 
+function homeNetworkUnavailable(error) {
+  return navigator.onLine === false || error instanceof TypeError || error?.name === "AbortError";
+}
+
+function showHomeOfflineBanner() {
+  const id = "sonara-home-connection-error";
+  document.getElementById(id)?.remove();
+  if (navigator.onLine !== false) return;
+  const banner = document.createElement("div");
+  banner.id = id;
+  banner.setAttribute("role", "alert");
+  banner.style.cssText = "position:sticky;top:0;z-index:999;padding:14px 18px;background:#111;color:#fff;border-bottom:1px solid #777;text-align:center";
+  banner.textContent = "Aucune connexion Internet. L'accueil et les previews peuvent être indisponibles.";
+  (content || document.body).prepend(banner);
+}
+window.addEventListener("offline", showHomeOfflineBanner);
+window.addEventListener("online", showHomeOfflineBanner);
+showHomeOfflineBanner();
+
 loadHome().catch((error) => {
   console.error(
     "Erreur chargement Home :",
@@ -579,10 +616,16 @@ loadHome().catch((error) => {
           </svg>
         </div>
 
-        <h2>Accueil momentanément indisponible</h2>
-        <p>Impossible de charger les packs pour le moment.</p>
+        <h2>${homeNetworkUnavailable(error) ? "Erreur de connexion" : "Accueil momentanément indisponible"}</h2>
+        <p>${homeNetworkUnavailable(error)
+          ? "Impossible de charger cette page à cause d'un problème de connexion ou d'accès au serveur."
+          : "Impossible de charger les packs pour le moment."}</p>
+        <button class="home-connection-retry" type="button">Réessayer</button>
       </section>
     `;
+    content.querySelector(".home-connection-retry")?.addEventListener("click", () => {
+      window.location.reload();
+    });
   }
 });
 
@@ -1157,6 +1200,17 @@ function stopHomeQuickPreview() {
   homeQuickPreview = null;
 }
 
+function showHomeAudioError(error) {
+  const banner = document.createElement("div");
+  banner.setAttribute("role", "alert");
+  banner.style.cssText = "position:fixed;bottom:20px;left:16px;right:16px;z-index:9999;max-width:520px;margin:auto;padding:14px;background:#111;color:white;border:1px solid #777;border-radius:10px";
+  banner.textContent = navigator.onLine === false
+    ? "Pas de connexion Internet. Impossible de lire la preview."
+    : "Lecture audio indisponible. Vérifie que la preview est accessible puis réessaie.";
+  document.body.appendChild(banner);
+  window.setTimeout(() => banner.remove(), 5500);
+}
+
 function createQuickTrackCard(track = {}) {
   const card = document.createElement("article");
   card.className = "home-track-card";
@@ -1194,8 +1248,11 @@ function createQuickTrackCard(track = {}) {
   previewButton.setAttribute("aria-label", `Écouter ${title.textContent} pendant ${limit} secondes`);
 
   previewButton.addEventListener("click", async () => {
-    const source = getFilePath(track.audioName || "");
-    if (!source) return;
+    const source = getFilePath(track.audioName || track.audio || "");
+    if (!source) {
+      showHomeAudioError(new Error("Preview manquante"));
+      return;
+    }
     if (homeQuickPreview?.button === previewButton) {
       stopHomeQuickPreview();
       window.lucide?.createIcons?.();
@@ -1203,7 +1260,8 @@ function createQuickTrackCard(track = {}) {
     }
     stopHomeQuickPreview();
     const audio = new Audio(source);
-    const start = Math.max(0, Number(track.previewStart || 0));
+    const start = /\/api\/media\/preview\//.test(source)
+      ? 0 : Math.max(0, Number(track.previewStart || 0));
     homeQuickPreview = { audio, button: previewButton, limit };
     previewButton.classList.add("is-playing");
     previewButton.innerHTML = `
@@ -1233,8 +1291,15 @@ function createQuickTrackCard(track = {}) {
       if (elapsed >= limit) finish();
     });
     audio.addEventListener("ended", finish, { once: true });
-    audio.addEventListener("error", finish, { once: true });
-    await audio.play().catch(finish);
+    audio.addEventListener("error", () => {
+      finish();
+      showHomeAudioError();
+    }, { once: true });
+    // play() stays within the user gesture, never behind a fetch.
+    audio.play().catch((error) => {
+      finish();
+      if (error?.name !== "AbortError") showHomeAudioError(error);
+    });
   });
 
   const action = document.createElement("button");

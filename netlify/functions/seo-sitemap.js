@@ -15,14 +15,28 @@ function validLastmod(value) {
 }
 
 function imageXml(item = {}) {
-  const candidates = Array.isArray(item.images) && item.images.length
-    ? item.images
-    : (item.imageUrl ? [{ url: item.imageUrl, title: item.imageTitle, caption: item.imageCaption }] : []);
+  const candidates =
+    Array.isArray(item.images) && item.images.length
+      ? item.images
+      : item.imageUrl
+        ? [
+            {
+              url: item.imageUrl,
+              title: item.imageTitle,
+              caption: item.imageCaption,
+            },
+          ]
+        : [];
   const seen = new Set();
   return candidates
-    .filter((image) => image?.url && !seen.has(image.url) && seen.add(image.url))
+    .filter(
+      (image) => image?.url && !seen.has(image.url) && seen.add(image.url),
+    )
     .slice(0, 10)
-    .map((image) => `\n    <image:image>\n      <image:loc>${xml(image.url)}</image:loc>${image.title ? `\n      <image:title>${xml(image.title)}</image:title>` : ""}${image.caption ? `\n      <image:caption>${xml(image.caption)}</image:caption>` : ""}\n    </image:image>`)
+    .map(
+      (image) =>
+        `\n    <image:image>\n      <image:loc>${xml(image.url)}</image:loc>${image.title ? `\n      <image:title>${xml(image.title)}</image:title>` : ""}${image.caption ? `\n      <image:caption>${xml(image.caption)}</image:caption>` : ""}\n    </image:image>`,
+    )
     .join("");
 }
 
@@ -30,8 +44,11 @@ exports.handler = async (event) => {
   if (environmentFromEvent(event) !== "main") {
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
-      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>'
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>',
     };
   }
 
@@ -42,7 +59,7 @@ exports.handler = async (event) => {
       ...(Array.isArray(data?.packs) ? data.packs : []),
       ...(Array.isArray(data?.tracks) ? data.tracks : []),
       ...(Array.isArray(data?.facets) ? data.facets : []),
-      ...(Array.isArray(data?.artists) ? data.artists : [])
+      ...(Array.isArray(data?.artists) ? data.artists : []),
     ];
 
     const seen = new Set();
@@ -58,15 +75,18 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control": "public, max-age=300, s-maxage=900"
+        "Cache-Control": "public, max-age=300, s-maxage=900",
       },
-      body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>`
+      body: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>`,
     };
   } catch (error) {
     return {
       statusCode: 503,
-      headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" },
-      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>'
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+      body: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"></urlset>',
     };
   }
 };

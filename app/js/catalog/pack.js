@@ -688,6 +688,10 @@ function getFilePath(file) {
 
   if (/^(https?:|blob:|data:)/i.test(value)) return value;
 
+  // Protected previews and purchased audio use API routes, not /uploads/.
+  if (value.startsWith("/api/media/")) return `${API_URL}${value}`;
+  if (value.startsWith("api/media/")) return `${API_URL}/${value}`;
+
   if (value.startsWith("/downloads/")) return `${API_URL}${value}`;
   if (value.startsWith("downloads/")) return `${API_URL}/${value}`;
 
@@ -1188,94 +1192,128 @@ function setupPackPreviewPlayer() {
     syncRows();
   }
 
-  function waitForMetadata() {
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      return Promise.resolve();
+  let previewRequestId = 0;
+  let playbackTimer = null;
+
+  function clearPlaybackTimer() {
+    if (playbackTimer !== null) {
+      window.clearTimeout(playbackTimer);
+      playbackTimer = null;
     }
+  }
 
-    return new Promise((resolve, reject) => {
-      const onLoaded = () => {
-        cleanup();
-        resolve();
-      };
-      const onError = () => {
-        cleanup();
-        reject(new Error("Audio preview indisponible."));
-      };
-      const cleanup = () => {
-        audio.removeEventListener("loadedmetadata", onLoaded);
-        audio.removeEventListener("error", onError);
-      };
+  function playbackErrorMessage(error) {
+    if (navigator.onLine === false) {
+      return "Aucune connexion Internet. Vérifie ton réseau puis réessaie.";
+    }
+    if (error?.name === "NotAllowedError") {
+      return "La lecture a été bloquée par le navigateur. Appuie à nouveau pour écouter.";
+    }
+    return "Le son n'a pas pu être chargé. Réessaie ; si le problème persiste, le fichier ou le serveur audio est indisponible.";
+  }
 
-      audio.addEventListener("loadedmetadata", onLoaded, { once: true });
-      audio.addEventListener("error", onError, { once: true });
+  function showPreviewError(error) {
+    audio.pause();
+    syncPlayButtons();
+    syncRows();
+    showPopup({
+      type: "error",
+      title: navigator.onLine === false ? "Connexion indisponible" : "Preview indisponible",
+      message: playbackErrorMessage(error)
     });
   }
 
-  async function selectTrack(index, { autoplay = true } = {}) {
+  // Important: audio.play() must be called in the *same click event*, before
+  // any await/fetch/metadata promise, especially on iOS Safari.
+  function selectTrack(index, { autoplay = true } = {}) {
     const track = tracks[index];
     if (!track) return;
 
-    await Promise.race([
-      preparePackPreviewIntelligence(),
-      new Promise((resolve) => window.setTimeout(resolve, 2200))
-    ]);
-
+    const requestId = ++previewRequestId;
+    clearPlaybackTimer();
     const source = getFilePath(track.audioName || track.audio);
-    if (!source) return;
-
-    let absoluteSource = source;
-    try {
-      absoluteSource = new URL(source, window.location.href).href;
-    } catch {}
-
-    if (audio.src !== absoluteSource) {
-      audio.pause();
-      audio.src = source;
-      audio.load();
-
-      try {
-        await waitForMetadata();
-      } catch (error) {
-        showPopup({
-          type: "error",
-          title: "Preview indisponible",
-          message: error.message
-        });
-        return;
-      }
+    if (!source) {
+      showPreviewError(new Error("Missing preview URL"));
+      return;
     }
 
-    const duration = Number(audio.duration || track.duration || 0);
-    const start = fallbackPackPreviewStart(track, duration);
+    // The server's /api/media/preview is already a clipped 30-second MP3.
+    // Seeking previewStart again would jump outside that short file.
+    const serverClipped = /\/api\/media\/preview\//.test(source);
     const requestedDuration = Math.min(
       PACK_PREVIEW_DURATION,
-      Math.max(1, Number(track.previewDuration || PACK_PREVIEW_DURATION))
+      Math.max(1, Number(track.previewDuration) || PACK_PREVIEW_DURATION)
     );
-    const end = duration > 0
-      ? Math.min(duration, start + requestedDuration)
-      : start + requestedDuration;
+    const initialStart = serverClipped ? 0 : Math.max(0, Number(track.previewStart) || 0);
+
+    let absoluteSource = source;
+    try { absoluteSource = new URL(source, window.location.href).href; } catch {}
+
+    const isNewSource = audio.src !== absoluteSource;
+    if (isNewSource) {
+      audio.pause();
+      audio.src = source;
+      // Do not await audio.load() or metadata: play immediately on user gesture.
+    }
 
     packPreviewState = {
       trackIndex: index,
-      start,
-      end
+      start: initialStart,
+      end: initialStart + requestedDuration
+    };
+    updatePlayerIdentity(track);
+
+    const alignStart = () => {
+      if (requestId !== previewRequestId || !packPreviewState) return;
+      const duration = Number(audio.duration);
+      const safeStart = serverClipped ? 0 : fallbackPackPreviewStart(track, duration);
+      const start = Number.isFinite(safeStart) ? Math.max(0, safeStart) : 0;
+      const end = Number.isFinite(duration) && duration > 0
+        ? Math.min(duration, start + requestedDuration)
+        : start + requestedDuration;
+      packPreviewState.start = start;
+      packPreviewState.end = Math.max(start, end);
+      if (Math.abs(audio.currentTime - start) > 0.15) {
+        try { audio.currentTime = start; } catch {}
+      }
+      syncProgress();
     };
 
-    updatePlayerIdentity(track);
-    audio.currentTime = start;
-    syncProgress();
-
-    if (autoplay) {
-      try {
-        await audio.play();
-      } catch (error) {
-        console.warn("Lecture preview bloquée :", error);
-      }
+    if (isNewSource) {
+      if (audio.readyState >= 1) alignStart();
+      else audio.addEventListener("loadedmetadata", alignStart, { once: true });
+    } else if (audio.currentTime >= packPreviewState.end - 0.05 ||
+               audio.currentTime < packPreviewState.start - 0.05) {
+      try { audio.currentTime = initialStart; } catch {}
     }
 
+    syncProgress();
     syncPlayButtons();
     syncRows();
+
+    if (!autoplay) return;
+
+    // A stalled first-time FFmpeg preview should give feedback instead of
+    // leaving a play animation stuck indefinitely.
+    playbackTimer = window.setTimeout(() => {
+      playbackTimer = null;
+      if (requestId === previewRequestId && audio.readyState < 3) {
+        showPreviewError(new Error("Audio loading timeout"));
+      }
+    }, 15000);
+
+    // Do not turn play promise rejection into a silent freeze.
+    try {
+      const playback = audio.play();
+      playback?.catch?.((error) => {
+        if (requestId !== previewRequestId || error?.name === "AbortError") return;
+        clearPlaybackTimer();
+        showPreviewError(error);
+      });
+    } catch (error) {
+      clearPlaybackTimer();
+      showPreviewError(error);
+    }
   }
 
   function togglePlayback() {
@@ -1293,7 +1331,9 @@ function setupPackPreviewPlayer() {
       audio.currentTime = packPreviewState.start;
     }
 
-    audio.play().catch(() => {});
+    audio.play().catch((error) => {
+      if (error?.name !== "AbortError") showPreviewError(error);
+    });
   }
 
   async function finishCurrentPreview() {
@@ -1335,6 +1375,11 @@ function setupPackPreviewPlayer() {
     }
   });
   audio.addEventListener("ended", finishCurrentPreview);
+  audio.addEventListener("playing", clearPlaybackTimer);
+  audio.addEventListener("error", () => {
+    clearPlaybackTimer();
+    if (packPreviewState) showPreviewError(audio.error);
+  });
   audio.addEventListener("play", () => {
     syncPlayButtons();
     syncRows();
@@ -1442,6 +1487,16 @@ function setupPackPreviewPlayer() {
     });
   });
 
+  document.querySelectorAll("body.pack-page .track-row").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button, a")) return;
+      const index = tracks.findIndex((track) => String(track.id) === String(row.dataset.trackId || ""));
+      if (index < 0) return;
+      if (packPreviewState?.trackIndex === index) togglePlayback();
+      else selectTrack(index, { autoplay: true });
+    });
+  });
+
   document.querySelectorAll("body.pack-page .track-row-mobile").forEach((row) => {
     row.addEventListener("click", (event) => {
       if (event.target.closest(".track-price-mobile")) return;
@@ -1463,7 +1518,6 @@ function setupPackPreviewPlayer() {
   });
 
   window.requestAnimationFrame(alignPackMiniPlayerToContent);
-  preparePackPreviewIntelligence();
 }
 
 function getPackShareUrl(packId) {
@@ -1759,8 +1813,7 @@ function renderPack() {
         : `<img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
      
           <button class="playerBtnMob play"></button>
-          <audio src="${getFilePath(packData.audio || packData.audioName)}">
-            </audio>
+
     </div>
 
     <button class="pack-share-button" type="button" aria-label="Partager" title="Partager">
@@ -1834,10 +1887,7 @@ function renderPack() {
  <span class="track-preview-time">30</span> 
 
  </button>
-  <audio
-class="track-audio"
-src="${getFilePath(track.audioName || track.audio)}"
-></audio>
+
     </div>
 
       <p class="track-title">${track.title}</p>
@@ -1869,7 +1919,7 @@ src="${getFilePath(track.audioName || track.audio)}"
      class="track-cover-mobile"
     >   
     <span class="mobile-preview-time">30</span>
-    <audio class="mobile-track-audio" src="${getFilePath(track.audioName || track.audio)}"></audio>
+
 
     </div>
 
@@ -2106,21 +2156,40 @@ async function initializePackPage() {
   } catch (error) {
     console.error("Erreur ouverture du pack :", error);
 
-    const message =
-      error?.name === "AbortError"
-        ? "Problème de chargement : le serveur met trop de temps à répondre."
-        : error?.message || "Impossible d’ouvrir ce pack.";
+    const networkIssue = navigator.onLine === false || error instanceof TypeError || error?.name === "AbortError";
+    const message = navigator.onLine === false
+      ? "Aucune connexion Internet : impossible de charger cette page."
+      : error?.name === "AbortError"
+        ? "Connexion au serveur trop lente : impossible de charger cette page."
+        : networkIssue
+          ? "Erreur de connexion : impossible de charger le pack depuis le serveur."
+          : error?.message || "Impossible d’ouvrir ce pack.";
 
     updatePackLoading(100, message);
     await waitForPackMinimum(loadingStartedAt);
 
     showPopup({
       type: "error",
-      title: "Pack indisponible",
+      title: networkIssue ? "Erreur de connexion" : "Pack indisponible",
       message
     });
   }
 }
+
+function syncPackOfflineBanner() {
+  const id = "sonara-pack-network-error";
+  document.getElementById(id)?.remove();
+  if (navigator.onLine !== false) return;
+  const banner = document.createElement("div");
+  banner.id = id;
+  banner.setAttribute("role", "alert");
+  banner.style.cssText = "position:sticky;top:0;z-index:9999;padding:14px 18px;background:#111;color:white;border-bottom:1px solid #777;text-align:center";
+  banner.textContent = "Erreur de connexion : impossible de charger ce pack ou ses previews tant que le réseau est indisponible.";
+  (packList || document.body).prepend(banner);
+}
+window.addEventListener("offline", syncPackOfflineBanner);
+window.addEventListener("online", syncPackOfflineBanner);
+syncPackOfflineBanner();
 
 initializePackPage();
 

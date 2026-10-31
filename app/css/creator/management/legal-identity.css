@@ -1,0 +1,357 @@
+/* ==========================================================
+   IDENTIFICATION LEGALE INTERNATIONALE · PAGE ARTISTE
+   Scoped only to the legal form, no impact on other settings.
+   ========================================================== */
+.artist-legal-page {
+  background: radial-gradient(ellipse 70% 45% at 50% -16%, rgba(48,111,185,.12), transparent 75%), #070a10;
+  color: #f4f7ff;
+}
+.artist-legal-content {
+  max-width: 810px;
+  margin: clamp(22px,4vw,44px) auto 0;
+}
+.artist-legal-form {
+  padding: clamp(22px,3.8vw,40px);
+  border: 1px solid rgba(143,176,219,.20);
+  background: linear-gradient(150deg,#171f2d 0%,#111824 40%,#0b111a 100%);
+  border-radius: 24px;
+  box-shadow: 0 22px 85px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.04);
+}
+.artist-legal-intro {
+  padding-bottom: 25px;
+  border-bottom: 1px solid rgba(175,196,228,.13);
+}
+.artist-legal-kicker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8ebce8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.artist-legal-kicker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6dd7ef;
+  box-shadow: 0 0 16px rgba(109,215,239,.65);
+}
+.artist-legal-intro h2 {
+  margin: 12px 0 9px;
+  color: #f7f9ff;
+  font-size: clamp(23px,3.6vw,32px);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  font-weight: 790;
+}
+.artist-legal-intro > p {
+  max-width: 63ch;
+  margin: 0;
+  color: #a5b3c7;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.artist-legal-current {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 13px;
+  border: 1px solid rgba(132,164,207,.24);
+  background: rgba(87,123,164,.11);
+  border-radius: 11px;
+  color: #d0e1f9;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.artist-legal-current-dot {
+  flex: 0 0 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8bc3fa;
+}
+.artist-legal-current[data-tone="error"] {
+  background: rgba(240,100,115,.10);
+  border-color: rgba(250,138,147,.27);
+  color: #ffd0d4;
+}
+.artist-legal-current[data-tone="error"] .artist-legal-current-dot {background:#ff929e;}
+.artist-legal-current[data-tone="empty"] .artist-legal-current-dot {background:#a9b6c8;}
+.artist-legal-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 23px 20px;
+  margin-top: 28px;
+  align-items: start;
+}
+.artist-legal-form .artist-legal-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: unset;
+  padding: 0;
+  border: none;
+}
+.artist-legal-form .artist-legal-field[hidden] {display: none !important;}
+.artist-legal-form .artist-legal-full {grid-column: 1 / -1;}
+.artist-legal-form .account-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  color: #e9eef8;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.artist-legal-optional {color:#90a1b9; font-size: 11px; font-weight:500;}
+.artist-legal-select-wrap {position:relative; width:100%; min-width:0;}
+.artist-legal-select-wrap::after {
+  content:"";
+  position:absolute;
+  right:18px;
+  top: calc(50% - 4px);
+  width:8px;
+  height:8px;
+  border-right: 2px solid #afc6df;
+  border-bottom: 2px solid #afc6df;
+  transform:rotate(45deg);
+  pointer-events:none;
+}
+.artist-legal-form .artist-legal-control {
+  display:block;
+  width:100%;
+  min-width:0;
+  height:52px;
+  min-height:52px;
+  padding:12px 16px;
+  border:1px solid #38475e;
+  border-radius:12px;
+  outline: none;
+  background: #0c1523;
+  color: #f7f9fc;
+  color-scheme: dark;
+  font: 550 14px/1.35 Inter, sans-serif;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.15);
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.artist-legal-form select.artist-legal-control {
+  appearance:none;
+  -webkit-appearance:none;
+  padding-right:42px;
+  cursor:pointer;
+  text-overflow:ellipsis;
+}
+.artist-legal-form .artist-legal-control:hover {border-color:#6684ab; background:#101d2f;}
+.artist-legal-form .artist-legal-control:focus-visible {
+  border-color:#6fc3fb;
+  box-shadow: 0 0 0 3px rgba(97,184,244,.22);
+}
+.artist-legal-form .artist-legal-control::placeholder {color:#7689a4; font-weight:450;}
+.artist-legal-form select.artist-legal-control option,
+.artist-legal-form select.artist-legal-control optgroup {
+  background:#111c2b;
+  color:#f5f8ff;
+  font-size:14px;
+}
+.artist-legal-form select.artist-legal-control optgroup {font-weight:700;}
+.artist-legal-hint {font-size:11px; color:#8fa0b6; line-height:1.45;}
+.artist-legal-notice {
+  display:flex;
+  align-items:flex-start;
+  gap:13px;
+  margin-top:27px;
+  padding:17px;
+  background:rgba(102,144,194,.07);
+  border:1px solid rgba(139,178,222,.18);
+  border-radius:13px;
+}
+.artist-legal-notice-icon {
+  flex: 0 0 22px;
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border:1px solid #6e9aca;
+  color:#afddfc;
+  border-radius:50%;
+  font-size:13px;
+  font-weight:750;
+}
+.artist-legal-notice p {margin:0; color:#a9bad0; line-height:1.65; font-size:12px;}
+.artist-legal-feedback {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-top:18px;
+  padding:14px 16px;
+  border-radius:12px;
+  border:1px solid rgba(106,166,221,.25);
+  background:rgba(87,153,207,.09);
+  color:#c7ddf6;
+  line-height:1.55;
+  font-size:13px;
+}
+.artist-legal-feedback[hidden],.artist-legal-retry[hidden] {display:none !important;}
+.artist-legal-feedback[data-tone="error"] {
+  background:rgba(210,70,84,.12);
+  border-color:rgba(245,127,140,.35);
+  color:#ffbec6;
+}
+.artist-legal-feedback[data-tone="success"] {
+  background:rgba(61,174,130,.12);
+  border-color:rgba(114,212,174,.32);
+  color:#b9f1d5;
+}
+.artist-legal-retry {
+  flex-shrink:0;
+  padding:9px 13px;
+  border:1px solid rgba(241,167,174,.5);
+  border-radius:9px;
+  background:rgba(255,255,255,.06);
+  color:inherit;
+  font-size:12px;
+  font-weight:750;
+}
+.artist-legal-retry:hover {background:rgba(255,255,255,.12);}
+.artist-legal-form .artist-legal-save {
+  margin-top:21px;
+  min-height:54px;
+  border-radius:12px;
+  background:linear-gradient(105deg,#afd8ff,#f2f7ff);
+  color:#0b1a2a;
+  font-size:14px;
+  font-weight:800;
+  transition:opacity .16s ease,transform .16s ease;
+}
+.artist-legal-form .artist-legal-save:disabled {
+  opacity:.48;
+  cursor:not-allowed;
+  transform:none;
+}
+.artist-legal-form .artist-legal-save:not(:disabled):hover {transform:translateY(-1px);}
+@media (max-width:700px) {
+  .artist-legal-page {padding:20px 14px 65px;}
+  .artist-legal-content {margin-top:24px;}
+  .artist-legal-form {padding:24px 20px; border-radius:20px;}
+  .artist-legal-fields {grid-template-columns:1fr; gap:20px;}
+  .artist-legal-form .artist-legal-full {grid-column:auto;}
+  .artist-legal-feedback {flex-direction:column; align-items:stretch;}
+  .artist-legal-retry {width:100%;}
+}
+@media (min-width:1600px) {
+  .artist-legal-content {max-width:880px;}
+}
+
+/* External provider status — independent of the artist's declaration. */
+.artist-legal-provider {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid rgba(108,156,223,.30);
+  border-radius: 16px;
+  background: linear-gradient(135deg,rgba(37,83,141,.19),rgba(8,18,32,.68));
+}
+.artist-legal-provider-heading {display:flex;align-items:center;gap:12px;color:#f4f8ff;}
+.artist-legal-provider-heading div {display:flex;flex-direction:column;gap:3px;}
+.artist-legal-provider-heading strong {font-size:15px;}
+.artist-legal-provider-heading small {font-size:12px;color:#9fb9d9;}
+.artist-legal-provider-icon {display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:rgba(70,135,222,.25);color:#a4d8ff;}
+.artist-legal-provider-status {margin:18px 0 10px;font-size:14px;font-weight:750;color:#b3defe;line-height:1.5;}
+.artist-legal-provider-help {margin:0;color:#a6b7ce;font-size:12px;line-height:1.65;}
+.artist-legal-provider-test {margin:12px 0 0;padding:10px 12px;border-radius:9px;background:rgba(246,180,70,.09);color:#fbd89d;font-size:12px;line-height:1.5;}
+.artist-legal-provider-action {display:inline-flex;margin-top:16px;padding:12px 17px;border:1px solid #6094cd;border-radius:10px;color:#e4f3ff;text-decoration:none;font-size:13px;font-weight:750;}
+.artist-legal-provider-action:hover {background:rgba(85,151,231,.16);}
+.artist-legal-provider-action[hidden],.artist-legal-provider-test[hidden] {display:none !important;}
+@media (max-width:700px) {
+  .artist-legal-provider {padding:18px 16px;}
+  .settings-title {font-size:clamp(14px,4vw,20px);}
+}
+
+/* Accessible back-arrow fallback even when the icon CDN is offline. */
+.artist-legal-page .settings-back-button [data-lucide="arrow-left"] {font-style:normal;font-size:26px;line-height:1;}
+
+/* Declarations are NOT verified: amber only, never green confirmation. */
+.artist-legal-current[data-tone="pending"],
+.artist-legal-feedback[data-tone="pending"],
+.artist-legal-feedback[data-tone="success"] {
+  border-color: rgba(242,169,61,.45);
+  background: rgba(233,151,34,.12);
+  color: #f9dca4;
+}
+.artist-legal-current[data-tone="pending"] .artist-legal-current-dot {background:#f4ad49;}
+.artist-legal-provider-status[data-tone="simulated"] {color:#f4c878;}
+.artist-legal-provider-separation {margin-top:12px!important;border-top:1px solid rgba(140,164,207,.18);padding-top:12px;}
+.artist-legal-attestation {display:flex;align-items:flex-start;gap:12px;margin-top:24px;padding:15px 18px;
+ background:rgba(228,157,48,.08);border:1px solid rgba(238,175,71,.36);border-radius:12px;
+ color:#e7d7bf;font-size:13px;line-height:1.6;cursor:pointer;}
+.artist-legal-attestation[hidden] {display:none!important;}
+.artist-legal-attestation input {width:18px;height:18px;margin:2px 0 0;flex:0 0 18px;accent-color:#e7ae58;}
+.artist-legal-clear {display:block;margin:12px auto 0;border:0;background:transparent;color:#bac9de;
+ text-decoration:underline;text-underline-offset:4px;cursor:pointer;font-size:12px;padding:8px 16px;}
+.artist-legal-clear[hidden] {display:none!important;}
+.artist-legal-clear:hover {color:#fff;}
+
+/* Invalid field feedback – match Sonara account authentication, scoped to legal management. */
+.artist-legal-form .artist-legal-control.artist-legal-invalid,
+.artist-legal-form .artist-legal-control[aria-invalid="true"] {
+  border: 2px solid #ff6478 !important;
+  background: rgba(110,25,42,.17) !important;
+  box-shadow: 0 0 0 3px rgba(255,83,112,.14) !important;
+}
+.artist-legal-form .artist-legal-control.artist-legal-invalid:focus-visible {
+  border-color:#ff8796 !important;
+  box-shadow: 0 0 0 4px rgba(255,93,118,.25) !important;
+}
+.artist-legal-form .artist-legal-has-error > .account-label {color:#ffabb8;}
+.artist-legal-field-error {
+  display:block;
+  color:#ff9fac;
+  font-size:12px;
+  line-height:1.5;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.artist-legal-field-error[hidden] {display:none !important;}
+.artist-legal-attestation.artist-legal-has-error {
+  border:2px solid #ff6478;
+  background:rgba(110,25,42,.17);
+  box-shadow:0 0 0 3px rgba(255,83,112,.12);
+  flex-wrap:wrap;
+}
+.artist-legal-attestation .artist-legal-field-error {flex-basis:100%;margin-left:30px;}
+
+/* V1 TEST is a clearly isolated simulation, never a verification badge. */
+.artist-legal-proof {margin-top:20px;padding:16px 18px;border:1px solid rgba(245,175,64,.34);border-radius:12px;background:rgba(230,145,39,.07);color:#ffe1a6;}
+.artist-legal-proof strong {display:block;font-size:13px;}
+.artist-legal-proof p {margin:7px 0 0;color:#cdbb9d;font-size:12px;line-height:1.6;}
+.artist-legal-proof-test {color:#ffc671!important;}
+.artist-legal-test-switch {display:flex;gap:12px;align-items:flex-start;margin-top:16px;padding:12px 14px;border:1px solid rgba(247,168,65,.46);border-radius:12px;color:#ffe1b0;background:rgba(234,147,38,.10);cursor:pointer;}
+.artist-legal-test-switch[hidden],.artist-legal-proof-test[hidden] {display:none!important;}
+.artist-legal-test-switch input {width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:#f2b459;}
+.artist-legal-test-switch span {display:flex;flex-direction:column;gap:4px;}
+.artist-legal-test-switch strong {font-size:13px;}
+.artist-legal-test-switch small {font-size:12px;color:#dcc6a5;line-height:1.5;}
+
+/* Portail d'enregistrement local et contrôle du registre public. */
+.artist-registration-portal { grid-column:1 / -1; display:flex; flex-direction:column; gap:11px;
+  border:1px solid rgba(124,211,252,.24); border-radius:13px; padding:17px; background:rgba(56,189,248,.07); }
+.artist-registration-portal-content { display:flex;flex-direction:column;gap:9px;line-height:1.5;color:#d0e2fb; }
+.artist-registration-portal-content a {color:#89d5fb;text-decoration:underline;text-underline-offset:4px;}
+.artist-registration-portal small {color:#99abc0;line-height:1.5;}
+.artist-legal-instant-check {display:flex;flex-direction:column;gap:12px;margin-top:22px;padding:16px;
+  border:1px solid rgba(125,211,252,.2);border-radius:14px;}
+.artist-legal-instant-check[hidden] {display:none;}
+.artist-legal-instant-check label {display:flex;align-items:center;gap:10px;line-height:1.5;}
+.artist-legal-check-registry {padding:15px 20px;border:0;border-radius:12px;cursor:pointer;
+  background:#1674c4;color:white;font-weight:750;}
+.artist-legal-check-registry:focus-visible {outline:3px solid #7dd3fc;outline-offset:2px;}
+.artist-legal-instant-check small {color:#9aafc9;line-height:1.5;}

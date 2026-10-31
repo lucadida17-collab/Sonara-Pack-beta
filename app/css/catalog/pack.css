@@ -4671,3 +4671,13 @@ body.pack-page .sonara-pack-book-hero-card .cover {
   outline: 0 !important;
   box-shadow: none !important;
 }
+
+/* L'overlay Play sur la cover est uniquement pour les ordinateurs à souris. */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  body.pack-page .playerBtnMob { display: flex !important; }
+  body.pack-page .track-row { cursor: pointer; }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 899px) {
+  body.pack-page .playerBtnMob { display: none !important; }
+}
