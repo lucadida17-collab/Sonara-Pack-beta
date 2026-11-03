@@ -26,6 +26,7 @@ function makePack(version = 1) {
     status: "approved",
     submittedAt: "2026-08-18T10:00:00.000Z",
     publishedAt: "2026-08-18T11:00:00.000Z",
+    rightsDeclarationAccepted: true,
     license: {
       ...defaultPackLicense(),
       id: `pack_test_1:license:v${version}`,

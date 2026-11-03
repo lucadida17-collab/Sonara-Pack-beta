@@ -3696,21 +3696,22 @@ async function toggleModerationPackAudio(card) {
       const url = await moderationTrackBlobUrl(packId, trackId);
       const previewStart = Math.max(0, Number(track.previewStart || 0));
       const previewDuration = Math.min(30, Math.max(1, Number(track.previewDuration || 30)));
+      const artistLocked = String(track.previewMode || "") === "manual";
       row.innerHTML = `
         <div class="moderation-audio-track-title"><span>${String(tracks.indexOf(track) + 1).padStart(2, "0")}</span><strong>${escapeHTML(track.title || track.name || "Piste")}</strong></div>
         <div class="moderation-audio-track-tools">
           <audio controls preload="metadata" src="${url}"></audio>
-          <div class="moderation-highlight-picker" data-highlight-picker data-track-id="${escapeHTML(trackId)}" data-preview-start="${previewStart}" data-preview-duration="${previewDuration}">
+          <div class="moderation-highlight-picker" data-highlight-picker data-track-id="${escapeHTML(trackId)}" data-preview-start="${previewStart}" data-preview-duration="${previewDuration}" data-artist-locked="${artistLocked}">
             <div class="moderation-highlight-picker-head">
-              <strong>Moment fort</strong>
+              <strong>${artistLocked ? "Choix de l'artiste — verrouillé" : "Moment fort · modération"}</strong>
               <small data-highlight-label>${moderationPreviewClock(previewStart)} → ${moderationPreviewClock(previewStart + previewDuration)}</small>
             </div>
             <div class="moderation-highlight-picker-controls">
-              <input type="range" min="0" step="0.1" value="${previewStart}" data-highlight-range aria-label="Début du moment fort">
-              <label>Début <input type="number" min="0" step="0.1" value="${previewStart}" data-highlight-number> s</label>
+              <input type="range" min="0" step="0.1" value="${previewStart}" data-highlight-range aria-label="Début du moment fort" ${artistLocked ? "disabled" : ""}>
+              <label>Début <input type="number" min="0" step="0.1" value="${previewStart}" data-highlight-number ${artistLocked ? "disabled" : ""}> s</label>
               <button type="button" class="secondary-button compact" data-highlight-listen><i data-lucide="play"></i>Écouter ici</button>
             </div>
-            <small class="moderation-highlight-help">Choisis le début du passage. À l’acceptation, ce moment devient la preview Sonara de 30 s.</small>
+            <small class="moderation-highlight-help">${artistLocked ? "Passage choisi par l'artiste : la modération ne le remplace pas." : "Si tu changes ce début, il sera enregistré lors de l'approbation."} Fondu d'ouverture et de fin de 5 s.</small>
           </div>
           <div class="moderation-preview-export">
             <small>Extrait actuel · <span data-preview-export-label>${moderationPreviewClock(previewStart)} → ${moderationPreviewClock(previewStart + previewDuration)}</span></small>
@@ -3765,7 +3766,19 @@ async function toggleModerationPackAudio(card) {
       if (!audio) return;
       applyStart(picker.dataset.previewStart, false);
       audio.currentTime = Math.max(0, asNumber(picker.dataset.previewStart, 0));
-      audio.play().catch(() => {});
+      // Simulate the same 5s in/out envelope while the moderator listens.
+      const beginning = Math.max(0, asNumber(picker.dataset.previewStart, 0));
+      const windowLength = Math.min(30, audio.duration - beginning || 30);
+      const onTime = () => {
+        const elapsed = Math.max(0, audio.currentTime - beginning);
+        const fade = Math.min(1, elapsed / 5, Math.max(0, (windowLength - elapsed) / 5));
+        audio.volume = Math.max(0, fade);
+        if (elapsed >= windowLength) { audio.pause(); audio.removeEventListener("timeupdate", onTime); audio.volume = 1; }
+      };
+      audio.addEventListener("timeupdate", onTime);
+      audio.addEventListener("pause", () => { audio.removeEventListener("timeupdate", onTime); audio.volume = 1; }, {once:true});
+      onTime();
+      audio.play().catch(() => { audio.removeEventListener("timeupdate", onTime); audio.volume=1; });
     });
   });
 

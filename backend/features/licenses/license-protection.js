@@ -10,6 +10,62 @@ const RIGHTS_DECLARATION_VERSION = "SONARA_RIGHTS_PRE_V1_1";
 const LEGAL_TEXT_REVIEW_REQUIRED = "LEGAL_TEXT_REVIEW_REQUIRED";
 const FINGERPRINT_STATUS = "NOT_CONFIGURED";
 const DOWNLOAD_TOKEN_TTL_MS = 15 * 60 * 1000;
+// Informations déclaratives uniquement : elles ne constituent pas une certification de titularité.
+const THIRD_PARTY_RIGHTS = Object.freeze([
+  "collaborators", "samples", "remix_cover", "publisher_label",
+  "master_coowners", "collective_management"
+]);
+const RIGHTS_MANAGEMENT = Object.freeze([
+  "none", "content_id", "distributor", "label", "other", "unknown"
+]);
+const RIGHTS_DECLARATION_TEXT = "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.";
+
+function normalizeTrackRights(input) {
+  // Les packs historiques sans cette propriété restent lisibles et publiables selon leurs règles initiales.
+  if (input == null) return { valid: true, value: null, requiresReview: false };
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { valid: false, code: "TRACK_RIGHTS_INVALID", message: "Déclaration de droits invalide." };
+  }
+  const status = String(input.status || "").trim();
+  if (!["controlled", "third_party"].includes(status)) {
+    return { valid: false, code: "TRACK_RIGHTS_INVALID", message: "Précise qui contrôle les droits sur cette track." };
+  }
+  const management = String(input.management || "none").trim();
+  if (!RIGHTS_MANAGEMENT.includes(management)) {
+    return { valid: false, code: "TRACK_RIGHTS_INVALID", message: "Gestion des droits non reconnue." };
+  }
+  const kinds = status === "third_party"
+    ? [...new Set((Array.isArray(input.kinds) ? input.kinds : []).filter(k => THIRD_PARTY_RIGHTS.includes(k)))].slice(0, 6)
+    : [];
+  if (status === "third_party" && !kinds.length) {
+    return { valid: false, code: "TRACK_RIGHTS_DETAILS_REQUIRED", message: "Précise la nature des droits tiers sur cette track." };
+  }
+  if (status === "third_party" && input.permissionsConfirmed !== true) {
+    return { valid: false, code: "TRACK_THIRD_PARTY_PERMISSION_REQUIRED", message: "Confirme les autorisations nécessaires des tiers avant de publier cette track." };
+  }
+  const value = {
+    declarationVersion: 1,
+    status,
+    kinds,
+    permissionsConfirmed: status === "third_party" && input.permissionsConfirmed === true,
+    management,
+    managerName: management === "none" ? "" : text(input.managerName, 140),
+    notes: status === "third_party" ? text(input.notes, 500) : ""
+  };
+  // Même si des autorisations sont déclarées, une gestion externe exige un examen humain.
+  return {
+    valid: true, value,
+    requiresReview: status === "third_party" || management !== "none"
+  };
+}
+
+function packRequiresRightsReview(pack = {}) {
+  return (Array.isArray(pack.tracks) ? pack.tracks : []).some(track => {
+    const result = normalizeTrackRights(track?.rightsInfo);
+    return !result.valid || result.requiresReview === true;
+  });
+}
+
 
 const INCIDENT_STATUSES = Object.freeze([
   "PENDING",
@@ -301,22 +357,56 @@ function createLicenseProtection(options = {}) {
   }
 
   async function recordRightsDeclaration({ rootUserId, artistId, pack, acceptedAt = nowIso() }) {
+    if (pack?.rightsDeclarationAccepted !== true) {
+      throw new Error("La déclaration de droits doit avoir été acceptée avant son archivage.");
+    }
     const tracks = Array.isArray(pack?.tracks) ? pack.tracks : [];
+    const trackDeclarations = tracks.map(track => {
+      const normalized = normalizeTrackRights(track?.rightsInfo);
+      if (!normalized.valid) throw new Error(normalized.message);
+      return {
+        trackId: text(track?.id, 180),
+        title: text(track?.title, 240),
+        rightsInfo: normalized.value
+      };
+    });
+    const files = fileEvidenceForItem(pack, null);
+    const declarationTextHash = sha256(RIGHTS_DECLARATION_TEXT);
+    const declarationContentHash = sha256(stableStringify({
+      declarationVersion: RIGHTS_DECLARATION_VERSION,
+      declarationTextHash,
+      trackDeclarations,
+      files,
+      license: normalizePackLicense(pack?.license)
+    }));
+    const previous = await store.findOne({
+      recordType: "RIGHTS_DECLARATION", packId: text(pack?.id, 180)
+    });
+    if (previous?.declarationContentHash === declarationContentHash) return previous;
     const record = await store.insert({
       recordType: "RIGHTS_DECLARATION",
       id: makeId("rights_declaration"),
       rightsDeclarationId: makeId("rights"),
-      uniqueKey: `rights:${text(pack?.id, 180)}:${RIGHTS_DECLARATION_VERSION}`,
+      // Le contenu, les fichiers et les choix de droits déterminent l'identité de cette déclaration.
+      uniqueKey: `rights:${text(pack?.id, 180)}:${RIGHTS_DECLARATION_VERSION}:${declarationContentHash}`,
       declarationVersion: RIGHTS_DECLARATION_VERSION,
+      declarationTextHash,
+      declarationContentHash,
+      previousRightsDeclarationId: previous?.declarationContentHash !== declarationContentHash
+        ? previous?.rightsDeclarationId || null : null,
       legalTextStatus: LEGAL_TEXT_REVIEW_REQUIRED,
-      declarationTextSnapshot: "Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.",
+      declarationTextSnapshot: RIGHTS_DECLARATION_TEXT,
+      // Pas de nouveau contrat fictif ; la version technique et le texte exact sont figés.
+      artistContractVersion: RIGHTS_DECLARATION_VERSION,
+      artistContractReviewStatus: LEGAL_TEXT_REVIEW_REQUIRED,
+      trackDeclarations,
       userId: text(rootUserId, 180) || null,
       artistId: text(artistId, 180),
       packId: text(pack?.id, 180),
       packTitleSnapshot: text(pack?.title || pack?.name, 240),
       trackIds: tracks.map((track) => text(track?.id, 180)).filter(Boolean),
       resourceIds: (Array.isArray(pack?.resources) ? pack.resources : []).map((resource) => text(resource?.id, 180)).filter(Boolean),
-      files: fileEvidenceForItem(pack, null),
+      files,
       submittedAt: pack?.submittedAt || pack?.createdAt || null,
       acceptedAt,
       createdAt: acceptedAt
@@ -479,6 +569,11 @@ function createLicenseProtection(options = {}) {
     const snapshot = acceptance
       ? await store.findOne({ recordType: "LICENSE_SNAPSHOT", id: acceptance.licenseSnapshotId })
       : null;
+    if (acceptance && !snapshot) {
+      const error = new Error("La version historique de la licence est introuvable.");
+      error.code = "LICENSE_SNAPSHOT_MISSING";
+      throw error;
+    }
     const downloadId = makeId("download");
     const licenseReceiptId = makeId("license_receipt");
     const rawToken = crypto.randomBytes(32).toString("hex");
@@ -710,6 +805,26 @@ function createLicenseProtection(options = {}) {
     };
   }
 
+  async function acceptedLicensesForAccount(accountId) {
+    const id = text(accountId, 180);
+    if (!id) return [];
+    const acceptances = await store.find({ recordType: "LICENSE_ACCEPTANCE", accountId: id }, { limit: 300 });
+    return Promise.all(acceptances.map(async acceptance => {
+      const snapshot = await store.findOne({ recordType: "LICENSE_SNAPSHOT", id: acceptance.licenseSnapshotId });
+      return {
+        acceptanceId: acceptance.acceptanceId,
+        packId: acceptance.packId,
+        trackId: acceptance.trackId,
+        resourceId: acceptance.resourceId,
+        acceptedAt: acceptance.acceptedAt,
+        licenseHash: acceptance.licenseHash,
+        packLicenseVersion: acceptance.packLicenseVersion,
+        licenseTextSnapshot: snapshot?.licenseText || null,
+        integrity: snapshot && snapshot.licenseHash === acceptance.licenseHash ? "OK" : "SNAPSHOT_MISSING_OR_MISMATCH"
+      };
+    }));
+  }
+
   async function artistEvidence(artistId) {
     const id = text(artistId, 180);
     const records = await store.find({ artistId: id }, { limit: 500 });
@@ -763,6 +878,10 @@ function createLicenseProtection(options = {}) {
       RIGHTS_DECLARATION_VERSION,
       LEGAL_TEXT_REVIEW_REQUIRED,
       FINGERPRINT_STATUS,
+      THIRD_PARTY_RIGHTS,
+      RIGHTS_MANAGEMENT,
+      normalizeTrackRights,
+      packRequiresRightsReview,
       INCIDENT_STATUSES,
       SANCTION_LEVELS,
       INCIDENT_TYPES
@@ -781,6 +900,7 @@ function createLicenseProtection(options = {}) {
     reviewIncident,
     createSanction,
     accountEvidence,
+    acceptedLicensesForAccount,
     artistEvidence,
     migrateLegacyDownloads,
     getIncident,
@@ -795,6 +915,10 @@ module.exports = {
   RIGHTS_DECLARATION_VERSION,
   LEGAL_TEXT_REVIEW_REQUIRED,
   FINGERPRINT_STATUS,
+  THIRD_PARTY_RIGHTS,
+  RIGHTS_MANAGEMENT,
+  normalizeTrackRights,
+  packRequiresRightsReview,
   INCIDENT_STATUSES,
   SANCTION_LEVELS,
   INCIDENT_TYPES,

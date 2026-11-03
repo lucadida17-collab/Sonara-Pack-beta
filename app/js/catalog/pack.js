@@ -1159,6 +1159,11 @@ function setupPackPreviewPlayer() {
     miniTitle.textContent = title;
     miniArtist.textContent = artist;
     grandCover.src = cover;
+    // Meme source que le livre : fond floute uniquement sur mobile.
+    grandPlayer.style.setProperty(
+      "--sonara-player-cover-image",
+      cover ? `url(${JSON.stringify(cover)})` : "none"
+    );
     grandCover.dataset.sonaraBookCover = cover;
     delete grandCover.dataset.sonaraBookReady;
     window.SonaraBookCover?.render?.(grandCover);
@@ -1231,7 +1236,14 @@ function setupPackPreviewPlayer() {
 
     const requestId = ++previewRequestId;
     clearPlaybackTimer();
-    const source = getFilePath(track.audioName || track.audio);
+    // Pack page = preview only, even for a signed-in buyer entitled to the full song.
+    // The protected endpoint exports the artist-selected 30 s passage with 5 s
+    // fade-in and 5 s fade-out; library playback keeps the untouched master.
+    const previewPackId = track.sourcePackId || packData?.id;
+    const previewTrackId = track.id || "single";
+    const source = previewPackId
+      ? `${API_URL}/api/media/preview/${encodeURIComponent(previewPackId)}/${encodeURIComponent(previewTrackId)}`
+      : getFilePath(track.audioName || track.audio);
     if (!source) {
       showPreviewError(new Error("Missing preview URL"));
       return;
@@ -1780,6 +1792,14 @@ function autoPlaylistCoverMarkup(pack = {}) {
 }
 
 function renderPack() {
+  // Le fond mobile reprend exactement la cover du pack affiché.
+  const ambientCover = document.querySelector(".pack-page-ambient-cover");
+  if (ambientCover) {
+    const coverPath = packData?.coverPack || packData?.tracks?.[0]?.coverPack || "";
+    if (coverPath) ambientCover.src = getFilePath(coverPath);
+    else ambientCover.removeAttribute("src");
+  }
+
   if (packData && packList && isResourcePack(packData)) {
     renderResourcePack();
     return;
@@ -1812,7 +1832,6 @@ function renderPack() {
         ? `<img src="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" data-sonara-book-cover="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`
         : `<img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
      
-          <button class="playerBtnMob play"></button>
 
     </div>
 

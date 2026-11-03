@@ -184,7 +184,8 @@ CreatePack.innerHTML = `
     <button type="button" class="step active" data-step="0">Pack</button>
     <button type="button" class="step" data-step="1">Contenu</button>
     <button type="button" class="step" data-step="2">Prix global</button>
-    <button type="button" class="step" data-step="3">Licence</button>
+    <button type="button" class="step" data-step="3">Temps fort</button>
+    <button type="button" class="step" data-step="4">Licence</button>
   </section>
 
   <section class="draft-state" aria-live="polite">
@@ -310,7 +311,27 @@ function createEmptyTrack({ coverFile = null, coverMode = "pack" } = {}) {
     coverMode: coverMode === "custom" ? "custom" : "pack",
     coverFile,
     audioFile: null,
-    duration: 0
+    duration: 0,
+    previewMode: "auto",
+    previewStart: 0,
+    rightsInfo: defaultTrackRightsInfo()
+  };
+}
+
+function defaultTrackRightsInfo() {
+  return { status: "controlled", kinds: [], permissionsConfirmed: false,
+    management: "none", managerName: "", notes: "" };
+}
+
+function normalizeDraftTrackRightsInfo(input) {
+  const safe = input && typeof input === "object" ? input : {};
+  return {
+    status: safe.status === "third_party" ? "third_party" : "controlled",
+    kinds: Array.isArray(safe.kinds) ? safe.kinds.filter(k => RIGHTS_KIND_OPTIONS.some(([id]) => id === k)) : [],
+    permissionsConfirmed: safe.permissionsConfirmed === true,
+    management: RIGHTS_MANAGEMENT_OPTIONS.some(([id]) => id === safe.management) ? safe.management : "none",
+    managerName: String(safe.managerName || "").slice(0, 140),
+    notes: String(safe.notes || "").slice(0, 500)
   };
 }
 
@@ -410,7 +431,10 @@ function hydratePackData(saved) {
           ),
           coverFile: track.coverFile || null,
           audioFile: track.audioFile || null,
-          duration: Number(track.duration) || 0
+          duration: Number(track.duration) || 0,
+          previewMode: track.previewMode === "manual" ? "manual" : "auto",
+          previewStart: Math.max(0, Number(track.previewStart) || 0),
+          rightsInfo: normalizeDraftTrackRightsInfo(track.rightsInfo)
         }))
       : [createEmptyTrack()];
 
@@ -465,14 +489,16 @@ function updateSteps() {
 }
 
 function render() {
+  missionCard.querySelectorAll("audio").forEach(audio => audio.pause());
   releaseObjectUrls();
   updateSteps();
-  missionCard.classList.toggle("is-license-step", currentStep === 3);
+  missionCard.classList.toggle("is-license-step", currentStep === 4);
 
   const screens = [
     renderIdentity,
     renderContent,
     renderPrice,
+    renderPreviewSettings,
     renderLicense
   ];
 
@@ -604,7 +630,7 @@ function renderIdentity() {
   missionCard.innerHTML = `
     <section class="step-panel">
       <header class="step-header">
-        <p class="step-number">ÉTAPE 1 SUR 4</p>
+        <p class="step-number">ÉTAPE 1 SUR 5</p>
         <h2>Identité du pack</h2>
       </header>
 
@@ -877,7 +903,7 @@ function renderResources() {
         <span>Pack</span>
       </button>
       <header class="step-header">
-        <p class="step-number">ÉTAPE 2 SUR 4</p>
+        <p class="step-number">ÉTAPE 2 SUR 5</p>
         <h2>${contentLabel}</h2>
         <p>${isMidiContent()
           ? "Ajoute les fichiers MIDI que l’acheteur recevra dans leur format d’origine."
@@ -1129,7 +1155,7 @@ function renderTracks() {
         <span>Pack</span>
       </button>
       <header class="step-header">
-        <p class="step-number">ÉTAPE 2 SUR 4</p>
+        <p class="step-number">ÉTAPE 2 SUR 5</p>
         <h2>Tracks du pack</h2>
       </header>
 
@@ -1595,7 +1621,7 @@ function renderAudioPrice() {
   missionCard.innerHTML = `
     <section class="step-panel">
       <header class="step-header">
-        <p class="step-number">ÉTAPE 3 SUR 4</p>
+        <p class="step-number">ÉTAPE 3 SUR 5</p>
         <h2>Prix du pack</h2>
       </header>
 
@@ -1711,7 +1737,7 @@ function renderResourcePrice() {
   missionCard.innerHTML = `
     <section class="step-panel">
       <header class="step-header">
-        <p class="step-number">ÉTAPE 3 SUR 4</p>
+        <p class="step-number">ÉTAPE 3 SUR 5</p>
         <h2>Prix du pack</h2>
       </header>
 
@@ -1789,6 +1815,99 @@ function renderResourcePrice() {
 function renderPrice() {
   if (isAudioContent()) return renderAudioPrice();
   return renderResourcePrice();
+}
+
+function previewTimeLabel(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  return `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2,"0")}`;
+}
+
+// Preview settings are a Pre-V1 feature: no Stripe or commercial gate.
+function renderPreviewSettings() {
+  const audioContent = isAudioContent();
+  missionCard.innerHTML = `
+    <section class="step-panel create-preview-step">
+      <header class="step-header">
+        <p class="step-number">ÉTAPE 4 SUR 5</p>
+        <h2>Temps fort · Paramètres du pack</h2>
+        <p>${audioContent ? "Choisis librement les 30 secondes que les visiteurs entendront avant l'achat." : "Les aperçus audio concernent les packs musicaux uniquement."}</p>
+      </header>
+      ${audioContent ? `<div class="create-preview-track-list">
+        ${packData.tracks.map((track, index) => {
+          const duration = Math.max(0, Number(track.duration) || 0);
+          const length = Math.min(30, duration || 30);
+          const max = Math.max(0, duration - length);
+          const start = Math.min(max, Math.max(0, Number(track.previewStart) || 0));
+          const manual = track.previewMode === "manual";
+          return `<article class="create-preview-track" data-preview-index="${index}">
+            <div class="create-preview-track-head"><strong>${escapeHtml(track.title || `Morceau ${index + 1}`)}</strong><small>30 s maximum · Fondu 5 s au début et à la fin</small></div>
+            <div class="create-preview-modes" role="group" aria-label="Sélection du temps fort">
+              <label><input type="radio" name="previewMode_${index}" value="auto" ${manual ? "" : "checked"}> Laisser Sonara choisir</label>
+              <label><input type="radio" name="previewMode_${index}" value="manual" ${manual ? "checked" : ""}> Choisir mon passage</label>
+            </div>
+            <div class="create-preview-manual" ${manual ? "" : "hidden"}>
+              <div class="create-preview-time"><span>Début du passage</span><strong data-preview-label>${previewTimeLabel(start)} → ${previewTimeLabel(start + length)}</strong></div>
+              <input type="range" aria-label="Début du passage" data-preview-range min="0" max="${max}" step="0.1" value="${start}">
+              <label class="create-preview-seconds">Début (secondes) <input data-preview-number type="number" min="0" max="${max}" step="0.1" value="${start}"></label>
+              <button class="create-preview-listen" type="button" data-preview-listen>Écouter mes 30 secondes</button>
+              <audio preload="none" data-preview-audio></audio>
+            </div>
+            <small class="create-preview-hint">${manual ? "Ton choix sera conservé à la publication. Le modérateur ne le remplacera pas." : "L'analyse automatique choisira le passage à la publication. La modération pourra l'ajuster."}</small>
+          </article>`;
+        }).join("")}
+      </div>` : ""}
+      <div class="actions">
+        <button type="button" class="prev-btn">Retour</button>
+        <button type="button" class="next-btn">Continuer vers la licence</button>
+      </div>
+    </section>`;
+
+  missionCard.querySelectorAll("[data-preview-index]").forEach(card => {
+    const track = packData.tracks[Number(card.dataset.previewIndex)];
+    const player = card.querySelector("[data-preview-audio]");
+    const range = card.querySelector("[data-preview-range]");
+    const input = card.querySelector("[data-preview-number]");
+    const label = card.querySelector("[data-preview-label]");
+    const manualPanel = card.querySelector(".create-preview-manual");
+    const length = Math.min(30, Number(track.duration) || 30);
+    const max = Math.max(0, Number(track.duration || 0) - length);
+    let listenStart = 0;
+    const syncStart = raw => {
+      const value = Number(raw);
+      const start = Math.round(Math.max(0, Math.min(max, Number.isFinite(value) ? value : 0)) * 10) / 10;
+      track.previewStart = start;
+      range.value = input.value = String(start);
+      label.textContent = `${previewTimeLabel(start)} → ${previewTimeLabel(start + length)}`;
+    };
+    card.querySelectorAll(`input[name^="previewMode_"]`).forEach(radio => radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      track.previewMode = radio.value;
+      manualPanel.hidden = radio.value !== "manual";
+      card.querySelector(".create-preview-hint").textContent = radio.value === "manual"
+        ? "Ton choix sera conservé à la publication. Le modérateur ne le remplacera pas."
+        : "L'analyse automatique choisira le passage à la publication. La modération pourra l'ajuster.";
+      player.pause();
+    }));
+    range.addEventListener("input", () => syncStart(range.value));
+    input.addEventListener("change", () => syncStart(input.value));
+    card.querySelector("[data-preview-listen]").addEventListener("click", () => {
+      if (!track.audioFile) return;
+      if (!player.src) player.src = createObjectUrl(track.audioFile);
+      player.pause();
+      player.currentTime = Number(track.previewStart) || 0;
+      listenStart = player.currentTime;
+      player.volume = 0;
+      player.play().catch(() => { card.querySelector(".create-preview-hint").textContent = "Lecture impossible sur cet appareil."; });
+    });
+    player.addEventListener("timeupdate", () => {
+      if (player.paused) return;
+      const elapsed = Math.max(0, player.currentTime - listenStart);
+      player.volume = Math.max(0, Math.min(1, elapsed / 5, (length - elapsed) / 5));
+      if (elapsed >= length) { player.pause(); player.volume = 1; }
+    });
+  });
+  missionCard.querySelector(".prev-btn").addEventListener("click", () => {currentStep = 2; render();});
+  missionCard.querySelector(".next-btn").addEventListener("click", () => {currentStep = 4; render();});
 }
 
 function createPackLicenseCheckboxGroup(items, values, type) {
@@ -1930,13 +2049,126 @@ function syncHumanCreationForm(form) {
   };
 }
 
+const RIGHTS_KIND_OPTIONS = [
+  ["collaborators", "Coauteurs ou collaborateurs"],
+  ["samples", "Samples ou boucles tierces"],
+  ["remix_cover", "Remix ou reprise"],
+  ["publisher_label", "Éditeur ou label"],
+  ["master_coowners", "Coproducteurs ou titulaires de l’enregistrement"],
+  ["collective_management", "Société de gestion collective"]
+];
+const RIGHTS_MANAGEMENT_OPTIONS = [
+  ["none", "Aucune gestion automatisée connue"],
+  ["content_id", "YouTube Content ID"],
+  ["distributor", "Distributeur musical"],
+  ["label", "Label ou prestataire de droits"],
+  ["other", "Autre gestionnaire"],
+  ["unknown", "Je ne sais pas"]
+];
+const RIGHTS_EVIDENCE_EXTENSIONS = new Set([
+  "mid", "midi", "flp", "als", "rpp", "cpr", "ptx", "song", "logicx",
+  "wav", "mp3", "flac", "aif", "aiff", "zip", "pdf", "png", "jpg", "jpeg", "webp", "txt"
+]);
+
+function renderTrackRightsCards() {
+  if (!isAudioContent()) return "";
+  return `<section class="create-rights-tracks" aria-label="${escapeHtml(createPackTranslate("Droits sur les morceaux"))}">
+    <h3>${escapeHtml(createPackTranslate("Droits sur les morceaux"))}</h3>
+    <p>${escapeHtml(createPackTranslate("Pour chaque morceau, indique qui contrôle les droits. Aucun justificatif demandé par défaut."))}</p>
+    ${packData.tracks.map((track, index) => {
+      const rights = normalizeDraftTrackRightsInfo(track.rightsInfo);
+      return `<div class="create-rights-track" data-track-rights-index="${index}">
+        <strong>${escapeHtml(track.title || `${createPackTranslate("Morceau")} ${index + 1}`)}</strong>
+        <label><span>${escapeHtml(createPackTranslate("Titularité des droits"))}</span>
+          <select class="track-rights-status">
+            <option value="controlled" ${rights.status === "controlled" ? "selected" : ""}>${escapeHtml(createPackTranslate("Je contrôle les droits nécessaires"))}</option>
+            <option value="third_party" ${rights.status === "third_party" ? "selected" : ""}>${escapeHtml(createPackTranslate("D'autres ayants droit sont impliqués"))}</option>
+          </select>
+        </label>
+        <div class="track-rights-third" ${rights.status === "third_party" ? "" : "hidden"}>
+          <p>${escapeHtml(createPackTranslate("Quels droits tiers sont concernés ?"))}</p>
+          <div class="create-rights-kind-list">
+            ${RIGHTS_KIND_OPTIONS.map(([id, title]) => `<label class="create-rights-check"><input type="checkbox" value="${id}" class="track-rights-kind" ${rights.kinds.includes(id) ? "checked" : ""}><span>${escapeHtml(createPackTranslate(title))}</span></label>`).join("")}
+          </div>
+          <label><span>${escapeHtml(createPackTranslate("Précisions facultatives"))}</span>
+            <textarea class="track-rights-notes" maxlength="500" rows="2">${escapeHtml(rights.notes)}</textarea>
+          </label>
+          <label class="create-rights-check"><input type="checkbox" class="track-rights-permissions" ${rights.permissionsConfirmed ? "checked" : ""}>
+            <span>${escapeHtml(createPackTranslate("Je déclare disposer des autorisations nécessaires des tiers concernés"))}</span>
+          </label>
+        </div>
+        <label><span>${escapeHtml(createPackTranslate("Gestion externe des droits"))}</span>
+          <select class="track-rights-management">
+            ${RIGHTS_MANAGEMENT_OPTIONS.map(([id, title]) => `<option value="${id}" ${rights.management === id ? "selected" : ""}>${escapeHtml(createPackTranslate(title))}</option>`).join("")}
+          </select>
+        </label>
+        <label class="track-rights-manager" ${rights.management === "none" ? "hidden" : ""}>
+          <span>${escapeHtml(createPackTranslate("Nom du gestionnaire, si connu"))}</span>
+          <input class="track-rights-manager-name" maxlength="140" value="${escapeHtml(rights.managerName)}">
+        </label>
+        <small class="create-rights-risk" ${rights.status === "third_party" || rights.management !== "none" ? "" : "hidden"}>${escapeHtml(createPackTranslate("Une vérification humaine des droits peut être nécessaire avant publication."))}</small>
+      </div>`;
+    }).join("")}
+  </section>`;
+}
+
+function syncTrackRightsForm(form) {
+  if (!form) return;
+  form.querySelectorAll("[data-track-rights-index]").forEach(panel => {
+    const index = Number(panel.dataset.trackRightsIndex);
+    const status = panel.querySelector(".track-rights-status")?.value || "controlled";
+    const management = panel.querySelector(".track-rights-management")?.value || "none";
+    const rights = {
+      status,
+      management,
+      kinds: status === "third_party"
+        ? [...panel.querySelectorAll(".track-rights-kind:checked")].map(input => input.value)
+        : [],
+      permissionsConfirmed: status === "third_party" && Boolean(panel.querySelector(".track-rights-permissions")?.checked),
+      managerName: management === "none" ? "" : (panel.querySelector(".track-rights-manager-name")?.value || "").trim(),
+      notes: status === "third_party" ? (panel.querySelector(".track-rights-notes")?.value || "").trim() : ""
+    };
+    if (packData.tracks[index]) packData.tracks[index].rightsInfo = rights;
+    panel.querySelector(".track-rights-third").hidden = status !== "third_party";
+    panel.querySelector(".track-rights-manager").hidden = management === "none";
+    panel.querySelector(".create-rights-risk").hidden = status !== "third_party" && management === "none";
+  });
+}
+
+function bindTrackRightsForm(form) {
+  form.querySelectorAll("[data-track-rights-index] input, [data-track-rights-index] select, [data-track-rights-index] textarea")
+    .forEach(input => {
+      input.addEventListener("change", () => syncTrackRightsForm(form));
+      input.addEventListener("input", () => syncTrackRightsForm(form));
+    });
+  const evidenceInput = form.querySelector(".create-evidence-files");
+  const evidenceSummary = form.querySelector(".create-evidence-summary");
+  evidenceInput?.addEventListener("change", () => {
+    const files = Array.from(evidenceInput.files || []);
+    const error = files.length > 8 ? createPackTranslate("Maximum 8 justificatifs.")
+      : files.some(file => file.size <= 0 || file.size > 100 * 1024 * 1024 || !RIGHTS_EVIDENCE_EXTENSIONS.has(file.name.toLowerCase().split(".").pop()))
+        ? createPackTranslate("Type ou taille de justificatif non autorisé.") : "";
+    if (error) {
+      evidenceInput.value = "";
+      packData.creationEvidenceFiles = [];
+      evidenceSummary.textContent = error;
+    } else {
+      packData.creationEvidenceFiles = files;
+      evidenceSummary.textContent = files.length ? `${files.length} ${createPackTranslate("justificatif(s) sélectionné(s)")}` : "";
+    }
+  });
+  if (evidenceSummary && packData.creationEvidenceFiles.length) {
+    evidenceSummary.textContent = `${packData.creationEvidenceFiles.length} ${createPackTranslate("justificatif(s) sélectionné(s)")}`;
+  }
+}
+
 function renderLicense() {
   const license = cloneCreatePackLicense(packData.license);
 
   missionCard.innerHTML = `
     <section class="step-panel create-license-step">
       <header class="step-header">
-        <p class="step-number">ÉTAPE 4 SUR 4</p>
+        <p class="step-number">ÉTAPE 5 SUR 5</p>
         <h2>Licence d’utilisation</h2>
       </header>
 
@@ -1994,6 +2226,8 @@ function renderLicense() {
             <textarea name="customTerms" maxlength="1600" placeholder="Précisions particulières visibles par l’acheteur">${escapeHtml(license.customTerms || "")}</textarea>
           </label>
 
+          ${renderTrackRightsCards()}
+
           <label class="create-license-credit create-rights-declaration">
             <input type="checkbox" name="rightsDeclarationAccepted" ${packData.rightsDeclarationAccepted ? "checked" : ""}>
             <span>
@@ -2041,8 +2275,12 @@ function renderLicense() {
             </div>
 
             <label><span>Commentaire sur le processus de création</span><textarea name="creationProcessComment" maxlength="1600" placeholder="Optionnel : composition, enregistrement, arrangement, mix…">${escapeHtml(packData.creationProcess.processComment || "")}</textarea></label>
-
-            
+            <label class="create-evidence-label">
+              <span>${escapeHtml(createPackTranslate("Justificatifs privés (facultatif)"))}</span>
+              <input type="file" class="create-evidence-files" multiple accept=".mid,.midi,.flp,.als,.rpp,.cpr,.ptx,.song,.logicx,.wav,.mp3,.flac,.aif,.aiff,.zip,.pdf,.png,.jpg,.jpeg,.webp,.txt">
+              <small>${escapeHtml(createPackTranslate("Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération."))}</small>
+              <small class="create-evidence-summary" aria-live="polite"></small>
+            </label>
           </section>
         </form>
 
@@ -2074,6 +2312,7 @@ function renderLicense() {
 
   const form = document.querySelector(".create-license-editor");
   bindCreatePackLicenseForm(form);
+  bindTrackRightsForm(form);
   updateCreatePackLicensePreview(form);
   const aiToggle = form.elements.aiAssistanceUsed;
   const aiFields = form.querySelector(".create-human-ai-fields");
@@ -2084,12 +2323,14 @@ function renderLicense() {
 
   document.querySelector(".prev-btn").addEventListener("click", async () => {
     syncCreatePackLicenseForm(form);
-    currentStep = 2;
+    syncTrackRightsForm(form);
+    currentStep = 3;
     render();
   });
 
   document.querySelector(".submit-btn").addEventListener("click", () => {
     syncCreatePackLicenseForm(form);
+    syncTrackRightsForm(form);
     syncHumanCreationForm(form);
     packData.rightsDeclarationAccepted = Boolean(form.elements.rightsDeclarationAccepted?.checked);
     submitPack();
@@ -2342,6 +2583,9 @@ async function submitPack() {
 
     formData.append("packData", JSON.stringify(finalPack));
     formData.append("coverPack", packData.identity.coverFile);
+    packData.creationEvidenceFiles.slice(0, 8).forEach((file, index) => {
+      formData.append(`creationEvidence_${index}`, file, file.name);
+    });
 
     if (isAudioContent()) {
       packData.tracks.forEach((track, index) => {
@@ -2502,7 +2746,12 @@ function buildFinalPack() {
         audioName: track.audioFile.name,
         isFree: track.isFree,
         price: track.isFree ? "Gratuit" : formatPriceForSubmission(track.price),
-        previewDuration: 30,
+        previewDuration: Math.min(30, Math.max(1, Number(track.duration) || 30)),
+        previewMode: track.previewMode === "manual" ? "manual" : "auto",
+        previewStart: track.previewMode === "manual" ? Math.max(0, Number(track.previewStart) || 0) : 0,
+        previewFadeIn: 5,
+        previewFadeOut: 5,
+        rightsInfo: normalizeDraftTrackRightsInfo(track.rightsInfo),
         duration: track.duration || 0
       };
     }) : [],
@@ -2536,7 +2785,7 @@ function buildFinalPack() {
     },
     rightsDeclarationAccepted: packData.rightsDeclarationAccepted === true,
     creationProcess: { ...packData.creationProcess, declaredAt: new Date().toISOString() },
-    creationEvidenceKinds: [],
+    creationEvidenceKinds: packData.creationEvidenceFiles.slice(0, 8).map(inferCreationEvidenceKind),
     status: "pending",
     createdAt: new Date().toISOString()
   };
@@ -2708,7 +2957,7 @@ function validateEverything() {
   if (!String(packData.license?.name || "").trim()) {
     return {
       valid: false,
-      step: 3,
+      step: 4,
       show: () => showFieldError("license", "Donne un nom à la licence avant l’envoi.")
     };
   }
@@ -2716,15 +2965,27 @@ function validateEverything() {
   if (packData.rightsDeclarationAccepted !== true) {
     return {
       valid: false,
-      step: 3,
+      step: 4,
       show: () => showFieldError("license", "Confirme la déclaration de droits avant l’envoi.")
     };
+  }
+
+  if (isAudioContent()) {
+    const invalidRights = packData.tracks.findIndex(track => {
+      const rights = normalizeDraftTrackRightsInfo(track.rightsInfo);
+      return rights.status === "third_party" &&
+        (rights.kinds.length === 0 || rights.permissionsConfirmed !== true);
+    });
+    if (invalidRights !== -1) {
+      return { valid: false, step: 4,
+        show: () => showFieldError("license", `${createPackTranslate("Précise les droits tiers et confirme les autorisations pour le morceau")} ${invalidRights + 1}.`) };
+    }
   }
 
   if (packData.creationProcess?.humanCreationConfirmed !== true) {
     return {
       valid: false,
-      step: 3,
+      step: 4,
       show: () => showFieldError("license", "Confirme la déclaration de création humaine avant l’envoi.")
     };
   }
@@ -2980,10 +3241,11 @@ async function persistCurrentScreen() {
     syncGlobalPriceFromTracks();
   }
 
-  if (currentStep === 3) {
+  if (currentStep === 4) {
     const licenseForm = document.querySelector(".create-license-editor");
     if (licenseForm) {
       packData.license = readCreatePackLicenseForm(licenseForm);
+      syncTrackRightsForm(licenseForm);
       syncHumanCreationForm(licenseForm);
       packData.rightsDeclarationAccepted = Boolean(licenseForm.elements.rightsDeclarationAccepted?.checked);
     }

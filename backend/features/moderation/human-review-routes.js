@@ -95,8 +95,9 @@ function registerHumanCreationReviewRoutes(options = {}) {
         .find(item => String(item?.id || '') === String(req.params.evidenceId));
       if (!pack || !evidence?.storageKey) return res.status(404).json({ success: false, message: 'Justificatif introuvable.' });
       res.setHeader('Cache-Control', 'private, no-store');
-      res.setHeader('Content-Type', evidence.mimeType || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `inline; filename="${String(evidence.originalName || 'evidence').replace(/["\r\n]/g, '')}"`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${String(evidence.originalName || 'evidence').replace(/["\r\n]/g, '')}"`);
       if (typeof getRemoteObject === 'function') {
         const object = await getRemoteObject(evidence.storageKey);
         if (!object?.Body || typeof object.Body.pipe !== 'function') throw new Error('Flux justificatif indisponible.');
@@ -118,6 +119,14 @@ function registerHumanCreationReviewRoutes(options = {}) {
       const pack = await getPack(req.params.packId);
       if (!pack) return res.status(404).json({ success: false, message: 'Pack introuvable.' });
       const note = String(req.body?.note || '').trim().slice(0, 1800);
+      const rightsReviewRequired = (pack.tracks || []).some(track =>
+        track?.rightsInfo?.status === 'third_party' ||
+        (track?.rightsInfo?.management && track.rightsInfo.management !== 'none')) ||
+        pack.rightsDeclarationReviewRequired === true;
+      if (state === 'approved' && rightsReviewRequired && note.length < 10) {
+        return res.status(400).json({ success: false, code: 'RIGHTS_REVIEW_NOTE_REQUIRED',
+          message: 'Précise le résultat de la vérification des droits (au moins 10 caractères).' });
+      }
       const previous = pack.humanModeration && typeof pack.humanModeration === 'object' ? pack.humanModeration : {};
       const requests = Array.isArray(previous.requests) ? [...previous.requests] : [];
       if (state === 'information_requested') {

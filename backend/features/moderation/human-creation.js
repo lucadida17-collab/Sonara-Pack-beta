@@ -93,6 +93,16 @@ function buildTechnicalSignals(pack = {}) {
     durationSeconds: tracks.reduce((sum, track) => sum + Math.max(0, Number(track?.duration) || 0), 0),
     aiAssistanceDeclared: creation.aiAssistanceUsed,
     aiAssistanceType: creation.aiAssistanceType,
+    rightsReviewRequired: tracks.some(track => {
+      const rights = track?.rightsInfo || {};
+      return rights.status === 'third_party' ||
+        (rights.management && rights.management !== 'none');
+    }) || pack.rightsDeclarationReviewRequired === true,
+    rightsReviewTrackIds: tracks.filter(track => {
+      const rights = track?.rightsInfo || {};
+      return rights.status === 'third_party' ||
+        (rights.management && rights.management !== 'none');
+    }).map(track => String(track.id || '')),
     generatedAt: new Date().toISOString()
   };
 }
@@ -117,6 +127,11 @@ function publicPackWithoutPrivateEvidence(pack = {}) {
   delete clone.creationProcess;
   delete clone.humanModeration;
   delete clone.technicalModerationSignals;
+  delete clone.rightsReviewRequired;
+  delete clone.rightsDeclarationReviewRequired;
+  clone.tracks = (Array.isArray(clone.tracks) ? clone.tracks : []).map(item => {
+    const track = { ...item }; delete track.rightsInfo; return track;
+  });
   return clone;
 }
 

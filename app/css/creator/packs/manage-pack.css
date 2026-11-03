@@ -1074,3 +1074,78 @@ a.sonara-pack-book-card,
 .sonara-pack-book-hero-card:hover .sonara-book-cover,
 .sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
 .sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* Pre-V1 — Paramètres du pack : identité Sonara noir / blanc, sans accents bleus. */
+:root { background: #000; }
+html { scrollbar-color: #555 #000; }
+body.manage-pack-page { background: #000; color: #fff; }
+body.manage-pack-page .manage-pack-eyebrow,
+body.manage-pack-page .license-preview-head span,
+body.manage-pack-page .license-choice-icon { color: #c9c9c9; }
+body.manage-pack-page .manage-pack-topbar { background: #000; backdrop-filter: none; -webkit-backdrop-filter:none; }
+body.manage-pack-page button:focus-visible,
+body.manage-pack-page input:focus-visible,
+body.manage-pack-page textarea:focus-visible { outline-color: #fff; }
+body.manage-pack-page .manage-pack-root { max-width: 1120px; }
+body.manage-pack-page .manage-pack-hero,
+body.manage-pack-page .license-editor,
+body.manage-pack-page .license-preview-panel { background: #101010; border: 1px solid #292929; box-shadow: none; }
+body.manage-pack-page .manage-pack-status,
+body.manage-pack-page .license-choice,
+body.manage-pack-page input,
+body.manage-pack-page textarea { border-color: #363636; }
+body.manage-pack-page .license-save,
+body.manage-pack-page .license-reset,
+body.manage-pack-page .manage-pack-view,
+body.manage-pack-page .manage-pack-back { background: #171717; color: #fff; border-color: #393939; box-shadow: none; }
+body.manage-pack-page button:hover { filter: brightness(1.1); }
+body.manage-pack-page [hidden] { display: none !important; }
+
+.manage-pack-options { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 18px 0 24px; }
+.manage-option { cursor:pointer; text-align:left; display:flex; align-items:flex-start; flex-direction:column; min-height:126px; gap:10px; padding:20px; background:#111; border:1px solid #303030; border-radius:16px; color:#fff; transition:background .15s, border-color .15s; }
+.manage-option:hover, .manage-option.is-active { background:#1a1a1a; border-color:#777; }
+.manage-option svg { width:22px; height:22px; color:#fafafa; }
+.manage-option strong { font-size:1.05rem; line-height:1.2; }
+.manage-option small { color:#a8a8a8; line-height:1.5; font-size:.85rem; }
+.manage-preview-settings { margin:16px 0 28px; padding:24px; border-radius:18px; border:1px solid #333; background:#101010; color:#fff; scroll-margin-top:100px; }
+.manage-preview-settings header h2 { font-size:clamp(1.35rem,3vw,2rem); margin:10px 0; }
+.manage-preview-settings header p { color:#aaa; line-height:1.5; }
+.manage-preview-track { padding:20px; border:1px solid #333; background:#080808; border-radius:14px; margin-top:16px; }
+.manage-preview-head {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.manage-preview-head span {font-size:.74rem;color:#bbb;border:1px solid #555;border-radius:20px;padding:6px 10px;}
+.manage-preview-modes {display:flex;gap:12px;flex-wrap:wrap;margin:18px 0;}
+.manage-preview-modes label {cursor:pointer;display:flex;align-items:center;gap:8px;background:#171717;border:1px solid #303030;padding:12px 14px;border-radius:10px;}
+.manage-preview-track input[type=radio] { accent-color:#fff; }
+.manage-preview-manual { padding:15px 0; }
+.manage-preview-time {display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;color:#ddd;}
+.manage-preview-manual input[type=range] {width:100%;accent-color:#fff;}
+.manage-preview-manual label {display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0;}
+.manage-preview-manual input[type=number] {width:110px;padding:10px;background:#0a0a0a;color:#fff;border:1px solid #444;border-radius:8px;}
+.manage-preview-manual audio {display:block;width:100%;margin-top:14px;}
+.manage-preview-listen,.manage-preview-footer button {padding:11px 15px;background:#fff;color:#000;border:1px solid #fff;border-radius:10px;cursor:pointer;font-weight:700;}
+.manage-preview-listen:disabled,.manage-preview-footer button:disabled {opacity:.55;cursor:wait;}
+.manage-preview-footer {display:flex;gap:15px;justify-content:space-between;align-items:center;border-top:1px solid #303030;padding-top:16px;flex-wrap:wrap;}
+.manage-preview-footer small {color:#aaa;line-height:1.4;}
+@media(max-width:700px) {
+ .manage-pack-options {grid-template-columns:1fr 1fr;gap:9px;}
+ .manage-option {min-height:115px;padding:15px;}
+ .manage-preview-settings {padding:14px;}
+ .manage-preview-track {padding:14px;}
+}
+@media(max-width:410px) { .manage-pack-options {grid-template-columns:1fr;} }
+.manage-pack-edit-form{display:grid;gap:17px;margin-top:20px;}
+.manage-pack-edit-form label{display:flex;flex-direction:column;gap:9px;color:#dedede;font-weight:600;}
+.manage-pack-edit-form input{padding:12px;border:1px solid #404040;border-radius:10px;background:#090909;color:#fff;width:100%;}
+.manage-pack-edit-form input[type=file]{cursor:pointer;}
+.manage-edit-track{border:1px solid #363636;border-radius:12px;padding:16px;display:grid;gap:14px;min-width:0;}
+.manage-edit-track legend{padding:0 8px;color:#aaa;}
+.manage-edit-submit{cursor:pointer;border:none;border-radius:10px;background:#fff;color:#000;padding:13px 17px;font-weight:750;justify-self:start;}
+.manage-edit-submit:disabled{opacity:.5;cursor:wait;}
+
+
+/* Confirmation des droits seulement lorsqu'un enregistrement est remplacé. */
+.manage-pack-edit-form .manage-audio-rights-confirmation:not([hidden]) {
+  display: flex; align-items: flex-start; gap: 10px; margin: 16px 0;
+  font-size: .9rem; color: #efefef;
+}
+.manage-pack-edit-form .manage-audio-rights-confirmation input { flex: 0 0 auto; }

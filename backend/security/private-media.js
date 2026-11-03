@@ -20,6 +20,13 @@ function isPublicImageKey(key) {
 function publicPackMetadata(pack) {
   const safe={...pack};
   for (const key of ["downloadZip","fileKey","creationEvidence","creationEvidenceKinds","creationProcess","humanModeration","technicalModerationSignals","stripeAccountId","stripeCustomerId","bankAccount","bankDetails","moderationInternalNote","originalFileHash"]) delete safe[key];
+  delete safe.rightsDeclarationReviewRequired;
+  delete safe.rightsReviewRequired;
+  safe.tracks=(Array.isArray(pack.tracks)?pack.tracks:[]).map(item=>{
+    const track={...item};
+    delete track.rightsInfo;
+    return track;
+  });
   safe.resources=(Array.isArray(pack.resources)?pack.resources:[]).map(item=>{
     const resource={...item};
     for(const key of ["fileKey","downloadZip","storageKey","originalFileHash","originalFileHashAlgorithm","originalFileHashComputedAt"]) delete resource[key];
@@ -67,7 +74,9 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
     if(tickets.size>20000) tickets.clear();
     return packs.map(pack => {
       const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
-      const withAudio = tracks.map(track => {
+      const withAudio = tracks.map(item => {
+        const track = { ...item };
+        delete track.rightsInfo;
         const source = normalizedKey(track.audioName || track.audio || "");
         if (!source) return track;
         const preview = `/api/media/preview/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id || "single")}`;
@@ -106,7 +115,7 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
       if(!entry || !isApproved(entry.pack) || !entry.source) return res.status(404).json({success:false,code:"PREVIEW_NOT_FOUND"});
       const start=Math.max(0,Number.isFinite(Number(entry.track.previewStart)) ? Number(entry.track.previewStart) : 0);
       const duration=Math.max(1,Math.min(30,Number(entry.track.previewDuration)||30));
-      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,start,duration])).digest("hex");
+      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,start,duration,"5s-fade-v1"])).digest("hex");
       const now=Date.now();
       const cached=previewCache.get(key);
       if (cached && cached.expiresAt > now && fs.existsSync(cached.file)) {

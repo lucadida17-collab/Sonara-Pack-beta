@@ -53,8 +53,8 @@ function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30, l
     const safeStart = Math.max(0, safeNumber(start, 0));
     const safeDuration = clamp(safeNumber(duration, 30), 1, 30);
     const safeLevel = clamp(safeNumber(levelPercent, 100), 70, 100) / 100;
-    const fadeInDuration = Math.min(0.15, safeDuration / 4);
-    const fadeOutDuration = Math.min(0.35, safeDuration / 3);
+    const fadeInDuration = Math.min(5, safeDuration / 2);
+    const fadeOutDuration = Math.min(5, safeDuration / 2);
     const fadeOutStart = Math.max(0, safeDuration - fadeOutDuration);
     const audioFilter = [
       "loudnorm=I=-16:TP=-1.5:LRA=11",

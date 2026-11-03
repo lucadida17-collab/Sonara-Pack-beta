@@ -38,6 +38,8 @@ const {
   createLicenseProtection,
   hashFileSha256,
   FINGERPRINT_STATUS,
+  normalizeTrackRights,
+  packRequiresRightsReview,
 } = require("./backend/features/licenses/license-protection");
 const humanCreationModeration = require("./backend/features/moderation/human-creation");
 const {
@@ -782,26 +784,15 @@ function isPackEvidenceField(fieldname) {
 
 function isAllowedCreationEvidence(file) {
   const extension = path.extname(file?.originalname || "").toLowerCase();
-  const blocked = new Set([
-    ".exe",
-    ".msi",
-    ".bat",
-    ".cmd",
-    ".com",
-    ".scr",
-    ".js",
-    ".mjs",
-    ".cjs",
-    ".php",
-    ".py",
-    ".sh",
-    ".ps1",
+  // Preuves destinées à une consultation privée, jamais exécutées par le navigateur.
+  const permitted = new Set([
+    ".mid", ".midi", ".flp", ".als", ".rpp", ".cpr", ".ptx",
+    ".song", ".logicx", ".wav", ".mp3", ".flac", ".aif", ".aiff",
+    ".zip", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".txt"
   ]);
-  return (
-    Boolean(extension) &&
-    !blocked.has(extension) &&
-    Number(file?.size || 0) <= PACK_MAX_EVIDENCE_SIZE
-  );
+  // Dans fileFilter de Multer, le flux n’a pas encore fourni file.size.
+  // La limite de 100 Mo est appliquée par multer.limits.fileSize.
+  return permitted.has(extension);
 }
 
 function packFileFilter(req, file, cb) {
@@ -1331,6 +1322,15 @@ async function validatePendingPackRequest(req) {
   if (normalizedContentType === "audio") {
     for (let index = 0; index < tracks.length; index += 1) {
       const track = tracks[index];
+      const rightsValidation = normalizeTrackRights(track?.rightsInfo);
+      if (!rightsValidation.valid) {
+        return {
+          valid: false, status: 400,
+          code: rightsValidation.code,
+          message: `Track ${index + 1} : ${rightsValidation.message}`
+        };
+      }
+      track.rightsInfo = rightsValidation.value;
       const trackTitle = String(track?.title || "").trim();
       const trackIsFree =
         track?.isFree === true ||
@@ -1545,7 +1545,11 @@ async function validatePendingPackRequest(req) {
     };
   }
   for (const evidenceFile of evidenceFiles) {
-    if (!isAllowedCreationEvidence(evidenceFile)) {
+    // Après Multer, file.size est fiable : 100 Mo maximum par justificatif,
+    // indépendamment de la limite plus large autorisée pour les ressources DAW.
+    if (!isAllowedCreationEvidence(evidenceFile) ||
+        Number(evidenceFile.size || 0) <= 0 ||
+        Number(evidenceFile.size || 0) > PACK_MAX_EVIDENCE_SIZE) {
       return {
         valid: false,
         status: 400,
@@ -4274,6 +4278,10 @@ app.patch(
     try {
       const packId = String(req.params.id || "");
       const accountId = String(req.body?.accountId || "");
+      // Le formulaire multipart arrive après le middleware global : revérifier la session ici.
+      if (!req.sonaraIdentity || accountId !== req.sonaraIdentity.accountId) {
+        return res.status(403).json({ success: false, code: "ACCOUNT_FORBIDDEN" });
+      }
       const pack = await packsCollection.findOne({ id: packId });
 
       if (!pack) {
@@ -4309,6 +4317,11 @@ app.patch(
       const tracks = (Array.isArray(pack.tracks) ? pack.tracks : []).map(
         (track) => ({ ...track }),
       );
+      const newRecording = (Array.isArray(req.files) ? req.files : []).some(file => /^trackAudio_\d+$/.test(file.fieldname));
+      if (newRecording && String(req.body?.rightsDeclarationAccepted || "") !== "true") {
+        return res.status(400).json({ success: false, code: "RIGHTS_REDECLARATION_REQUIRED",
+          message: "Confirme les droits sur les nouveaux fichiers audio avant de les envoyer." });
+      }
       const updates = {};
       const now = new Date().toISOString();
       let requestedTracks = null;
@@ -4451,6 +4464,10 @@ app.patch(
         });
         audioVersionsUpdated += 1;
         contentChanged = true;
+        pack.rightsDeclarationReviewRequired = true;
+        if (pack.humanModeration && typeof pack.humanModeration === "object") {
+          pack.humanModeration.state = "pending";
+        }
       }
 
       const oldR2Keys = [];
@@ -4516,6 +4533,25 @@ app.patch(
       }
 
       updates.tracks = tracks;
+      if (audioVersionsUpdated > 0) {
+        const declaration = await licenseProtection.recordRightsDeclaration({
+          rootUserId: req.sonaraIdentity?.rootId || null,
+          artistId: accountId,
+          pack: { ...pack, ...updates, tracks, rightsDeclarationAccepted: true },
+          acceptedAt: now
+        });
+        updates.rightsDeclaration = {
+          rightsDeclarationId: declaration.rightsDeclarationId,
+          declarationVersion: declaration.declarationVersion,
+          declarationContentHash: declaration.declarationContentHash,
+          declarationTextHash: declaration.declarationTextHash,
+          artistContractVersion: declaration.artistContractVersion,
+          legalTextStatus: declaration.legalTextStatus,
+          acceptedAt: declaration.acceptedAt
+        };
+        updates.rightsDeclarationReviewRequired = false;
+        updates.humanModeration = { ...(pack.humanModeration || {}), state: "pending" };
+      }
       updates.updatedAt = now;
       const previousStatus = String(pack.status || "draft").toLowerCase();
       const moderationRequired =
@@ -5354,6 +5390,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
         ? receivedPack.licenseHistory
         : [],
       creationEvidence,
+      rightsReviewRequired: packRequiresRightsReview({ tracks: preparedTracks }),
       humanModeration: {
         state: "pending",
         internalNote: "",
@@ -5437,6 +5474,9 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
       rightsDeclarationId: rightsDeclaration.rightsDeclarationId,
       declarationVersion: rightsDeclaration.declarationVersion,
       legalTextStatus: rightsDeclaration.legalTextStatus,
+      declarationContentHash: rightsDeclaration.declarationContentHash,
+      declarationTextHash: rightsDeclaration.declarationTextHash,
+      artistContractVersion: rightsDeclaration.artistContractVersion,
       acceptedAt: rightsDeclaration.acceptedAt,
     };
     await packsCollection.updateOne(
@@ -5717,6 +5757,22 @@ app.post("/api/free-download-access", async (req, res) => {
       success: false,
       message: "Impossible d’autoriser le téléchargement gratuit.",
     });
+  }
+});
+
+// Consultation du contrat historique par le seul compte acheteur authentifié.
+// Fonctionne même si le pack a été retiré du catalogue : les preuves sont archivées à part.
+app.get("/api/licenses/mine", async (req, res) => {
+  if (!req.sonaraIdentity?.accountId) {
+    return res.status(401).json({ success: false, code: "AUTH_REQUIRED" });
+  }
+  try {
+    res.setHeader("Cache-Control", "private, no-store");
+    const licenses = await licenseProtection.acceptedLicensesForAccount(req.sonaraIdentity.accountId);
+    return res.json({ success: true, licenses });
+  } catch (error) {
+    console.error("Historique des licences indisponible :", error?.message || error);
+    return res.status(500).json({ success: false, message: "Impossible de consulter les licences historiques." });
   }
 });
 
@@ -6560,6 +6616,12 @@ app.patch("/api/packs/:id/status", requireFounderKey, async (req, res) => {
       status === "approved"
         ? await packsCollection.findOne({ id: packId })
         : null;
+    if (status === "approved" && existingPack &&
+        (packRequiresRightsReview(existingPack) || existingPack.rightsDeclarationReviewRequired === true) &&
+        existingPack.humanModeration?.state !== "approved") {
+      return res.status(409).json({ success: false, code: "RIGHTS_REVIEW_REQUIRED",
+        message: "Un examen humain des droits tiers doit être validé avant publication." });
+    }
     const result = await packsCollection.findOneAndUpdate(
       { id: packId },
       {
@@ -8507,6 +8569,14 @@ app.patch(
         });
       }
 
+      if (status === "approved") {
+        const candidate = await packsCollection.findOne({ id: requestedId });
+        if (candidate && (packRequiresRightsReview(candidate) || candidate.rightsDeclarationReviewRequired === true) &&
+            (candidate.humanModeration?.state !== "approved" || String(candidate.humanModeration?.internalNote || "").trim().length < 10)) {
+          return res.status(409).json({ success: false, code: "RIGHTS_REVIEW_REQUIRED",
+            message: "Un examen humain des droits tiers doit être validé avant publication." });
+        }
+      }
       const result = await packsCollection.findOneAndUpdate(
         { id: requestedId },
         {

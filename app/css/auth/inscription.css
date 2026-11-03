@@ -1062,3 +1062,40 @@ button {
   min-width: 0;
   padding: 0;
 }
+
+/* Choix du profil uniquement — mêmes visuels que les écrans de chargement Sonara.
+   Les formulaires et l'écran de connexion conservent leur fond noir d'origine. */
+body.chaos:has(> .chaos-page) {
+  --sonara-signup-choice-image: url("/assets/image/loading/sonara-loading-mobile-portrait.jpeg");
+  background-color: #02040a;
+  background-image:
+    linear-gradient(180deg, rgba(1, 3, 9, 0.36), rgba(1, 4, 12, 0.62)),
+    var(--sonara-signup-choice-image);
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  body.chaos:has(> .chaos-page) {
+    --sonara-signup-choice-image: url("/assets/image/loading/sonara-loading-tablet-portrait.jpeg");
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  body.chaos:has(> .chaos-page) {
+    --sonara-signup-choice-image: url("/assets/image/loading/sonara-loading-compact-screen.jpeg");
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+  body.chaos:has(> .chaos-page) {
+    --sonara-signup-choice-image: url("/assets/image/loading/sonara-loading-desktop.jpeg");
+  }
+}
+
+@media (min-width: 1600px) {
+  body.chaos:has(> .chaos-page) {
+    --sonara-signup-choice-image: url("/assets/image/loading/sonara-loading-wide.jpeg");
+  }
+}

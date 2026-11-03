@@ -244,7 +244,10 @@
       const totalLabel = player.querySelector("[data-preview-total]");
       if (!audio || !toggle || !progress || !fill || !thumb) return;
 
-      const requestedStart = Math.max(0, Number(audio.dataset.previewStart || 0));
+      // /api/media/preview already starts at the artist's selected moment
+      // and contains the opening/closing fades in the MP3 itself.
+      const processedPreview = /\/api\/media\/preview\//.test(audio.currentSrc || audio.src || "");
+      const requestedStart = processedPreview ? 0 : Math.max(0, Number(audio.dataset.previewStart || 0));
       const requestedDuration = Math.min(30, Math.max(1, Number(audio.dataset.previewDuration || 30)));
       let start = requestedStart;
       let end = start + requestedDuration;

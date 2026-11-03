@@ -48,6 +48,8 @@ function createPackPlayerHarness(audioPath, previewStart = 65, duration = NaN) {
   const track = { id: "t1", audioName: audioPath, previewStart, previewDuration: 30 };
   const context = {
     tracks: [track],
+    packData: { id: "pack_1" },
+    API_URL: "https://test.sonara.invalid",
     packPreviewState: null,
     audio,
     previewRequestId: 0,
@@ -73,20 +75,22 @@ test("pack: one click calls audio.play immediately with no preview analysis or m
   const {controller, calls, audio} = createPackPlayerHarness("/api/media/preview/p/t");
   controller.selectTrack(0);
   assert.ok(calls.includes("play"));
-  assert.equal(audio.src, "https://test.sonara.invalid/api/media/preview/p/t");
+  assert.equal(audio.src, "https://test.sonara.invalid/api/media/preview/pack_1/t1");
   assert.equal(controller.state().start, 0);
   assert.equal(controller.state().end, 30);
 });
 
-test("pack: purchased full track remains limited to a 30-second excerpt", () => {
-  const {controller, audio, listeners} = createPackPlayerHarness("/api/media/full/opaque", 65, 180);
+test("pack: a buyer with a full-audio ticket still hears ONLY the processed 30 s preview", () => {
+  const {controller, audio, listeners} = createPackPlayerHarness("/api/media/full/opaque", 65, 30);
   controller.selectTrack(0);
-  assert.equal(controller.state().end - controller.state().start, 30);
+  assert.equal(audio.src, "https://test.sonara.invalid/api/media/preview/pack_1/t1");
+  assert.equal(controller.state().start, 0);
+  assert.equal(controller.state().end, 30);
   audio.readyState = 1;
   listeners.get("loadedmetadata")();
-  assert.equal(controller.state().start, 65);
-  assert.equal(controller.state().end, 95);
-  assert.equal(audio.currentTime, 65);
+  assert.equal(controller.state().start, 0);
+  assert.equal(controller.state().end, 30);
+  assert.equal(audio.currentTime, 0);
 });
 
 test("pack: no cover play button on tablets/touch or mobiles; mouse desktop is supported", () => {

@@ -50,6 +50,8 @@ const {
   createLicenseProtection,
   hashFileSha256,
   FINGERPRINT_STATUS,
+  normalizeTrackRights,
+  packRequiresRightsReview,
 } = require("./backend/features/licenses/license-protection");
 const humanCreationModeration = require("./backend/features/moderation/human-creation");
 const {
@@ -70,6 +72,7 @@ const {
   normalizeStoredPreview,
   ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION,
 } = require("./backend/features/audio/preview-selector");
+const { applyCreatorPreview, applyModeratorPreviews, validatePreviewStart } = require("./backend/features/audio/preview-policy");
 const {
   validateMp3Upload,
   MAX_MP3_FILE_SIZE_BYTES,
@@ -569,26 +572,15 @@ function isPackEvidenceField(fieldname) {
 
 function isAllowedCreationEvidence(file) {
   const extension = path.extname(file?.originalname || "").toLowerCase();
-  const blocked = new Set([
-    ".exe",
-    ".msi",
-    ".bat",
-    ".cmd",
-    ".com",
-    ".scr",
-    ".js",
-    ".mjs",
-    ".cjs",
-    ".php",
-    ".py",
-    ".sh",
-    ".ps1",
+  // Preuves destinées à une consultation privée, jamais exécutées par le navigateur.
+  const permitted = new Set([
+    ".mid", ".midi", ".flp", ".als", ".rpp", ".cpr", ".ptx",
+    ".song", ".logicx", ".wav", ".mp3", ".flac", ".aif", ".aiff",
+    ".zip", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".txt"
   ]);
-  return (
-    Boolean(extension) &&
-    !blocked.has(extension) &&
-    Number(file?.size || 0) <= PACK_MAX_EVIDENCE_SIZE
-  );
+  // Dans fileFilter de Multer, le flux n’a pas encore fourni file.size.
+  // La limite de 100 Mo est appliquée par multer.limits.fileSize.
+  return permitted.has(extension);
 }
 
 function packFileFilter(req, file, cb) {
@@ -1118,6 +1110,15 @@ async function validatePendingPackRequest(req) {
   if (normalizedContentType === "audio") {
     for (let index = 0; index < tracks.length; index += 1) {
       const track = tracks[index];
+      const rightsValidation = normalizeTrackRights(track?.rightsInfo);
+      if (!rightsValidation.valid) {
+        return {
+          valid: false, status: 400,
+          code: rightsValidation.code,
+          message: `Track ${index + 1} : ${rightsValidation.message}`
+        };
+      }
+      track.rightsInfo = rightsValidation.value;
       const trackTitle = String(track?.title || "").trim();
       const trackIsFree =
         track?.isFree === true ||
@@ -1332,7 +1333,11 @@ async function validatePendingPackRequest(req) {
     };
   }
   for (const evidenceFile of evidenceFiles) {
-    if (!isAllowedCreationEvidence(evidenceFile)) {
+    // Après Multer, file.size est fiable : 100 Mo maximum par justificatif,
+    // indépendamment de la limite plus large autorisée pour les ressources DAW.
+    if (!isAllowedCreationEvidence(evidenceFile) ||
+        Number(evidenceFile.size || 0) <= 0 ||
+        Number(evidenceFile.size || 0) > PACK_MAX_EVIDENCE_SIZE) {
       return {
         valid: false,
         status: 400,
@@ -3988,6 +3993,69 @@ app.get("/api/creator/packs/:accountId", async (req, res) => {
   }
 });
 
+// Pre-V1 — a change of preview timing is a metadata update, never a new moderation.
+app.patch("/api/creator/packs/:id/preview", (req, res) => {
+  try {
+    const accountId = String(req.body?.accountId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.accountId !== accountId) {
+      return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
+    }
+    const packs = readJsonArray(packsPath);
+    const pack = packs.find(p => String(p.id) === String(req.params.id));
+    if (!pack) return res.status(404).json({success:false,message:"Pack introuvable."});
+    if (!creatorPackBelongsTo(pack, accountId) || isPackHiddenByModeration(pack)) {
+      return res.status(403).json({success:false,message:"Accès refusé."});
+    }
+    if (String(pack.contentType || "audio").toLowerCase() !== "audio") {
+      return res.status(400).json({success:false,message:"Ce pack ne contient pas de previews audio."});
+    }
+    const track = (pack.tracks || []).find(t => String(t.id) === String(req.body?.trackId));
+    if (!track) return res.status(404).json({success:false,message:"Son introuvable."});
+    const mode = String(req.body?.previewMode || "");
+    if (!["auto", "manual"].includes(mode)) return res.status(400).json({success:false,message:"Mode de preview invalide."});
+    if (mode === "manual") {
+      track.previewStart = validatePreviewStart(req.body?.previewStart, track.audioDuration || track.duration);
+      track.previewChosenBy = "artist";
+    } else {
+      // Preserve the analyzed automatic proposal even after a moderator's choice.
+      track.previewStart = Math.max(0, Number(track.previewAutoStart ?? track.previewStart) || 0);
+      track.previewChosenBy = "system";
+    }
+    track.previewMode = mode;
+    track.previewDuration = Math.min(30, Math.max(1, Number(track.audioDuration || track.duration) || 30));
+    track.previewFadeIn = 5;
+    track.previewFadeOut = 5;
+    const now = new Date().toISOString();
+    pack.updatedAt = now;
+    track.previewUpdatedAt = now;
+    writeJsonArray(packsPath, packs);
+    return res.json({success:true,preview:{id:track.id,previewStart:track.previewStart,previewDuration:track.previewDuration,previewMode:mode,previewChosenBy:track.previewChosenBy},moderationRequired:false});
+  } catch (err) {
+    return res.status(err instanceof RangeError ? 400 : 500).json({success:false,message:err instanceof RangeError ? err.message : "Impossible de sauvegarder la preview."});
+  }
+});
+
+// Creator may audition any valid 30s window without exposing the original file.
+app.post("/api/creator/packs/:id/preview-listen", async (req, res) => {
+  const workspace = createPreviewWorkspace();
+  try {
+    const accountId = String(req.body?.accountId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.accountId !== accountId) return res.status(403).json({success:false});
+    const pack = readJsonArray(packsPath).find(p => String(p.id) === String(req.params.id));
+    if (!pack || !creatorPackBelongsTo(pack, accountId) || isPackHiddenByModeration(pack)) return res.status(404).json({success:false});
+    const track = (pack.tracks || []).find(t => String(t.id) === String(req.body?.trackId));
+    if (!track?.audioName) return res.status(404).json({success:false});
+    const start = validatePreviewStart(req.body?.previewStart, track.audioDuration || track.duration);
+    const pathToAudio = path.join(__dirname, "uploads", path.basename(String(track.audioName)));
+    await renderAudioPreview({inputPath:pathToAudio,outputPath:workspace.outputPath,start,duration:Math.min(30,Number(track.audioDuration || track.duration) || 30)});
+    res.setHeader("Cache-Control","private, no-store");
+    return res.sendFile(workspace.outputPath, error => { workspace.cleanup(); if(error && !res.headersSent) res.status(500).end(); });
+  } catch (err) {
+    workspace.cleanup();
+    return res.status(err instanceof RangeError ? 400 : 503).json({success:false,message:err instanceof RangeError ? err.message : "Extrait d'écoute indisponible."});
+  }
+});
+
 app.patch("/api/creator/packs/:id/license", async (req, res) => {
   try {
     const packId = String(req.params.id || "").trim();
@@ -4169,6 +4237,11 @@ app.patch(
         });
       }
       const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+      const newRecording = (Array.isArray(req.files) ? req.files : []).some(file => /^trackAudio_\d+$/.test(file.fieldname));
+      if (newRecording && String(req.body?.rightsDeclarationAccepted || "") !== "true") {
+        return res.status(400).json({ success: false, code: "RIGHTS_REDECLARATION_REQUIRED",
+          message: "Confirme les droits sur les nouveaux fichiers audio avant de les envoyer." });
+      }
       const now = new Date().toISOString();
       let contentChanged = false;
       let audioVersionsUpdated = 0;
@@ -4278,7 +4351,7 @@ app.patch(
 
         const track = tracks[trackIndex];
         const originalFileHash = await hashFileSha256(file.path);
-        const preview = await analyzeAudioPreview(file.path);
+        const preview = applyCreatorPreview({ previewMode: "auto" }, await analyzeAudioPreview(file.path), track.duration);
         replacedAudioNames.push(track.audioName);
         track.audioName = file.filename;
         track.audioVersion =
@@ -4291,6 +4364,10 @@ app.patch(
         Object.assign(track, preview);
         audioVersionsUpdated += 1;
         contentChanged = true;
+        pack.rightsDeclarationReviewRequired = true;
+        if (pack.humanModeration && typeof pack.humanModeration === "object") {
+          pack.humanModeration.state = "pending";
+        }
       }
 
       if (audioVersionsUpdated > 0) {
@@ -4366,6 +4443,26 @@ app.patch(
         delete pack.moderatedBy;
       }
 
+      if (audioVersionsUpdated > 0) {
+        // L'artiste a explicitement accepté la même déclaration pour les nouveaux fichiers.
+        // La nouvelle empreinte produit un nouvel enregistrement immuable.
+        const declaration = await licenseProtection.recordRightsDeclaration({
+          rootUserId: req.sonaraIdentity?.rootId || null,
+          artistId: accountId,
+          pack: { ...pack, rightsDeclarationAccepted: true },
+          acceptedAt: now
+        });
+        pack.rightsDeclaration = {
+          rightsDeclarationId: declaration.rightsDeclarationId,
+          declarationVersion: declaration.declarationVersion,
+          declarationContentHash: declaration.declarationContentHash,
+          declarationTextHash: declaration.declarationTextHash,
+          artistContractVersion: declaration.artistContractVersion,
+          legalTextStatus: declaration.legalTextStatus,
+          acceptedAt: declaration.acceptedAt
+        };
+        pack.rightsDeclarationReviewRequired = false;
+      }
       pack.updatedAt = now;
       writeJsonArray(packsPath, packs);
       revisionPersisted = true;
@@ -4877,6 +4974,7 @@ app.post("/api/packs/:id/preview-analysis", async (req, res) => {
 
     for (const track of tracks) {
       const previewReady =
+        ["artist", "moderator"].includes(String(track.previewChosenBy || "")) ||
         Number.isFinite(Number(track.previewStart)) &&
         Number(track.previewAnalysisVersion || 0) >= PREVIEW_ANALYSIS_VERSION;
 
@@ -5096,7 +5194,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
         const trackCoverFile = fileByField.get(`trackCover_${index}`);
         const trackAudioFile = fileByField.get(`trackAudio_${index}`);
         const originalFileHash = await hashFileSha256(trackAudioFile.path);
-        const preview = await analyzeAudioPreview(trackAudioFile.path);
+        const preview = applyCreatorPreview(track, await analyzeAudioPreview(trackAudioFile.path), track.duration);
 
         preparedTracks.push({
           ...track,
@@ -5110,6 +5208,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
           originalFileHashComputedAt: new Date().toISOString(),
           fingerprintStatus: FINGERPRINT_STATUS,
           ...preview,
+          previewAutoStart: Math.max(0, Number(preview.previewStart) || 0),
         });
       }
     } else {
@@ -5159,6 +5258,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
         ? receivedPack.licenseHistory
         : [],
       creationEvidence,
+      rightsReviewRequired: packRequiresRightsReview({ tracks: preparedTracks }),
       humanModeration: {
         state: "pending",
         internalNote: "",
@@ -5231,6 +5331,9 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
       rightsDeclarationId: rightsDeclaration.rightsDeclarationId,
       declarationVersion: rightsDeclaration.declarationVersion,
       legalTextStatus: rightsDeclaration.legalTextStatus,
+      declarationContentHash: rightsDeclaration.declarationContentHash,
+      declarationTextHash: rightsDeclaration.declarationTextHash,
+      artistContractVersion: rightsDeclaration.artistContractVersion,
       acceptedAt: rightsDeclaration.acceptedAt,
     };
     const storedPackIndex = packs.findIndex(
@@ -5517,6 +5620,22 @@ app.post("/api/free-download-access", async (req, res) => {
       success: false,
       message: "Impossible d’autoriser le téléchargement gratuit.",
     });
+  }
+});
+
+// Consultation du contrat historique par le seul compte acheteur authentifié.
+// Fonctionne même si le pack a été retiré du catalogue : les preuves sont archivées à part.
+app.get("/api/licenses/mine", async (req, res) => {
+  if (!req.sonaraIdentity?.accountId) {
+    return res.status(401).json({ success: false, code: "AUTH_REQUIRED" });
+  }
+  try {
+    res.setHeader("Cache-Control", "private, no-store");
+    const licenses = await licenseProtection.acceptedLicensesForAccount(req.sonaraIdentity.accountId);
+    return res.json({ success: true, licenses });
+  } catch (error) {
+    console.error("Historique des licences indisponible :", error?.message || error);
+    return res.status(500).json({ success: false, message: "Impossible de consulter les licences historiques." });
   }
 });
 
@@ -6469,6 +6588,15 @@ app.patch("/api/packs/:id/status", requireFounderKey, async (req, res) => {
       });
     }
 
+    if (status === "approved" &&
+        (packRequiresRightsReview(pack) || pack.rightsDeclarationReviewRequired === true) &&
+        pack.humanModeration?.state !== "approved") {
+      return res.status(409).json({
+        success: false,
+        code: "RIGHTS_REVIEW_REQUIRED",
+        message: "Les droits tiers ou la gestion Content ID nécessitent une revue humaine préalable."
+      });
+    }
     const moderatedAt = new Date().toISOString();
     pack.status = status;
     pack.moderatedAt = moderatedAt;
@@ -8419,6 +8547,16 @@ app.patch(
         return res.json({ success: true, deleted: false, item: pack, pack });
       }
 
+      if (status === "approved") {
+        if ((packRequiresRightsReview(pack) || pack.rightsDeclarationReviewRequired === true) &&
+            (pack.humanModeration?.state !== "approved" || String(pack.humanModeration?.internalNote || "").trim().length < 10)) {
+          return res.status(409).json({ success: false,
+            code: "RIGHTS_REVIEW_REQUIRED",
+            message: "Un examen des droits tiers doit être validé dans la modération humaine." });
+        }
+        const selection = applyModeratorPreviews(pack, req.body?.previews);
+        if (!selection.ok) return res.status(400).json({success:false,message:selection.message});
+      }
       pack.status = status;
       pack.moderatedAt = new Date().toISOString();
       updateLocalV1PaymentReadyOnModeration(pack, status, commercialPolicy);

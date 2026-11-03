@@ -3750,3 +3750,46 @@ a.sonara-pack-book-card,
 .sonara-pack-book-hero-card:hover .sonara-book-cover,
 .sonara-grand-player-book:hover { filter: none !important; box-shadow: none !important; }
 .sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* Grand lecteur — ambiance dynamique uniquement sur mobile.
+   Le visuel du livre et la mise en page restent inchanges.
+   Desktop / grand ecran conservent le fond bleu original. */
+@media (max-width: 899px) {
+  body.library .grand-player {
+    background: #080a0f;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  body.library .grand-player::before {
+    content: "";
+    position: absolute;
+    inset: -36px;
+    z-index: 0;
+    pointer-events: none;
+    background-image: var(--sonara-player-cover-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: .55;
+    filter: blur(9px) brightness(.80);
+  }
+
+  body.library .grand-player::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(0, 0, 0, .25);
+  }
+
+  body.library .grand-player > .grand-player-shell {
+    position: relative;
+    z-index: 1;
+  }
+
+  body.library .grand-player > .grand-player-back {
+    z-index: 2;
+  }
+}

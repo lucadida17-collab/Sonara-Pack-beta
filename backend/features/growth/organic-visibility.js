@@ -397,6 +397,15 @@ function requestOrigin(req) {
   return host ? `${proto}://${host}` : "";
 }
 
+// Public previews must never expose the original audio or depend on seek-based
+// browser playback. This endpoint renders a 30 s MP3 with 5 s fades.
+function previewUrl(req, packId, trackId, hasAudio = true) {
+  if (!hasAudio || !packId || !trackId) return "";
+  const route = `/api/media/preview/${encodeURIComponent(packId)}/${encodeURIComponent(trackId)}`;
+  const origin = requestOrigin(req);
+  return origin ? `${origin}${route}` : route;
+}
+
 function mediaUrl(req, value) {
   const raw = text(value, 1500).replace(/\\/g, "/");
   if (!raw) return "";
@@ -437,7 +446,7 @@ function packCommunicationKit(req, pack, publicOrigin, environment = "main") {
       instagram: trackedLink("Instagram"),
       youtube: trackedLink("YouTube")
     },
-    previewAudioUrl: previewTrack ? mediaUrl(req, previewTrack.audioName) : "",
+    previewAudioUrl: previewTrack ? previewUrl(req, normalized.id, previewTrack.id, Boolean(previewTrack.audioName)) : "",
     previewStart: previewTrack?.previewStart || 0,
     previewDuration: previewTrack?.previewDuration || 30,
     publishedAt: normalized.publishedAt,
@@ -1384,7 +1393,7 @@ function registerOrganicVisibility({
           ...track,
           coverUrl: mediaUrl(req, track.coverPack),
           promoImageUrl: mediaUrl(req, track.promoImage),
-          previewAudioUrl: mediaUrl(req, track.audioName),
+          previewAudioUrl: previewUrl(req, normalized.id, track.id, Boolean(track.audioName)),
           publicUrl: eligible ? publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalized.id, track.id) : "",
           canonicalUrl: eligible ? publicTrackUrl(normalizedPublicOrigin, normalized.id, track.id) : ""
         };
@@ -1764,7 +1773,7 @@ function registerOrganicVisibility({
           ...normalizedTrack,
           coverUrl: mediaUrl(req, normalizedTrack.coverPack),
           promoImageUrl: mediaUrl(req, normalizedTrack.promoImage),
-          previewAudioUrl: mediaUrl(req, normalizedTrack.audioName),
+          previewAudioUrl: previewUrl(req, normalizedPack.id, normalizedTrack.id, Boolean(normalizedTrack.audioName)),
           publicUrl: publicTrackPreviewUrl(runtimeEnvironment, normalizedPublicOrigin, normalizedPack.id, normalizedTrack.id),
           canonicalUrl: publicTrackUrl(normalizedPublicOrigin, normalizedPack.id, normalizedTrack.id)
         }

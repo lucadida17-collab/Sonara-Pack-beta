@@ -1887,6 +1887,12 @@ trackRowsMobile.forEach(row => {
         // Le grand player affiche désormais le pack sous forme de livre 3D,
         // avec la cover courante appliquée sur la couverture du livre.
         grandPlayerCover.src = coverSrc;
+        // Le fond mobile utilise exactement la cover de la track active.
+        // Le livre 3D reste independant et parfaitement net.
+        grandPlayer.style.setProperty(
+            "--sonara-player-cover-image",
+            coverSrc ? `url(${JSON.stringify(coverSrc)})` : "none"
+        );
         grandPlayerCover.dataset.sonaraBookCover = coverSrc;
         delete grandPlayerCover.dataset.sonaraBookReady;
         delete grandPlayerCover.dataset.sonaraBookPending;
@@ -2579,6 +2585,12 @@ trackRowsMobile.forEach(row => {
         // Le grand player affiche désormais le pack sous forme de livre 3D,
         // avec la cover courante appliquée sur la couverture du livre.
         grandPlayerCover.src = coverSrc;
+        // Le fond mobile utilise exactement la cover de la track active.
+        // Le livre 3D reste independant et parfaitement net.
+        grandPlayer.style.setProperty(
+            "--sonara-player-cover-image",
+            coverSrc ? `url(${JSON.stringify(coverSrc)})` : "none"
+        );
         grandPlayerCover.dataset.sonaraBookCover = coverSrc;
         delete grandPlayerCover.dataset.sonaraBookReady;
         delete grandPlayerCover.dataset.sonaraBookPending;

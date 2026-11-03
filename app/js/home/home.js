@@ -1248,7 +1248,18 @@ function createQuickTrackCard(track = {}) {
   previewButton.setAttribute("aria-label", `Écouter ${title.textContent} pendant ${limit} secondes`);
 
   previewButton.addEventListener("click", async () => {
-    const source = getFilePath(track.audioName || track.audio || "");
+    // "Top Track" must always play the processed 30 s preview, not a
+    // purchased full-audio ticket. The source has artist-selected timing
+    // and both 5 s fades encoded by the protected media endpoint.
+    const previewPackId = track.packId || track.sourcePackId;
+    const previewTrackId = track.trackId || track.id;
+    const source = previewPackId && previewTrackId
+      ? `${API_URL}/api/media/preview/${encodeURIComponent(previewPackId)}/${encodeURIComponent(previewTrackId)}`
+      : getFilePath(track.audioName || track.audio || "");
+    if (/\/api\/media\/full\//.test(source)) {
+      showHomeAudioError(new Error("Lien de preview manquant"));
+      return;
+    }
     if (!source) {
       showHomeAudioError(new Error("Preview manquante"));
       return;

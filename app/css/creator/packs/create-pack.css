@@ -3932,3 +3932,70 @@ a.sonara-pack-book-card,
 .sonara-grand-player-book { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 
 .cover-picker-preview.sonara-book-cover { object-fit: contain !important; background: transparent !important; padding: 0 !important; }
+
+/* Pre-V1 — simple preview selector, no commercial dependencies. */
+.create-preview-track-list { display:grid; gap:16px; margin:20px 0; }
+.create-preview-track { background:#101010; color:#fff; border:1px solid #313131; border-radius:16px; padding:20px; }
+.create-preview-track-head {display:flex;flex-direction:column;gap:7px;}
+.create-preview-track-head strong {font-size:1.05rem;}
+.create-preview-track-head small,.create-preview-hint {color:#a9a9a9;line-height:1.5;}
+.create-preview-modes {display:flex;gap:12px;flex-wrap:wrap;margin:18px 0;}
+.create-preview-modes label {cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 14px;background:#181818;border:1px solid #343434;border-radius:10px;}
+.create-preview-modes input {accent-color:#fff;}
+.create-preview-manual {padding:14px 0;}
+.create-preview-time {display:flex;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.create-preview-manual input[type=range] {display:block;width:100%;accent-color:#fff;}
+.create-preview-seconds {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0;}
+.create-preview-seconds input {background:#050505;color:#fff;border:1px solid #555;padding:10px;width:100px;border-radius:9px;}
+.create-preview-listen {background:#fff;color:#000;border:none;border-radius:9px;font-weight:700;padding:12px 16px;cursor:pointer;}
+.create-preview-track audio {display:none;}
+@media(max-width:600px){.create-preview-track{padding:15px;}.create-preview-modes{flex-direction:column;}}
+/* Isolate preview radio controls from legacy Create Pack field layout. */
+.create-pack .create-preview-modes label,
+.create-preview-modes label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  width: auto;
+  min-height: 46px;
+  text-align: left;
+  font-size: .95rem;
+  font-weight: 600;
+}
+.create-pack .create-preview-modes input[type="radio"],
+.create-preview-modes input[type="radio"] {
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+@media(max-width:600px) {
+ .create-preview-modes label { width:100% !important; }
+}
+
+
+/* Droits des tracks et pièces facultatives : s'insèrent dans l'étape Licence existante. */
+.create-license-step .create-rights-tracks { margin: 20px 0; padding: 16px; border: 1px solid #303030; border-radius: 12px; background: #101010; color: #fff; }
+.create-license-step .create-rights-tracks > p { font-size: .88rem; color: #bcbcbc; }
+.create-license-step .create-rights-track { display: grid; gap: 12px; padding: 15px 0; border-top: 1px solid #333; }
+.create-license-step .create-rights-track > strong { overflow-wrap: anywhere; }
+.create-license-step .create-rights-track label:not(.create-rights-check),
+.create-license-step .create-evidence-label { display: grid; gap: 7px; min-width: 0; }
+.create-license-step .create-rights-track select,
+.create-license-step .create-rights-track textarea,
+.create-license-step .create-rights-track input:not([type="checkbox"]) { width: 100%; max-width: 100%; box-sizing: border-box; padding: 11px; border: 1px solid #404040; border-radius: 8px; background: #080808; color: #fff; }
+.create-license-step .create-rights-check { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0; font-size: .88rem; }
+.create-license-step .create-rights-check input[type="checkbox"] { flex: 0 0 16px; width: 16px !important; height: 16px !important; min-width: 16px; margin: 1px 0 0; padding: 0; }
+.create-license-step .create-rights-check > span { flex: 1 1 auto; min-width: 0; }
+.create-license-step .create-rights-kind-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
+.create-license-step .create-rights-risk { color: #e5c68a; }
+.create-license-step .create-evidence-label { margin-top: 18px; font-size: .88rem; }
+.create-license-step .create-evidence-label small { color: #aaa; }
+.create-license-step .create-evidence-files { max-width: 100%; }
+@media (max-width: 720px) {
+  .create-license-step .create-rights-tracks { padding: 12px; }
+  .create-license-step .create-rights-kind-list { grid-template-columns: minmax(0, 1fr); }
+}

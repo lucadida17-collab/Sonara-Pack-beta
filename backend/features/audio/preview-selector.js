@@ -222,7 +222,8 @@ function analyzeAudioPreview(filePath, { previewDuration = DEFAULT_PREVIEW_DURAT
           previewStart: Number(selection.start.toFixed(2)),
           previewDuration: Math.min(previewDuration, Math.max(1, selection.duration)),
           previewAnalysisVersion: ANALYSIS_VERSION,
-          previewAnalysisMethod: "sonara-energy-stream-v2"
+          previewAnalysisMethod: "sonara-energy-stream-v2",
+          audioDuration: energy.length
         });
       } catch (error) {
         console.warn("Analyse preview audio échouée :", error.message);

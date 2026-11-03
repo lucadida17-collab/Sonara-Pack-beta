@@ -3,7 +3,7 @@
 const managePackRoot = document.getElementById("managePackRoot");
 const managePackParams = new URLSearchParams(window.location.search);
 const managePackId = managePackParams.get("id");
-const MANAGE_PACK_MIN_LOADING_TIME = 6000;
+const MANAGE_PACK_MIN_LOADING_TIME = 450;
 const MANAGE_PACK_REQUEST_TIMEOUT = 60000;
 const managePackLoadingStartedAt = Date.now();
 
@@ -294,7 +294,7 @@ function renderManagePack(pack) {
         ${cover ? `<img class="sonara-pack-book-surface" src="${managePackEscape(cover)}" data-sonara-book-cover="${managePackEscape(cover)}" alt="" data-i18n-ignore>` : `<i data-lucide="package"></i>`}
       </div>
       <div>
-        <p class="manage-pack-eyebrow">GESTION DU PACK</p>
+        <p class="manage-pack-eyebrow">PARAMÈTRES DU PACK</p>
         <h1 data-user-content>${managePackEscape(title)}</h1>
         <div class="manage-pack-meta">
           <span class="manage-pack-status status-${managePackEscape(status)}">${managePackEscape(managePackStatusLabel(status))}</span>
@@ -304,7 +304,58 @@ function renderManagePack(pack) {
       </div>
     </section>
 
-    <section class="manage-pack-layout">
+    <nav class="manage-pack-options" aria-label="Paramètres du pack">
+      ${String(pack.contentType || "audio").toLowerCase() === "audio" ? `<button type="button" class="manage-option" data-manage-panel="preview"><i data-lucide="music-2"></i><strong>Temps fort</strong><small>Choisir les 30 secondes et écouter les fondus</small></button>` : ""}
+      <button type="button" class="manage-option" data-manage-panel="license"><i data-lucide="shield-check"></i><strong>Licence</strong><small>Configurer les droits d'utilisation</small></button>
+      <button type="button" class="manage-option" data-manage-panel="edit"><i data-lucide="pencil"></i><strong>Modifier le pack</strong><small>Titre, prix et versions audio</small></button>
+      ${status === "approved" ? `<button type="button" class="manage-option" data-manage-share><i data-lucide="share-2"></i><strong>Partager</strong><small>Obtenir le lien public du pack</small></button>` : ""}
+      ${["draft", "rejected"].includes(status) ? `<button type="button" class="manage-option" data-manage-publish><i data-lucide="send"></i><strong>${pack.wasPublished || pack.publishedAt ? "Republier" : "Envoyer à la modération"}</strong><small>Soumettre les changements à Sonara</small></button>` : ""}
+    </nav>
+
+    <section class="manage-preview-settings" data-manage-panel-content="edit" hidden>
+      <header><p class="manage-pack-eyebrow">MODIFIER LE PACK</p><h2>Modifier les informations</h2><p>Un nouveau fichier audio ou un changement de contenu renvoie le pack en modération. Le temps fort seul se règle dans l'option dédiée, sans modération.</p></header>
+      <form class="manage-pack-edit-form">
+        <label>Nom du pack <input type="text" name="title" maxlength="70" required value="${managePackEscape(title)}"></label>
+        <label>Prix (laisser vide pour conserver) <input name="price" inputmode="decimal" placeholder="${managePackEscape(pack.price || "Gratuit")}"></label>
+        ${(pack.tracks || []).map((track,index)=>`<fieldset class="manage-edit-track"><legend>Morceau ${index+1}</legend>
+          <label>Titre <input name="trackTitle_${index}" maxlength="70" required value="${managePackEscape(track.title || "")}"></label>
+          <label>Remplacer le fichier MP3 (facultatif) <input name="trackAudio_${index}" type="file" accept=".mp3,audio/mpeg"></label>
+        </fieldset>`).join("")}
+        <label class="manage-audio-rights-confirmation" hidden>
+          <input type="checkbox" name="rightsDeclarationAccepted">
+          <span>Je confirme disposer des droits nécessaires pour publier et licencier ce contenu sur Sonara Pack.</span>
+        </label>
+        <button type="submit" class="manage-edit-submit">Enregistrer les modifications</button>
+      </form>
+    </section>
+
+    <section class="manage-preview-settings" data-manage-panel-content="preview" hidden>
+      <header><p class="manage-pack-eyebrow">PRÉVIEW · PRE-V1</p><h2>Choisir le temps fort</h2><p>Les 30 secondes entendues par l'acheteur, avec un fondu d'ouverture et de fin de 5 secondes.</p></header>
+      ${(pack.tracks || []).map(track => {
+        const duration = Math.max(0, Number(track.audioDuration || track.duration) || 0);
+        const length = Math.min(30, duration || 30);
+        const max = Math.max(0, duration - length);
+        const start = Math.min(max, Math.max(0, Number(track.previewStart) || 0));
+        const manual = track.previewMode === "manual";
+        return `<article class="manage-preview-track" data-track-id="${managePackEscape(track.id)}" data-duration="${duration}">
+          <div class="manage-preview-head"><strong>${managePackEscape(track.title || "Morceau")}</strong><span data-preview-status>${manual ? "Choix artiste" : "Automatique"}</span></div>
+          <div class="manage-preview-modes">
+            <label><input type="radio" name="mode_${managePackEscape(track.id)}" value="auto" ${manual ? "" : "checked"}> Laisser Sonara choisir</label>
+            <label><input type="radio" name="mode_${managePackEscape(track.id)}" value="manual" ${manual ? "checked" : ""}> Choisir moi-même</label>
+          </div>
+          <div class="manage-preview-manual" ${manual ? "" : "hidden"}>
+            <div class="manage-preview-time"><span>Début du passage</span><strong data-preview-time>${start.toFixed(1)} s → ${(start + length).toFixed(1)} s</strong></div>
+            <input type="range" data-preview-range min="0" max="${max}" step="0.1" value="${start}" aria-label="Début du passage">
+            <label>Seconde de départ <input type="number" data-preview-number min="0" max="${max}" step="0.1" value="${start}"></label>
+            <button type="button" class="manage-preview-listen" data-preview-listen>Écouter les 30 secondes avec fondus</button>
+            <audio controls preload="none" data-preview-audio></audio>
+          </div>
+          <div class="manage-preview-footer"><small data-preview-help>${manual ? "Choix personnel prioritaire sur la modération." : "Le modérateur peut ajuster le temps fort automatique."}</small><button type="button" data-preview-save>Enregistrer</button></div>
+        </article>`;
+      }).join("")}
+    </section>
+
+    <section class="manage-pack-layout" data-manage-panel-content="license" hidden>
       <form class="license-editor" data-license-version="${Number(license.version || 1)}">
         <div class="license-section-heading">
           <div>
@@ -393,6 +444,146 @@ function renderManagePack(pack) {
   const form = managePackRoot.querySelector(".license-editor");
   updateManagePackLicensePreview(form, license.version);
   bindManagePackChoiceStates(form);
+
+  const showPanel = id => {
+    managePackRoot.querySelectorAll("[data-manage-panel-content]").forEach(panel => {
+      panel.hidden = panel.dataset.managePanelContent !== id;
+    });
+    managePackRoot.querySelectorAll("[data-manage-panel]").forEach(button => {
+      button.classList.toggle("is-active", button.dataset.managePanel === id);
+    });
+    managePackRoot.querySelector(`[data-manage-panel-content="${id}"]`)?.scrollIntoView({behavior:"smooth",block:"start"});
+  };
+  managePackRoot.querySelectorAll("[data-manage-panel]").forEach(button => button.addEventListener("click", () => showPanel(button.dataset.managePanel)));
+  const editForm = managePackRoot.querySelector(".manage-pack-edit-form");
+  const updateAudioRightsVisibility = () => {
+    const hasNewAudio = [...editForm.querySelectorAll('input[type="file"][name^="trackAudio_"]')]
+      .some(input => Array.from(input.files || []).some(file => file.size > 0));
+    const confirmation = editForm.querySelector(".manage-audio-rights-confirmation");
+    if (confirmation) confirmation.hidden = !hasNewAudio;
+    if (!hasNewAudio && editForm.elements.rightsDeclarationAccepted) {
+      editForm.elements.rightsDeclarationAccepted.checked = false;
+    }
+  };
+  editForm?.addEventListener("change", updateAudioRightsVisibility);
+  editForm?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("[type=submit]");
+    button.disabled = true;
+    try {
+      const values = new FormData(form);
+      const payload = new FormData();
+      payload.append("accountId", managePackAccountId() || "");
+      payload.append("title", String(values.get("title") || "").trim());
+      const price = String(values.get("price") || "").trim();
+      if (price) payload.append("price", price);
+      const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+      payload.append("tracksData", JSON.stringify(tracks.map((track,index)=>({
+        id: track.id,
+        title: String(values.get(`trackTitle_${index}`) || "").trim()
+      }))));
+      const replacingAudio = tracks.some((_, index) => {
+        const file = values.get(`trackAudio_${index}`);
+        return file instanceof File && file.size > 0;
+      });
+      if (replacingAudio && values.get("rightsDeclarationAccepted") !== "on") {
+        throw new Error("Confirme les droits sur les nouveaux fichiers avant l'envoi.");
+      }
+      if (replacingAudio) payload.append("rightsDeclarationAccepted", "true");
+      for (let index=0; index<tracks.length; index++) {
+        const file = values.get(`trackAudio_${index}`);
+        if (!(file instanceof File) || file.size <= 0) continue;
+        const policy = window.SonaraAudioUploadPolicy;
+        if (!policy?.isAllowedMp3Metadata?.(file) || file.size > Number(policy.MAX_MP3_FILE_SIZE_BYTES || 0)) {
+          throw new Error("MP3 invalide ou trop volumineux.");
+        }
+        payload.append(`trackAudio_${index}`, file, file.name);
+      }
+      const response = await fetch(`${API_URL}/api/creator/packs/${encodeURIComponent(pack.id)}`, {method:"PATCH",body:payload});
+      const data = await managePackReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Modification impossible.");
+      managePackToast(data.moderationRequired ? "Pack modifié et envoyé en modération." : "Pack mis à jour.");
+      window.location.reload();
+    } catch(error) {managePackToast(error.message,"error");}
+    finally {button.disabled=false;}
+  });
+  managePackRoot.querySelector("[data-manage-share]")?.addEventListener("click", async () => {
+    const link = `${window.location.origin}/app/pages/catalog/pack.html?id=${encodeURIComponent(pack.id)}`;
+    try {
+      if (navigator.share) await navigator.share({title:pack.title || "Sonara Pack",url:link});
+      else await navigator.clipboard.writeText(link);
+      managePackToast("Lien du pack partagé.");
+    } catch(error) { if (error.name !== "AbortError") managePackToast("Partage indisponible.","error"); }
+  });
+  managePackRoot.querySelector("[data-manage-publish]")?.addEventListener("click", async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const response = await fetch(`${API_URL}/api/creator/packs/bulk`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountId:managePackAccountId(),action:(pack.wasPublished || pack.publishedAt)?"republish":"publish",packIds:[pack.id]})});
+      const data = await managePackReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Envoi impossible.");
+      managePackToast("Pack envoyé à la modération.");
+      window.location.reload();
+    } catch(error) {managePackToast(error.message,"error");button.disabled=false;}
+  });
+
+  managePackRoot.querySelectorAll(".manage-preview-track").forEach(card => {
+    const trackId = card.dataset.trackId;
+    const duration = Number(card.dataset.duration) || 30;
+    const max = Math.max(0, duration - Math.min(30,duration));
+    const range = card.querySelector("[data-preview-range]");
+    const number = card.querySelector("[data-preview-number]");
+    const timeLabel = card.querySelector("[data-preview-time]");
+    const panel = card.querySelector(".manage-preview-manual");
+    const player = card.querySelector("[data-preview-audio]");
+    const save = card.querySelector("[data-preview-save]");
+    let audioObjectUrl = null;
+    const syncStart = raw => {
+      const numeric = Number(raw);
+      const start = Math.round(Math.max(0, Math.min(max, Number.isFinite(numeric)?numeric:0))*10)/10;
+      range.value = number.value = String(start);
+      timeLabel.textContent = `${start.toFixed(1)} s → ${(start+Math.min(30,duration)).toFixed(1)} s`;
+      return start;
+    };
+    card.querySelectorAll("input[type=radio]").forEach(radio => radio.addEventListener("change", () => {
+      if (radio.checked) {panel.hidden = radio.value !== "manual"; player.pause();}
+    }));
+    range.addEventListener("input", () => syncStart(range.value));
+    number.addEventListener("change", () => syncStart(number.value));
+    card.querySelector("[data-preview-listen]").addEventListener("click", async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        player.pause();
+        if (audioObjectUrl) URL.revokeObjectURL(audioObjectUrl);
+        const response = await fetch(`${API_URL}/api/creator/packs/${encodeURIComponent(pack.id)}/preview-listen`,{
+          method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountId:managePackAccountId(),trackId,previewStart:syncStart(number.value)})
+        });
+        if (!response.ok) { const data=await managePackReadJson(response);throw new Error(data.message||"Impossible d'écouter cet extrait."); }
+        audioObjectUrl = URL.createObjectURL(await response.blob());
+        player.src = audioObjectUrl;
+        player.onended = () => { if(audioObjectUrl){URL.revokeObjectURL(audioObjectUrl);audioObjectUrl=null;} };
+        await player.play();
+      } catch(error) {managePackToast(error.message,"error");}
+      finally {button.disabled=false;}
+    });
+    save.addEventListener("click", async () => {
+      const mode = card.querySelector("input[type=radio]:checked")?.value || "auto";
+      save.disabled = true;
+      try {
+        const response = await fetch(`${API_URL}/api/creator/packs/${encodeURIComponent(pack.id)}/preview`,{
+          method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountId:managePackAccountId(),trackId,previewMode:mode,previewStart:syncStart(number.value)})
+        });
+        const data = await managePackReadJson(response);
+        if (!response.ok) throw new Error(data.message||"Enregistrement impossible.");
+        card.querySelector("[data-preview-status]").textContent = mode === "manual" ? "Choix artiste" : "Automatique";
+        card.querySelector("[data-preview-help]").textContent = mode === "manual" ? "Choix personnel prioritaire sur la modération." : "Le modérateur peut ajuster le temps fort automatique.";
+        managePackToast("Temps fort enregistré sans nouvelle modération.");
+      } catch(error) {managePackToast(error.message,"error");}
+      finally {save.disabled=false;}
+    });
+  });
 
   managePackRoot.querySelector(".manage-pack-back").addEventListener("click", () => {
     window.location.href = "my-pack.html";

@@ -1,5 +1,5 @@
 const myPackPage = document.querySelector(".create-pack");
-const MY_PACK_MIN_LOADING_TIME = 6000;
+const MY_PACK_MIN_LOADING_TIME = 450;
 const MY_PACK_SERVER_LOADING_TIMEOUT = 60000;
 const MY_PACK_IMAGE_LOADING_TIMEOUT = 12000;
 const MY_PACK_AUDIO_UPLOAD_POLICY = window.SonaraAudioUploadPolicy;
@@ -601,11 +601,6 @@ function renderMyPacksStructure() {
         <button type="button" class="my-pack-select-all">
           <i data-lucide="check-check"></i>Tout sélectionner
         </button>
-        <button type="button" data-action="share"><i data-lucide="share-2"></i>Partager</button>
-        <button type="button" data-action="edit"><i data-lucide="pencil"></i>Modifier</button>
-        <button type="button" data-action="draft"><i data-lucide="file-pen-line"></i>Mettre en brouillon</button>
-        <button type="button" data-action="publish"><i data-lucide="upload-cloud"></i>Publier</button>
-        <button type="button" data-action="republish"><i data-lucide="refresh-cw"></i>Republier</button>
         <button type="button" data-action="delete" class="danger"><i data-lucide="trash-2"></i>Supprimer</button>
       </div>
     </section>
@@ -675,17 +670,11 @@ async function initializeMyPacks() {
       selectedPacks.length > 0 &&
       selectedPacks.some((pack) => String(pack.status || "draft").toLowerCase() !== "draft");
 
-    selectionMenu.querySelector('[data-action="share"]').disabled =
-      !selectedPacks.some((pack) => String(pack.status || "").toLowerCase() === "approved");
-    selectionMenu.querySelector('[data-action="edit"]').disabled = count !== 1;
-    selectionMenu.querySelector('[data-action="draft"]').disabled = !canMoveToDraft;
-    selectionMenu.querySelector('[data-action="publish"]').disabled = !canPublish;
-    selectionMenu.querySelector('[data-action="republish"]').disabled = !canRepublish;
     selectionMenu.querySelector('[data-action="delete"]').disabled = count === 0;
 
     toggle.innerHTML = selectionMode
       ? `<i data-lucide="x"></i>Quitter (${count})`
-      : `<i data-lucide="list-checks"></i>Sélectionner`;
+      : `<i data-lucide="trash-2"></i>Sélectionner pour supprimer`;
 
     if (window.lucide) lucide.createIcons();
   };
@@ -786,17 +775,8 @@ async function initializeMyPacks() {
                 Licence
               </span>
               <div class="my-pack-card-actions">
-                ${status === "approved" ? `
-                  <button class="my-pack-share-button" type="button" data-share-pack>
-                    <i data-lucide="share-2"></i>
-                    ${escapeMyPackHtml(myPackTranslate("Partager mon pack"))}
-                  </button>
-                  <button class="my-pack-copy-link-button" type="button" data-copy-pack-link>
-                    <i data-lucide="link-2"></i>
-                    ${escapeMyPackHtml(myPackTranslate("Copier le lien"))}
-                  </button>` : ""}
                 <button class="my-pack-manage-button" type="button" data-manage-pack>
-                  Gérer le pack
+                  Paramètres du pack
                   <i data-lucide="arrow-up-right"></i>
                 </button>
               </div>
@@ -840,7 +820,7 @@ async function initializeMyPacks() {
         }
 
         const manageButton = event.target.closest("[data-manage-pack]");
-        if (manageButton) {
+        if (manageButton && !selectionMode) {
           event.preventDefault();
           event.stopPropagation();
           window.location.href = myPackManagementUrl(card.dataset.packId);
@@ -868,6 +848,12 @@ async function initializeMyPacks() {
     });
 
     updateSelectionUi();
+    const editId = new URLSearchParams(window.location.search).get("edit");
+    if (editId) {
+      window.history.replaceState(null,"",window.location.pathname);
+      const selectedPack = currentPacks.find(pack => String(pack.id) === editId);
+      if (selectedPack) openMyPackEditor(selectedPack, load);
+    }
   };
 
   toggle.addEventListener("click", () => {

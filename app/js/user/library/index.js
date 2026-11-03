@@ -1845,6 +1845,12 @@ trackRowsMobile.forEach(row => {
         const artist = row.querySelector(".track-artist-mobile, .track-artist")?.textContent || "";
 
         grandPlayerCover.src = coverSrc;
+        // Le fond mobile utilise exactement la cover de la track active.
+        // Le livre 3D reste independant et parfaitement net.
+        grandPlayer.style.setProperty(
+            "--sonara-player-cover-image",
+            coverSrc ? `url(${JSON.stringify(coverSrc)})` : "none"
+        );
         grandPlayerTitle.textContent = title;
         grandPlayerArtist.textContent = artist;
 
@@ -2554,6 +2560,12 @@ trackRowsMobile.forEach(row => {
         const artist = row.querySelector(".track-artist-mobile, .track-artist")?.textContent || "";
 
         grandPlayerCover.src = coverSrc;
+        // Le fond mobile utilise exactement la cover de la track active.
+        // Le livre 3D reste independant et parfaitement net.
+        grandPlayer.style.setProperty(
+            "--sonara-player-cover-image",
+            coverSrc ? `url(${JSON.stringify(coverSrc)})` : "none"
+        );
         grandPlayerTitle.textContent = title;
         grandPlayerArtist.textContent = artist;
 

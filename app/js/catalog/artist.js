@@ -322,7 +322,11 @@ function renderTrackRows(trackEntries = []) {
     <div class="artist-track-list">
       ${trackEntries.map(({ track, pack }, index) => {
         const cover = artistFilePath(track.coverPack || pack.coverPack || pack.cover);
-        const audio = artistFilePath(track.audioName || track.audio);
+        // Always use the 30 s processed preview, including for existing buyers.
+        // Avoid passing /api/media/full/ tickets to this public preview player.
+        const audio = pack?.id && track?.id && (track.audioName || track.audio)
+          ? `${API_URL}/api/media/preview/${encodeURIComponent(pack.id)}/${encodeURIComponent(track.id)}`
+          : "";
         const previewLimit = Math.max(
           1,
           Math.min(30, artistSafeNumber(track.previewDuration, 30) || 30)

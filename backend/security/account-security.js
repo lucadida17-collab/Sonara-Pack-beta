@@ -45,6 +45,7 @@ function isProtected(req) {
   if (/^\/api\/(?:users|profile)\//.test(p)) return true;
   if (p === "/api/profile") return true;
   if (p.startsWith("/api/support/tickets/") || p === "/api/support/tickets") return true;
+  if (p === "/api/licenses/mine") return true;
   if (p === "/api/feedback/mine" || p === "/api/feedback") return true;
   if (p.startsWith("/api/appeals/")) return true;
   if (p === "/api/appeals") return true;

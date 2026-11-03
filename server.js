@@ -70,6 +70,7 @@ const {
   normalizeStoredPreview,
   ANALYSIS_VERSION: PREVIEW_ANALYSIS_VERSION,
 } = require("./backend/features/audio/preview-selector");
+const { applyCreatorPreview, applyModeratorPreviews, validatePreviewStart } = require("./backend/features/audio/preview-policy");
 const {
   validateMp3Upload,
   MAX_MP3_FILE_SIZE_BYTES,
@@ -4395,6 +4396,58 @@ app.get("/api/creator/packs/:accountId", async (req, res) => {
   }
 });
 
+// Pre-V1 — update preview metadata without resubmitting published audio.
+app.patch("/api/creator/packs/:id/preview", async (req, res) => {
+  try {
+    const accountId = String(req.body?.accountId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.accountId !== accountId) return res.status(403).json({success:false,code:"ACCOUNT_FORBIDDEN"});
+    const pack = await packsCollection.findOne({id:String(req.params.id), moderationHidden:{$ne:true}});
+    if (!pack || !creatorPackBelongsTo(pack, accountId)) return res.status(404).json({success:false,message:"Pack introuvable."});
+    if (String(pack.contentType || "audio").toLowerCase() !== "audio") return res.status(400).json({success:false,message:"Ce pack n'est pas audio."});
+    const tracks = Array.isArray(pack.tracks) ? pack.tracks : [];
+    const track = tracks.find(t => String(t.id) === String(req.body?.trackId));
+    if (!track) return res.status(404).json({success:false,message:"Son introuvable."});
+    const mode = String(req.body?.previewMode || "");
+    if (!["auto", "manual"].includes(mode)) return res.status(400).json({success:false,message:"Mode de preview invalide."});
+    if (mode === "manual") {
+      track.previewStart = validatePreviewStart(req.body?.previewStart, track.audioDuration || track.duration);
+      track.previewChosenBy = "artist";
+    } else {
+      track.previewStart = Math.max(0, Number(track.previewAutoStart ?? track.previewStart) || 0);
+      track.previewChosenBy = "system";
+    }
+    track.previewMode = mode;
+    track.previewDuration = Math.min(30, Math.max(1, Number(track.audioDuration || track.duration) || 30));
+    track.previewFadeIn = 5;
+    track.previewFadeOut = 5;
+    track.previewUpdatedAt = new Date().toISOString();
+    await packsCollection.updateOne({_id:pack._id},{$set:{tracks, updatedAt:track.previewUpdatedAt}});
+    return res.json({success:true,preview:{id:track.id,previewStart:track.previewStart,previewDuration:track.previewDuration,previewMode:mode,previewChosenBy:track.previewChosenBy},moderationRequired:false});
+  } catch (err) {
+    return res.status(err instanceof RangeError ? 400 : 500).json({success:false,message:err instanceof RangeError ? err.message : "Impossible de sauvegarder la preview."});
+  }
+});
+
+app.post("/api/creator/packs/:id/preview-listen", async (req,res) => {
+  const workspace = createPreviewWorkspace();
+  try {
+    const accountId = String(req.body?.accountId || "");
+    if (!req.sonaraIdentity || req.sonaraIdentity.accountId !== accountId) return res.status(403).json({success:false});
+    const pack = await packsCollection.findOne({id:String(req.params.id),moderationHidden:{$ne:true}});
+    if (!pack || !creatorPackBelongsTo(pack,accountId)) return res.status(404).json({success:false});
+    const track = (pack.tracks||[]).find(t=>String(t.id)===String(req.body?.trackId));
+    if (!track?.audioName) return res.status(404).json({success:false});
+    const start = validatePreviewStart(req.body?.previewStart,track.audioDuration||track.duration);
+    await downloadPackR2File(track.audioName,workspace.inputPath);
+    await renderAudioPreview({inputPath:workspace.inputPath,outputPath:workspace.outputPath,start,duration:Math.min(30,Number(track.audioDuration||track.duration)||30)});
+    res.setHeader("Cache-Control","private, no-store");
+    return res.sendFile(workspace.outputPath,error=>{workspace.cleanup();if(error&&!res.headersSent)res.status(500).end();});
+  } catch (err) {
+    workspace.cleanup();
+    return res.status(err instanceof RangeError?400:503).json({success:false,message:err instanceof RangeError?err.message:"Extrait d'écoute indisponible."});
+  }
+});
+
 app.patch("/api/creator/packs/:id/license", async (req, res) => {
   try {
     const packId = String(req.params.id || "").trim();
@@ -4715,7 +4768,7 @@ app.patch(
         const previousDownloadZip = track.downloadZip;
         const audioKey = await uploadToR2(file, "tracks/audio");
         const originalFileHash = await hashFileSha256(file.path);
-        const preview = await analyzeAudioPreview(file.path);
+        const preview = applyCreatorPreview({ previewMode: "auto" }, await analyzeAudioPreview(file.path), track.duration);
         newR2Keys.push(audioKey);
         track.audioName = audioKey;
         track.audioVersion =
@@ -5388,6 +5441,7 @@ app.post("/api/packs/:id/preview-analysis", async (req, res) => {
     for (let index = 0; index < tracks.length; index += 1) {
       const track = tracks[index];
       const previewReady =
+        ["artist", "moderator"].includes(String(track.previewChosenBy || "")) ||
         Number.isFinite(Number(track.previewStart)) &&
         Number(track.previewAnalysisVersion || 0) >= PREVIEW_ANALYSIS_VERSION;
 
@@ -5610,7 +5664,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
           : await uploadToR2(trackCoverFile, "tracks/covers");
         const trackAudioKey = await uploadToR2(trackAudioFile, "tracks/audio");
         const originalFileHash = await hashFileSha256(trackAudioFile.path);
-        const preview = await analyzeAudioPreview(trackAudioFile.path);
+        const preview = applyCreatorPreview(track, await analyzeAudioPreview(trackAudioFile.path), track.duration);
         preparedTracks.push({
           ...track,
           coverPack: trackCoverKey,
@@ -5621,6 +5675,7 @@ app.post("/api/packs/pending", handlePackUpload, async (req, res) => {
           originalFileHashComputedAt: new Date().toISOString(),
           fingerprintStatus: FINGERPRINT_STATUS,
           ...preview,
+          previewAutoStart: Math.max(0, Number(preview.previewStart) || 0),
           _audioLocalPath: trackAudioFile.path,
         });
       }
@@ -8860,12 +8915,19 @@ app.patch(
         });
       }
 
+      const pendingPack = await packsCollection.findOne({id:requestedId});
+      if (!pendingPack) return res.status(404).json({success:false,message:"Pack introuvable."});
+      const selection = status === "approved"
+        ? applyModeratorPreviews(pendingPack, req.body?.previews)
+        : {ok:true,updated:0};
+      if (!selection.ok) return res.status(400).json({success:false,message:selection.message});
       const result = await packsCollection.findOneAndUpdate(
         { id: requestedId },
         {
           $set: {
             status,
             moderatedAt: new Date().toISOString(),
+            ...(selection.updated ? {tracks:pendingPack.tracks} : {}),
           },
         },
         { returnDocument: "after" },
