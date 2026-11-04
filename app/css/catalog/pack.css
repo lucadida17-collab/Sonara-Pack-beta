@@ -4682,89 +4682,83 @@ body.pack-page .sonara-pack-book-hero-card .cover {
   body.pack-page .playerBtnMob { display: none !important; }
 }
 
-/* Grand lecteur — ambiance dynamique uniquement sur mobile.
-   Le visuel du livre et la mise en page restent inchanges.
-   Desktop / grand ecran conservent le fond bleu original. */
-@media (max-width: 899px) {
-  body.pack-page .pack-preview-player-root .grand-player {
-    background: #080a0f;
-    overflow: hidden;
-    isolation: isolate;
-  }
+/* Grand lecteur — cover floutee sur mobile, tablette et desktop.
+   Le livre et toutes les commandes restent nets et au premier plan. */
+body.pack-page .pack-preview-player-root .grand-player {
+  background: #080a0f;
+  overflow: hidden;
+  isolation: isolate;
+}
 
-  body.pack-page .pack-preview-player-root .grand-player::before {
-    content: "";
-    position: absolute;
-    inset: -36px;
-    z-index: 0;
-    pointer-events: none;
-    background-image: var(--sonara-player-cover-image, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: .55;
-    filter: blur(9px) brightness(.80);
-  }
+body.pack-page .pack-preview-player-root .grand-player::before {
+  content: "";
+  position: absolute;
+  inset: -36px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--sonara-player-cover-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: .55;
+  filter: blur(9px) brightness(.80);
+}
 
-  body.pack-page .pack-preview-player-root .grand-player::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, .25);
-  }
+body.pack-page .pack-preview-player-root .grand-player::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .25);
+}
 
-  body.pack-page .pack-preview-player-root .grand-player > .grand-player-shell {
-    position: relative;
-    z-index: 1;
-  }
+body.pack-page .pack-preview-player-root .grand-player > .grand-player-shell {
+  position: relative;
+  z-index: 1;
+}
 
-  body.pack-page .pack-preview-player-root .grand-player > .grand-player-back {
-    z-index: 2;
-  }
+body.pack-page .pack-preview-player-root .grand-player > .grand-player-back {
+  z-index: 2;
 }
 
 
-/* Page Pack : ambiance de la cover, uniquement sur mobile.
-   Identique au grand player : blur(9px), brightness(.80), opacity .55.
-   Le contenu et le livre 3D restent nets ; desktop ne change pas. */
+/* Page Pack : meme cover floutee sur toutes les tailles d'ecran.
+   blur(9px), brightness(.80), opacity .55 ; livre et contenu nets. */
 body.pack-page > .pack-page-ambient {
   display: none;
 }
 
-@media (max-width: 899px) {
-  body.pack-page > .pack-page-ambient {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-    background: #080a0f;
-  }
+body.pack-page > .pack-page-ambient {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #080a0f;
+}
 
-  body.pack-page > .pack-page-ambient .pack-page-ambient-cover {
-    position: absolute;
-    inset: -36px;
-    width: calc(100% + 72px);
-    height: calc(100% + 72px);
-    max-width: none;
-    object-fit: cover;
-    object-position: center;
-    opacity: .55;
-    filter: blur(9px) brightness(.80);
-  }
+body.pack-page > .pack-page-ambient .pack-page-ambient-cover {
+  position: absolute;
+  inset: -36px;
+  width: calc(100% + 72px);
+  height: calc(100% + 72px);
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  opacity: .55;
+  filter: blur(9px) brightness(.80);
+}
 
-  body.pack-page > .pack-page-ambient::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, .25);
-  }
+body.pack-page > .pack-page-ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .25);
+}
 
-  body.pack-page > .desktop-shell {
-    position: relative;
-    z-index: 1;
-  }
+body.pack-page > .desktop-shell {
+  position: relative;
+  z-index: 1;
 }

@@ -195,37 +195,35 @@ body.Download {
 }
 
 
-/* Ambiance du pack téléchargé, identique au grand player mobile. */
-@media (max-width: 899px) {
-  body.Download.has-download-cover {
-    background: #080a0f;
-  }
+/* Ambiance du pack telecharge, meme cover sur mobile et desktop. */
+body.Download.has-download-cover {
+  background: #080a0f;
+}
 
-  body.Download.has-download-cover::before {
-    content: "";
-    position: fixed;
-    inset: -36px;
-    z-index: 0;
-    pointer-events: none;
-    background-image: var(--sonara-download-cover-image, none);
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-    opacity: .55;
-    filter: blur(9px) brightness(.80);
-  }
+body.Download.has-download-cover::before {
+  content: "";
+  position: fixed;
+  inset: -36px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--sonara-download-cover-image, none);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: .55;
+  filter: blur(9px) brightness(.80);
+}
 
-  body.Download.has-download-cover::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, .25);
-  }
+body.Download.has-download-cover::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .25);
+}
 
-  body.Download.has-download-cover > .download-page {
-    position: relative;
-    z-index: 1;
-  }
+body.Download.has-download-cover > .download-page {
+  position: relative;
+  z-index: 1;
 }

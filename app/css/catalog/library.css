@@ -4055,78 +4055,73 @@ body.library .grand-player-cover.sonara-grand-player-book {
   }
 }
 
-/* Grand lecteur — ambiance dynamique uniquement sur mobile.
-   Le visuel du livre et la mise en page restent inchanges.
-   Desktop / grand ecran conservent le fond bleu original. */
-@media (max-width: 899px) {
-  body.library .grand-player {
-    background: #080a0f;
-    overflow: hidden;
-    isolation: isolate;
-  }
+/* Grand lecteur — cover floutee sur mobile, tablette et desktop.
+   Le livre et toutes les commandes restent nets et au premier plan. */
+body.library .grand-player {
+  background: #080a0f;
+  overflow: hidden;
+  isolation: isolate;
+}
 
-  body.library .grand-player::before {
-    content: "";
-    position: absolute;
-    inset: -36px;
-    z-index: 0;
-    pointer-events: none;
-    background-image: var(--sonara-player-cover-image, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: .55;
-    filter: blur(9px) brightness(.80);
-  }
+body.library .grand-player::before {
+  content: "";
+  position: absolute;
+  inset: -36px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--sonara-player-cover-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: .55;
+  filter: blur(9px) brightness(.80);
+}
 
-  body.library .grand-player::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, .25);
-  }
+body.library .grand-player::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .25);
+}
 
-  body.library .grand-player > .grand-player-shell {
-    position: relative;
-    z-index: 1;
-  }
+body.library .grand-player > .grand-player-shell {
+  position: relative;
+  z-index: 1;
+}
 
-  body.library .grand-player > .grand-player-back {
-    z-index: 2;
-  }
+body.library .grand-player > .grand-player-back {
+  z-index: 2;
 }
 
 
 /* Ambiance cover sur les pages Bibliothèque et Pack téléchargé.
    Le grand player conserve sa propre cover de track et son propre fond. */
-@media (max-width: 899px) {
-  body.library.has-library-cover::before {
-    content: "";
-    position: fixed;
-    inset: -36px;
-    z-index: 0;
-    pointer-events: none;
-    background-image: var(--sonara-library-cover-image, none);
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-    opacity: .55;
-    filter: blur(9px) brightness(.80);
-  }
+body.library.has-library-cover::before {
+  content: "";
+  position: fixed;
+  inset: -36px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--sonara-library-cover-image, none);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: .55;
+  filter: blur(9px) brightness(.80);
+}
 
-  body.library.has-library-cover::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, .25);
-  }
+body.library.has-library-cover::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .25);
+}
 
-  body.library.has-library-cover > .desktop-shell {
-    position: relative;
-    z-index: 1;
-  }
+body.library.has-library-cover > .desktop-shell {
+  position: relative;
+  z-index: 1;
 }
