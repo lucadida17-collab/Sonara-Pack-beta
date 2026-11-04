@@ -4871,6 +4871,7 @@ app.get("/api/packs/pending", async (req, res) => {
 });
 
 app.get("/api/packs", async (req, res) => {
+  const requestedPackId = String(req.query?.packId || "").trim();
   const packs = readJsonArray(packsPath);
   const catalogueContext = buildLocalPublicCatalogueContext();
   const approvedPacks = packs
@@ -4879,6 +4880,7 @@ app.get("/api/packs", async (req, res) => {
         String(pack?.status || "").toLowerCase() === "approved" &&
         !isPackHiddenByModeration(pack),
     )
+    .filter((pack) => !requestedPackId || String(pack.id) === requestedPackId)
     .filter(
       (pack) =>
         commercialPolicy.paymentsActive ||

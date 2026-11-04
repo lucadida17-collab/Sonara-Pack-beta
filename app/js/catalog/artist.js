@@ -6,9 +6,7 @@ let artistCatalogue = [];
 let artistPacks = [];
 let publicArtist = null;
 let activePreview = null;
-const ARTIST_PUBLIC_MIN_LOADING_MS = 6000;
 const ARTIST_PUBLIC_REQUEST_TIMEOUT = 60000;
-const artistPublicLoadingStartedAt = Date.now();
 
 
 function updateArtistSeo(profile = {}) {
@@ -704,7 +702,6 @@ async function loadPublicArtist() {
     publicArtist = getPackArtist(artistPacks[0]);
     updateArtistSeo(publicArtist);
 
-    await window.SonaraLoadingExperience?.waitMinimum?.(artistPublicLoadingStartedAt, ARTIST_PUBLIC_MIN_LOADING_MS);
     renderArtistPage();
   } catch (error) {
     console.error("Erreur profil artiste public :", error);

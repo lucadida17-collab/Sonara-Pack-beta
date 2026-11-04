@@ -16,6 +16,18 @@ function getFilePath(file) {
   return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
 }
 
+
+// Le fond du téléchargement reprend la cover du pack, sur mobile seulement.
+function setDownloadAmbientCover(pack = null) {
+  const cover = pack?.coverPack || pack?.tracks?.[0]?.coverPack || "";
+  const url = cover ? getFilePath(cover) : "";
+  document.body.style.setProperty(
+    "--sonara-download-cover-image",
+    url ? `url(${JSON.stringify(url)})` : "none"
+  );
+  document.body.classList.toggle("has-download-cover", Boolean(url));
+}
+
 const downloadPage = document.querySelector(".download-page");
 
 const params = new URLSearchParams(window.location.search);
@@ -263,6 +275,8 @@ async function loadDownloadData() {
     if (!selectedDownload) {
       throw new Error("Fichier introuvable.");
     }
+
+    setDownloadAmbientCover(selectedPack);
 
     if (isMobile) {
       connectMobileButtons();

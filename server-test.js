@@ -4984,11 +4984,13 @@ app.get("/api/packs/pending", async (req, res) => {
 
 app.get("/api/packs", async (req, res) => {
   try {
+    const requestedPackId = String(req.query?.packId || "").trim();
     const [approvedPacks, catalogueContext] = await Promise.all([
       packsCollection
         .find({
           status: "approved",
           moderationHidden: { $ne: true },
+          ...(requestedPackId ? { id: requestedPackId } : {}),
         })
         .toArray(),
       buildPublicCatalogueContext(),

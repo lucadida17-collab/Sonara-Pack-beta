@@ -7,6 +7,7 @@ const { renderAudioPreview } = require("../features/audio/preview-export");
 const { bearer, digestToken, findSession } = require("./account-security");
 
 const TTL = 20 * 60 * 1000;
+const PREVIEW_CACHE_TTL = 60 * 60 * 1000; // Reuse FFmpeg results for one hour per server instance.
 const IMAGE_EXT = /\.(?:png|jpe?g|webp|gif|avif)$/i;
 const PRIVATE_EXT = /\.(?:mp3|wav|aiff?|flac|ogg|m4a|aac|zip|rar|7z|mid|midi|als|flp|rpp|logicx|mp4|mov|pdf)$/i;
 // Raw upload URLs serve artwork only, never feedback screenshots or moderation proofs.
@@ -115,7 +116,7 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
       if(!entry || !isApproved(entry.pack) || !entry.source) return res.status(404).json({success:false,code:"PREVIEW_NOT_FOUND"});
       const start=Math.max(0,Number.isFinite(Number(entry.track.previewStart)) ? Number(entry.track.previewStart) : 0);
       const duration=Math.max(1,Math.min(30,Number(entry.track.previewDuration)||30));
-      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,start,duration,"5s-fade-v1"])).digest("hex");
+      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,entry.track.originalFileHash || "",start,duration,"5s-fade-v1"])).digest("hex");
       const now=Date.now();
       const cached=previewCache.get(key);
       if (cached && cached.expiresAt > now && fs.existsSync(cached.file)) {
@@ -136,7 +137,7 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
             await getInput(entry.source,input);
             await renderAudioPreview({inputPath:input,outputPath:output,start,duration});
             try{fs.rmSync(input,{force:true});}catch{}
-            previewCache.set(key,{file:output,directory,expiresAt:Date.now()+5*60*1000});
+            previewCache.set(key,{file:output,directory,expiresAt:Date.now()+PREVIEW_CACHE_TTL});
             // A small bounded temporary cache prevents N downloads/encodes for N listeners.
             for(const [cacheKey,item] of previewCache) {
               if(item.expiresAt>Date.now() && previewCache.size<=64) continue;

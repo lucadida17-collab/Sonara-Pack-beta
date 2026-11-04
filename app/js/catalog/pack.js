@@ -386,7 +386,6 @@ function getStoredPackProfile() {
 }
 
 
-const PACK_MIN_LOADING_TIME = 6000;
 const PACK_REQUEST_TIMEOUT = 60000;
 
 function updatePackLoading(progress, message) {
@@ -400,32 +399,15 @@ function updatePackLoading(progress, message) {
   loader?.setAttribute("aria-valuenow", String(value));
 }
 
-function waitForPackMinimum(startedAt) {
-  const elapsed = Date.now() - startedAt;
-  const remaining = Math.max(0, PACK_MIN_LOADING_TIME - elapsed);
-
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, remaining);
-  });
-}
-
-async function finishPackLoading(startedAt, message = "Pack prêt") {
-  updatePackLoading(92, "Finalisation de l’affichage…");
-  await waitForPackMinimum(startedAt);
-
+function finishPackLoading(message = "Pack prêt") {
   updatePackLoading(100, message);
-
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 280);
-  });
-
   const loader = document.querySelector(".my-pack-page-loader");
   const content = document.querySelector(".my-pack-loaded-content");
-
-  loader?.classList.add("is-hidden");
+  // There is no artificial minimum loading time: show the pack as soon as the
+  // server has returned and rendering has finished.
   content?.classList.add("is-ready");
-
-  window.setTimeout(() => loader?.remove(), 500);
+  loader?.classList.add("is-hidden");
+  window.setTimeout(() => loader?.remove(), 450); // CSS fade, not a navigation wait.
 }
 
 function isFreeCatalogItem(item = {}) {
@@ -784,7 +766,7 @@ function normalizeAutoPlaylistAsPack(playlist = {}) {
   };
 }
 
-async function loadAutoPlaylist() {
+async function loadAutoPlaylist({ render = true } = {}) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), PACK_REQUEST_TIMEOUT);
   let response;
@@ -809,21 +791,21 @@ async function loadAutoPlaylist() {
   document.title = `${packData.title} | Sonara Pack`;
   const meta = document.querySelector('meta[name="robots"]');
   if (meta) meta.content = "noindex, follow";
-  renderPack();
+  if (render) renderPack();
   return packData;
 }
 
-async function loadPack() {
+async function loadPack({ render = true } = {}) {
 
   if (playlistId) {
-    return loadAutoPlaylist();
+    return loadAutoPlaylist({ render });
   }
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), PACK_REQUEST_TIMEOUT);
   let response;
   try {
-    response = await fetch(`${API_URL}/api/packs`, {
+    response = await fetch(`${API_URL}/api/packs?packId=${encodeURIComponent(packId)}`, {
       method: "GET",
       cache: "no-store",
       headers: { Accept: "application/json" },
@@ -839,20 +821,14 @@ async function loadPack() {
 
   const packs = await response.json();
 
-  console.log("ID DANS URL :", packId);
-  console.log("PACKS REÇUS :", packs);
-  console.log("IDS DISPONIBLES :", packs.map(pack => pack.id));
-
   packData = packs.find(pack => pack.id === packId);
-
-  console.log("PACK :", packData);
 
   if (!packData) {
     throw new Error("Pack introuvable.");
   }
 
   updatePackSeo(packData);
-  renderPack();
+  if (render) renderPack();
   return packData;
 
 }
@@ -1062,7 +1038,15 @@ function setupPackPreviewPlayer() {
 
   const root = ensurePackPreviewPlayerMarkup();
   const audio = new Audio();
-  audio.preload = "metadata";
+  audio.preload = "auto";
+  // Warm only the first (or deep-linked) preview. Reusing the SAME Audio element
+  // avoids a second request when the user clicks Play, without autoplaying.
+  // Browsers may ignore this hint on data-saver/mobile networks.
+  const initialTrack = tracks.find((item) => String(item.id) === String(trackId || "")) || tracks[0];
+  const warmPackId = initialTrack?.sourcePackId || packData?.id;
+  if (warmPackId && initialTrack?.id && navigator.connection?.saveData !== true) {
+    audio.src = `${API_URL}/api/media/preview/${encodeURIComponent(warmPackId)}/${encodeURIComponent(initialTrack.id)}`;
+  }
   packPreviewAudio = audio;
   packPreviewState = null;
 
@@ -1261,7 +1245,8 @@ function setupPackPreviewPlayer() {
     let absoluteSource = source;
     try { absoluteSource = new URL(source, window.location.href).href; } catch {}
 
-    const isNewSource = audio.src !== absoluteSource;
+    // A failed background preload must be retried on an explicit Play click.
+    const isNewSource = audio.src !== absoluteSource || Boolean(audio.error);
     if (isNewSource) {
       audio.pause();
       audio.src = source;
@@ -2157,8 +2142,6 @@ document.querySelector(".nav-mobile-library").addEventListener("click", () => {
 });
 
 async function initializePackPage() {
-  const loadingStartedAt = Date.now();
-
   try {
     updatePackLoading(10, "Préparation du pack…");
 
@@ -2169,9 +2152,14 @@ async function initializePackPage() {
     updatePackLoading(48, "Connexion au catalogue Sonara…");
     updatePackLoading(66, "Chargement du pack…");
 
-    await window.SonaraCommercial?.ready?.();
-    await loadPack();
-    await finishPackLoading(loadingStartedAt, "Pack prêt");
+    // API mode and pack data are independent requests; start both together.
+    // Rendering waits for the verified mode so pricing/access rules stay correct.
+    await Promise.all([
+      window.SonaraCommercial?.ready?.() || Promise.resolve(),
+      loadPack({ render: false })
+    ]);
+    renderPack();
+    finishPackLoading("Pack prêt");
   } catch (error) {
     console.error("Erreur ouverture du pack :", error);
 
@@ -2185,7 +2173,7 @@ async function initializePackPage() {
           : error?.message || "Impossible d’ouvrir ce pack.";
 
     updatePackLoading(100, message);
-    await waitForPackMinimum(loadingStartedAt);
+    finishPackLoading(message);
 
     showPopup({
       type: "error",

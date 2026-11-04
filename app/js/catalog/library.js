@@ -19,6 +19,20 @@ function getFilePath(file) {
   return `${API_URL}/uploads/${value.replace(/^\/+/, "")}`;
 }
 
+
+// Ambiance de Bibliothèque : la cover du pack affiché, sans altérer les livres.
+function setLibraryAmbientCover(item = null) {
+    const cover = typeof item === "string"
+        ? item
+        : item?.coverPack || item?.tracks?.[0]?.coverPack || "";
+    const url = cover ? getFilePath(cover) : "";
+    document.body.style.setProperty(
+        "--sonara-library-cover-image",
+        url ? `url(${JSON.stringify(url)})` : "none"
+    );
+    document.body.classList.toggle("has-library-cover", Boolean(url));
+}
+
 // Keep the Library player honest: never claim playback succeeded until
 // the browser's `play` event fires. Network/media errors are surfaced to users.
 function reportLibraryAudioError(audio, error) {
@@ -485,25 +499,27 @@ async function getLibraryAccountDownloads() {
 }
 
 function getLibraryDownloadedPacks(account) {
-    const downloadedPackIds =
-        Array.isArray(
-            account?.downloadedPacks
-        )
-            ? account.downloadedPacks.map(
-                (id) => String(id)
-            )
-            : [];
+    // The backend appends a pack ID when it is first acquired/downloaded.
+    // Show those IDs newest-first, regardless of the catalogue order.
+    const downloadedPackIds = Array.isArray(account?.downloadedPacks)
+        ? account.downloadedPacks.map((id) => String(id)).reverse()
+        : [];
 
-    return (
-        Array.isArray(packs)
-            ? packs
-            : []
-    ).filter((pack) =>
-        String(pack?.contentType || "audio").trim().toLowerCase() === "audio" &&
-        downloadedPackIds.includes(
-            String(pack.id)
-        )
+    const availablePacks = new Map(
+        (Array.isArray(packs) ? packs : [])
+            .filter((pack) =>
+                String(pack?.contentType || "audio").trim().toLowerCase() === "audio"
+            )
+            .map((pack) => [String(pack.id), pack])
     );
+
+    const seen = new Set();
+    return downloadedPackIds.flatMap((id) => {
+        if (seen.has(id)) return [];
+        seen.add(id);
+        const pack = availablePacks.get(id);
+        return pack ? [pack] : [];
+    });
 }
 
 function getLibraryDownloadedTracks(account) {
@@ -705,6 +721,7 @@ function renderLibraryOverviewLoading() {
 }
 
 function renderLibraryOverviewError(message) {
+    setLibraryAmbientCover();
     content.innerHTML = `
         <section class="library-overview">
             <div class="library-overview-heading">
@@ -823,6 +840,13 @@ async function renderLibrary() {
 
         const previewPacks =
             downloadedPacks.slice(0, 4);
+
+        const fallbackTrack = previewPacks.length
+            ? null
+            : getLibraryDownloadedTracks(account)[0];
+        setLibraryAmbientCover(previewPacks[0] || fallbackTrack || null);
+
+
 
         const packPreviewContent =
             previewPacks.length
@@ -998,6 +1022,8 @@ async function renderChoiceTelechargement() {
 
         const previewPacks =
             downloadedPacks.slice(0, 4);
+
+        setLibraryAmbientCover(previewPacks[0] || downloadedTracks[0] || null);
 
         const previewTracks =
             downloadedTracks.slice(0, 3);
@@ -1296,6 +1322,8 @@ async function renderPack() {
     }
 
 
+    setLibraryAmbientCover(packsTelecharges[0] || null);
+
     content.innerHTML = `
 
      ${createLibraryBackButton()}
@@ -1375,6 +1403,8 @@ function renderDownloadedPack(packId) {
         Array.isArray(packData.tracks)
             ? packData.tracks
             : [];
+
+    setLibraryAmbientCover(packData);
 
     content.innerHTML = `
   
@@ -2152,6 +2182,8 @@ async function renderTrack() {
         return;
     }
 
+
+    setLibraryAmbientCover(downloadedTracks[0] || null);
 
     content.innerHTML = `
 
