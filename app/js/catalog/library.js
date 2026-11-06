@@ -1504,10 +1504,10 @@ function renderDownloadedPack(packId) {
 
     <section class="download-pack-page">
 
-        <div class="pack-hero">
+        <div class="pack-hero sonara-stats-hero" data-sonara-stats-hero>
     <div class="left-side">
 
-    <div class="card sonara-pack-book-card sonara-pack-book-hero-card">
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface>
       <img 
       src="${getFilePath(packData.coverPack)}"
       data-sonara-book-cover="${getFilePath(packData.coverPack)}"
@@ -1518,6 +1518,8 @@ function renderDownloadedPack(packId) {
           <button class="playerBtnMob play"></button>
             <audio src="../../${packData.audio}">
             </audio>
+      ${window.SonaraPackStats?.renderPackCover(packData) || ""}
+      ${window.SonaraPackStats?.renderNav("cover") || ""}
     </div>
 
     <button class="pack-share-button js-share-library-pack" type="button" aria-label="Partager" title="Partager">
@@ -1567,8 +1569,9 @@ function renderDownloadedPack(packId) {
           </svg>
         </button>
       </div>
+      ${window.SonaraPackStats?.renderPackHero(packData) || ""}
+      ${window.SonaraPackStats?.renderNav("desktop") || ""}
     </div>
-   ${window.SonaraPackStats?.renderPack(packData) || ""}
    <div class="track-row-separator"></div>
     <div class="track">
 

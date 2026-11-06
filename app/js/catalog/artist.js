@@ -424,13 +424,15 @@ function renderArtistPage() {
   const rankedPacks = [...artistPacks].sort((a,b) => artistSafeNumber(b.downloadCount ?? b.downloads ?? b.stats?.downloads) - artistSafeNumber(a.downloadCount ?? a.downloads ?? a.stats?.downloads) || Date.parse(b.publishedAt || b.createdAt || 0) - Date.parse(a.publishedAt || a.createdAt || 0));
 
   artistContent.innerHTML = `
-    <section class="artist-public-hero">
+    <section class="artist-public-hero sonara-stats-hero" data-sonara-stats-hero>
       <button class="artist-public-back" type="button" aria-label="Retour">
         <i data-lucide="chevron-left"></i>
       </button>
 
-      <div class="artist-public-photo">
+      <div class="artist-public-photo" data-sonara-stats-cover-surface>
         ${renderArtistPhoto(publicArtist)}
+        ${window.SonaraPackStats?.renderArtistCover(artistPacks, publicArtist.name) || ""}
+        ${window.SonaraPackStats?.renderNav("cover") || ""}
       </div>
 
       <div class="artist-public-identity">
@@ -463,9 +465,9 @@ function renderArtistPage() {
 
         </div>
       </div>
+      ${window.SonaraPackStats?.renderArtistHero(artistPacks, publicArtist.name) || ""}
+      ${window.SonaraPackStats?.renderNav("desktop") || ""}
     </section>
-
-    ${window.SonaraPackStats?.renderArtist(artistPacks, publicArtist.name) || ""}
 
     <section class="artist-public-section" data-artist-tracks>
       <header class="artist-public-section-header">

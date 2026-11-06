@@ -80,7 +80,7 @@
     return `<strong>${escape(value)}</strong>${suffix ? `<small>${escape(suffix)}</small>` : ""}`;
   }
 
-  function render(packs, { type = "pack", title = "" } = {}) {
+  function renderStats(packs, { type = "pack", title = "" } = {}) {
     const artist = type === "artist";
     const data = calculate(packs);
     const knownDuration = data.tracks === 0 ? "0:00" : data.missingDurations ? "—" : formatDuration(data.duration);
@@ -99,68 +99,109 @@
       [packLabel, valueMarkup(data.packs)],
       [priceLabel, valueMarkup(knownPrice, priceNote)]
     ];
-
     return `
-      <section class="sonara-stats-swipe" data-sonara-stats aria-label="${escape(sectionTitle)}">
-        <div class="sonara-stats-face sonara-stats-front">
-          <div class="sonara-stats-copy">
-            <span class="sonara-stats-kicker">SONARA PACK</span>
-            <strong>${escape(sectionTitle)}</strong>
-            ${title ? `<small data-user-content>${escape(title)}</small>` : ""}
-          </div>
-          <button class="sonara-stats-action" type="button" data-sonara-stats-toggle aria-expanded="false" aria-label="Voir les statistiques">
-            <span>Glisser vers la droite</span><span aria-hidden="true">→</span>
-          </button>
-        </div>
-        <div class="sonara-stats-face sonara-stats-back" hidden>
-          <div class="sonara-stats-top">
-            <span class="sonara-stats-kicker">${escape(sectionTitle)}</span>
-            <button class="sonara-stats-back-action" type="button" data-sonara-stats-toggle aria-expanded="true" aria-label="Retour aux informations">← <span>Retour</span></button>
-          </div>
-          <div class="sonara-stats-grid">
-            ${stats.map(([label, value]) => `<div class="sonara-stats-cell"><span>${escape(label)}</span>${value}</div>`).join("")}
-          </div>
-        </div>
-      </section>`;
+      <div class="sonara-stats-panel-heading">
+        <span class="sonara-stats-kicker">SONARA PACK</span>
+        <strong>${escape(sectionTitle)}</strong>
+        ${title ? `<small data-user-content>${escape(title)}</small>` : ""}
+      </div>
+      <div class="sonara-stats-grid">
+        ${stats.map(([label, value]) => `<div class="sonara-stats-cell"><span>${escape(label)}</span>${value}</div>`).join("")}
+      </div>`;
   }
 
-  function setOpen(section, open) {
-    if (!section) return;
-    section.querySelector(".sonara-stats-front").hidden = open;
-    section.querySelector(".sonara-stats-back").hidden = !open;
-    section.classList.toggle("is-open", open);
-    section.querySelectorAll("[data-sonara-stats-toggle]").forEach((button) => {
+  // These panels live INSIDE the existing hero: never below it.
+  function renderPanel(packs, options, surface) {
+    const klass = surface === "cover" ? "sonara-stats-cover-panel" : "sonara-stats-hero-panel";
+    return `<div class="${klass}" data-sonara-stats-panel hidden>
+      ${renderStats(packs, options)}
+    </div>`;
+  }
+
+  // One icon, no swipe instructions. The same button reverses direction when open.
+  function renderNav(surface = "cover") {
+    const klass = surface === "cover" ? "sonara-stats-nav-cover" : "sonara-stats-nav-desktop";
+    return `<button class="sonara-stats-nav ${klass}" type="button"
+        data-sonara-stats-toggle aria-expanded="false"
+        aria-label="Voir les statistiques" title="Voir les statistiques">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>`;
+  }
+
+  function setOpen(hero, open) {
+    if (!hero) return;
+    hero.classList.toggle("is-open", open);
+    hero.querySelectorAll("[data-sonara-stats-panel]").forEach((panel) => {
+      panel.hidden = !open;
+    });
+    hero.querySelectorAll("[data-sonara-stats-toggle]").forEach((button) => {
       button.setAttribute("aria-expanded", String(open));
+      button.setAttribute("aria-label", open ? "Retour" : "Voir les statistiques");
+      button.setAttribute("title", open ? "Retour" : "Voir les statistiques");
     });
     window.SonaraI18n?.refresh?.();
   }
 
-  // Délégation : résiste aux rerenders de Library, Pack et profil artiste.
+  // Delegated handlers work after every Pack, Library, and Artist re-render.
   document.addEventListener("click", (event) => {
     const button = event.target.closest?.("[data-sonara-stats-toggle]");
     if (!button) return;
-    const section = button.closest("[data-sonara-stats]");
-    setOpen(section, !section.classList.contains("is-open"));
+    const hero = button.closest("[data-sonara-stats-hero]");
+    if (hero) setOpen(hero, !hero.classList.contains("is-open"));
   });
 
-  const gestures = new WeakMap();
-  document.addEventListener("touchstart", (event) => {
-    const section = event.target.closest?.("[data-sonara-stats]");
-    if (!section || event.touches.length !== 1) return;
-    gestures.set(section, { x: event.touches[0].clientX, y: event.touches[0].clientY });
+  // Avoid the browser's native image drag stealing a desktop swipe.
+  document.addEventListener("dragstart", (event) => {
+    if (event.target.matches?.("img") && event.target.closest?.("[data-sonara-stats-cover-surface]")) {
+      event.preventDefault();
+    }
+  });
+
+  const activePointers = new Map();
+  function mobileLayout() {
+    return window.matchMedia?.("(max-width: 899px)")?.matches ?? false;
+  }
+  function isInteractive(element) {
+    return Boolean(element?.closest?.("button, a, input, textarea, select, audio, video, [role=button]"));
+  }
+
+  document.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || !event.isPrimary) return;
+    const hero = event.target.closest?.("[data-sonara-stats-hero]");
+    if (!hero || isInteractive(event.target)) return;
+    // Mobile/tablet: gestures belong to the cover only.
+    // Desktop: gestures belong to the whole cover + information hero.
+    if (mobileLayout() && !event.target.closest("[data-sonara-stats-cover-surface]")) return;
+    activePointers.set(event.pointerId, { hero, x: event.clientX, y: event.clientY });
   }, { passive: true });
 
-  document.addEventListener("touchend", (event) => {
-    const section = event.target.closest?.("[data-sonara-stats]");
-    const start = section && gestures.get(section);
-    if (!start || !event.changedTouches.length) return;
-    gestures.delete(section);
-    const dx = event.changedTouches[0].clientX - start.x;
-    const dy = event.changedTouches[0].clientY - start.y;
-    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
-    // Swipe right reveals details; swipe left returns to the cover summary.
-    if (dx > 0) setOpen(section, true);
-    else setOpen(section, false);
+  document.addEventListener("pointerup", (event) => {
+    const start = activePointers.get(event.pointerId);
+    activePointers.delete(event.pointerId);
+    if (!start || !start.hero.isConnected) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+      // Right reveals the statistics; left returns to the cover.
+      setOpen(start.hero, dx > 0);
+    }
+  }, { passive: true });
+  document.addEventListener("pointercancel", (event) => activePointers.delete(event.pointerId), { passive: true });
+
+  // Trackpad horizontal swipes on desktop (vertical page scrolling is untouched).
+  const lastWheel = new WeakMap();
+  document.addEventListener("wheel", (event) => {
+    if (mobileLayout()) return;
+    const hero = event.target.closest?.("[data-sonara-stats-hero]");
+    if (!hero || Math.abs(event.deltaX) < 30 || Math.abs(event.deltaX) < Math.abs(event.deltaY) * 1.3) return;
+    const now = Date.now();
+    if (now - (lastWheel.get(hero) || 0) < 450) return;
+    lastWheel.set(hero, now);
+    // Native trackpad swiping right typically has negative deltaX.
+    setOpen(hero, event.deltaX < 0);
   }, { passive: true });
 
   window.SonaraPackStats = Object.freeze({
@@ -170,7 +211,13 @@
       const value = fullTrackDuration(track);
       return value === null ? "—" : formatDuration(value);
     },
-    renderPack: (pack) => render([pack], { title: pack?.title || "" }),
-    renderArtist: (packs, name) => render(packs, { type: "artist", title: name })
+    renderNav,
+    renderPackCover: (pack) => renderPanel([pack], { title: pack?.title || "" }, "cover"),
+    renderPackHero: (pack) => renderPanel([pack], { title: pack?.title || "" }, "hero"),
+    renderArtistCover: (packs, name) => renderPanel(packs, { type: "artist", title: name }, "cover"),
+    renderArtistHero: (packs, name) => renderPanel(packs, { type: "artist", title: name }, "hero"),
+    // Keep the old methods available to integrations and existing unit tests.
+    renderPack: (pack) => renderPanel([pack], { title: pack?.title || "" }, "hero"),
+    renderArtist: (packs, name) => renderPanel(packs, { type: "artist", title: name }, "hero")
   });
 })();

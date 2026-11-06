@@ -1809,15 +1809,17 @@ function renderPack() {
     
 
     <section class="body-pack">
-    <div class="pack-hero">
+    <div class="pack-hero sonara-stats-hero" data-sonara-stats-hero>
     <div class="left-side">
 
-    <div class="card sonara-pack-book-card sonara-pack-book-hero-card">
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface>
       ${packData.isAutoPlaylist
         ? `<img src="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" data-sonara-book-cover="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`
         : `<img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}
      
 
+      ${window.SonaraPackStats?.renderPackCover(packData) || ""}
+      ${window.SonaraPackStats?.renderNav("cover") || ""}
     </div>
 
     <button class="pack-share-button" type="button" aria-label="Partager" title="Partager">
@@ -1858,9 +1860,9 @@ function renderPack() {
          <button class="btn-acheter-desktop">${packActionLabel}</button>
          ${plannedPriceMarkup}
       </div>
+      ${window.SonaraPackStats?.renderPackHero(packData) || ""}
+      ${window.SonaraPackStats?.renderNav("desktop") || ""}
     </div>
-
-    ${window.SonaraPackStats?.renderPack(packData) || ""}
 
     <div class="track">
 
