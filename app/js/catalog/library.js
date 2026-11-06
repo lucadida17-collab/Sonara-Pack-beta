@@ -55,20 +55,108 @@ function reportLibraryAudioError(audio, error) {
   reportLibraryAudioError.hideTimeout = setTimeout(() => alert.remove(), 5500);
 }
 
+// A full-file ticket expires after 20 minutes. Safari's <audio> element
+// cannot send the bearer token, so a failed ticket needs a fresh catalogue
+// capability; NEVER replace purchased audio with a 30-second preview.
+const libraryAudioRepairs = new WeakMap();
+const libraryAudioLastRefresh = new WeakMap();
+
+async function recoverLibraryAudioFailure(audio, error) {
+  if (!audio) return;
+  if (error?.name === "AbortError") return;
+  if (libraryAudioRepairs.has(audio)) return libraryAudioRepairs.get(audio);
+
+  const attempt = (async () => {
+    const row = audio.closest?.(".track-row, .track-row-mobile");
+    const packId = String(row?.dataset?.packId || "");
+    const trackId = String(row?.dataset?.trackId || "");
+    const source = String(audio.currentSrc || audio.getAttribute("src") || "");
+    let status = null;
+    let contentType = null;
+    let resolution = "not-a-full-ticket";
+
+    // This bounded request reads at most two bytes, not the entire original.
+    if (/\/api\/media\/full\/[^/?]+/.test(source)) {
+      try {
+        const probe = await fetch(source, {
+          method: "GET",
+          cache: "no-store",
+          headers: { Range: "bytes=0-1" }
+        });
+        status = probe.status;
+        contentType = probe.headers?.get?.("content-type") || null;
+        await probe.body?.cancel?.();
+        resolution = status === 403 ? "full-ticket-expired" : "original-response";
+      } catch (probeError) {
+        resolution = "media-network-error";
+      }
+
+      if (status === 403 && packId && trackId && libraryAudioLastRefresh.get(audio) !== source) {
+        libraryAudioLastRefresh.set(audio, source);
+        try {
+          const response = await fetch(`${API_URL}/api/packs?packId=${encodeURIComponent(packId)}`, {
+            method: "GET",
+            cache: "no-store",
+            headers: { Accept: "application/json" }
+          });
+          if (!response.ok) throw new Error(`Catalogue HTTP ${response.status}`);
+          const catalogue = await response.json();
+          const pack = Array.isArray(catalogue)
+            ? catalogue.find((item) => String(item?.id) === packId)
+            : null;
+          const track = pack?.tracks?.find((item) => String(item?.id) === trackId);
+          const nextSource = track?.audioName || track?.audio || "";
+          const refreshedUrl = nextSource ? getFilePath(nextSource) : "";
+          // Require a new protected full-audio ticket. No preview fallback.
+          if (!/\/api\/media\/full\/[^/?]+/.test(refreshedUrl) || refreshedUrl === source) {
+            throw new Error("No renewed full-audio ticket");
+          }
+          if (!audio.isConnected || audio.dataset.sonaraStopped === "1") return;
+          audio.src = refreshedUrl;
+          audio.load();
+          try {
+            await audio.play();
+            return;
+          } catch (retryError) {
+            // Mobile Safari can require another tap after an async renewal.
+            error = retryError;
+            resolution = "renewed-ticket-needs-retry";
+          }
+        } catch (renewalError) {
+          resolution = "full-ticket-renewal-failed";
+          console.warn("[Library audio] Ticket renewal failed", renewalError?.message || renewalError);
+        }
+      }
+    }
+
+    console.warn("[Library audio] Playback failed", {
+      packId, trackId, httpStatus: status, contentType, resolution,
+      mediaErrorCode: audio.error?.code ?? null,
+      errorName: error?.name || null
+    });
+    if (audio.isConnected && audio.dataset.sonaraStopped !== "1") {
+      reportLibraryAudioError(audio, error);
+    }
+  })();
+
+  libraryAudioRepairs.set(audio, attempt);
+  try { await attempt; } finally { libraryAudioRepairs.delete(audio); }
+}
+
 function startLibraryAudio(audio) {
   if (!audio?.getAttribute("src")) {
     reportLibraryAudioError(audio, new Error("Source audio manquante"));
     return;
   }
-  // Called immediately inside the click handler (no awaits).
+  // Preserve the user gesture for immediate playback (no await before play).
   try {
     const result = audio.play();
     result?.catch?.((error) => {
-      if (error?.name !== "AbortError") reportLibraryAudioError(audio, error);
+      if (error?.name !== "AbortError") void recoverLibraryAudioFailure(audio, error);
     });
     return result;
   } catch (error) {
-    reportLibraryAudioError(audio, error);
+    void recoverLibraryAudioFailure(audio, error);
   }
 }
 
@@ -1497,7 +1585,7 @@ function renderDownloadedPack(packId) {
     
  
 
-      <div class="track-row" data-track-id="${track.id}">
+      <div class="track-row" data-pack-id="${escapeLibraryHtml(packData.id)}" data-track-id="${track.id}">
 
       <span class="track-number">#${index + 1}</span>
 
@@ -1545,7 +1633,7 @@ function renderDownloadedPack(packId) {
 
    
 
-  <div class="track-row-mobile" data-track-id="${track.id}">
+  <div class="track-row-mobile" data-pack-id="${escapeLibraryHtml(packData.id)}" data-track-id="${track.id}">
 
       <span class="track-number-mobile">#${index + 1}</span>
 
@@ -1795,6 +1883,7 @@ function renderDownloadedPack(packId) {
             currentRowMobile = row;
             currentGrandAudio = audio;
 
+            oldAudio.dataset.sonaraStopped = "1";
             oldAudio.pause();
             oldAudio.currentTime = 0;
             oldRow?.classList.remove("is-playing", "is-paused");
@@ -1854,7 +1943,8 @@ function renderDownloadedPack(packId) {
             syncGrandPlayButton();
         };
 
-        audio.onerror = () => reportLibraryAudioError(audio, audio.error);
+        audio.onerror = () => { void recoverLibraryAudioFailure(audio, audio.error); };
+        audio.dataset.sonaraStopped = "0";
         startLibraryAudio(audio);
     }
 
@@ -2197,7 +2287,7 @@ async function renderTrack() {
     
  
 
-      <div class="track-row" data-track-id="${track.id}">
+      <div class="track-row" data-pack-id="${escapeLibraryHtml(track.packId)}" data-track-id="${track.id}">
 
       <span class="track-number">#${index + 1}</span>
 
@@ -2245,7 +2335,7 @@ async function renderTrack() {
 
    
 
-  <div class="track-row-mobile" data-track-id="${track.id}">
+  <div class="track-row-mobile" data-pack-id="${escapeLibraryHtml(track.packId)}" data-track-id="${track.id}">
 
       <span class="track-number-mobile">#${index + 1}</span>
 
@@ -2495,6 +2585,7 @@ async function renderTrack() {
             currentRowMobile = row;
             currentGrandAudio = audio;
 
+            oldAudio.dataset.sonaraStopped = "1";
             oldAudio.pause();
             oldAudio.currentTime = 0;
             oldRow?.classList.remove("is-playing", "is-paused");
@@ -2554,7 +2645,8 @@ async function renderTrack() {
             syncGrandPlayButton();
         };
 
-        audio.onerror = () => reportLibraryAudioError(audio, audio.error);
+        audio.onerror = () => { void recoverLibraryAudioFailure(audio, audio.error); };
+        audio.dataset.sonaraStopped = "0";
         startLibraryAudio(audio);
     }
 
