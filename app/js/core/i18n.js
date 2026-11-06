@@ -28,7 +28,7 @@
     "sonara-i18n-dictionaries-v4";
 
   const DICTIONARY_CONTENT_VERSION =
-    "2026-11-03-track-rights-v1";
+    "2026-11-06-pack-stats-v1";
 
   const NETWORK_RETRY_DELAY_MS =
     450;

@@ -1568,6 +1568,7 @@ function renderDownloadedPack(packId) {
         </button>
       </div>
     </div>
+   ${window.SonaraPackStats?.renderPack(packData) || ""}
    <div class="track-row-separator"></div>
     <div class="track">
 

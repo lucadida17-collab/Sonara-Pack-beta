@@ -1860,6 +1860,8 @@ function renderPack() {
       </div>
     </div>
 
+    ${window.SonaraPackStats?.renderPack(packData) || ""}
+
     <div class="track">
 
     <div class="track-list-center">
@@ -1902,7 +1904,7 @@ function renderPack() {
          
 
     <div class="track-duration">
-          <span class="duration">${Math.floor(track.previewDuration / 60)}:${track.previewDuration % 60 < 10 ? '00' : ''}${track.previewDuration % 60}</span>
+          <span class="duration">${window.SonaraPackStats?.trackDuration(track) ?? "—"}</span>
         </div>
 
         <button class="track-price"

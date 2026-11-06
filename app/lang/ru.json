@@ -2926,5 +2926,17 @@
   "Justificatifs privés (facultatif)": "Личные подтверждающие файлы (необязательно)",
   "Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération.": "Не более 8 файлов по 100 МБ. Доступны только модераторам.",
   "Précise les droits tiers pour le morceau": "Укажите права третьих лиц для трека",
-  "Précise les droits tiers et confirme les autorisations pour le morceau": "Укажите права третьих лиц и подтвердите разрешения для трека"
+  "Précise les droits tiers et confirme les autorisations pour le morceau": "Укажите права третьих лиц и подтвердите разрешения для трека",
+  "Informations de l’artiste": "Информация об исполнителе",
+  "Informations du pack": "Информация о пакете",
+  "Glisser vers la droite": "Свайпните вправо",
+  "Voir les statistiques": "Посмотреть статистику",
+  "Retour aux informations": "Вернуться к информации",
+  "Durée totale": "Общая длительность",
+  "Durée indisponible pour certains sons": "Длительность некоторых треков недоступна",
+  "Packs publiés": "Опубликованные пакеты",
+  "Prix total prévu": "Планируемая общая стоимость",
+  "Prix total des packs": "Общая стоимость пакетов",
+  "Prix prévu": "Планируемая цена",
+  "Prix indisponible pour certains packs": "Цена некоторых пакетов недоступна"
 }

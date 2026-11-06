@@ -2926,5 +2926,17 @@
   "Justificatifs privés (facultatif)": "Private Nachweise (optional)",
   "Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération.": "Maximal 8 Dateien à 100 MB. Nur für die Moderation sichtbar.",
   "Précise les droits tiers pour le morceau": "Gib die Rechte Dritter für den Titel an",
-  "Précise les droits tiers et confirme les autorisations pour le morceau": "Gib Rechte Dritter an und bestätige die Genehmigungen für den Titel"
+  "Précise les droits tiers et confirme les autorisations pour le morceau": "Gib Rechte Dritter an und bestätige die Genehmigungen für den Titel",
+  "Informations de l’artiste": "Künstlerinformationen",
+  "Informations du pack": "Pack-Informationen",
+  "Glisser vers la droite": "Nach rechts wischen",
+  "Voir les statistiques": "Statistiken anzeigen",
+  "Retour aux informations": "Zurück zu den Informationen",
+  "Durée totale": "Gesamtdauer",
+  "Durée indisponible pour certains sons": "Dauer für einige Titel nicht verfügbar",
+  "Packs publiés": "Veröffentlichte Packs",
+  "Prix total prévu": "Geplanter Gesamtpreis",
+  "Prix total des packs": "Gesamtpreis der Packs",
+  "Prix prévu": "Geplanter Preis",
+  "Prix indisponible pour certains packs": "Preis für einige Packs nicht verfügbar"
 }

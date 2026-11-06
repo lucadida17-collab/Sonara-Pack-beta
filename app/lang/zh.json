@@ -2926,5 +2926,17 @@
   "Justificatifs privés (facultatif)": "私人证明文件（可选）",
   "Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération.": "最多 8 个文件，每个 100 MB。仅审核人员可见。",
   "Précise les droits tiers pour le morceau": "请说明该曲目的第三方权利",
-  "Précise les droits tiers et confirme les autorisations pour le morceau": "请说明第三方权利并确认该曲目的授权"
+  "Précise les droits tiers et confirme les autorisations pour le morceau": "请说明第三方权利并确认该曲目的授权",
+  "Informations de l’artiste": "艺人信息",
+  "Informations du pack": "音频包信息",
+  "Glisser vers la droite": "向右滑动",
+  "Voir les statistiques": "查看统计数据",
+  "Retour aux informations": "返回信息",
+  "Durée totale": "总时长",
+  "Durée indisponible pour certains sons": "部分曲目的时长不可用",
+  "Packs publiés": "已发布的音频包",
+  "Prix total prévu": "预计总价",
+  "Prix total des packs": "音频包总价",
+  "Prix prévu": "预计价格",
+  "Prix indisponible pour certains packs": "部分音频包的价格不可用"
 }

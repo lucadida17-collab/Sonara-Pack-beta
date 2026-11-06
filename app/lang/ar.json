@@ -2926,5 +2926,17 @@
   "Justificatifs privés (facultatif)": "مستندات خاصة (اختياري)",
   "Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération.": "8 ملفات كحد أقصى، 100 ميغابايت لكل ملف. يراها المشرفون فقط.",
   "Précise les droits tiers pour le morceau": "حدّد حقوق الأطراف الأخرى للمقطع",
-  "Précise les droits tiers et confirme les autorisations pour le morceau": "حدّد حقوق الأطراف الأخرى وأكّد التصاريح اللازمة للمقطع"
+  "Précise les droits tiers et confirme les autorisations pour le morceau": "حدّد حقوق الأطراف الأخرى وأكّد التصاريح اللازمة للمقطع",
+  "Informations de l’artiste": "معلومات الفنان",
+  "Informations du pack": "معلومات الحزمة",
+  "Glisser vers la droite": "اسحب إلى اليمين",
+  "Voir les statistiques": "عرض الإحصائيات",
+  "Retour aux informations": "العودة إلى المعلومات",
+  "Durée totale": "المدة الإجمالية",
+  "Durée indisponible pour certains sons": "المدة غير متاحة لبعض المقاطع",
+  "Packs publiés": "الحزم المنشورة",
+  "Prix total prévu": "السعر الإجمالي المتوقع",
+  "Prix total des packs": "السعر الإجمالي للحزم",
+  "Prix prévu": "السعر المتوقع",
+  "Prix indisponible pour certains packs": "السعر غير متاح لبعض الحزم"
 }

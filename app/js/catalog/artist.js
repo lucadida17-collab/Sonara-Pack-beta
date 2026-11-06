@@ -465,6 +465,8 @@ function renderArtistPage() {
       </div>
     </section>
 
+    ${window.SonaraPackStats?.renderArtist(artistPacks, publicArtist.name) || ""}
+
     <section class="artist-public-section" data-artist-tracks>
       <header class="artist-public-section-header">
         <div class="artist-public-section-copy">

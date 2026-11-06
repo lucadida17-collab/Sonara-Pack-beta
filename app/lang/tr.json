@@ -2926,5 +2926,17 @@
   "Justificatifs privés (facultatif)": "Özel kanıt dosyaları (isteğe bağlı)",
   "Maximum 8 fichiers, 100 Mo chacun. Visibles uniquement par la modération.": "En fazla 8 dosya, her biri 100 MB. Yalnızca moderatörler görebilir.",
   "Précise les droits tiers pour le morceau": "Parçanın üçüncü taraf haklarını belirt",
-  "Précise les droits tiers et confirme les autorisations pour le morceau": "Parçanın üçüncü taraf haklarını belirt ve izinleri onayla"
+  "Précise les droits tiers et confirme les autorisations pour le morceau": "Parçanın üçüncü taraf haklarını belirt ve izinleri onayla",
+  "Informations de l’artiste": "Sanatçı bilgileri",
+  "Informations du pack": "Paket bilgileri",
+  "Glisser vers la droite": "Sağa kaydır",
+  "Voir les statistiques": "İstatistikleri görüntüle",
+  "Retour aux informations": "Bilgilere dön",
+  "Durée totale": "Toplam süre",
+  "Durée indisponible pour certains sons": "Bazı parçaların süresi mevcut değil",
+  "Packs publiés": "Yayınlanan paketler",
+  "Prix total prévu": "Planlanan toplam fiyat",
+  "Prix total des packs": "Paketlerin toplam fiyatı",
+  "Prix prévu": "Planlanan fiyat",
+  "Prix indisponible pour certains packs": "Bazı paketlerin fiyatı mevcut değil"
 }

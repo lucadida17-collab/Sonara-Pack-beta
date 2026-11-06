@@ -736,3 +736,33 @@ body.Load {
     transition-duration: 0.01ms;
   }
 }
+
+/* Fix ciblé : le titre du chargeur débordait sur iPhone en nowrap.
+   La boîte reste centrée, sans changer le fond ni la barre de progression. */
+@media (max-width: 640px) {
+  .sonara-entry-loader .sonara-loader-content {
+    width: 100%;
+    max-width: min(560px, 100%);
+    min-width: 0;
+    margin-inline: auto;
+  }
+  .sonara-entry-loader .sonara-loader-content h1 {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-wrap: balance;
+    text-align: center;
+    font-size: clamp(1.55rem, 6vw, 2rem);
+    line-height: 1.16;
+  }
+  .sonara-entry-loader .sonara-loader-message {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: center;
+  }
+}
