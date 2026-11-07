@@ -113,14 +113,21 @@
   // These panels live INSIDE the existing hero: never below it.
   function renderPanel(packs, options, surface) {
     const klass = surface === "cover" ? "sonara-stats-cover-panel" : "sonara-stats-hero-panel";
-    return `<div class="${klass}" data-sonara-stats-panel hidden>
+    // Mobile face stays mounted behind the artwork for continuous finger tracking.
+    // It is hidden from assistive technology until the gesture settles open.
+    const state = surface === "cover" ? 'aria-hidden="true"' : 'hidden';
+    return `<div class="${klass}" data-sonara-stats-panel ${state}>
       ${renderStats(packs, options)}
     </div>`;
   }
 
   // One icon, no swipe instructions. The same button reverses direction when open.
   function renderNav(surface = "cover") {
-    const klass = surface === "cover" ? "sonara-stats-nav-cover" : "sonara-stats-nav-desktop";
+    // Mobile: no arrow or fake swipe button. Only a subtle two-page indicator.
+    if (surface === "cover") {
+      return '<span class="sonara-swipe-indicator" aria-hidden="true"><i></i><i></i></span>';
+    }
+    const klass = "sonara-stats-nav-desktop";
     return `<button class="sonara-stats-nav ${klass}" type="button"
         data-sonara-stats-toggle aria-expanded="false"
         aria-label="Voir les statistiques" title="Voir les statistiques">
@@ -135,8 +142,15 @@
     if (!hero) return;
     hero.classList.toggle("is-open", open);
     hero.querySelectorAll("[data-sonara-stats-panel]").forEach((panel) => {
-      panel.hidden = !open;
+      if (panel.classList.contains("sonara-stats-cover-panel")) {
+        panel.hidden = false;
+        panel.setAttribute("aria-hidden", String(!open));
+      } else {
+        panel.hidden = !open;
+      }
     });
+    const cover = hero.querySelector("[data-sonara-stats-cover-surface]");
+    cover?.style.setProperty("--sonara-swipe-progress", open ? "1" : "0");
     hero.querySelectorAll("[data-sonara-stats-toggle]").forEach((button) => {
       button.setAttribute("aria-expanded", String(open));
       button.setAttribute("aria-label", open ? "Retour" : "Voir les statistiques");
@@ -161,6 +175,8 @@
   });
 
   const activePointers = new Map();
+  const recentSwipes = new WeakMap();
+  const clamp = (n) => Math.max(0, Math.min(1, n));
   function mobileLayout() {
     return window.matchMedia?.("(max-width: 899px)")?.matches ?? false;
   }
@@ -168,28 +184,121 @@
     return Boolean(element?.closest?.("button, a, input, textarea, select, audio, video, [role=button]"));
   }
 
+  function putProgress(state, x) {
+    const progress = clamp(state.initial + (x - state.x) / state.distance);
+    state.cover.style.setProperty("--sonara-swipe-progress", progress.toFixed(4));
+    state.progress = progress;
+    return progress;
+  }
+
+  function finishMobileGesture(state, event, cancelled = false) {
+    const { hero, cover } = state;
+    hero.classList.remove("is-dragging");
+    if (state.captured && cover.hasPointerCapture?.(state.id)) {
+      cover.releasePointerCapture?.(state.id);
+    }
+    if (!hero.isConnected) return;
+    if (state.axis !== "x") return;
+    const x = event.clientX ?? state.lastX;
+    const progress = putProgress(state, x);
+    const time = Number.isFinite(event.timeStamp) ? event.timeStamp : state.lastTime;
+    // Short, recent motion matters more than a slow drag's overall speed.
+    const sample = state.samples.find((s) => time - s.time >= 35) || state.samples[0];
+    const velocity = sample && time > sample.time ? (x - sample.x) / (time - sample.time) : 0;
+    const open = cancelled ? Boolean(state.initial) :
+      (Math.abs(velocity) > 0.48 && Math.abs(x - state.x) > 20
+        ? velocity > 0 : progress >= 0.48);
+    // An intentional drag must not accidentally activate the cover/player click.
+    recentSwipes.set(cover, Date.now());
+    setOpen(hero, open);
+  }
+
+  // The cover itself is the gesture surface. Finger movement drives the visual
+  // position continuously; nothing waits for pointerup to start moving.
   document.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || !event.isPrimary) return;
     const hero = event.target.closest?.("[data-sonara-stats-hero]");
     if (!hero || isInteractive(event.target)) return;
-    // Mobile/tablet: gestures belong to the cover only.
-    // Desktop: gestures belong to the whole cover + information hero.
-    if (mobileLayout() && !event.target.closest("[data-sonara-stats-cover-surface]")) return;
-    activePointers.set(event.pointerId, { hero, x: event.clientX, y: event.clientY });
+    const mobile = mobileLayout();
+    const cover = hero.querySelector("[data-sonara-stats-cover-surface]");
+    if (!cover || (mobile && !event.target.closest("[data-sonara-stats-cover-surface]"))) return;
+    const initial = hero.classList.contains("is-open") ? 1 : 0;
+    activePointers.set(event.pointerId, {
+      id: event.pointerId, hero, cover, mobile, initial,
+      x: event.clientX, y: event.clientY, lastX: event.clientX,
+      lastTime: event.timeStamp, samples: [{ x: event.clientX, time: event.timeStamp }],
+      distance: Math.max(165, cover.getBoundingClientRect().width * 0.78),
+      axis: null, captured: false, progress: initial
+    });
+  }, { passive: true });
+
+  document.addEventListener("pointermove", (event) => {
+    const state = activePointers.get(event.pointerId);
+    if (!state || !state.mobile || !state.hero.isConnected) return;
+    const dx = event.clientX - state.x;
+    const dy = event.clientY - state.y;
+    if (!state.axis) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 9) return;
+      // Do not trap normal vertical page or statistics-panel scrolling.
+      state.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (state.axis !== "x") return;
+      state.hero.classList.add("is-dragging");
+      if (state.cover.setPointerCapture) {
+        try {
+          state.cover.setPointerCapture(event.pointerId);
+          state.captured = true;
+        } catch { /* Fall back to document-level pointer tracking. */ }
+      }
+    }
+    if (state.axis !== "x") return;
+    putProgress(state, event.clientX);
+    state.lastX = event.clientX;
+    state.lastTime = event.timeStamp;
+    state.samples.push({ x: event.clientX, time: event.timeStamp });
+    state.samples = state.samples.filter((s) => event.timeStamp - s.time <= 130).slice(-6);
   }, { passive: true });
 
   document.addEventListener("pointerup", (event) => {
-    const start = activePointers.get(event.pointerId);
+    const state = activePointers.get(event.pointerId);
     activePointers.delete(event.pointerId);
-    if (!start || !start.hero.isConnected) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
+    if (!state || !state.hero.isConnected) return;
+    if (state.mobile) {
+      finishMobileGesture(state, event);
+      return;
+    }
+    // Desktop keeps its original full-hero gesture behavior.
+    const dx = event.clientX - state.x;
+    const dy = event.clientY - state.y;
     if (Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      // Right reveals the statistics; left returns to the cover.
-      setOpen(start.hero, dx > 0);
+      setOpen(state.hero, dx > 0);
     }
   }, { passive: true });
-  document.addEventListener("pointercancel", (event) => activePointers.delete(event.pointerId), { passive: true });
+
+  document.addEventListener("pointercancel", (event) => {
+    const state = activePointers.get(event.pointerId);
+    activePointers.delete(event.pointerId);
+    if (state?.mobile) finishMobileGesture(state, event, true);
+  }, { passive: true });
+
+  // Dragging the artwork must not trigger a synthetic click on release.
+  document.addEventListener("click", (event) => {
+    const cover = event.target.closest?.("[data-sonara-stats-cover-surface]");
+    if (cover && Date.now() - (recentSwipes.get(cover) || 0) < 400) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  // Keyboard users can also turn the cover without a visible arrow button.
+  document.addEventListener("keydown", (event) => {
+    if (!mobileLayout() || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const cover = event.target.closest?.("[data-sonara-stats-cover-surface]");
+    if (!cover || isInteractive(event.target)) return;
+    const hero = cover.closest("[data-sonara-stats-hero]");
+    if (!hero) return;
+    event.preventDefault();
+    setOpen(hero, event.key === "ArrowRight");
+  });
 
   // Trackpad horizontal swipes on desktop (vertical page scrolling is untouched).
   const lastWheel = new WeakMap();

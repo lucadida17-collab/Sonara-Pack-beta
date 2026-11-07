@@ -429,7 +429,7 @@ function renderArtistPage() {
         <i data-lucide="chevron-left"></i>
       </button>
 
-      <div class="artist-public-photo" data-sonara-stats-cover-surface>
+      <div class="artist-public-photo" data-sonara-stats-cover-surface tabindex="0" role="group" aria-label="Photo et statistiques de l’artiste">
         ${renderArtistPhoto(publicArtist)}
         ${window.SonaraPackStats?.renderArtistCover(artistPacks, publicArtist.name) || ""}
         ${window.SonaraPackStats?.renderNav("cover") || ""}

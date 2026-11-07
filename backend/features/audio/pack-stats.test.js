@@ -56,7 +56,9 @@ test("artist profile shows cumulative cost without triggering purchases", () => 
   assert.match(markup, /sonara-stats-hero-panel/);
   const coverMarkup = stats.renderArtistCover([{ price: "1.00", tracks: [{ duration: 60 }] }], "Artiste");
   assert.match(coverMarkup, /sonara-stats-cover-panel/);
-  assert.match(stats.renderNav("cover"), /<svg[^>]*viewBox=/);
+  assert.doesNotMatch(stats.renderNav("cover"), /<button|<svg/);
+  assert.match(stats.renderNav("cover"), /sonara-swipe-indicator/);
+  assert.match(stats.renderNav("desktop"), /<svg[^>]*viewBox=/);
   assert.doesNotMatch(stats.renderNav("cover"), />Glisser|>Retour/);
   assert.doesNotMatch(markup, /checkout|fetch\(/i);
 });

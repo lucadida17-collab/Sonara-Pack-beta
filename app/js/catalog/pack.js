@@ -1812,7 +1812,7 @@ function renderPack() {
     <div class="pack-hero sonara-stats-hero" data-sonara-stats-hero>
     <div class="left-side">
 
-    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface>
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface tabindex="0" role="group" aria-label="Couverture du pack et statistiques">
       ${packData.isAutoPlaylist
         ? `<img src="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" data-sonara-book-cover="${getFilePath(packData.coverPack || packData.tracks?.[0]?.coverPack || "")}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`
         : `<img src="${getFilePath(packData.coverPack)}" data-sonara-book-cover="${getFilePath(packData.coverPack)}" class="cover sonara-pack-book-surface" alt="${escapePackLicenseHtml(packData.title || "Pack")} cover image">`}

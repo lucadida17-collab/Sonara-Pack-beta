@@ -1507,7 +1507,7 @@ function renderDownloadedPack(packId) {
         <div class="pack-hero sonara-stats-hero" data-sonara-stats-hero>
     <div class="left-side">
 
-    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface>
+    <div class="card sonara-pack-book-card sonara-pack-book-hero-card" data-sonara-stats-cover-surface tabindex="0" role="group" aria-label="Couverture du pack et statistiques">
       <img 
       src="${getFilePath(packData.coverPack)}"
       data-sonara-book-cover="${getFilePath(packData.coverPack)}"
