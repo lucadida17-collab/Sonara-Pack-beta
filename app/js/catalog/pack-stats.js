@@ -133,7 +133,7 @@
         aria-label="Voir les statistiques" title="Voir les statistiques">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
       </button>`;
   }
@@ -185,7 +185,7 @@
   }
 
   function putProgress(state, x) {
-    const progress = clamp(state.initial + (x - state.x) / state.distance);
+    const progress = clamp(state.initial - (x - state.x) / state.distance);
     state.cover.style.setProperty("--sonara-swipe-progress", progress.toFixed(4));
     state.progress = progress;
     return progress;
@@ -207,7 +207,7 @@
     const velocity = sample && time > sample.time ? (x - sample.x) / (time - sample.time) : 0;
     const open = cancelled ? Boolean(state.initial) :
       (Math.abs(velocity) > 0.48 && Math.abs(x - state.x) > 20
-        ? velocity > 0 : progress >= 0.48);
+        ? velocity < 0 : progress >= 0.48);
     // An intentional drag must not accidentally activate the cover/player click.
     recentSwipes.set(cover, Date.now());
     setOpen(hero, open);
@@ -270,7 +270,7 @@
     const dx = event.clientX - state.x;
     const dy = event.clientY - state.y;
     if (Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      setOpen(state.hero, dx > 0);
+      setOpen(state.hero, dx < 0);
     }
   }, { passive: true });
 
@@ -297,7 +297,7 @@
     const hero = cover.closest("[data-sonara-stats-hero]");
     if (!hero) return;
     event.preventDefault();
-    setOpen(hero, event.key === "ArrowRight");
+    setOpen(hero, event.key === "ArrowLeft");
   });
 
   // Trackpad horizontal swipes on desktop (vertical page scrolling is untouched).
@@ -309,8 +309,8 @@
     const now = Date.now();
     if (now - (lastWheel.get(hero) || 0) < 450) return;
     lastWheel.set(hero, now);
-    // Native trackpad swiping right typically has negative deltaX.
-    setOpen(hero, event.deltaX < 0);
+    // Trackpad swipe toward the left reveals the stats, as on touch screens.
+    setOpen(hero, event.deltaX > 0);
   }, { passive: true });
 
   window.SonaraPackStats = Object.freeze({

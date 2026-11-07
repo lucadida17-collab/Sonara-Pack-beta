@@ -118,7 +118,7 @@
 }
 
 /* SONARA FLOW — a physical cover layer that follows the finger.
-   Right drag: reveal live stats UNDER the artwork. Left drag: return.
+   Left drag: reveal live stats on the RIGHT. Right drag: return.
    On mobile there is no button: the art itself is the interface. */
 @media (max-width: 899px) {
   .sonara-stats-nav-desktop,
@@ -135,29 +135,14 @@
     perspective: 1100px;
   }
   .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface] { cursor: grabbing; }
-  /* An opaque backing protects transparent areas of the rendered 3D book. */
-  [data-sonara-stats-cover-surface]::before {
-    content: "";
-    position: absolute;
-    z-index: 2;
-    inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(ellipse at 50% 45%, #16243a 0%, #070c14 78%);
-    transform-origin: 0% 50%;
-    transform: translate3d(calc(var(--sonara-swipe-progress) * 108%),0,0)
-      rotateY(calc(var(--sonara-swipe-progress) * -12deg));
-    box-shadow: -10px 0 26px rgba(3, 9, 19, calc(var(--sonara-swipe-progress) * .55));
-    transition: transform .55s cubic-bezier(.18, .83, .23, 1), box-shadow .55s ease;
-    pointer-events: none;
-    will-change: transform;
-  }
+  /* Keep the original 3D-book transparency: no opaque backing pseudo-element. */
   [data-sonara-stats-cover-surface] > img,
   [data-sonara-stats-cover-surface] > .artist-public-photo-fallback {
     position: relative;
     z-index: 3;
-    transform-origin: 0% 50%;
-    transform: translate3d(calc(var(--sonara-swipe-progress) * 108%),0,0)
-      rotateY(calc(var(--sonara-swipe-progress) * -12deg));
+    transform-origin: 100% 50%;
+    transform: translate3d(calc(var(--sonara-swipe-progress) * -108%),0,0)
+      rotateY(calc(var(--sonara-swipe-progress) * 12deg));
     transition: transform .55s cubic-bezier(.18, .83, .23, 1);
     will-change: transform;
     -webkit-user-drag: none;
@@ -168,7 +153,7 @@
     content: "";
     position: absolute;
     z-index: 4;
-    left: calc(var(--sonara-swipe-progress) * 100%);
+    right: calc(var(--sonara-swipe-progress) * 100%);
     top: 4%;
     height: 92%;
     width: 2px;
@@ -177,21 +162,24 @@
     box-shadow: 0 0 14px 2px rgba(87, 211, 255, .56);
     opacity: var(--sonara-swipe-engaged, 0);
     transform: translateX(-50%);
-    transition: left .55s cubic-bezier(.18, .83, .23, 1), opacity .3s ease;
+    transition: right .55s cubic-bezier(.18, .83, .23, 1), opacity .3s ease;
     pointer-events: none;
   }
   .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface] {
     --sonara-swipe-engaged: 1;
   }
-  .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface]::before,
   .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface]::after,
   .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface] > img,
-  .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface] > .artist-public-photo-fallback {
+  .sonara-stats-hero.is-dragging [data-sonara-stats-cover-surface] > .artist-public-photo-fallback,
+  .sonara-stats-hero.is-dragging .sonara-stats-cover-panel {
     transition: none !important;
   }
   .sonara-stats-cover-panel {
     position: absolute;
     z-index: 1;
+    /* Zero background/text bleed through the transparent 3D cover when closed. */
+    opacity: var(--sonara-swipe-progress);
+    transition: opacity .55s cubic-bezier(.18, .83, .23, 1);
     inset: 0;
     min-width: 0;
     min-height: 0;
@@ -205,6 +193,7 @@
     padding: clamp(13px, 3vw, 23px);
     border: 1px solid rgba(101, 218, 255, .32);
     border-radius: inherit;
+    background: transparent; /* Ambient background remains visible around the book. */
     box-shadow: inset 0 1px rgba(255,255,255,.11);
     pointer-events: none;
   }
@@ -275,7 +264,6 @@
 @media (prefers-reduced-motion: reduce) {
   .sonara-stats-cover-panel,
   .sonara-stats-hero-panel { animation: none; }
-  [data-sonara-stats-cover-surface]::before,
   [data-sonara-stats-cover-surface]::after,
   [data-sonara-stats-cover-surface] > img,
   [data-sonara-stats-cover-surface] > .artist-public-photo-fallback,
