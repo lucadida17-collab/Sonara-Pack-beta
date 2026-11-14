@@ -605,8 +605,7 @@ function createMongoStore(collection, internalDevicesCollection) {
             accountId: "",
             accountCreatedAt: "",
             linkedAt: "",
-            signupAttributed: false,
-            internalVisitCount: 0
+            signupAttributed: false
           },
           $set: {
             lastTouch: touch,
