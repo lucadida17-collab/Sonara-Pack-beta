@@ -1,0 +1,69 @@
+/* SONARA PACK — Fond commun des écrans d'authentification.
+   Réutilise exactement les images responsive du chargement et de l'inscription.
+   N'affecte PAS les autres pages de gestion de compte, la bibliothèque ou le lecteur. */
+
+/* Inscription initiale : choix du rôle, formulaires et connexion. */
+body.chaos:has(> :is(.chaos-page, .form-page, .form)),
+/* Sessions existantes : ajout de compte, choix du rôle et connexion supplémentaire.
+   Même famille de formulaire pour l'utilisateur, le profil et le créateur. */
+body:has(.app-layout > .account-page :is(
+  .add-account-button,
+  .add-account-role-choice,
+  .add-account-form,
+  .connect-existing-account-form
+)) {
+  --sonara-auth-background-image: url("/assets/image/loading/sonara-loading-mobile-portrait.jpeg");
+  background-color: #02040a;
+  background-image:
+    linear-gradient(180deg, rgba(1, 3, 9, 0.36), rgba(1, 4, 12, 0.62)),
+    var(--sonara-auth-background-image);
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Les couches précédemment opaques cachaient complètement le fond sur connexion.
+   Formulaires et cartes conservent leurs propres fonds pour la lisibilité. */
+body.chaos:has(> :is(.form-page, .form)) > :is(.form-page, .form),
+body:has(.app-layout > .account-page :is(
+  .add-account-button,
+  .add-account-role-choice,
+  .add-account-form,
+  .connect-existing-account-form
+)) > .app-layout,
+body:has(.app-layout > .account-page :is(
+  .add-account-button,
+  .add-account-role-choice,
+  .add-account-form,
+  .connect-existing-account-form
+)) > .app-layout > .account-page {
+  background: transparent;
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  body.chaos:has(> :is(.chaos-page, .form-page, .form)),
+  body:has(.app-layout > .account-page :is(.add-account-button, .add-account-role-choice, .add-account-form, .connect-existing-account-form)) {
+    --sonara-auth-background-image: url("/assets/image/loading/sonara-loading-tablet-portrait.jpeg");
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  body.chaos:has(> :is(.chaos-page, .form-page, .form)),
+  body:has(.app-layout > .account-page :is(.add-account-button, .add-account-role-choice, .add-account-form, .connect-existing-account-form)) {
+    --sonara-auth-background-image: url("/assets/image/loading/sonara-loading-compact-screen.jpeg");
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+  body.chaos:has(> :is(.chaos-page, .form-page, .form)),
+  body:has(.app-layout > .account-page :is(.add-account-button, .add-account-role-choice, .add-account-form, .connect-existing-account-form)) {
+    --sonara-auth-background-image: url("/assets/image/loading/sonara-loading-desktop.jpeg");
+  }
+}
+
+@media (min-width: 1600px) {
+  body.chaos:has(> :is(.chaos-page, .form-page, .form)),
+  body:has(.app-layout > .account-page :is(.add-account-button, .add-account-role-choice, .add-account-form, .connect-existing-account-form)) {
+    --sonara-auth-background-image: url("/assets/image/loading/sonara-loading-wide.jpeg");
+  }
+}
