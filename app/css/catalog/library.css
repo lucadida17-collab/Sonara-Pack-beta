@@ -3775,14 +3775,20 @@ body.library .sonara-pack-book-card .sonara-book-cover {
   border: 0 !important;
   box-shadow: none !important;
   opacity: 1 !important;
-  transform: translateY(0) scale(1);
   filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.34));
+}
+
+/* Les livres des vignettes gardent leur animation au survol.
+   Dans la vue détail, Sonara Flow doit piloter seul transform/transition
+   de la cover quand le panneau d'informations est ouvert. */
+body.library .sonara-pack-book-card:not(.sonara-pack-book-hero-card) .sonara-book-cover {
+  transform: translateY(0) scale(1);
   transition: transform 190ms ease, filter 190ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  body.library .sonara-pack-book-card:hover .sonara-book-cover,
-  body.library .sonara-pack-book-card:focus-visible .sonara-book-cover {
+  body.library .sonara-pack-book-card:not(.sonara-pack-book-hero-card):hover .sonara-book-cover,
+  body.library .sonara-pack-book-card:not(.sonara-pack-book-hero-card):focus-visible .sonara-book-cover {
     transform: translateY(-3px) scale(1.012);
     filter:
       drop-shadow(0 16px 22px rgba(0, 0, 0, 0.36))
