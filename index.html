@@ -60,6 +60,8 @@
       content="Sonara Pack est une plateforme de musique sous licence pour créateurs. Découvrez des packs et morceaux pour vidéos, films, jeux et projets de contenu."
     />
     <link rel="canonical" href="https://sonarapack.com/" />
+    <!-- Public, human-readable overview for assistants; never an authentication bypass. -->
+    <link rel="alternate" type="text/html" title="Découvrir Sonara Pack / Public overview" href="/discover" />
     <link rel="alternate" hreflang="fr" href="https://sonarapack.com/" />
     <link rel="alternate" hreflang="en" href="https://sonarapack.com/en/" />
     <link rel="alternate" hreflang="sq" href="https://sonarapack.com/sq/" />
@@ -287,6 +289,22 @@
         </button>
       </section>
     </main>
+
+    <!-- Displayed only when a known assistant user-agent is recognized.
+         The same public page is accessible by anyone at /discover. -->
+    <aside class="sonara-ai-entry sonara-loading-surface" id="sonaraAiEntry" hidden
+      aria-labelledby="sonaraAiTitle">
+      <div class="sonara-ai-entry-card">
+        <p class="sonara-ai-entry-brand" translate="no">SONARA PACK</p>
+        <h2 id="sonaraAiTitle">Découvrir Sonara Pack</h2>
+        <p>Présentation publique de la plateforme, accessible sans connexion ni code de vérification.</p>
+        <a class="sonara-ai-entry-primary" href="/discover">Découvrir Sonara Pack</a>
+        <a class="sonara-ai-entry-secondary" href="/discover-en" lang="en">Public overview in English</a>
+        <p class="sonara-ai-entry-note">Aucun accès aux comptes ou aux fichiers privés.</p>
+      </div>
+    </aside>
+    <noscript><p><a href="/discover">Présentation publique de Sonara Pack</a> ·
+      <a href="/discover-en" lang="en">Public overview</a></p></noscript>
 
     <script src="/app/js/core/i18n.js?v=seo-title-clean-v1"></script>
     <script src="/app/js/core/config.js?v=render-only-v1"></script>
@@ -849,7 +867,23 @@
           });
         }
 
+        function isKnownAssistantAgent() {
+          // Signal indicatif uniquement : un User-Agent peut être absent ou usurpé.
+          // Il ne sert JAMAIS à autoriser l'accès à une route protégée.
+          return /(?:^|[^a-z])(?:ChatGPT-User|OAI-SearchBot|GPTBot|ClaudeBot|Claude-User|PerplexityBot|Perplexity-User)(?:\/|\b)/i.test(navigator.userAgent || "");
+        }
+
         async function startEntryFlow() {
+          // Les assistants identifiables voient un lien vers une présentation
+          // PUBLIQUE, sans appel serveur ni modification de l'authentification.
+          if (isKnownAssistantAgent()) {
+            document.documentElement.dataset.sonaraLanguageChosen = "true";
+            languageChoice?.setAttribute("aria-hidden", "true");
+            loader?.setAttribute("aria-hidden", "true");
+            const aiEntry = document.getElementById("sonaraAiEntry");
+            if (aiEntry) aiEntry.hidden = false;
+            return;
+          }
           // Entrée simplifiée : choix de langue, puis chargement/auth Sonara.
           // La cinématique Pre-V1 a été retirée volontairement.
           await ensureLanguageChoice();

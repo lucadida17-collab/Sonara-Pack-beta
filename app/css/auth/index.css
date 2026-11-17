@@ -766,3 +766,26 @@ body.Load {
     text-align: center;
   }
 }
+
+/* Découverte IA : porte d'entrée publique, réservée à la présentation.
+   Le parcours humain normal n'est pas modifié. */
+.sonara-ai-entry[hidden] { display: none !important; }
+.sonara-ai-entry {
+  position: fixed; inset: 0; z-index: 2147483646;
+  display: grid; place-items: center; overflow-y: auto;
+  padding: 24px; color: #f8fdff; font-family: Inter, Arial, sans-serif;
+}
+.sonara-ai-entry-card {
+  width: min(550px, 100%); padding: clamp(24px, 5vw, 40px);
+  border: 1px solid rgba(98, 223, 248, .3); border-radius: 25px;
+  background: rgba(5, 15, 32, .86); text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .42);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.sonara-ai-entry-brand { margin-bottom: 16px; color: #7fe8ff; font-weight: 900; letter-spacing: .28em; }
+.sonara-ai-entry-card h2 { font-size: clamp(25px, 5vw, 38px); line-height: 1.12; margin-bottom: 14px; }
+.sonara-ai-entry-card > p:not(.sonara-ai-entry-brand) { line-height: 1.55; color: #d0dae8; margin-bottom: 20px; }
+.sonara-ai-entry-card a { display: block; padding: 14px 18px; border-radius: 13px; font-weight: 750; text-decoration: none; margin-top: 12px; }
+.sonara-ai-entry-primary { color: #041525; background: #81e8ff; }
+.sonara-ai-entry-secondary { color: #e7f9ff; border: 1px solid rgba(129, 232, 255, .4); }
+.sonara-ai-entry-card .sonara-ai-entry-note { font-size: 12px; margin: 20px 0 0 !important; color: #adc3d3 !important; }

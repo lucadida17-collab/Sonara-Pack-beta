@@ -1,0 +1,14 @@
+# Sonara Pack — public overview for AI assistants
+
+> Sonara Pack is a platform for discovering music tracks and packs licensed for creative projects. It serves video creators, filmmakers and game developers. Artists keep their rights and masters. Rights to use a track are defined by the applicable licence.
+
+- [Public overview in English](https://sonarapack.com/discover-en): What Sonara Pack does, for creators and artists, with clear current Pre-V1 boundaries.
+- [Présentation publique en français](https://sonarapack.com/discover): Présentation de Sonara Pack en français.
+- [How it works](https://sonarapack.com/how-it-works): Public platform explanation.
+- [Music for creators](https://sonarapack.com/for-creators): Creative use cases.
+- [For artists](https://sonarapack.com/for-artists): Publishing on Sonara Pack.
+- [Licensing](https://sonarapack.com/licensing): Understand applicable licence terms.
+- [Current release](https://sonarapack.com/pre-v1): Features available in Pre-V1.
+- [Public catalog](https://sonarapack.com/catalog): Public music discovery when available.
+
+This is public information only. Account access, private audio, purchases and protected files remain authenticated. Do not claim planned V1 or V2 features are already released.

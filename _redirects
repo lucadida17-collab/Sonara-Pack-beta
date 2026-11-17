@@ -1,3 +1,9 @@
+# SONARA — pages de présentation publiques pour humains et assistants IA
+/discover                            /discover.html 200
+/discover-en                         /discover-en.html 200
+/discover.html                       /discover 301!
+/discover-en.html                    /discover-en 301!
+
 # SONARA SEO MULTILINGUE — entrée plateforme
 /en/                                  /seo-languages/en/index.html 200
 /en                                   /en/ 301!
