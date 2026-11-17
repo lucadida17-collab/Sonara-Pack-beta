@@ -1050,6 +1050,28 @@ function setupPackPreviewPlayer() {
   packPreviewAudio = audio;
   packPreviewState = null;
 
+  // Native preload hints are ignored on some mobile browsers. A tiny Range
+  // request forces the server to start preparing the 30 s MP3 ahead of Play,
+  // without downloading the whole preview or any private master.
+  const warmedPreviewUrls = new Set();
+  function warmPreviewUrl(url) {
+    if (!url || navigator.connection?.saveData === true ||
+        /2g/.test(String(navigator.connection?.effectiveType || "")) ||
+        warmedPreviewUrls.has(url)) return;
+    warmedPreviewUrls.add(url);
+    fetch(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      cache: "no-store",
+      credentials: "omit"
+    }).then(response => response.body?.cancel?.()).catch(() => {});
+  }
+  if (warmPackId && initialTrack?.id) {
+    window.setTimeout(() => warmPreviewUrl(
+      `${API_URL}/api/media/preview/${encodeURIComponent(warmPackId)}/${encodeURIComponent(initialTrack.id)}`
+    ), 200);
+  }
+
   const miniPlayer = root.querySelector(".mini-player-mobile");
   const miniCover = root.querySelector(".mini-player-cover");
   const miniTitle = root.querySelector(".mini-player-title");
@@ -1212,6 +1234,29 @@ function setupPackPreviewPlayer() {
     });
   }
 
+  // A play request must go out before rendering the 3D cover and the whole
+  // player UI. This protects mobile gesture activation and shaves JS time off
+  // the perceived startup latency; the network/FFmpeg cache handles the rest.
+  function beginPreviewPlayback(requestId) {
+    playbackTimer = window.setTimeout(() => {
+      playbackTimer = null;
+      if (requestId === previewRequestId && audio.readyState < 3) {
+        showPreviewError(new Error("Audio loading timeout"));
+      }
+    }, 15000);
+    try {
+      const playback = audio.play();
+      playback?.catch?.((error) => {
+        if (requestId !== previewRequestId || error?.name === "AbortError") return;
+        clearPlaybackTimer();
+        showPreviewError(error);
+      });
+    } catch (error) {
+      clearPlaybackTimer();
+      showPreviewError(error);
+    }
+  }
+
   // Important: audio.play() must be called in the *same click event*, before
   // any await/fetch/metadata promise, especially on iOS Safari.
   function selectTrack(index, { autoplay = true } = {}) {
@@ -1258,6 +1303,11 @@ function setupPackPreviewPlayer() {
       start: initialStart,
       end: initialStart + requestedDuration
     };
+    // Server-generated previews always begin at 0, so Play can be requested
+    // immediately, before costly cover/mini-player DOM work. Other sources
+    // still align their custom previewStart before playback.
+    const earlyPlay = autoplay && serverClipped;
+    if (earlyPlay) beginPreviewPlayback(requestId);
     updatePlayerIdentity(track);
 
     const alignStart = () => {
@@ -1290,27 +1340,17 @@ function setupPackPreviewPlayer() {
 
     if (!autoplay) return;
 
-    // A stalled first-time FFmpeg preview should give feedback instead of
-    // leaving a play animation stuck indefinitely.
-    playbackTimer = window.setTimeout(() => {
-      playbackTimer = null;
-      if (requestId === previewRequestId && audio.readyState < 3) {
-        showPreviewError(new Error("Audio loading timeout"));
-      }
-    }, 15000);
-
-    // Do not turn play promise rejection into a silent freeze.
-    try {
-      const playback = audio.play();
-      playback?.catch?.((error) => {
-        if (requestId !== previewRequestId || error?.name === "AbortError") return;
-        clearPlaybackTimer();
-        showPreviewError(error);
-      });
-    } catch (error) {
-      clearPlaybackTimer();
-      showPreviewError(error);
+    // After a selected preview starts loading, warm one neighbour for an
+    // uninterrupted next-track transition. Keep requests tightly bounded.
+    const nextTrack = tracks[index + 1];
+    const nextPackId = nextTrack?.sourcePackId || packData?.id;
+    if (nextTrack?.id && nextPackId) {
+      window.setTimeout(() => warmPreviewUrl(
+        `${API_URL}/api/media/preview/${encodeURIComponent(nextPackId)}/${encodeURIComponent(nextTrack.id)}`
+      ), 350);
     }
+
+    if (!earlyPlay) beginPreviewPlayback(requestId);
   }
 
   function togglePlayback() {

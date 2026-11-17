@@ -98,6 +98,38 @@ function renderAudioPreview({ inputPath, outputPath, start = 0, duration = 30, l
 }
 
 
+// Normalisation d'écoute intégrale : mêmes cibles LUFS que la preview,
+// sans aucun fondu. Le master (et le fichier téléchargé sous licence) reste intact.
+function renderFullListeningAudio({ inputPath, outputPath }) {
+  return new Promise((resolve, reject) => {
+    if (!ffmpegPath || !inputPath || !fs.existsSync(inputPath)) {
+      reject(new Error("Source ou FFmpeg indisponible pour l'écoute normalisée."));
+      return;
+    }
+    const args = [
+      "-v", "error", "-nostdin", "-y", "-i", inputPath,
+      "-vn", "-map_metadata", "-1",
+      "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+      "-codec:a", "libmp3lame", "-b:a", "192k", outputPath
+    ];
+    const child = spawn(ffmpegPath, args, {
+      windowsHide: true,
+      stdio: ["ignore", "ignore", "pipe"]
+    });
+    let stderr = "";
+    child.stderr.on("data", chunk => { if (stderr.length < 6000) stderr += chunk.toString("utf8"); });
+    child.once("error", reject);
+    child.once("close", code => {
+      if (code !== 0 || !fs.existsSync(outputPath)) {
+        reject(new Error(stderr.trim() || `FFmpeg a quitté avec le code ${code}.`));
+        return;
+      }
+      resolve(outputPath);
+    });
+  });
+}
+
+
 function renderPromoVideo({ framePath, audioPath, outputPath, duration = 30 }) {
   return new Promise((resolve, reject) => {
     if (!ffmpegPath) {
@@ -186,6 +218,7 @@ function promoVideoDownloadName(pack = {}, track = {}) {
 module.exports = {
   createPreviewWorkspace,
   renderAudioPreview,
+  renderFullListeningAudio,
   renderPromoVideo,
   previewDownloadName,
   coverDownloadName,

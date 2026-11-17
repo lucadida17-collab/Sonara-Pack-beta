@@ -3,11 +3,12 @@ const crypto = require("crypto");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { renderAudioPreview } = require("../features/audio/preview-export");
+const { renderAudioPreview, renderFullListeningAudio } = require("../features/audio/preview-export");
 const { bearer, digestToken, findSession } = require("./account-security");
 
 const TTL = 20 * 60 * 1000;
-const PREVIEW_CACHE_TTL = 60 * 60 * 1000; // Reuse FFmpeg results for one hour per server instance.
+const PREVIEW_CACHE_TTL = 6 * 60 * 60 * 1000; // Keep encoded public previews available across repeat plays.
+const FULL_CACHE_TTL = 6 * 60 * 60 * 1000;
 const IMAGE_EXT = /\.(?:png|jpe?g|webp|gif|avif)$/i;
 const PRIVATE_EXT = /\.(?:mp3|wav|aiff?|flac|ogg|m4a|aac|zip|rar|7z|mid|midi|als|flp|rpp|logicx|mp4|mov|pdf)$/i;
 // Raw upload URLs serve artwork only, never feedback screenshots or moderation proofs.
@@ -62,10 +63,16 @@ function findAudioByKey(packs, key) {
   }
   return null;
 }
-function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticated, getAccountById }) {
+function createPrivateMedia({
+  readPacks, getInput, sendOriginal, getAuthenticated, getAccountById,
+  loadPreparedPreview, savePreparedPreview, sendPreparedFull, savePreparedFull
+}) {
   const tickets = new Map();
   const previewCache = new Map();
   const previewPending = new Map();
+  const fullPending = new Map();
+  const fullCache = new Map();
+  const fullMisses = new Map();
   let issued = 0;
   async function catalogue(req, packs) {
     let identity = null;
@@ -116,7 +123,7 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
       if(!entry || !isApproved(entry.pack) || !entry.source) return res.status(404).json({success:false,code:"PREVIEW_NOT_FOUND"});
       const start=Math.max(0,Number.isFinite(Number(entry.track.previewStart)) ? Number(entry.track.previewStart) : 0);
       const duration=Math.max(1,Math.min(30,Number(entry.track.previewDuration)||30));
-      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,entry.track.originalFileHash || "",start,duration,"5s-fade-v1"])).digest("hex");
+      const key=crypto.createHash("sha256").update(JSON.stringify([entry.source,entry.track.originalFileHash || "",start,duration,"5s-fade-v1-loudnorm-16"])).digest("hex");
       const now=Date.now();
       const cached=previewCache.get(key);
       if (cached && cached.expiresAt > now && fs.existsSync(cached.file)) {
@@ -134,8 +141,22 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
           try {
             const input=path.join(directory,"original"+path.extname(entry.source));
             const output=path.join(directory,"preview.mp3");
-            await getInput(entry.source,input);
-            await renderAudioPreview({inputPath:input,outputPath:output,start,duration});
+            // Reuse durable (private) preview derivatives, when available.
+            // Cache key includes the original file/hash, selected passage and filter version.
+            let restored = false;
+            if (typeof loadPreparedPreview === "function") {
+              try { restored = await loadPreparedPreview(key, output) === true; }
+              catch (err) { console.warn("[MEDIA] Cache preview distant indisponible:", err.message); }
+            }
+            if (!restored) {
+              await getInput(entry.source,input);
+              await renderAudioPreview({inputPath:input,outputPath:output,start,duration});
+              if (typeof savePreparedPreview === "function") {
+                // R2 upload must NOT delay the first audible byte.
+                void Promise.resolve().then(() => savePreparedPreview(key,output))
+                  .catch(err => console.warn("[MEDIA] Cache preview distant non persistant:",err.message));
+              }
+            }
             try{fs.rmSync(input,{force:true});}catch{}
             previewCache.set(key,{file:output,directory,expiresAt:Date.now()+PREVIEW_CACHE_TTL});
             // A small bounded temporary cache prevents N downloads/encodes for N listeners.
@@ -178,6 +199,58 @@ function createPrivateMedia({ readPacks, getInput, sendOriginal, getAuthenticate
       }
       if (!entry.source) return res.status(404).end();
       res.setHeader("Cache-Control","private, no-store");
+
+      // Same -16 LUFS target as previews, but no fades on full songs.
+      // Never delay an initial playback for FFmpeg: fall back to the original
+      // while its private listening derivative is prepared asynchronously.
+      const key=crypto.createHash("sha256").update(JSON.stringify([
+        entry.source,entry.track.originalFileHash || "","full-listening-loudnorm-16-v1"
+      ])).digest("hex");
+      const now=Date.now();
+      const cached=fullCache.get(key);
+      if (cached && cached.expiresAt>now && fs.existsSync(cached.file)) {
+        res.setHeader("Content-Type","audio/mpeg");
+        return res.sendFile(cached.file,{acceptRanges:true});
+      }
+      if (typeof sendPreparedFull==="function" && (fullMisses.get(key)||0)<now) {
+        try {
+          const delivered=await sendPreparedFull(key,req,res);
+          if (delivered) return;
+        } catch(err) {
+          if (res.headersSent) throw err;
+          console.warn("[MEDIA] Lecture du cache normalisé indisponible:",err.message);
+        }
+        fullMisses.set(key,Date.now()+60_000);
+      }
+      if (!fullPending.has(key) && fullPending.size<1) {
+        const task=(async()=>{
+          const directory=fs.mkdtempSync(path.join(os.tmpdir(),"sonara-full-listening-"));
+          try {
+            const input=path.join(directory,"original"+path.extname(entry.source));
+            const output=path.join(directory,"listening.mp3");
+            await getInput(entry.source,input);
+            await renderFullListeningAudio({inputPath:input,outputPath:output});
+            fs.rmSync(input,{force:true});
+            fullCache.set(key,{file:output,directory,expiresAt:Date.now()+FULL_CACHE_TTL});
+            if (typeof savePreparedFull==="function") {
+              // Playback may use the local derivative immediately; remote
+              // persistence happens separately and never blocks the player.
+              void Promise.resolve().then(() => savePreparedFull(key,output))
+                .catch(err => console.warn("[MEDIA] Cache écoute distante non persistant:",err.message));
+            }
+            fullMisses.delete(key);
+            for (const [oldKey,item] of fullCache) {
+              if (item.expiresAt>Date.now() && fullCache.size<=16) continue;
+              fullCache.delete(oldKey);
+              if(oldKey!==key) try{fs.rmSync(item.directory,{recursive:true,force:true});}catch{}
+            }
+          } catch(err) {
+            fs.rmSync(directory,{recursive:true,force:true});
+            console.warn("[MEDIA] Préparation écoute normalisée échouée:",err.message);
+          }
+        })().finally(()=>fullPending.delete(key));
+        fullPending.set(key,task);
+      }
       return await sendOriginal(entry.source,req,res);
     } catch(err) {
       console.error("[MEDIA] Lecture protégée impossible:",err.message);

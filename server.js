@@ -714,6 +714,39 @@ app.use(accountSecurity.middleware);
 const mediaSafety = createPrivateMedia({
   readPacks: async () => packsCollection.find({}).toArray(),
   getInput: async (key, target) => downloadPackR2File(key, target),
+  loadPreparedPreview: async (hash, target) => {
+    try {
+      await downloadPackR2File(`derived/previews-v2/${hash}.mp3`, target);
+      return true;
+    } catch (error) {
+      if (["NoSuchKey", "NotFound", "NoSuchBucket"].includes(error.name) || error.$metadata?.httpStatusCode === 404) return false;
+      throw error;
+    }
+  },
+  savePreparedPreview: async (hash, file) =>
+    uploadLocalFileToR2(file, `derived/previews-v2/${hash}.mp3`, "audio/mpeg"),
+  savePreparedFull: async (hash, file) =>
+    uploadLocalFileToR2(file, `derived/listening-v1/${hash}.mp3`, "audio/mpeg"),
+  sendPreparedFull: async (hash, req, res) => {
+    let object;
+    try {
+      object = await r2.send(new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: `derived/listening-v1/${hash}.mp3`,
+        ...(req.headers.range ? { Range: req.headers.range } : {}),
+      }));
+    } catch (error) {
+      if (["NoSuchKey", "NotFound", "NoSuchBucket"].includes(error.name) || error.$metadata?.httpStatusCode === 404) return false;
+      throw error;
+    }
+    res.setHeader("Content-Type", "audio/mpeg");
+    if (object.ContentRange) { res.setHeader("Content-Range", object.ContentRange); res.status(206); }
+    if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
+    res.setHeader("Accept-Ranges", "bytes");
+    if (!object.Body?.pipe) throw new Error("Flux audio normalisé indisponible");
+    object.Body.pipe(res);
+    return true;
+  },
   sendOriginal: async (key, req, res) => {
     const object = await r2.send(
       new GetObjectCommand({
