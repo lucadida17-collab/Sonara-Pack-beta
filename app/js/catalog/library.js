@@ -33,6 +33,51 @@ function setLibraryAmbientCover(item = null) {
     document.body.classList.toggle("has-library-cover", Boolean(url));
 }
 
+// PRE-V1 gratuite : l'audio de la bibliothèque ne joue que lorsque
+// cette page est active à l'écran (pas de lecture en arrière-plan).
+let libraryAudioInForeground = !document.hidden;
+let libraryCurrentAudioElement = null;
+
+function canPlayLibraryAudioInForeground() {
+  return libraryAudioInForeground && !document.hidden;
+}
+
+function pauseLibraryAudioInBackground() {
+  libraryAudioInForeground = false;
+  // Inclut les pistes desktop/mobile, la cover et une piste déjà détachée du DOM.
+  const audios = new Set(document.querySelectorAll("audio"));
+  if (libraryCurrentAudioElement) audios.add(libraryCurrentAudioElement);
+  audios.forEach((audio) => {
+    audio.dataset.sonaraStopped = "1";
+    if (!audio.paused) audio.pause();
+  });
+}
+
+function allowLibraryAudioWhenVisible() {
+  if (!document.hidden) libraryAudioInForeground = true;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pauseLibraryAudioInBackground();
+  else allowLibraryAudioWhenVisible();
+});
+window.addEventListener("blur", pauseLibraryAudioInBackground);
+window.addEventListener("pagehide", pauseLibraryAudioInBackground);
+window.addEventListener("focus", allowLibraryAudioWhenVisible);
+window.addEventListener("pageshow", allowLibraryAudioWhenVisible);
+// En cas de retour d'une fenêtre système, un geste utilisateur réactive
+// uniquement la possibilité de lancer la lecture, jamais la lecture elle-même.
+document.addEventListener("pointerdown", allowLibraryAudioWhenVisible, true);
+document.addEventListener("keydown", allowLibraryAudioWhenVisible, true);
+// Bloque aussi une reprise depuis les contrôles média du téléphone.
+document.addEventListener("play", (event) => {
+  const audio = event.target;
+  if (!canPlayLibraryAudioInForeground() && audio instanceof HTMLMediaElement) {
+    audio.dataset.sonaraStopped = "1";
+    audio.pause();
+  }
+}, true);
+
 // Keep the Library player honest: never claim playback succeeded until
 // the browser's `play` event fires. Network/media errors are surfaced to users.
 function reportLibraryAudioError(audio, error) {
@@ -62,7 +107,7 @@ const libraryAudioRepairs = new WeakMap();
 const libraryAudioLastRefresh = new WeakMap();
 
 async function recoverLibraryAudioFailure(audio, error) {
-  if (!audio) return;
+  if (!audio || !canPlayLibraryAudioInForeground() || audio.dataset.sonaraStopped === "1") return;
   if (error?.name === "AbortError") return;
   if (libraryAudioRepairs.has(audio)) return libraryAudioRepairs.get(audio);
 
@@ -111,7 +156,7 @@ async function recoverLibraryAudioFailure(audio, error) {
           if (!/\/api\/media\/full\/[^/?]+/.test(refreshedUrl) || refreshedUrl === source) {
             throw new Error("No renewed full-audio ticket");
           }
-          if (!audio.isConnected || audio.dataset.sonaraStopped === "1") return;
+          if (!audio.isConnected || audio.dataset.sonaraStopped === "1" || !canPlayLibraryAudioInForeground()) return;
           audio.src = refreshedUrl;
           audio.load();
           try {
@@ -144,11 +189,24 @@ async function recoverLibraryAudioFailure(audio, error) {
 }
 
 function startLibraryAudio(audio) {
-  if (!audio?.getAttribute("src")) {
+  if (!audio) return;
+  if (!canPlayLibraryAudioInForeground()) {
+    audio.dataset.sonaraStopped = "1";
+    audio.pause();
+    return;
+  }
+  if (!audio.getAttribute("src")) {
     reportLibraryAudioError(audio, new Error("Source audio manquante"));
     return;
   }
+  // Une ancienne piste peut survivre en mémoire après un changement de vue.
+  if (libraryCurrentAudioElement && libraryCurrentAudioElement !== audio) {
+    libraryCurrentAudioElement.dataset.sonaraStopped = "1";
+    libraryCurrentAudioElement.pause();
+  }
+  libraryCurrentAudioElement = audio;
   // Preserve the user gesture for immediate playback (no await before play).
+  audio.dataset.sonaraStopped = "0";
   try {
     const result = audio.play();
     result?.catch?.((error) => {
