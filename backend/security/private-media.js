@@ -65,7 +65,7 @@ function findAudioByKey(packs, key) {
 }
 function createPrivateMedia({
   readPacks, getInput, sendOriginal, getAuthenticated, getAccountById,
-  loadPreparedPreview, savePreparedPreview, sendPreparedFull, savePreparedFull
+  loadPreparedPreview, savePreparedPreview, sendPreparedFull, savePreparedFull, readPack, sendPreparedPreview
 }) {
   const tickets = new Map();
   const previewCache = new Map();
@@ -117,9 +117,13 @@ function createPrivateMedia({
     const track=tracks.find(x=>String(x === pack ? "single" : (x.id||"single"))===String(trackId));
     return track ? {pack,track,source:normalizedKey(track.audioName||track.audio)} : null;
   }
+  async function lookupTrack(packId, trackId) {
+    const packs = typeof readPack === "function" ? [await readPack(packId)].filter(Boolean) : await readPacks();
+    return findTrack(packs, packId, trackId);
+  }
   async function preview(req,res) {
     try {
-      const entry=findTrack(await readPacks(),req.params.packId,req.params.trackId);
+      const entry=await lookupTrack(req.params.packId,req.params.trackId);
       if(!entry || !isApproved(entry.pack) || !entry.source) return res.status(404).json({success:false,code:"PREVIEW_NOT_FOUND"});
       const start=Math.max(0,Number.isFinite(Number(entry.track.previewStart)) ? Number(entry.track.previewStart) : 0);
       const duration=Math.max(1,Math.min(30,Number(entry.track.previewDuration)||30));
@@ -129,6 +133,14 @@ function createPrivateMedia({
       if (cached && cached.expiresAt > now && fs.existsSync(cached.file)) {
         res.setHeader("Content-Type","audio/mpeg");res.setHeader("Cache-Control","private, no-store");
         return res.sendFile(cached.file);
+      }
+      if (typeof sendPreparedPreview === "function" && !previewPending.has(key)) {
+        try {
+          if (await sendPreparedPreview(key,req,res)) return;
+        } catch (err) {
+          if (res.headersSent) throw err;
+          console.warn("[MEDIA] Flux preview distant indisponible:",err.message);
+        }
       }
       // Limit the maximum simultaneous CPU/IO-heavy ffmpeg conversions.
       if (!previewPending.has(key) && previewPending.size >= 4) {
@@ -144,7 +156,7 @@ function createPrivateMedia({
             // Reuse durable (private) preview derivatives, when available.
             // Cache key includes the original file/hash, selected passage and filter version.
             let restored = false;
-            if (typeof loadPreparedPreview === "function") {
+            if (typeof loadPreparedPreview === "function" && typeof sendPreparedPreview !== "function") {
               try { restored = await loadPreparedPreview(key, output) === true; }
               catch (err) { console.warn("[MEDIA] Cache preview distant indisponible:", err.message); }
             }
@@ -188,9 +200,10 @@ function createPrivateMedia({
     try {
       // Native <audio> doesn't attach a bearer header. The ticket is an opaque,
       // short-lived capability. Recheck ownership on every range request.
-      const entry=findTrack(await readPacks(),ticket.packId,ticket.trackId);
+      const [entry, identity] = await Promise.all([
+        lookupTrack(ticket.packId,ticket.trackId), getAccountById(ticket.accountId)
+      ]);
       if(!entry || !isApproved(entry.pack)) return res.status(404).end();
-      const identity = await getAccountById(ticket.accountId);
       if (!identity?.account || !purchased(identity.account, entry.pack, entry.track) ||
           (ticket.sessionDigest && !findSession(identity.account,ticket.sessionDigest)) ||
           ["banned","suspended","rejected"].includes(String(identity.account.status||"").toLowerCase())) {

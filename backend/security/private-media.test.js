@@ -25,3 +25,11 @@ test("anonymous catalogue gets preview, purchaser gets temporary full ticket",as
  assert.match(privatePack.tracks[0].audioName,/^\/api\/media\/full\/[A-Za-z0-9_-]{25,}$/);
  assert.equal(pack.tracks[0].audioName,"tracks/audio/song.mp3");
 });
+
+test("targeted preview lookup streams prepared audio without reading catalogue or master", async()=>{
+ let reads=0, streams=0;
+ const media=createPrivateMedia({readPacks:async()=>{throw Error('catalogue scan');},readPack:async id=>{reads++;assert.equal(id,pack.id);return pack;},getInput:async()=>{throw Error('master read');},sendPreparedPreview:async()=>{streams++;return true;},getAuthenticated:async()=>null,getAccountById:async()=>null});
+ const routes=new Map();media.mount({get:(p,h)=>routes.set(p,h),use(){}});
+ await routes.get('/api/media/preview/:packId/:trackId')({params:{packId:pack.id,trackId:'track_1'}},{});
+ assert.equal(reads,1);assert.equal(streams,1);
+});
