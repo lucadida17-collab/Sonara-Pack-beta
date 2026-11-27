@@ -153,7 +153,7 @@
         </div>
         <audio
           class="public-catalog-preview-audio"
-          preload="metadata"
+          preload="none"
           src="${escapeHTML(track.previewAudioUrl)}"
           data-public-preview
           data-preview-start="${Math.max(0, Number(track.previewStart || 0))}"

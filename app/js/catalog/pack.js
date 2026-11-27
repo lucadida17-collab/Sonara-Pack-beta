@@ -1055,7 +1055,7 @@ function setupPackPreviewPlayer() {
   // without downloading the whole preview or any private master.
   const warmedPreviewUrls = new Set();
   function warmPreviewUrl(url) {
-    if (!url || navigator.connection?.saveData === true ||
+    if (!url || document.hidden || packPreviewAudio !== audio || navigator.connection?.saveData === true ||
         /2g/.test(String(navigator.connection?.effectiveType || "")) ||
         warmedPreviewUrls.has(url)) return;
     warmedPreviewUrls.add(url);
@@ -1067,9 +1067,14 @@ function setupPackPreviewPlayer() {
     }).then(response => response.body?.cancel?.()).catch(() => {});
   }
   if (warmPackId && initialTrack?.id) {
-    window.setTimeout(() => warmPreviewUrl(
-      `${API_URL}/api/media/preview/${encodeURIComponent(warmPackId)}/${encodeURIComponent(initialTrack.id)}`
-    ), 200);
+    const initialPreviewUrl = `${API_URL}/api/media/preview/${encodeURIComponent(warmPackId)}/${encodeURIComponent(initialTrack.id)}`;
+    window.setTimeout(() => {
+      // Native preload is preferred. Only fall back to a tiny Range request
+      // if the browser did not start loading and the user has not pressed Play.
+      if (packPreviewAudio !== audio || packPreviewState || audio.error ||
+          audio.networkState === 2 || audio.readyState >= 1) return;
+      warmPreviewUrl(initialPreviewUrl);
+    }, 200);
   }
 
   const miniPlayer = root.querySelector(".mini-player-mobile");
@@ -1345,9 +1350,10 @@ function setupPackPreviewPlayer() {
     const nextTrack = tracks[index + 1];
     const nextPackId = nextTrack?.sourcePackId || packData?.id;
     if (nextTrack?.id && nextPackId) {
-      window.setTimeout(() => warmPreviewUrl(
-        `${API_URL}/api/media/preview/${encodeURIComponent(nextPackId)}/${encodeURIComponent(nextTrack.id)}`
-      ), 350);
+      window.setTimeout(() => {
+        if (requestId !== previewRequestId || audio.paused) return;
+        warmPreviewUrl(`${API_URL}/api/media/preview/${encodeURIComponent(nextPackId)}/${encodeURIComponent(nextTrack.id)}`);
+      }, 350);
     }
 
     if (!earlyPlay) beginPreviewPlayback(requestId);

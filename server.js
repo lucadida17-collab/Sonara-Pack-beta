@@ -716,6 +716,19 @@ app.use(accountSecurity.middleware);
 // V1 business identity API is intentionally absent on MAIN PRE_V1.
 // It can be registered during a separately approved V1 launch after hosted document verification.
 
+// Stop the upstream R2 audio stream as soon as the client disconnects.
+// This also handles a disconnect while the R2 GetObject request was pending.
+function pipeMainAudio(body, res) {
+  if (!body?.pipe) throw new Error("Flux audio R2 indisponible");
+  body.on("error", error => { if (!res.destroyed) res.destroy(error); });
+  if (res.destroyed || res.writableEnded) {
+    body.destroy?.();
+    return;
+  }
+  res.once("close", () => body.destroy?.());
+  body.pipe(res);
+}
+
 // Public previews are server-side 30-second exports. Full audio gets a short-lived
 // capability URL only when the authenticated account has acquired that content.
 const mediaSafety = createPrivateMedia({
@@ -751,11 +764,8 @@ const mediaSafety = createPrivateMedia({
     if (object.ContentRange) { res.setHeader("Content-Range", object.ContentRange); res.status(206); }
     if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
     res.setHeader("Accept-Ranges", "bytes");
-    if (!object.Body?.pipe) throw new Error("Flux preview indisponible");
     res.setHeader("Cache-Control", "private, no-store");
-    object.Body.on("error", error => res.destroy(error));
-    res.once("close", () => object.Body.destroy?.());
-    object.Body.pipe(res);
+    pipeMainAudio(object.Body, res);
     return true;
   },
   sendPreparedFull: async (hash, req, res) => {
@@ -774,8 +784,7 @@ const mediaSafety = createPrivateMedia({
     if (object.ContentRange) { res.setHeader("Content-Range", object.ContentRange); res.status(206); }
     if (object.ContentLength != null) res.setHeader("Content-Length", String(object.ContentLength));
     res.setHeader("Accept-Ranges", "bytes");
-    if (!object.Body?.pipe) throw new Error("Flux audio normalisé indisponible");
-    object.Body.pipe(res);
+    pipeMainAudio(object.Body, res);
     return true;
   },
   sendOriginal: async (key, req, res) => {
@@ -795,8 +804,7 @@ const mediaSafety = createPrivateMedia({
     if (object.ContentLength != null)
       res.setHeader("Content-Length", String(object.ContentLength));
     res.setHeader("Accept-Ranges", "bytes");
-    if (!object.Body?.pipe) throw new Error("Flux audio indisponible");
-    object.Body.pipe(res);
+    pipeMainAudio(object.Body, res);
   },
   getAccountById: (id) => findRootAndAccountById(id),
   getAuthenticated: (req) => accountSecurity.authenticate(req),

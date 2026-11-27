@@ -264,59 +264,86 @@ const founderFinance = registerFounderFinance({
 
 const PORT = process.env.PORT || 3001;
 
-const allowedOrigins = [
+// LOCAL: accept only valid HTTP(S) origins, never a wildcard or a null origin.
+function parseLocalCorsOrigin(value) {
+  try {
+    const parsed = new URL(String(value || "").trim());
+    if (
+      !["http:", "https:"].includes(parsed.protocol) ||
+      parsed.username || parsed.password || parsed.search || parsed.hash ||
+      parsed.pathname !== "/"
+    ) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function isLoopbackFrontHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
+function isPrivateFrontHost(hostname) {
+  return /^(?:192\.168\.|10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)/.test(hostname) &&
+    /^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+}
+
+const localLanEnabled = String(process.env.SONARA_LOCAL_ALLOW_LAN || "").toLowerCase() === "true";
+const allowedOrigins = new Set([
   "http://127.0.0.1:5500",
   "http://localhost:5500",
   "http://127.0.0.1:5501",
   "http://localhost:5501",
   "http://127.0.0.1:3001",
   "http://localhost:3001",
-  ...String(process.env.ALLOWED_ORIGINS || "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-];
+  ...String(process.env.ALLOWED_ORIGINS || "").split(","),
+].map(parseLocalCorsOrigin).filter(Boolean).map((parsed) => parsed.origin));
+
+// FRONT_URL is an explicit configuration for this environment, not a public wildcard.
+const configuredLocalFront = parseLocalCorsOrigin(frontUrl);
+if (configuredLocalFront && (
+  isLoopbackFrontHost(configuredLocalFront.hostname) ||
+  (localLanEnabled && isPrivateFrontHost(configuredLocalFront.hostname))
+)) {
+  allowedOrigins.add(configuredLocalFront.origin);
+}
+
+function isAllowedLocalOrigin(origin) {
+  const parsed = parseLocalCorsOrigin(origin);
+  if (!parsed) return false;
+  if (allowedOrigins.has(parsed.origin)) return true;
+  // Live Server can increment its port when the default 5500 is already busy.
+  // This allowance is loopback-only; LAN still requires explicit configuration.
+  const port = Number(parsed.port);
+  return isLoopbackFrontHost(parsed.hostname) && port >= 5500 && port <= 5599;
+}
 
 function resolveFrontUrl(req) {
   const candidates = [req?.headers?.origin, req?.headers?.referer];
-
   for (const candidate of candidates) {
     if (!candidate) continue;
-
     try {
-      const parsed = new URL(String(candidate));
-      const origin = parsed.origin.replace(/\/+$/, "");
-      const isConfiguredOrigin = origin === frontUrl;
-      const isAllowedOrigin = allowedOrigins.includes(origin);
-      const isLocalFront =
-        ["localhost", "127.0.0.1"].includes(parsed.hostname) ||
-        parsed.hostname.startsWith("192.168.") ||
-        parsed.hostname.startsWith("10.");
-
-      if (
-        isConfiguredOrigin ||
-        isAllowedOrigin ||
-        ((frontUrl.includes("localhost") || frontUrl.includes("127.0.0.1")) &&
-          isLocalFront &&
-          parsed.port === "5500")
-      ) {
-        return origin;
-      }
+      const origin = new URL(String(candidate)).origin;
+      if (isAllowedLocalOrigin(origin)) return origin;
     } catch {
       // Origine invalide : on conserve l'URL configurée pour l'environnement.
     }
   }
-
   return frontUrl;
 }
+
+// Reject the request itself, not just its CORS response headers.
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || isAllowedLocalOrigin(origin)) return next();
+  console.warn(`[CORS:LOCAL] Origine refusée : ${JSON.stringify(String(origin).slice(0, 300))}`);
+  return res.status(403).json({ success: false, code: "LOCAL_ORIGIN_NOT_ALLOWED", message: "Origine non autorisée par Sonara." });
+});
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Origine non autorisée par Sonara."));
+      return callback(null, !origin || isAllowedLocalOrigin(origin));
     },
     credentials: true,
   }),
